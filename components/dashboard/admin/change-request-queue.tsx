@@ -77,8 +77,10 @@ function ReviewModal({
   const approve = useApproveChangeRequest()
   const reject = useRejectChangeRequest()
   const submit = () => {
-    if (mode === "approve") approve.mutate({ id: request.id, note }, { onSuccess: onClose })
-    else if (mode === "reject") reject.mutate({ id: request.id, note }, { onSuccess: onClose })
+    if (mode === "approve")
+      approve.mutate({ id: request.id, note }, { onSuccess: onClose })
+    else if (mode === "reject")
+      reject.mutate({ id: request.id, note }, { onSuccess: onClose })
   }
   const busy = approve.isPending || reject.isPending
   const p = request.requestedPayload
@@ -103,7 +105,9 @@ function ReviewModal({
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Type</span>
-            <span className="font-medium">{TYPE_LABEL[request.type] ?? request.type}</span>
+            <span className="font-medium">
+              {TYPE_LABEL[request.type] ?? request.type}
+            </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Effective</span>
@@ -117,9 +121,9 @@ function ReviewModal({
               Requested policy
             </p>
             <p className="text-[11px]">
-              Clock-in {p.earliestClockIn ?? "—"}–{p.latestClockIn ?? "—"} (grace{" "}
-              {p.lateGraceMins ?? 0}m) · {p.requiredHours ?? "—"}h/day · workdays{" "}
-              {(p.workdays ?? []).join(", ") || "—"}
+              Clock-in {p.earliestClockIn ?? "—"}–{p.latestClockIn ?? "—"}{" "}
+              (grace {p.lateGraceMins ?? 0}m) · {p.requiredHours ?? "—"}h/day ·
+              workdays {(p.workdays ?? []).join(", ") || "—"}
             </p>
           </div>
           {request.reason && (
@@ -171,7 +175,9 @@ function ReviewModal({
 }
 
 export function ChangeRequestQueueSection() {
-  const [status, setStatus] = useState<ChangeRequestStatus | undefined>("PENDING")
+  const [status, setStatus] = useState<ChangeRequestStatus | undefined>(
+    "PENDING"
+  )
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState("")
   const [reviewTarget, setReviewTarget] = useState<{
@@ -232,7 +238,14 @@ export function ChangeRequestQueueSection() {
       <Table>
         <TableHeader>
           <TableRow>
-            {["Employee", "Type", "Effective", "Status", "Reviewed by", "Actions"].map((h) => (
+            {[
+              "Employee",
+              "Type",
+              "Effective",
+              "Status",
+              "Reviewed by",
+              "Actions",
+            ].map((h) => (
               <TableHead
                 key={h}
                 className={h === "Actions" ? "text-right" : undefined}
@@ -270,7 +283,9 @@ export function ChangeRequestQueueSection() {
                 <TableCell>
                   <div>
                     <p className="text-[13px] font-medium">{r.userName}</p>
-                    <p className="text-[11px] text-muted-foreground">{r.userEmail}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {r.userEmail}
+                    </p>
                   </div>
                 </TableCell>
                 <TableCell className="text-[12px]">
@@ -304,7 +319,9 @@ export function ChangeRequestQueueSection() {
                           size="icon-xs"
                           variant="outline"
                           className="border-green-300 text-green-600 hover:bg-green-50 dark:border-green-900/40 dark:hover:bg-green-900/20"
-                          onClick={() => setReviewTarget({ req: r, mode: "approve" })}
+                          onClick={() =>
+                            setReviewTarget({ req: r, mode: "approve" })
+                          }
                         >
                           <HugeiconsIcon
                             icon={CheckmarkCircle02Icon}
@@ -317,9 +334,15 @@ export function ChangeRequestQueueSection() {
                           size="icon-xs"
                           variant="outline"
                           className="border-red-200 text-red-500 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/20"
-                          onClick={() => setReviewTarget({ req: r, mode: "reject" })}
+                          onClick={() =>
+                            setReviewTarget({ req: r, mode: "reject" })
+                          }
                         >
-                          <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={2} />
+                          <HugeiconsIcon
+                            icon={Cancel01Icon}
+                            size={12}
+                            strokeWidth={2}
+                          />
                           <span className="sr-only">Reject</span>
                         </Button>
                       </>

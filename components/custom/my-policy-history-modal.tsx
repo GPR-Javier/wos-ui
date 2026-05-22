@@ -35,15 +35,18 @@ function fmtDateTime(iso: string | null | undefined) {
 function Summary({ v }: { v: PolicyVersion }) {
   if (v.deletionMarker) {
     return (
-      <p className="text-[11px] italic text-muted-foreground">
-        My override was removed — schedule reverted to my role / organization default.
+      <p className="text-[11px] text-muted-foreground italic">
+        My override was removed — schedule reverted to my role / organization
+        default.
       </p>
     )
   }
   const p = v.payload
   return (
     <p className="text-[11px] text-muted-foreground">
-      <span className="font-medium text-foreground">{p.requiredHours ?? "—"}h/day</span>
+      <span className="font-medium text-foreground">
+        {p.requiredHours ?? "—"}h/day
+      </span>
       {" · "}Clock-in {p.earliestClockIn ?? "—"}–{p.latestClockIn ?? "—"} (grace{" "}
       {p.lateGraceMins ?? 0}m)
       {" · "}

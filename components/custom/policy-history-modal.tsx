@@ -12,10 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TablePagination } from "@/components/custom/table-pagination"
 import { usePolicyHistory } from "@/hooks/use-schedule-policy"
-import type {
-  PolicyScope,
-  PolicyVersion,
-} from "@/lib/schedule-policy-api"
+import type { PolicyScope, PolicyVersion } from "@/lib/schedule-policy-api"
 
 interface Props {
   open: boolean
@@ -41,8 +38,9 @@ function fmtDateTime(iso: string | null | undefined) {
 function PayloadSummary({ v }: { v: PolicyVersion }) {
   if (v.deletionMarker) {
     return (
-      <p className="text-[11px] italic text-muted-foreground">
-        Override removed — resolution falls through to the parent scope from this date onward.
+      <p className="text-[11px] text-muted-foreground italic">
+        Override removed — resolution falls through to the parent scope from
+        this date onward.
       </p>
     )
   }
@@ -89,7 +87,8 @@ export function PolicyHistoryModal({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-[15px]">
-            Policy history · <span className="text-muted-foreground">{scopeLabel}</span>
+            Policy history ·{" "}
+            <span className="text-muted-foreground">{scopeLabel}</span>
           </DialogTitle>
         </DialogHeader>
 

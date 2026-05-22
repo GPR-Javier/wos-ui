@@ -2,7 +2,11 @@
 
 import { useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Edit01Icon, Clock01Icon, Alert01Icon } from "@hugeicons/core-free-icons"
+import {
+  Edit01Icon,
+  Clock01Icon,
+  Alert01Icon,
+} from "@hugeicons/core-free-icons"
 import { Button } from "@/components/ui/button"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -169,9 +173,7 @@ function Field({
       >
         {value}
       </p>
-      {sub && (
-        <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p>
-      )}
+      {sub && <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p>}
     </div>
   )
 }

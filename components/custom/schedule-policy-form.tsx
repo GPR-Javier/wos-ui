@@ -4,10 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import type {
-  SchedulePolicyPayload,
-  Weekday,
-} from "@/lib/schedule-policy-api"
+import type { SchedulePolicyPayload, Weekday } from "@/lib/schedule-policy-api"
 
 const WEEKDAYS: { code: Weekday; label: string }[] = [
   { code: "MON", label: "Mon" },
@@ -35,7 +32,11 @@ interface Props {
  *   - admin policy editor (org/role/user)
  *   - employee change-request modal (without the note field)
  */
-export function SchedulePolicyForm({ value, onChange, showNote = true }: Props) {
+export function SchedulePolicyForm({
+  value,
+  onChange,
+  showNote = true,
+}: Props) {
   const p = value.payload
   const set = (patch: Partial<SchedulePolicyPayload>) =>
     onChange({ ...value, payload: { ...p, ...patch } })
@@ -62,7 +63,9 @@ export function SchedulePolicyForm({ value, onChange, showNote = true }: Props) 
               type="time"
               className="h-9 text-[13px]"
               value={p.earliestClockIn ?? ""}
-              onChange={(e) => set({ earliestClockIn: e.target.value || undefined })}
+              onChange={(e) =>
+                set({ earliestClockIn: e.target.value || undefined })
+              }
             />
           </div>
           <div className="space-y-1.5">
@@ -71,7 +74,9 @@ export function SchedulePolicyForm({ value, onChange, showNote = true }: Props) 
               type="time"
               className="h-9 text-[13px]"
               value={p.latestClockIn ?? ""}
-              onChange={(e) => set({ latestClockIn: e.target.value || undefined })}
+              onChange={(e) =>
+                set({ latestClockIn: e.target.value || undefined })
+              }
             />
           </div>
           <div className="col-span-2 space-y-1.5">
@@ -107,7 +112,9 @@ export function SchedulePolicyForm({ value, onChange, showNote = true }: Props) 
               type="time"
               className="h-9 text-[13px]"
               value={p.earliestClockOut ?? ""}
-              onChange={(e) => set({ earliestClockOut: e.target.value || undefined })}
+              onChange={(e) =>
+                set({ earliestClockOut: e.target.value || undefined })
+              }
             />
           </div>
           <div className="space-y-1.5">
@@ -116,7 +123,9 @@ export function SchedulePolicyForm({ value, onChange, showNote = true }: Props) 
               type="time"
               className="h-9 text-[13px]"
               value={p.latestClockOut ?? ""}
-              onChange={(e) => set({ latestClockOut: e.target.value || undefined })}
+              onChange={(e) =>
+                set({ latestClockOut: e.target.value || undefined })
+              }
             />
           </div>
         </div>

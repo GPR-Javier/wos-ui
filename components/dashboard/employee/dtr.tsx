@@ -704,8 +704,7 @@ export function DTRSection() {
   const breakStartMutation = useBreakStart()
   const breakEndMutation = useBreakEnd()
   const isClockBusy = clockInMutation.isPending || clockOutMutation.isPending
-  const isBreakBusy =
-    breakStartMutation.isPending || breakEndMutation.isPending
+  const isBreakBusy = breakStartMutation.isPending || breakEndMutation.isPending
 
   async function applyClockIn() {
     try {
@@ -739,7 +738,11 @@ export function DTRSection() {
     try {
       const result = await clockOutMutation.mutateAsync()
       setClocked(false)
-      setClockOutTime(result.timeOut ? new Date(result.timeOut) : (pendingClockOut ?? new Date()))
+      setClockOutTime(
+        result.timeOut
+          ? new Date(result.timeOut)
+          : (pendingClockOut ?? new Date())
+      )
       setBreaks(INITIAL_BREAKS)
       setPendingClockOut(null)
       setEodOpen(false)
@@ -845,7 +848,9 @@ export function DTRSection() {
             const next = Object.fromEntries(
               Object.entries(prev).map(([k, v]) => {
                 if (v.active && v.startTime) {
-                  const addedSecs = Math.floor((Date.now() - v.startTime) / 1000)
+                  const addedSecs = Math.floor(
+                    (Date.now() - v.startTime) / 1000
+                  )
                   const elapsed = v.elapsed + addedSecs
                   return [
                     k,
@@ -862,7 +867,8 @@ export function DTRSection() {
               })
             )
             const cur = next[type]
-            if (cur) next[type] = { ...cur, active: true, startTime: Date.now() }
+            if (cur)
+              next[type] = { ...cur, active: true, startTime: Date.now() }
             return next
           })
         }
@@ -1252,7 +1258,9 @@ export function DTRSection() {
               <div className="flex items-center justify-between border-t border-border pt-1.5 text-[12px]">
                 <span className="font-medium">Total break</span>
                 <span className="font-semibold tabular-nums">
-                  {breakSecs > 0 || anyBreakActive ? fmtDuration(breakSecs) : "—"}
+                  {breakSecs > 0 || anyBreakActive
+                    ? fmtDuration(breakSecs)
+                    : "—"}
                 </span>
               </div>
             </div>
@@ -1291,7 +1299,8 @@ export function DTRSection() {
                 My schedule
               </p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
-                Your current effective policy. Set by admin; appeal via "Request schedule change".
+                Your current effective policy. Set by admin; appeal via "Request
+                schedule change".
               </p>
             </div>
             <Button
@@ -1309,7 +1318,8 @@ export function DTRSection() {
                 Clock-in window
               </p>
               <p className="mt-0.5 tabular-nums">
-                {myPolicy.earliestClockIn ?? "—"} – {myPolicy.latestClockIn ?? "—"}
+                {myPolicy.earliestClockIn ?? "—"} –{" "}
+                {myPolicy.latestClockIn ?? "—"}
               </p>
               <p className="text-[10px] text-muted-foreground">
                 Grace {myPolicy.lateGraceMins ?? 0}m
@@ -1320,7 +1330,8 @@ export function DTRSection() {
                 Clock-out window
               </p>
               <p className="mt-0.5 tabular-nums">
-                {myPolicy.earliestClockOut ?? "—"} – {myPolicy.latestClockOut ?? "—"}
+                {myPolicy.earliestClockOut ?? "—"} –{" "}
+                {myPolicy.latestClockOut ?? "—"}
               </p>
             </div>
             <div>
@@ -1338,7 +1349,9 @@ export function DTRSection() {
               <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                 Workdays
               </p>
-              <p className="mt-0.5">{(myPolicy.workdays ?? []).join(", ") || "—"}</p>
+              <p className="mt-0.5">
+                {(myPolicy.workdays ?? []).join(", ") || "—"}
+              </p>
             </div>
           </div>
         </div>

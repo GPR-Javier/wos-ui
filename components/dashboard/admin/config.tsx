@@ -3,12 +3,7 @@
 import { useMemo } from "react"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { SchedulePoliciesSection } from "@/components/dashboard/admin/schedule-policies"
 import { useAuthStore } from "@/store/auth-store"
 
@@ -34,7 +29,9 @@ function PlaceholderSection({
       <div className="mb-4 flex items-center justify-between">
         <div>
           <p className="text-[13px] font-semibold">{title}</p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">{description}</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            {description}
+          </p>
         </div>
         <Button size="xs" variant="outline" disabled>
           Edit

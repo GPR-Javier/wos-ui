@@ -13,10 +13,7 @@ import {
   SchedulePolicyForm,
   type SchedulePolicyFormValue,
 } from "./schedule-policy-form"
-import {
-  useCurrentPolicy,
-  useSavePolicy,
-} from "@/hooks/use-schedule-policy"
+import { useCurrentPolicy, useSavePolicy } from "@/hooks/use-schedule-policy"
 import type {
   PolicyScope,
   SchedulePolicyPayload,
@@ -85,7 +82,8 @@ export function SchedulePolicyModal({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-[15px]">
-            Edit schedule policy · <span className="text-muted-foreground">{scopeLabel}</span>
+            Edit schedule policy ·{" "}
+            <span className="text-muted-foreground">{scopeLabel}</span>
           </DialogTitle>
         </DialogHeader>
 
@@ -96,8 +94,9 @@ export function SchedulePolicyModal({
         ) : (
           <>
             <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
-              Saving creates a new version effective immediately. Past attendance
-              already evaluated under the previous version will <span className="font-semibold">not</span> be reclassified.
+              Saving creates a new version effective immediately. Past
+              attendance already evaluated under the previous version will{" "}
+              <span className="font-semibold">not</span> be reclassified.
             </p>
             <div className="max-h-[60vh] overflow-y-auto pr-1">
               <SchedulePolicyForm value={value} onChange={setValue} />

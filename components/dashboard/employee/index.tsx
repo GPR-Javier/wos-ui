@@ -119,7 +119,11 @@ export function OverviewSection() {
       <div className="grid grid-cols-4 gap-4">
         <StatCard
           title="Total days present"
-          value={statsLoading ? valueSkeleton : String(stats?.totalDaysPresent ?? "—")}
+          value={
+            statsLoading
+              ? valueSkeleton
+              : String(stats?.totalDaysPresent ?? "—")
+          }
           delta={statsLoading ? undefined : "Year to date"}
           deltaUp={true}
           accent="blue"
@@ -279,7 +283,9 @@ export function OverviewSection() {
           ) : (
             policyActivities.map((a, i) => (
               <div key={i} className="flex items-start gap-3">
-                <div className={cn("mt-1 size-2 shrink-0 rounded-full", a.dot)} />
+                <div
+                  className={cn("mt-1 size-2 shrink-0 rounded-full", a.dot)}
+                />
                 <div className="flex-1">
                   <p className="text-[13px] font-medium">{a.title}</p>
                   <p className="text-[12px] text-muted-foreground">{a.meta}</p>

@@ -9,7 +9,9 @@ import {
 
 const KEY = ["schedule-change-request"] as const
 
-export function useMyChangeRequests(params: { page?: number; size?: number } = {}) {
+export function useMyChangeRequests(
+  params: { page?: number; size?: number } = {}
+) {
   return useQuery({
     queryKey: [...KEY, "me", params],
     queryFn: () => scheduleChangeRequestApi.listMine(params),

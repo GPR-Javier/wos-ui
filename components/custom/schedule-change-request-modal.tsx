@@ -17,16 +17,16 @@ import {
   SchedulePolicyForm,
   type SchedulePolicyFormValue,
 } from "./schedule-policy-form"
-import {
-  useCreateChangeRequest,
-} from "@/hooks/use-schedule-change-request"
+import { useCreateChangeRequest } from "@/hooks/use-schedule-change-request"
 import { useMyPolicy } from "@/hooks/use-schedule-policy"
-import type {
-  ChangeRequestType,
-} from "@/lib/schedule-change-request-api"
+import type { ChangeRequestType } from "@/lib/schedule-change-request-api"
 import type { SchedulePolicyPayload } from "@/lib/schedule-policy-api"
 
-const TYPE_OPTIONS: { value: ChangeRequestType; label: string; help: string }[] = [
+const TYPE_OPTIONS: {
+  value: ChangeRequestType
+  label: string
+  help: string
+}[] = [
   {
     value: "SHIFT_CHANGE",
     label: "Temporary shift change",
@@ -106,7 +106,8 @@ export function ScheduleChangeRequestModal({ open, onClose }: Props) {
         </DialogHeader>
 
         <p className="text-[12px] text-muted-foreground">
-          Submits for admin review. Your current schedule keeps applying until approval.
+          Submits for admin review. Your current schedule keeps applying until
+          approval.
         </p>
 
         {/* Type selector */}
@@ -165,7 +166,11 @@ export function ScheduleChangeRequestModal({ open, onClose }: Props) {
           <p className="mb-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
             Requested schedule
           </p>
-          <SchedulePolicyForm value={policy} onChange={setPolicy} showNote={false} />
+          <SchedulePolicyForm
+            value={policy}
+            onChange={setPolicy}
+            showNote={false}
+          />
         </div>
 
         {/* Reason */}

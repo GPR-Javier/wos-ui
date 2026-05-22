@@ -48,9 +48,12 @@ export const scheduleChangeRequestApi = {
 
   listMine: (params: { page?: number; size?: number } = {}) =>
     api
-      .get<PageResponse<ScheduleChangeRequest>>("/schedule-change-requests/me", {
-        params: { page: 0, size: 20, ...params },
-      })
+      .get<PageResponse<ScheduleChangeRequest>>(
+        "/schedule-change-requests/me",
+        {
+          params: { page: 0, size: 20, ...params },
+        }
+      )
       .then((r) => r.data),
 
   cancelMine: (id: number) =>

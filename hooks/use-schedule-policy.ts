@@ -29,7 +29,8 @@ export function usePolicyHistory(
 export function useSavePolicy(scope: PolicyScope) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: SavePolicyRequest) => schedulePolicyApi.save(scope, body),
+    mutationFn: (body: SavePolicyRequest) =>
+      schedulePolicyApi.save(scope, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: POLICY_KEY })
       qc.invalidateQueries({ queryKey: ["employee", "policy"] })
@@ -77,7 +78,9 @@ export function useResetPolicy() {
   })
 }
 
-export function useMyPolicyHistory(params: { page?: number; size?: number } = {}) {
+export function useMyPolicyHistory(
+  params: { page?: number; size?: number } = {}
+) {
   return useQuery({
     queryKey: ["employee", "policy", "history", params],
     queryFn: () => schedulePolicyApi.myHistory(params),

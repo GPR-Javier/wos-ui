@@ -46,7 +46,8 @@ export function ConfirmPunchModal({
           <Button
             onClick={onConfirm}
             className={cn(
-              !isClockIn && "bg-red-500 hover:bg-red-600 focus-visible:ring-red-500"
+              !isClockIn &&
+                "bg-red-500 hover:bg-red-600 focus-visible:ring-red-500"
             )}
           >
             Yes, {verb.toLowerCase()}

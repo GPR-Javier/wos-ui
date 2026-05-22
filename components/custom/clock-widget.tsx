@@ -272,8 +272,7 @@ export function ClockWidget() {
   const breakStartMutation = useBreakStart()
   const breakEndMutation = useBreakEnd()
   const isClockBusy = clockInMutation.isPending || clockOutMutation.isPending
-  const isBreakBusy =
-    breakStartMutation.isPending || breakEndMutation.isPending
+  const isBreakBusy = breakStartMutation.isPending || breakEndMutation.isPending
 
   const applyPunch = useCallback(
     async (type: "in" | "out") => {
@@ -363,17 +362,25 @@ export function ClockWidget() {
             const next = Object.fromEntries(
               Object.entries(prev).map(([k, v]) => {
                 if (v.active && v.startTime) {
-                  const addedSecs = Math.floor((Date.now() - v.startTime) / 1000)
+                  const addedSecs = Math.floor(
+                    (Date.now() - v.startTime) / 1000
+                  )
                   return [
                     k,
-                    { ...v, elapsed: v.elapsed + addedSecs, active: false, startTime: null },
+                    {
+                      ...v,
+                      elapsed: v.elapsed + addedSecs,
+                      active: false,
+                      startTime: null,
+                    },
                   ]
                 }
                 return [k, v]
               })
             )
             const cur = next[type]
-            if (cur) next[type] = { ...cur, active: true, startTime: Date.now() }
+            if (cur)
+              next[type] = { ...cur, active: true, startTime: Date.now() }
             return next
           })
         }

@@ -55,7 +55,9 @@ export const schedulePolicyApi = {
         // 204 → empty body. Axios returns "" — normalize to null below.
         validateStatus: (s) => s === 200 || s === 204,
       })
-      .then((r) => (r.status === 204 || r.data === "" ? null : (r.data as PolicyVersion))),
+      .then((r) =>
+        r.status === 204 || r.data === "" ? null : (r.data as PolicyVersion)
+      ),
 
   save: (scope: PolicyScope, body: SavePolicyRequest) =>
     api

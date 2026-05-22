@@ -155,7 +155,8 @@ function ScopeRow({
           <PolicySummary p={q.data.payload} />
         ) : (
           <p className="mt-1 text-[11px] text-muted-foreground">
-            No policy set at this scope — resolution falls back to a higher scope or system defaults.
+            No policy set at this scope — resolution falls back to a higher
+            scope or system defaults.
           </p>
         )}
       </div>
@@ -175,11 +176,21 @@ function ScopeRow({
             Reset
           </Button>
         )}
-        <Button size="xs" variant="ghost" onClick={onHistory} className="gap-1.5">
+        <Button
+          size="xs"
+          variant="ghost"
+          onClick={onHistory}
+          className="gap-1.5"
+        >
           <HugeiconsIcon icon={Clock01Icon} size={12} strokeWidth={2} />
           History
         </Button>
-        <Button size="xs" variant="outline" onClick={onEdit} className="gap-1.5">
+        <Button
+          size="xs"
+          variant="outline"
+          onClick={onEdit}
+          className="gap-1.5"
+        >
           <HugeiconsIcon icon={Edit01Icon} size={12} strokeWidth={2} />
           Edit
         </Button>
@@ -244,14 +255,20 @@ function UserOverridesList({
           >
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <p className="truncate text-[13px] font-medium">{v.scopeRefLabel}</p>
-                <StatusBadge variant="green" dot={false}>Override</StatusBadge>
+                <p className="truncate text-[13px] font-medium">
+                  {v.scopeRefLabel}
+                </p>
+                <StatusBadge variant="green" dot={false}>
+                  Override
+                </StatusBadge>
               </div>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
-                <span className="font-medium text-foreground">{p.requiredHours ?? "—"}h/day</span>
+                <span className="font-medium text-foreground">
+                  {p.requiredHours ?? "—"}h/day
+                </span>
                 {" · "}
-                Clock-in {p.earliestClockIn ?? "—"}–{p.latestClockIn ?? "—"} (grace{" "}
-                {p.lateGraceMins ?? 0}m)
+                Clock-in {p.earliestClockIn ?? "—"}–{p.latestClockIn ?? "—"}{" "}
+                (grace {p.lateGraceMins ?? 0}m)
                 {" · "}
                 {(p.workdays ?? []).length}/7 workdays
               </p>
@@ -262,11 +279,21 @@ function UserOverridesList({
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
-              <Button size="xs" variant="ghost" onClick={() => onHistory(v)} className="gap-1.5">
+              <Button
+                size="xs"
+                variant="ghost"
+                onClick={() => onHistory(v)}
+                className="gap-1.5"
+              >
                 <HugeiconsIcon icon={Clock01Icon} size={12} strokeWidth={2} />
                 History
               </Button>
-              <Button size="xs" variant="outline" onClick={() => onEdit(v)} className="gap-1.5">
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={() => onEdit(v)}
+                className="gap-1.5"
+              >
                 <HugeiconsIcon icon={Edit01Icon} size={12} strokeWidth={2} />
                 Edit
               </Button>
@@ -290,7 +317,9 @@ function UserOverridesList({
 function PolicySummary({ p }: { p: SchedulePolicyPayload }) {
   return (
     <p className="mt-1 text-[11px] text-muted-foreground">
-      <span className="font-medium text-foreground">{p.requiredHours ?? "—"}h/day</span>
+      <span className="font-medium text-foreground">
+        {p.requiredHours ?? "—"}h/day
+      </span>
       {" · "}
       Clock-in {p.earliestClockIn ?? "—"}–{p.latestClockIn ?? "—"} (grace{" "}
       {p.lateGraceMins ?? 0}m)
@@ -335,7 +364,8 @@ export function SchedulePoliciesSection() {
           <div>
             <p className="text-[13px] font-semibold">Organization default</p>
             <p className="text-[11px] text-muted-foreground">
-              The fallback policy for every user who has no role- or user-level override.
+              The fallback policy for every user who has no role- or user-level
+              override.
             </p>
           </div>
         </div>
@@ -344,13 +374,25 @@ export function SchedulePoliciesSection() {
           scopeRef={null}
           label="All employees"
           onEdit={() =>
-            setEditing({ scope: "ORG", scopeRef: null, label: "Organization-wide" })
+            setEditing({
+              scope: "ORG",
+              scopeRef: null,
+              label: "Organization-wide",
+            })
           }
           onHistory={() =>
-            setHistoryFor({ scope: "ORG", scopeRef: null, label: "Organization-wide" })
+            setHistoryFor({
+              scope: "ORG",
+              scopeRef: null,
+              label: "Organization-wide",
+            })
           }
           onReset={() =>
-            setResetTarget({ scope: "ORG", scopeRef: null, label: "Organization-wide" })
+            setResetTarget({
+              scope: "ORG",
+              scopeRef: null,
+              label: "Organization-wide",
+            })
           }
         />
       </section>
@@ -361,7 +403,8 @@ export function SchedulePoliciesSection() {
           <div>
             <p className="text-[13px] font-semibold">Role overrides</p>
             <p className="text-[11px] text-muted-foreground">
-              Override per user role. Applied to anyone holding the role; trumps the organization default.
+              Override per user role. Applied to anyone holding the role; trumps
+              the organization default.
             </p>
           </div>
         </div>
@@ -381,13 +424,25 @@ export function SchedulePoliciesSection() {
                 label={r.name}
                 sublabel={r.description}
                 onEdit={() =>
-                  setEditing({ scope: "USER_ROLE", scopeRef: r.id, label: r.name })
+                  setEditing({
+                    scope: "USER_ROLE",
+                    scopeRef: r.id,
+                    label: r.name,
+                  })
                 }
                 onHistory={() =>
-                  setHistoryFor({ scope: "USER_ROLE", scopeRef: r.id, label: r.name })
+                  setHistoryFor({
+                    scope: "USER_ROLE",
+                    scopeRef: r.id,
+                    label: r.name,
+                  })
                 }
                 onReset={() =>
-                  setResetTarget({ scope: "USER_ROLE", scopeRef: r.id, label: r.name })
+                  setResetTarget({
+                    scope: "USER_ROLE",
+                    scopeRef: r.id,
+                    label: r.name,
+                  })
                 }
               />
             ))
@@ -401,7 +456,8 @@ export function SchedulePoliciesSection() {
           <div>
             <p className="text-[13px] font-semibold">User overrides</p>
             <p className="text-[11px] text-muted-foreground">
-              Individuals singled out with a custom schedule. Trumps role &amp; org defaults.
+              Individuals singled out with a custom schedule. Trumps role &amp;
+              org defaults.
             </p>
           </div>
         </div>
