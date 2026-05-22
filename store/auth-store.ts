@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>()(
         }),
 
       // Also refreshes the authorities cache so permission changes (toggled via
-       // Roles & Permissions) propagate without requiring a fresh login.
+      // Roles & Permissions) propagate without requiring a fresh login.
       setUser: (user) => set({ user, authorities: user.authorities }),
 
       setAvailableRoles: (roles, activeId) =>

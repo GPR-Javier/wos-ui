@@ -97,9 +97,13 @@ export function Sidebar() {
     return authorities.includes(authority)
   }
 
-  function isVisible(item: { authority: string | null; hideIfAuthority?: string }): boolean {
+  function isVisible(item: {
+    authority: string | null
+    hideIfAuthority?: string
+  }): boolean {
     if (!hasAuthority(item.authority)) return false
-    if (item.hideIfAuthority && authorities.includes(item.hideIfAuthority)) return false
+    if (item.hideIfAuthority && authorities.includes(item.hideIfAuthority))
+      return false
     return true
   }
 
@@ -109,9 +113,7 @@ export function Sidebar() {
   const displayName = user ? `${user.firstName} ${user.lastName}` : "—"
   const employeeId = user?.employeeId ?? ""
 
-  const items = isSettings
-    ? settingsNavConfig
-    : navConfig.filter(isVisible)
+  const items = isSettings ? settingsNavConfig : navConfig.filter(isVisible)
 
   function isActive(itemSection: string) {
     if (isSettings) return (subSection ?? "general") === itemSection
