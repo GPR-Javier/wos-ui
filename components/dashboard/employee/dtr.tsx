@@ -17,6 +17,7 @@ import {
 import { StatusBadge } from "@/components/custom/status-badge"
 import { DtrChangeModal } from "@/components/custom/dtr-change-modal"
 import { AttendanceCameraCapture } from "@/components/custom/attendance-camera-capture"
+import { ConfirmPunchModal } from "@/components/custom/confirm-punch-modal"
 import { useAuthStore } from "@/store/auth-store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -637,6 +638,9 @@ export function DTRSection() {
   const [cameraPunchType, setCameraPunchType] = useState<"in" | "out" | null>(
     null
   )
+  const [confirmPunchType, setConfirmPunchType] = useState<"in" | "out" | null>(
+    null
+  )
   const [eodOpen, setEodOpen] = useState(false)
   const [pendingClockOut, setPendingClockOut] = useState<Date | null>(null)
 
@@ -906,9 +910,9 @@ export function DTRSection() {
                 if (anyBreakActive && activeBreakEntry) {
                   toggleBreak(activeBreakEntry[0])
                 } else if (!clocked) {
-                  startPunch("in")
+                  setConfirmPunchType("in")
                 } else {
-                  startPunch("out")
+                  setConfirmPunchType("out")
                 }
               }}
               className={cn(
@@ -1304,6 +1308,15 @@ export function DTRSection() {
       </div>
 
       <AttendanceHeatmap />
+
+      <ConfirmPunchModal
+        punchType={confirmPunchType}
+        onCancel={() => setConfirmPunchType(null)}
+        onConfirm={() => {
+          if (confirmPunchType) startPunch(confirmPunchType)
+          setConfirmPunchType(null)
+        }}
+      />
 
       {cameraPunchType && (
         <PunchCameraModal

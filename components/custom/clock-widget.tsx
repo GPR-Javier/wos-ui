@@ -21,6 +21,7 @@ import {
   StopCircleIcon,
 } from "@hugeicons/core-free-icons"
 import { AttendanceCameraCapture } from "@/components/custom/attendance-camera-capture"
+import { ConfirmPunchModal } from "@/components/custom/confirm-punch-modal"
 import { useAuthStore } from "@/store/auth-store"
 
 // ── types ─────────────────────────────────────────────────────────────────────
@@ -193,6 +194,9 @@ export function ClockWidget() {
   const [clocked, setClocked] = useState(false)
   const [clockInTime, setClockInTime] = useState<Date | null>(null)
   const [cameraPunchType, setCameraPunchType] = useState<"in" | "out" | null>(
+    null
+  )
+  const [confirmPunchType, setConfirmPunchType] = useState<"in" | "out" | null>(
     null
   )
   const [breaks, setBreaks] = useState<Record<string, BreakState>>(INIT_BREAKS)
@@ -418,9 +422,9 @@ export function ClockWidget() {
             if (anyBreakActive && activeBreakEntry) {
               toggleBreak(activeBreakEntry[0])
             } else if (!clocked) {
-              startPunch("in")
+              setConfirmPunchType("in")
             } else {
-              startPunch("out")
+              setConfirmPunchType("out")
             }
           }}
           className={cn(
@@ -520,6 +524,15 @@ export function ClockWidget() {
           </>
         )}
       </div>
+
+      <ConfirmPunchModal
+        punchType={confirmPunchType}
+        onCancel={() => setConfirmPunchType(null)}
+        onConfirm={() => {
+          if (confirmPunchType) startPunch(confirmPunchType)
+          setConfirmPunchType(null)
+        }}
+      />
 
       {cameraPunchType && (
         <PunchCameraModal
