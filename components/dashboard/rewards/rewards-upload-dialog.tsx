@@ -79,13 +79,19 @@ export function RewardsUploadDialog({ open, onClose }: Props) {
   const uploadMutation = useUploadRatings()
 
   function reset() {
-    setFile(null); setFileError(null); setTitle(""); setNotes("")
-    setUploadState("idle"); setErrorMessage(""); setDragging(false)
+    setFile(null)
+    setFileError(null)
+    setTitle("")
+    setNotes("")
+    setUploadState("idle")
+    setErrorMessage("")
+    setDragging(false)
   }
 
   function handleClose() {
     if (uploadState === "uploading") return
-    reset(); onClose()
+    reset()
+    onClose()
   }
 
   function validateAndSet(f: File) {
@@ -100,7 +106,8 @@ export function RewardsUploadDialog({ open, onClose }: Props) {
   }
 
   const onDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault(); setDragging(false)
+    e.preventDefault()
+    setDragging(false)
     const f = e.dataTransfer.files[0]
     if (f) validateAndSet(f)
   }, [])
@@ -109,7 +116,11 @@ export function RewardsUploadDialog({ open, onClose }: Props) {
     if (!file || !title.trim()) return
     setUploadState("uploading")
     try {
-      await uploadMutation.mutateAsync({ file, title: title.trim(), notes: notes.trim() || undefined })
+      await uploadMutation.mutateAsync({
+        file,
+        title: title.trim(),
+        notes: notes.trim() || undefined,
+      })
       setUploadState("success")
     } catch {
       setUploadState("error")
@@ -123,8 +134,18 @@ export function RewardsUploadDialog({ open, onClose }: Props) {
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Upload Rating Records</DialogTitle>
-            <Button size="xs" variant="outline" onClick={downloadTemplate} className="mr-6">
-              <HugeiconsIcon icon={Download01Icon} size={12} strokeWidth={2} className="mr-1" />
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={downloadTemplate}
+              className="mr-6"
+            >
+              <HugeiconsIcon
+                icon={Download01Icon}
+                size={12}
+                strokeWidth={2}
+                className="mr-1"
+              />
               Download template
             </Button>
           </div>
@@ -133,73 +154,161 @@ export function RewardsUploadDialog({ open, onClose }: Props) {
         {uploadState === "success" ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <div className="flex size-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={24} className="text-green-600" strokeWidth={1.8} />
+              <HugeiconsIcon
+                icon={CheckmarkCircle01Icon}
+                size={24}
+                className="text-green-600"
+                strokeWidth={1.8}
+              />
             </div>
             <p className="font-medium">Upload successful</p>
-            <p className="text-[13px] text-muted-foreground">Ratings are being processed and rewards computed.</p>
-            <Button size="sm" onClick={() => { reset(); onClose() }}>Done</Button>
+            <p className="text-[13px] text-muted-foreground">
+              Ratings are being processed and rewards computed.
+            </p>
+            <Button
+              size="sm"
+              onClick={() => {
+                reset()
+                onClose()
+              }}
+            >
+              Done
+            </Button>
           </div>
         ) : (
           <div className="space-y-4">
             <div
               className={cn(
                 "relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-10 transition-colors",
-                dragging ? "border-primary bg-primary/5"
-                  : file ? "border-green-500 bg-green-50 dark:bg-green-900/10"
-                  : "border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/60"
+                dragging
+                  ? "border-primary bg-primary/5"
+                  : file
+                    ? "border-green-500 bg-green-50 dark:bg-green-900/10"
+                    : "border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/60"
               )}
-              onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+              onDragOver={(e) => {
+                e.preventDefault()
+                setDragging(true)
+              }}
               onDragLeave={() => setDragging(false)}
               onDrop={onDrop}
               onClick={() => inputRef.current?.click()}
             >
-              <input ref={inputRef} type="file" accept=".xlsx,.xls" className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) validateAndSet(f) }} />
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) validateAndSet(f)
+                }}
+              />
               {file ? (
                 <>
-                  <HugeiconsIcon icon={CheckmarkCircle01Icon} size={28} className="mb-2 text-green-600" strokeWidth={1.5} />
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle01Icon}
+                    size={28}
+                    className="mb-2 text-green-600"
+                    strokeWidth={1.5}
+                  />
                   <p className="text-[13px] font-medium">{file.name}</p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">{(file.size / 1024).toFixed(1)} KB — click to change</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {(file.size / 1024).toFixed(1)} KB — click to change
+                  </p>
                 </>
               ) : (
                 <>
-                  <HugeiconsIcon icon={CloudUploadIcon} size={28} className="mb-2 text-muted-foreground" strokeWidth={1.5} />
-                  <p className="text-[13px] font-medium">Drag & drop your rating file here</p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">or click to browse — .xlsx and .xls only</p>
+                  <HugeiconsIcon
+                    icon={CloudUploadIcon}
+                    size={28}
+                    className="mb-2 text-muted-foreground"
+                    strokeWidth={1.5}
+                  />
+                  <p className="text-[13px] font-medium">
+                    Drag & drop your rating file here
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    or click to browse — .xlsx and .xls only
+                  </p>
                 </>
               )}
             </div>
 
             {fileError && (
               <p className="flex items-center gap-1.5 text-[12px] text-red-600">
-                <HugeiconsIcon icon={AlertCircleIcon} size={12} strokeWidth={2} />{fileError}
+                <HugeiconsIcon
+                  icon={AlertCircleIcon}
+                  size={12}
+                  strokeWidth={2}
+                />
+                {fileError}
               </p>
             )}
 
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label className="text-[12px]">Upload title</Label>
-                <Input placeholder="e.g. Week 3 Ratings – Jan 2025" value={title} onChange={(e) => setTitle(e.target.value)} />
+                <Input
+                  placeholder="e.g. Week 3 Ratings – Jan 2025"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[12px]">Notes <span className="text-muted-foreground">(optional)</span></Label>
-                <Textarea placeholder="Any context about this batch…" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+                <Label className="text-[12px]">
+                  Notes{" "}
+                  <span className="text-muted-foreground">(optional)</span>
+                </Label>
+                <Textarea
+                  placeholder="Any context about this batch…"
+                  rows={2}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
               </div>
             </div>
 
             {uploadState === "error" && (
               <p className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
-                <HugeiconsIcon icon={AlertCircleIcon} size={13} strokeWidth={2} />{errorMessage}
+                <HugeiconsIcon
+                  icon={AlertCircleIcon}
+                  size={13}
+                  strokeWidth={2}
+                />
+                {errorMessage}
               </p>
             )}
 
             <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" size="sm" onClick={handleClose}>Cancel</Button>
-              <Button size="sm" disabled={!file || !title.trim() || uploadState === "uploading"} onClick={handleUpload}>
+              <Button variant="outline" size="sm" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={!file || !title.trim() || uploadState === "uploading"}
+                onClick={handleUpload}
+              >
                 {uploadState === "uploading" ? (
-                  <><HugeiconsIcon icon={Refresh01Icon} size={13} strokeWidth={2} className="mr-1.5 animate-spin" />Uploading…</>
+                  <>
+                    <HugeiconsIcon
+                      icon={Refresh01Icon}
+                      size={13}
+                      strokeWidth={2}
+                      className="mr-1.5 animate-spin"
+                    />
+                    Uploading…
+                  </>
                 ) : (
-                  <><HugeiconsIcon icon={CloudUploadIcon} size={13} strokeWidth={2} className="mr-1.5" />Upload ratings</>
+                  <>
+                    <HugeiconsIcon
+                      icon={CloudUploadIcon}
+                      size={13}
+                      strokeWidth={2}
+                      className="mr-1.5"
+                    />
+                    Upload ratings
+                  </>
                 )}
               </Button>
             </div>

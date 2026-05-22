@@ -161,11 +161,7 @@ export function EmployeesSection() {
                         router.push(`/dashboard/employees/${emp.id}`)
                       }
                     >
-                      <HugeiconsIcon
-                        icon={EyeIcon}
-                        size={12}
-                        strokeWidth={2}
-                      />
+                      <HugeiconsIcon icon={EyeIcon} size={12} strokeWidth={2} />
                       View details
                     </Button>
                   </TableCell>

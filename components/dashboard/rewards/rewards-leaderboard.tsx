@@ -69,7 +69,7 @@ function StarRating({ value }: { value: number }) {
           }
         />
       ))}
-      <span className="ml-1 tabular-nums text-[12px] font-medium">
+      <span className="ml-1 text-[12px] font-medium tabular-nums">
         {value.toFixed(2)}
       </span>
     </div>
@@ -92,7 +92,12 @@ export function RewardsLeaderboard({ compact = false }: Props) {
       {/* Period toggle */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <HugeiconsIcon icon={CrownIcon} size={15} strokeWidth={1.8} className="text-amber-500" />
+          <HugeiconsIcon
+            icon={CrownIcon}
+            size={15}
+            strokeWidth={1.8}
+            className="text-amber-500"
+          />
           <h3 className="text-[13px] font-semibold">
             {period === "monthly" ? "Monthly" : "Weekly"} Leaderboard
           </h3>
@@ -121,35 +126,73 @@ export function RewardsLeaderboard({ compact = false }: Props) {
           {/* 2nd */}
           <div className="flex flex-col items-center gap-2">
             <div className="flex size-12 items-center justify-center rounded-full bg-slate-100 text-[14px] font-bold dark:bg-slate-800">
-              {top3[1]?.teacherName.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+              {top3[1]?.teacherName
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+                .slice(0, 2)}
             </div>
-            <p className="text-[11px] font-medium text-center max-w-[80px] truncate">{top3[1]?.teacherName}</p>
+            <p className="max-w-[80px] truncate text-center text-[11px] font-medium">
+              {top3[1]?.teacherName}
+            </p>
             <StarRating value={top3[1]?.averageRating ?? 0} />
             <div className="flex h-16 w-20 items-center justify-center rounded-t-lg bg-slate-200 dark:bg-slate-700">
-              <HugeiconsIcon icon={MedalSecondPlaceIcon} size={24} strokeWidth={1.5} className="text-slate-400" />
+              <HugeiconsIcon
+                icon={MedalSecondPlaceIcon}
+                size={24}
+                strokeWidth={1.5}
+                className="text-slate-400"
+              />
             </div>
           </div>
           {/* 1st */}
           <div className="flex flex-col items-center gap-2">
-            <HugeiconsIcon icon={CrownIcon} size={20} strokeWidth={1.8} className="text-amber-400" />
+            <HugeiconsIcon
+              icon={CrownIcon}
+              size={20}
+              strokeWidth={1.8}
+              className="text-amber-400"
+            />
             <div className="flex size-14 items-center justify-center rounded-full bg-amber-100 text-[16px] font-bold ring-2 ring-amber-400 dark:bg-amber-900/30">
-              {top3[0]?.teacherName.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+              {top3[0]?.teacherName
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+                .slice(0, 2)}
             </div>
-            <p className="text-[12px] font-semibold text-center max-w-[90px] truncate">{top3[0]?.teacherName}</p>
+            <p className="max-w-[90px] truncate text-center text-[12px] font-semibold">
+              {top3[0]?.teacherName}
+            </p>
             <StarRating value={top3[0]?.averageRating ?? 0} />
             <div className="flex h-24 w-24 items-center justify-center rounded-t-lg bg-amber-200 dark:bg-amber-900/30">
-              <HugeiconsIcon icon={MedalFirstPlaceIcon} size={28} strokeWidth={1.5} className="text-amber-500" />
+              <HugeiconsIcon
+                icon={MedalFirstPlaceIcon}
+                size={28}
+                strokeWidth={1.5}
+                className="text-amber-500"
+              />
             </div>
           </div>
           {/* 3rd */}
           <div className="flex flex-col items-center gap-2">
             <div className="flex size-12 items-center justify-center rounded-full bg-amber-50 text-[14px] font-bold dark:bg-amber-900/20">
-              {top3[2]?.teacherName.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+              {top3[2]?.teacherName
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+                .slice(0, 2)}
             </div>
-            <p className="text-[11px] font-medium text-center max-w-[80px] truncate">{top3[2]?.teacherName}</p>
+            <p className="max-w-[80px] truncate text-center text-[11px] font-medium">
+              {top3[2]?.teacherName}
+            </p>
             <StarRating value={top3[2]?.averageRating ?? 0} />
             <div className="flex h-12 w-20 items-center justify-center rounded-t-lg bg-amber-100 dark:bg-amber-900/20">
-              <HugeiconsIcon icon={MedalThirdPlaceIcon} size={22} strokeWidth={1.5} className="text-amber-700" />
+              <HugeiconsIcon
+                icon={MedalThirdPlaceIcon}
+                size={22}
+                strokeWidth={1.5}
+                className="text-amber-700"
+              />
             </div>
           </div>
         </div>
@@ -158,9 +201,13 @@ export function RewardsLeaderboard({ compact = false }: Props) {
       {/* Rankings list */}
       <div className="space-y-1">
         {isLoading ? (
-          <p className="py-6 text-center text-[13px] text-muted-foreground">Loading…</p>
+          <p className="py-6 text-center text-[13px] text-muted-foreground">
+            Loading…
+          </p>
         ) : display.length === 0 ? (
-          <p className="py-6 text-center text-[13px] text-muted-foreground">No leaderboard data yet</p>
+          <p className="py-6 text-center text-[13px] text-muted-foreground">
+            No leaderboard data yet
+          </p>
         ) : (
           display.map((entry) => (
             <div
@@ -174,11 +221,20 @@ export function RewardsLeaderboard({ compact = false }: Props) {
             >
               <MedalIcon rank={entry.rank} />
               <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
-                {entry.teacherName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                {entry.teacherName
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase()}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-medium truncate">{entry.teacherName}</p>
-                <p className="text-[11px] text-muted-foreground">{entry.totalSessions} sessions</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-medium">
+                  {entry.teacherName}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {entry.totalSessions} sessions
+                </p>
               </div>
               <div className="text-right">
                 <StarRating value={entry.averageRating} />

@@ -266,7 +266,11 @@ export function ScheduleUploadDialog({ open, onClose }: Props) {
 
             {fileError && (
               <p className="flex items-center gap-1.5 text-[12px] text-red-600">
-                <HugeiconsIcon icon={AlertCircleIcon} size={12} strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={AlertCircleIcon}
+                  size={12}
+                  strokeWidth={2}
+                />
                 {fileError}
               </p>
             )}

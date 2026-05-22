@@ -21,7 +21,7 @@ export const navConfig: NavItem[] = [
         authority: "LEAVE_MANAGEMENT:VIEW_ALL_LEAVE_REQUESTS",
         badge: 4,
       },
-      { label: "Teachers", section: "teachers", authority: null },
+      { label: "Employees", section: "employees", authority: null },
     ],
   },
   {
@@ -112,7 +112,7 @@ export const sectionTitles: Record<string, string> = {
   leave: "Leave Management",
   team: "Team",
   attendance: "Attendance",
-  teachers: "Teachers",
+  employees: "Employees",
   schedules: "Schedules",
   finance: "Finance",
   rewards: "Rewards & Ratings",

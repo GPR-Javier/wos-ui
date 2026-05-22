@@ -69,7 +69,10 @@ export interface RewardRule {
   createdAt: string
 }
 
-export type RewardRulePayload = Omit<RewardRule, "id" | "createdBy" | "createdAt">
+export type RewardRulePayload = Omit<
+  RewardRule,
+  "id" | "createdBy" | "createdAt"
+>
 
 export interface RewardHistory {
   id: number

@@ -7,8 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  Table, TableHeader, TableBody,
-  TableHead, TableRow, TableCell,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
 } from "@/components/ui/table"
 import { leaveBalances, leaveRequests } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
@@ -26,25 +30,31 @@ function addMonths(date: Date, n: number): Date {
 }
 
 function fmtDate(date: Date): string {
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
 }
 
 function fmtDateInput(date: Date): string {
-  const y  = date.getFullYear()
-  const m  = String(date.getMonth() + 1).padStart(2, "0")
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
   const dd = String(date.getDate()).padStart(2, "0")
   return `${y}-${m}-${dd}`
 }
 
 function monthsBetween(a: Date, b: Date): number {
-  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth())
+  return (
+    (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth())
+  )
 }
 
 interface AccrualEntry {
   date: Date
-  label: string        // "Month 2", "Month 4" …
-  earned: boolean      // past = earned, future = upcoming
-  cumulative: number   // running total at this point
+  label: string // "Month 2", "Month 4" …
+  earned: boolean // past = earned, future = upcoming
+  cumulative: number // running total at this point
 }
 
 function buildAccrualTimeline(
@@ -53,19 +63,21 @@ function buildAccrualTimeline(
   creditPerInterval: number,
   maxFuture: number = 6
 ): AccrualEntry[] {
-  const now     = new Date()
+  const now = new Date()
   const entries: AccrualEntry[] = []
 
   // How many intervals have already elapsed?
-  const elapsed      = Math.floor(Math.max(0, monthsBetween(startDate, now)) / intervalMonths)
-  const totalToShow  = elapsed + maxFuture
+  const elapsed = Math.floor(
+    Math.max(0, monthsBetween(startDate, now)) / intervalMonths
+  )
+  const totalToShow = elapsed + maxFuture
 
   let cumulative = 0
 
   for (let i = 1; i <= totalToShow; i++) {
-    const date     = addMonths(startDate, i * intervalMonths)
-    const earned   = date <= now
-    cumulative    += creditPerInterval
+    const date = addMonths(startDate, i * intervalMonths)
+    const earned = date <= now
+    cumulative += creditPerInterval
     entries.push({
       date,
       label: `Month ${i * intervalMonths}`,
@@ -80,7 +92,7 @@ function buildAccrualTimeline(
 // ── Leave accrual config card ──────────────────────────────────────────────────
 
 interface AccrualConfig {
-  startDate: string      // YYYY-MM-DD
+  startDate: string // YYYY-MM-DD
   intervalMonths: number
   creditPerInterval: number
 }
@@ -121,7 +133,9 @@ function AccrualSettings({
             type="date"
             className="h-9 text-[13px]"
             value={draft.startDate}
-            onChange={(e) => setDraft((d) => ({ ...d, startDate: e.target.value }))}
+            onChange={(e) =>
+              setDraft((d) => ({ ...d, startDate: e.target.value }))
+            }
           />
           <p className="text-[11px] text-muted-foreground">
             When the employee begins earning credits
@@ -139,13 +153,17 @@ function AccrualSettings({
               className="h-9 w-20 text-[13px]"
               value={draft.intervalMonths}
               onChange={(e) =>
-                setDraft((d) => ({ ...d, intervalMonths: Math.max(1, Number(e.target.value)) }))
+                setDraft((d) => ({
+                  ...d,
+                  intervalMonths: Math.max(1, Number(e.target.value)),
+                }))
               }
             />
             <span className="text-[12px] text-muted-foreground">months</span>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            1 credit every <strong>{draft.intervalMonths}</strong> month{draft.intervalMonths > 1 ? "s" : ""}
+            1 credit every <strong>{draft.intervalMonths}</strong> month
+            {draft.intervalMonths > 1 ? "s" : ""}
           </p>
         </div>
 
@@ -161,10 +179,15 @@ function AccrualSettings({
               className="h-9 w-20 text-[13px]"
               value={draft.creditPerInterval}
               onChange={(e) =>
-                setDraft((d) => ({ ...d, creditPerInterval: Math.max(0.5, Number(e.target.value)) }))
+                setDraft((d) => ({
+                  ...d,
+                  creditPerInterval: Math.max(0.5, Number(e.target.value)),
+                }))
               }
             />
-            <span className="text-[12px] text-muted-foreground">leave day{draft.creditPerInterval !== 1 ? "s" : ""}</span>
+            <span className="text-[12px] text-muted-foreground">
+              leave day{draft.creditPerInterval !== 1 ? "s" : ""}
+            </span>
           </div>
           <p className="text-[11px] text-muted-foreground">
             Earned per {draft.intervalMonths}-month period
@@ -173,11 +196,7 @@ function AccrualSettings({
       </div>
 
       <div className="mt-4 flex items-center gap-2">
-        <Button
-          size="sm"
-          disabled={!dirty}
-          onClick={save}
-        >
+        <Button size="sm" disabled={!dirty} onClick={save}>
           {saved ? "Saved!" : "Save settings"}
         </Button>
         {dirty && (
@@ -196,18 +215,29 @@ function AccrualSettings({
 // ── Accrual timeline ───────────────────────────────────────────────────────────
 
 function AccrualTimeline({ config }: { config: AccrualConfig }) {
-  const startDate = useMemo(() => new Date(config.startDate + "T00:00:00"), [config.startDate])
-  const entries   = useMemo(
-    () => buildAccrualTimeline(startDate, config.intervalMonths, config.creditPerInterval),
+  const startDate = useMemo(
+    () => new Date(config.startDate + "T00:00:00"),
+    [config.startDate]
+  )
+  const entries = useMemo(
+    () =>
+      buildAccrualTimeline(
+        startDate,
+        config.intervalMonths,
+        config.creditPerInterval
+      ),
     [startDate, config.intervalMonths, config.creditPerInterval]
   )
 
-  const now         = new Date()
-  const nextEntry   = entries.find((e) => !e.earned)
-  const totalEarned = entries.filter((e) => e.earned).length * config.creditPerInterval
+  const now = new Date()
+  const nextEntry = entries.find((e) => !e.earned)
+  const totalEarned =
+    entries.filter((e) => e.earned).length * config.creditPerInterval
 
   const daysUntilNext = nextEntry
-    ? Math.ceil((nextEntry.date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil(
+        (nextEntry.date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      )
     : null
 
   return (
@@ -216,18 +246,24 @@ function AccrualTimeline({ config }: { config: AccrualConfig }) {
         <div>
           <h3 className="text-[13px] font-semibold">Accrual Timeline</h3>
           <p className="mt-0.5 text-[12px] text-muted-foreground">
-            Started {fmtDate(startDate)} · {config.creditPerInterval} credit every {config.intervalMonths} month{config.intervalMonths > 1 ? "s" : ""}
+            Started {fmtDate(startDate)} · {config.creditPerInterval} credit
+            every {config.intervalMonths} month
+            {config.intervalMonths > 1 ? "s" : ""}
           </p>
         </div>
         <div className="flex shrink-0 gap-3 text-right">
           <div>
-            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total Earned</p>
+            <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+              Total Earned
+            </p>
             <p className="text-lg font-semibold tabular-nums">{totalEarned}</p>
           </div>
           {daysUntilNext !== null && (
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Next Credit</p>
-              <p className="text-lg font-semibold tabular-nums text-primary">
+              <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+                Next Credit
+              </p>
+              <p className="text-lg font-semibold text-primary tabular-nums">
                 {daysUntilNext <= 0 ? "Today" : `${daysUntilNext}d`}
               </p>
             </div>
@@ -256,10 +292,24 @@ function AccrualTimeline({ config }: { config: AccrualConfig }) {
               >
                 {entry.earned ? (
                   <svg viewBox="0 0 10 10" className="size-2.5 fill-current">
-                    <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                    <path
+                      d="M1.5 5l2.5 2.5 4.5-4.5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 ) : (
-                  <span className={cn("size-2 rounded-full", entry === nextEntry ? "bg-primary animate-pulse" : "bg-border")} />
+                  <span
+                    className={cn(
+                      "size-2 rounded-full",
+                      entry === nextEntry
+                        ? "animate-pulse bg-primary"
+                        : "bg-border"
+                    )}
+                  />
                 )}
               </div>
 
@@ -275,10 +325,17 @@ function AccrualTimeline({ config }: { config: AccrualConfig }) {
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <span className={cn("text-[12px] font-medium", !entry.earned && "text-muted-foreground")}>
+                  <span
+                    className={cn(
+                      "text-[12px] font-medium",
+                      !entry.earned && "text-muted-foreground"
+                    )}
+                  >
                     {fmtDate(entry.date)}
                   </span>
-                  <span className="text-[11px] text-muted-foreground">{entry.label}</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {entry.label}
+                  </span>
                   {entry === nextEntry && (
                     <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                       Next
@@ -286,13 +343,15 @@ function AccrualTimeline({ config }: { config: AccrualConfig }) {
                   )}
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={cn(
-                    "text-[12px] font-semibold tabular-nums",
-                    entry.earned ? "text-primary" : "text-muted-foreground"
-                  )}>
+                  <span
+                    className={cn(
+                      "text-[12px] font-semibold tabular-nums",
+                      entry.earned ? "text-primary" : "text-muted-foreground"
+                    )}
+                  >
                     +{config.creditPerInterval}
                   </span>
-                  <span className="text-[11px] tabular-nums text-muted-foreground">
+                  <span className="text-[11px] text-muted-foreground tabular-nums">
                     = {entry.cumulative} total
                   </span>
                   <StatusBadge variant={entry.earned ? "green" : "gray"}>
@@ -327,12 +386,14 @@ export function LeaveTab({ employee }: Props) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {leaveBalances.map((bal) => (
           <div key={bal.type} className="rounded-xl border bg-card p-4">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
               {bal.type.replace(" Leave", "")}
             </p>
             <p className="mt-1 text-2xl font-semibold tabular-nums">
               {bal.remaining}
-              <span className="ml-1 text-sm font-normal text-muted-foreground">/ {bal.total}</span>
+              <span className="ml-1 text-sm font-normal text-muted-foreground">
+                / {bal.total}
+              </span>
             </p>
             <div className="mt-2 h-1.5 w-full rounded-full bg-muted">
               <div
@@ -358,33 +419,48 @@ export function LeaveTab({ employee }: Props) {
         <Table>
           <TableHeader>
             <TableRow>
-              {["ID", "Type", "From", "To", "Days", "Filed", "Status"].map((h) => (
-                <TableHead key={h}>{h}</TableHead>
-              ))}
+              {["ID", "Type", "From", "To", "Days", "Filed", "Status"].map(
+                (h) => (
+                  <TableHead key={h}>{h}</TableHead>
+                )
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
             {myRequests.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-[13px] text-muted-foreground">
+                <TableCell
+                  colSpan={7}
+                  className="py-8 text-center text-[13px] text-muted-foreground"
+                >
                   No leave requests found
                 </TableCell>
               </TableRow>
             ) : (
               myRequests.map((req) => (
                 <TableRow key={req.id}>
-                  <TableCell className="font-mono text-[12px]">{req.id}</TableCell>
+                  <TableCell className="font-mono text-[12px]">
+                    {req.id}
+                  </TableCell>
                   <TableCell>{req.type}</TableCell>
-                  <TableCell className="tabular-nums text-muted-foreground">{req.from}</TableCell>
-                  <TableCell className="tabular-nums text-muted-foreground">{req.to}</TableCell>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {req.from}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {req.to}
+                  </TableCell>
                   <TableCell className="tabular-nums">{req.days}</TableCell>
-                  <TableCell className="tabular-nums text-muted-foreground">{req.filed}</TableCell>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {req.filed}
+                  </TableCell>
                   <TableCell>
                     <StatusBadge
                       variant={
-                        req.status === "approved" ? "green"
-                          : req.status === "rejected" ? "red"
-                          : "amber"
+                        req.status === "approved"
+                          ? "green"
+                          : req.status === "rejected"
+                            ? "red"
+                            : "amber"
                       }
                     >
                       {req.status.charAt(0).toUpperCase() + req.status.slice(1)}

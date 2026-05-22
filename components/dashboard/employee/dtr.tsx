@@ -197,7 +197,9 @@ function EodReportModal({
               className="h-9 text-[13px]"
               placeholder="Enter your name"
               value={form.teacherName}
-              onChange={(e) => setForm((f) => ({ ...f, teacherName: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, teacherName: e.target.value }))
+              }
             />
           </div>
 
@@ -211,7 +213,9 @@ function EodReportModal({
                 className="h-9 text-[13px]"
                 placeholder="0"
                 value={form.bookedClasses}
-                onChange={(e) => setForm((f) => ({ ...f, bookedClasses: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, bookedClasses: e.target.value }))
+                }
               />
             </div>
             <div className="space-y-1.5">
@@ -222,7 +226,9 @@ function EodReportModal({
                 className="h-9 text-[13px]"
                 placeholder="0"
                 value={form.openSlots}
-                onChange={(e) => setForm((f) => ({ ...f, openSlots: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, openSlots: e.target.value }))
+                }
               />
             </div>
           </div>
@@ -230,11 +236,16 @@ function EodReportModal({
           {/* Star ratings */}
           <div className="space-y-2">
             <Label className="text-[12px]">Star Ratings</Label>
-            <div className="rounded-lg border border-border divide-y divide-border">
+            <div className="divide-y divide-border rounded-lg border border-border">
               {([5, 4, 3, 2, 1] as const).map((star) => (
-                <div key={star} className="flex items-center justify-between px-3 py-2">
+                <div
+                  key={star}
+                  className="flex items-center justify-between px-3 py-2"
+                >
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[13px] font-medium tabular-nums">{star}</span>
+                    <span className="text-[13px] font-medium tabular-nums">
+                      {star}
+                    </span>
                     <span className="text-amber-400">{"★".repeat(star)}</span>
                   </div>
                   <Input
@@ -270,7 +281,11 @@ function EodReportModal({
             <Button variant="outline" size="sm" onClick={onClose}>
               Cancel
             </Button>
-            <Button size="sm" disabled={!canSubmit} onClick={() => onSubmit(form)}>
+            <Button
+              size="sm"
+              disabled={!canSubmit}
+              onClick={() => onSubmit(form)}
+            >
               Submit &amp; Clock Out
             </Button>
           </div>
@@ -559,7 +574,8 @@ function PunchCameraModal({
               {isClockIn ? "Clock In" : "Clock Out"} Verification
             </p>
             <p className="text-[13px] text-muted-foreground">
-              Capture your photo to complete {isClockIn ? "clock in" : "clock out"}
+              Capture your photo to complete{" "}
+              {isClockIn ? "clock in" : "clock out"}
             </p>
           </div>
           <button
@@ -617,7 +633,9 @@ export function DTRSection() {
   const [recordNotes, setRecordNotes] = useState<Record<string, string>>({})
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [cameraPunchType, setCameraPunchType] = useState<"in" | "out" | null>(null)
+  const [cameraPunchType, setCameraPunchType] = useState<"in" | "out" | null>(
+    null
+  )
   const [eodOpen, setEodOpen] = useState(false)
   const [pendingClockOut, setPendingClockOut] = useState<Date | null>(null)
 
@@ -1280,13 +1298,14 @@ export function DTRSection() {
 
       <EodReportModal
         open={eodOpen}
-        reportDate={
-          (pendingClockOut ?? new Date()).toLocaleDateString("en-US", {
+        reportDate={(pendingClockOut ?? new Date()).toLocaleDateString(
+          "en-US",
+          {
             month: "2-digit",
             day: "2-digit",
             year: "numeric",
-          })
-        }
+          }
+        )}
         hoursWorked={netSecs > 0 ? fmtDuration(netSecs) : "—"}
         onClose={() => {
           setEodOpen(false)

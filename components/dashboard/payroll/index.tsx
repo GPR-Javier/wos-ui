@@ -28,7 +28,8 @@ export function AdminPayrollSection() {
           Payroll Management
         </h1>
         <p className="text-[12px] text-muted-foreground">
-          Manage payroll runs, process earnings & deductions, and release payslips.
+          Manage payroll runs, process earnings & deductions, and release
+          payslips.
         </p>
       </div>
 

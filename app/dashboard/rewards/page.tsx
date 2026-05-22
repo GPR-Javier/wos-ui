@@ -1,7 +1,10 @@
 "use client"
 
 import { useAuthStore } from "@/store/auth-store"
-import { AdminRewardsView, PublicRewardsView } from "@/components/dashboard/rewards"
+import {
+  AdminRewardsView,
+  PublicRewardsView,
+} from "@/components/dashboard/rewards"
 
 export default function RewardsPage() {
   const apiRole = useAuthStore((s) => s.apiRole)

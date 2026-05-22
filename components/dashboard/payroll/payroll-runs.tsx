@@ -47,9 +47,7 @@ const PROCESSING_STEPS = [
   { step: "payslip_released", label: "Payslip Released" },
 ]
 
-function runStatusVariant(
-  s: RunStatus
-): "green" | "blue" | "amber" | "gray" {
+function runStatusVariant(s: RunStatus): "green" | "blue" | "amber" | "gray" {
   switch (s) {
     case "released":
       return "green"
@@ -81,9 +79,7 @@ function StepIcon({ status }: { status: StepStatus }) {
         className="animate-spin text-primary"
       />
     )
-  return (
-    <div className="size-4 rounded-full border-2 border-border" />
-  )
+  return <div className="size-4 rounded-full border-2 border-border" />
 }
 
 function fmt(n: number) {
@@ -112,9 +108,7 @@ function RunStepsPanel({ runId }: { runId: number }) {
             <div
               className={cn(
                 "mt-2 mr-[-4px] h-0.5 w-3 shrink-0",
-                resolved[i - 1].status === "done"
-                  ? "bg-green-400"
-                  : "bg-border"
+                resolved[i - 1].status === "done" ? "bg-green-400" : "bg-border"
               )}
             />
           )}
@@ -122,7 +116,7 @@ function RunStepsPanel({ runId }: { runId: number }) {
             <StepIcon status={s.status} />
             <span
               className={cn(
-                "text-[10px] font-medium leading-tight",
+                "text-[10px] leading-tight font-medium",
                 s.status === "done"
                   ? "text-green-600 dark:text-green-400"
                   : s.status === "in-progress"
@@ -197,9 +191,7 @@ function CreateRunDialog({
             </Button>
             <Button
               size="sm"
-              disabled={
-                !periodStart || !periodEnd || createMutation.isPending
-              }
+              disabled={!periodStart || !periodEnd || createMutation.isPending}
               onClick={handleCreate}
             >
               {createMutation.isPending ? "Creating…" : "Create run"}
@@ -213,7 +205,11 @@ function CreateRunDialog({
 
 // ── Main component ─────────────────────────────────────────────────────────
 
-export function PayrollRuns({ onViewPayslips }: { onViewPayslips: (runId: number) => void }) {
+export function PayrollRuns({
+  onViewPayslips,
+}: {
+  onViewPayslips: (runId: number) => void
+}) {
   const [createOpen, setCreateOpen] = useState(false)
   const [expandedId, setExpandedId] = useState<number | null>(null)
 
@@ -223,7 +219,14 @@ export function PayrollRuns({ onViewPayslips }: { onViewPayslips: (runId: number
 
   const runs = data?.content ?? []
 
-  const COLUMNS = ["Period", "Status", "Employees", "Total Amount", "Created", ""]
+  const COLUMNS = [
+    "Period",
+    "Status",
+    "Employees",
+    "Total Amount",
+    "Created",
+    "",
+  ]
 
   return (
     <div className="space-y-4">
@@ -232,7 +235,12 @@ export function PayrollRuns({ onViewPayslips }: { onViewPayslips: (runId: number
           Each payroll run represents a pay period.
         </p>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} className="mr-1.5" />
+          <HugeiconsIcon
+            icon={Add01Icon}
+            size={13}
+            strokeWidth={2}
+            className="mr-1.5"
+          />
           New payroll run
         </Button>
       </div>
@@ -247,7 +255,10 @@ export function PayrollRuns({ onViewPayslips }: { onViewPayslips: (runId: number
         <TableHeader>
           <TableRow>
             {COLUMNS.map((h) => (
-              <TableHead key={h} className={h === "" ? "text-right" : undefined}>
+              <TableHead
+                key={h}
+                className={h === "" ? "text-right" : undefined}
+              >
                 {h}
               </TableHead>
             ))}
@@ -256,13 +267,19 @@ export function PayrollRuns({ onViewPayslips }: { onViewPayslips: (runId: number
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={COLUMNS.length} className="py-8 text-center text-[13px] text-muted-foreground">
+              <TableCell
+                colSpan={COLUMNS.length}
+                className="py-8 text-center text-[13px] text-muted-foreground"
+              >
                 Loading…
               </TableCell>
             </TableRow>
           ) : runs.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={COLUMNS.length} className="py-8 text-center text-[13px] text-muted-foreground">
+              <TableCell
+                colSpan={COLUMNS.length}
+                className="py-8 text-center text-[13px] text-muted-foreground"
+              >
                 No payroll runs yet
               </TableCell>
             </TableRow>
@@ -277,28 +294,36 @@ export function PayrollRuns({ onViewPayslips }: { onViewPayslips: (runId: number
                   }
                 >
                   <TableCell>
-                    <p className="font-medium text-[13px]">{run.period}</p>
+                    <p className="text-[13px] font-medium">{run.period}</p>
                     <p className="text-[11px] text-muted-foreground">
                       {run.periodStart} → {run.periodEnd}
                     </p>
                   </TableCell>
                   <TableCell>
-                    <StatusBadge variant={runStatusVariant(run.status)} dot={false}>
+                    <StatusBadge
+                      variant={runStatusVariant(run.status)}
+                      dot={false}
+                    >
                       {run.status.charAt(0).toUpperCase() + run.status.slice(1)}
                     </StatusBadge>
                   </TableCell>
-                  <TableCell className="tabular-nums text-muted-foreground">
+                  <TableCell className="text-muted-foreground tabular-nums">
                     {run.employeeCount}
                   </TableCell>
-                  <TableCell className="tabular-nums font-medium">
+                  <TableCell className="font-medium tabular-nums">
                     {fmt(run.totalAmount)}
                   </TableCell>
-                  <TableCell className="tabular-nums text-[12px] text-muted-foreground">
+                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">
                     {new Date(run.createdAt).toLocaleDateString("en-PH", {
-                      month: "short", day: "numeric", year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
                     })}
                   </TableCell>
-                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <TableCell
+                    className="text-right"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex items-center justify-end gap-1.5">
                       {run.status === "draft" && (
                         <Button
@@ -307,7 +332,11 @@ export function PayrollRuns({ onViewPayslips }: { onViewPayslips: (runId: number
                           onClick={() => processMutation.mutate(run.id)}
                           disabled={processMutation.isPending}
                         >
-                          <HugeiconsIcon icon={PlayCircle02Icon} size={12} strokeWidth={2} />
+                          <HugeiconsIcon
+                            icon={PlayCircle02Icon}
+                            size={12}
+                            strokeWidth={2}
+                          />
                           Process
                         </Button>
                       )}
@@ -317,7 +346,11 @@ export function PayrollRuns({ onViewPayslips }: { onViewPayslips: (runId: number
                           onClick={() => releaseMutation.mutate(run.id)}
                           disabled={releaseMutation.isPending}
                         >
-                          <HugeiconsIcon icon={MoneySend01Icon} size={12} strokeWidth={2} />
+                          <HugeiconsIcon
+                            icon={MoneySend01Icon}
+                            size={12}
+                            strokeWidth={2}
+                          />
                           Release
                         </Button>
                       )}
@@ -346,7 +379,7 @@ export function PayrollRuns({ onViewPayslips }: { onViewPayslips: (runId: number
                 rows.push(
                   <TableRow key={`${run.id}-steps`} className="bg-muted/20">
                     <TableCell colSpan={COLUMNS.length} className="px-6 py-4">
-                      <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                      <p className="mb-3 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                         Processing Steps
                       </p>
                       <RunStepsPanel runId={run.id} />

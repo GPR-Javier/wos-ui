@@ -130,15 +130,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Password</Label>
-                    <Link
-                      href="/auth/forgot-password"
-                      className="text-[12px] text-primary hover:underline"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
+                  <Label htmlFor="password">Password</Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -188,38 +180,46 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <label className="flex cursor-pointer items-center gap-2.5">
-                  <div
-                    onClick={() => setRemember((v) => !v)}
-                    className={cn(
-                      "flex size-4 shrink-0 items-center justify-center rounded border transition-colors",
-                      remember
-                        ? "border-primary bg-primary"
-                        : "border-border bg-background"
-                    )}
+                <div className="flex items-center justify-between">
+                  <label className="flex cursor-pointer items-center gap-2.5">
+                    <div
+                      onClick={() => setRemember((v) => !v)}
+                      className={cn(
+                        "flex size-4 shrink-0 items-center justify-center rounded border transition-colors",
+                        remember
+                          ? "border-primary bg-primary"
+                          : "border-border bg-background"
+                      )}
+                    >
+                      {remember && (
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 10 10"
+                          fill="none"
+                          className="text-primary-foreground"
+                        >
+                          <path
+                            d="M2 5l2.5 2.5L8 3"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                    <span className="text-[13px] text-muted-foreground">
+                      Remember me
+                    </span>
+                  </label>
+                  <Link
+                    href="/auth/forgot-password"
+                    className="text-[12px] text-primary hover:underline"
                   >
-                    {remember && (
-                      <svg
-                        width="10"
-                        height="10"
-                        viewBox="0 0 10 10"
-                        fill="none"
-                        className="text-primary-foreground"
-                      >
-                        <path
-                          d="M2 5l2.5 2.5L8 3"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                  <span className="text-[13px] text-muted-foreground">
-                    Remember me
-                  </span>
-                </label>
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
 
               {apiError && (

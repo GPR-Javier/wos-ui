@@ -20,7 +20,13 @@ import {
   StarIcon,
 } from "@hugeicons/core-free-icons"
 import { useScheduleEntries } from "@/hooks/use-schedule"
-import { type ScheduleFilters, type ScheduleEntry, type ScheduleStatus, type AttendanceStatus, type TeacherStatus } from "@/lib/schedule-api"
+import {
+  type ScheduleFilters,
+  type ScheduleEntry,
+  type ScheduleStatus,
+  type AttendanceStatus,
+  type TeacherStatus,
+} from "@/lib/schedule-api"
 import { cn } from "@/lib/utils"
 
 // ── Status helpers ────────────────────────────────────────────────────────
@@ -58,9 +64,7 @@ function attendanceVariant(
   }
 }
 
-function teacherStatusVariant(
-  s: TeacherStatus
-): "green" | "amber" | "red" {
+function teacherStatusVariant(s: TeacherStatus): "green" | "amber" | "red" {
   switch (s) {
     case "online":
       return "green"
@@ -107,18 +111,27 @@ function ExpandedDetail({ entry }: { entry: ScheduleEntry }) {
             ["Teacher Status", label(entry.teacherStatus)],
             ["Student", entry.studentName],
             ["Schedule Status", label(entry.scheduleStatus)],
-            ["Attendance", entry.attendanceStatus ? label(entry.attendanceStatus) : "—"],
+            [
+              "Attendance",
+              entry.attendanceStatus ? label(entry.attendanceStatus) : "—",
+            ],
             ["Time In", entry.timeIn ?? "—"],
             ["Time Out", entry.timeOut ?? "—"],
-            ["Late (min)", entry.lateMinutes > 0 ? String(entry.lateMinutes) : "—"],
+            [
+              "Late (min)",
+              entry.lateMinutes > 0 ? String(entry.lateMinutes) : "—",
+            ],
             ["Team Leader", entry.teamLeader],
-            ["Rating", entry.rating != null ? `${entry.rating.toFixed(1)} / 5` : "—"],
+            [
+              "Rating",
+              entry.rating != null ? `${entry.rating.toFixed(1)} / 5` : "—",
+            ],
             ["Issue Flag", entry.issueFlag ? "Yes" : "No"],
             ["Last Updated", entry.lastUpdated],
             ["File Version", `#${entry.versionId}`],
           ].map(([k, v]) => (
             <div key={k}>
-              <p className="text-muted-foreground/70 uppercase tracking-wide text-[10px] font-semibold">
+              <p className="text-[10px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
                 {k}
               </p>
               <p className="mt-0.5 font-medium text-foreground">{v}</p>
@@ -126,7 +139,7 @@ function ExpandedDetail({ entry }: { entry: ScheduleEntry }) {
           ))}
           {entry.sessionNotes && (
             <div className="col-span-2 lg:col-span-4">
-              <p className="text-muted-foreground/70 uppercase tracking-wide text-[10px] font-semibold">
+              <p className="text-[10px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
                 Session Notes
               </p>
               <p className="mt-0.5 text-foreground">{entry.sessionNotes}</p>
@@ -256,7 +269,7 @@ export function ScheduleTable({ filters }: Props) {
                 <TableHead
                   key={h}
                   className={cn(
-                    "whitespace-nowrap text-[11px]",
+                    "text-[11px] whitespace-nowrap",
                     h === "" ? "w-8 text-right" : undefined
                   )}
                 >
@@ -292,7 +305,8 @@ export function ScheduleTable({ filters }: Props) {
                     className={cn(
                       "cursor-pointer text-[12px] transition-colors",
                       rowBg(entry.scheduleStatus),
-                      expandedId === entry.id && "ring-1 ring-inset ring-primary/20"
+                      expandedId === entry.id &&
+                        "ring-1 ring-primary/20 ring-inset"
                     )}
                     onClick={() => toggleRow(entry.id)}
                   >
@@ -311,13 +325,13 @@ export function ScheduleTable({ filters }: Props) {
                     <TableCell className="font-mono font-medium">
                       {entry.classId}
                     </TableCell>
-                    <TableCell className="tabular-nums whitespace-nowrap">
+                    <TableCell className="whitespace-nowrap tabular-nums">
                       {entry.date}
                     </TableCell>
-                    <TableCell className="tabular-nums whitespace-nowrap text-muted-foreground">
+                    <TableCell className="whitespace-nowrap text-muted-foreground tabular-nums">
                       {entry.startTime}–{entry.endTime}
                     </TableCell>
-                    <TableCell className="tabular-nums text-muted-foreground">
+                    <TableCell className="text-muted-foreground tabular-nums">
                       {entry.durationMinutes}m
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
@@ -354,10 +368,10 @@ export function ScheduleTable({ filters }: Props) {
                         <span className="text-muted-foreground/50">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="tabular-nums text-muted-foreground">
+                    <TableCell className="text-muted-foreground tabular-nums">
                       {entry.timeIn ?? "—"}
                     </TableCell>
-                    <TableCell className="tabular-nums text-muted-foreground">
+                    <TableCell className="text-muted-foreground tabular-nums">
                       {entry.timeOut ?? "—"}
                     </TableCell>
                     <TableCell className="tabular-nums">
@@ -402,7 +416,7 @@ export function ScheduleTable({ filters }: Props) {
                         />
                       )}
                     </TableCell>
-                    <TableCell className="tabular-nums text-[11px] text-muted-foreground whitespace-nowrap">
+                    <TableCell className="text-[11px] whitespace-nowrap text-muted-foreground tabular-nums">
                       {entry.lastUpdated}
                     </TableCell>
                     <TableCell className="text-right">
@@ -420,7 +434,9 @@ export function ScheduleTable({ filters }: Props) {
                 ]
 
                 if (expandedId === entry.id) {
-                  rows.push(<ExpandedDetail key={`${entry.id}-detail`} entry={entry} />)
+                  rows.push(
+                    <ExpandedDetail key={`${entry.id}-detail`} entry={entry} />
+                  )
                 }
 
                 return rows

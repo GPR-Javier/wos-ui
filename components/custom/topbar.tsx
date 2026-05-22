@@ -135,7 +135,10 @@ export function Topbar() {
                         { userRoleId: r.id },
                         {
                           onSuccess: () => {
-                            pushToast(`Successfully switched to ${r.name}.`, "success")
+                            pushToast(
+                              `Successfully switched to ${r.name}.`,
+                              "success"
+                            )
                           },
                         }
                       )

@@ -1,10 +1,8 @@
 import { NextRequest } from "next/server"
 
 // Per-service backend URLs (overridable via env vars).
-const AUTH_BACKEND =
-  process.env.AUTH_API_URL ?? "http://localhost:8081/api"
-const HR_BACKEND =
-  process.env.HR_API_URL ?? "http://localhost:8083/api"
+const AUTH_BACKEND = process.env.AUTH_API_URL ?? "http://localhost:8081/api"
+const HR_BACKEND = process.env.HR_API_URL ?? "http://localhost:8083/api"
 const PAYROLL_BACKEND =
   process.env.PAYROLL_API_URL ?? "http://localhost:8082/api"
 

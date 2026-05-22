@@ -18,7 +18,7 @@ export function AppToaster() {
         <div
           key={toast.id}
           className={cn(
-            "pointer-events-auto animate-in slide-in-from-right-6 fade-in-0 rounded-xl border px-4 py-3 text-[13px] shadow-xl duration-200",
+            "pointer-events-auto animate-in rounded-xl border px-4 py-3 text-[13px] shadow-xl duration-200 fade-in-0 slide-in-from-right-6",
             toast.type === "success" &&
               "border-emerald-300 bg-emerald-50 text-emerald-900",
             toast.type === "error" && "border-red-300 bg-red-50 text-red-900",

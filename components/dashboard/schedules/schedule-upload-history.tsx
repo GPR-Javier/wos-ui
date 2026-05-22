@@ -25,7 +25,11 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { useScheduleVersions, useActivateVersion, useArchiveVersion } from "@/hooks/use-schedule"
+import {
+  useScheduleVersions,
+  useActivateVersion,
+  useArchiveVersion,
+} from "@/hooks/use-schedule"
 import { scheduleApi, type VersionStatus } from "@/lib/schedule-api"
 import { cn } from "@/lib/utils"
 
@@ -76,14 +80,7 @@ export function ScheduleUploadHistory({ onViewVersion }: Props) {
   const activateMutation = useActivateVersion()
   const archiveMutation = useArchiveVersion()
 
-  const COLUMNS = [
-    "File",
-    "Upload Date",
-    "Uploaded By",
-    "Rows",
-    "Status",
-    "",
-  ]
+  const COLUMNS = ["File", "Upload Date", "Uploaded By", "Rows", "Status", ""]
 
   return (
     <div className="space-y-4">
@@ -129,7 +126,7 @@ export function ScheduleUploadHistory({ onViewVersion }: Props) {
             versions.map((v) => (
               <TableRow key={v.id}>
                 <TableCell>
-                  <p className="font-medium text-[13px]">{v.title}</p>
+                  <p className="text-[13px] font-medium">{v.title}</p>
                   <p className="text-[11px] text-muted-foreground">
                     {v.fileName}
                   </p>
@@ -139,11 +136,11 @@ export function ScheduleUploadHistory({ onViewVersion }: Props) {
                     </p>
                   )}
                 </TableCell>
-                <TableCell className="tabular-nums text-[13px] text-muted-foreground">
+                <TableCell className="text-[13px] text-muted-foreground tabular-nums">
                   {formatDate(v.uploadedAt)}
                 </TableCell>
                 <TableCell className="text-[13px]">{v.uploadedBy}</TableCell>
-                <TableCell className="tabular-nums text-[13px] text-muted-foreground">
+                <TableCell className="text-[13px] text-muted-foreground tabular-nums">
                   {v.rowCount.toLocaleString()}
                 </TableCell>
                 <TableCell>
@@ -175,9 +172,7 @@ export function ScheduleUploadHistory({ onViewVersion }: Props) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="text-[13px]">
-                      <DropdownMenuItem
-                        onClick={() => onViewVersion(v.id)}
-                      >
+                      <DropdownMenuItem onClick={() => onViewVersion(v.id)}>
                         View snapshot
                       </DropdownMenuItem>
                       <DropdownMenuItem

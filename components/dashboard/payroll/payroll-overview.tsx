@@ -28,7 +28,7 @@ function BarRow({ label, amount, total, color }: BarRowProps) {
     <div className="space-y-1">
       <div className="flex items-center justify-between text-[12px]">
         <span className="text-muted-foreground">{label}</span>
-        <span className="tabular-nums font-medium text-foreground">
+        <span className="font-medium text-foreground tabular-nums">
           {fmt(amount)}
           <span className="ml-1.5 text-muted-foreground/60">({pct}%)</span>
         </span>

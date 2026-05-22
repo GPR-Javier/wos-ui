@@ -21,9 +21,16 @@ import {
 import { TablePagination } from "@/components/custom/table-pagination"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Search01Icon, StarIcon, MedalFirstPlaceIcon } from "@hugeicons/core-free-icons"
+import {
+  Search01Icon,
+  StarIcon,
+  MedalFirstPlaceIcon,
+} from "@hugeicons/core-free-icons"
 import { useTeacherRatings } from "@/hooks/use-rewards"
-import { type LeaderboardPeriod, type RatingDistribution } from "@/lib/rewards-api"
+import {
+  type LeaderboardPeriod,
+  type RatingDistribution,
+} from "@/lib/rewards-api"
 import { cn } from "@/lib/utils"
 
 function StarBar({ value, max }: { value: number; max: number }) {
@@ -36,7 +43,7 @@ function StarBar({ value, max }: { value: number; max: number }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="tabular-nums text-[11px] text-muted-foreground">
+      <span className="text-[11px] text-muted-foreground tabular-nums">
         {value}
       </span>
     </div>
@@ -53,7 +60,7 @@ function RatingDistributionCell({ dist }: { dist: RatingDistribution }) {
     { stars: 1, count: dist.one, color: "bg-red-500" },
   ]
   return (
-    <div className="space-y-0.5 min-w-[80px]">
+    <div className="min-w-[80px] space-y-0.5">
       {bars.map((b) => (
         <StarBar key={b.stars} value={b.count} max={total} />
       ))}
@@ -64,25 +71,25 @@ function RatingDistributionCell({ dist }: { dist: RatingDistribution }) {
 function RankBadge({ rank }: { rank: number }) {
   if (rank === 1)
     return (
-      <span className="inline-flex items-center gap-1 text-amber-500 font-bold text-[13px]">
+      <span className="inline-flex items-center gap-1 text-[13px] font-bold text-amber-500">
         <HugeiconsIcon icon={MedalFirstPlaceIcon} size={14} strokeWidth={1.8} />
         #1
       </span>
     )
   if (rank === 2)
     return (
-      <span className="tabular-nums text-[13px] font-semibold text-slate-400">
+      <span className="text-[13px] font-semibold text-slate-400 tabular-nums">
         #2
       </span>
     )
   if (rank === 3)
     return (
-      <span className="tabular-nums text-[13px] font-semibold text-amber-700">
+      <span className="text-[13px] font-semibold text-amber-700 tabular-nums">
         #3
       </span>
     )
   return (
-    <span className="tabular-nums text-[13px] text-muted-foreground">
+    <span className="text-[13px] text-muted-foreground tabular-nums">
       #{rank}
     </span>
   )
@@ -131,16 +138,26 @@ export function RewardsTeacherTable() {
             className="h-8 pl-8 text-[12px]"
             placeholder="Search teacher…"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPage(1)
+            }}
           />
         </div>
-        <Select value={period} onValueChange={(v) => setPeriod(v as LeaderboardPeriod)}>
+        <Select
+          value={period}
+          onValueChange={(v) => setPeriod(v as LeaderboardPeriod)}
+        >
           <SelectTrigger className="h-8 w-32 text-[12px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="weekly" className="text-[12px]">Weekly</SelectItem>
-            <SelectItem value="monthly" className="text-[12px]">Monthly</SelectItem>
+            <SelectItem value="weekly" className="text-[12px]">
+              Weekly
+            </SelectItem>
+            <SelectItem value="monthly" className="text-[12px]">
+              Monthly
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -159,7 +176,13 @@ export function RewardsTeacherTable() {
                 key={h}
                 className={cn(
                   "text-[11px]",
-                  ["Weekly Avg", "Monthly Avg", "Sessions", "Total Rewards", "Attendance"].includes(h)
+                  [
+                    "Weekly Avg",
+                    "Monthly Avg",
+                    "Sessions",
+                    "Total Rewards",
+                    "Attendance",
+                  ].includes(h)
                     ? "text-right"
                     : undefined
                 )}
@@ -172,62 +195,104 @@ export function RewardsTeacherTable() {
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={COLUMNS.length} className="py-8 text-center text-[13px] text-muted-foreground">
+              <TableCell
+                colSpan={COLUMNS.length}
+                className="py-8 text-center text-[13px] text-muted-foreground"
+              >
                 Loading…
               </TableCell>
             </TableRow>
           ) : teachers.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={COLUMNS.length} className="py-8 text-center text-[13px] text-muted-foreground">
+              <TableCell
+                colSpan={COLUMNS.length}
+                className="py-8 text-center text-[13px] text-muted-foreground"
+              >
                 No data yet — upload rating records to get started
               </TableCell>
             </TableRow>
           ) : (
             teachers.map((t) => {
-              const initials = t.teacherName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+              const initials = t.teacherName
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+                .toUpperCase()
+                .slice(0, 2)
               return (
                 <TableRow key={t.id}>
-                  <TableCell><RankBadge rank={t.rank} /></TableCell>
+                  <TableCell>
+                    <RankBadge rank={t.rank} />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2.5">
                       <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
                         {initials}
                       </div>
                       <div>
-                        <p className="text-[13px] font-medium">{t.teacherName}</p>
-                        <p className="text-[11px] text-muted-foreground">{t.teamLeader}</p>
+                        <p className="text-[13px] font-medium">
+                          {t.teacherName}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {t.teamLeader}
+                        </p>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <HugeiconsIcon icon={StarIcon} size={11} strokeWidth={0} className="fill-amber-400 text-amber-400" />
-                      <span className="tabular-nums font-medium">{t.weeklyAvg.toFixed(2)}</span>
+                      <HugeiconsIcon
+                        icon={StarIcon}
+                        size={11}
+                        strokeWidth={0}
+                        className="fill-amber-400 text-amber-400"
+                      />
+                      <span className="font-medium tabular-nums">
+                        {t.weeklyAvg.toFixed(2)}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <HugeiconsIcon icon={StarIcon} size={11} strokeWidth={0} className="fill-amber-400 text-amber-400" />
-                      <span className="tabular-nums font-medium">{t.monthlyAvg.toFixed(2)}</span>
+                      <HugeiconsIcon
+                        icon={StarIcon}
+                        size={11}
+                        strokeWidth={0}
+                        className="fill-amber-400 text-amber-400"
+                      />
+                      <span className="font-medium tabular-nums">
+                        {t.monthlyAvg.toFixed(2)}
+                      </span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right tabular-nums text-muted-foreground">{t.totalSessions}</TableCell>
-                  <TableCell><RatingDistributionCell dist={t.ratingDistribution} /></TableCell>
+                  <TableCell className="text-right text-muted-foreground tabular-nums">
+                    {t.totalSessions}
+                  </TableCell>
                   <TableCell>
-                    <StatusBadge variant={t.rewardEligible ? "green" : "gray"} dot={false}>
+                    <RatingDistributionCell dist={t.ratingDistribution} />
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge
+                      variant={t.rewardEligible ? "green" : "gray"}
+                      dot={false}
+                    >
                       {t.rewardEligible ? "Eligible" : "Not eligible"}
                     </StatusBadge>
                   </TableCell>
-                  <TableCell className="text-right tabular-nums font-medium">
+                  <TableCell className="text-right font-medium tabular-nums">
                     ₱{t.totalEarnedRewards.toLocaleString("en-PH")}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    <span className={cn(
-                      "font-medium",
-                      t.attendanceRate >= 90 ? "text-green-600 dark:text-green-400"
-                        : t.attendanceRate >= 75 ? "text-amber-600 dark:text-amber-400"
-                        : "text-red-600 dark:text-red-400"
-                    )}>
+                    <span
+                      className={cn(
+                        "font-medium",
+                        t.attendanceRate >= 90
+                          ? "text-green-600 dark:text-green-400"
+                          : t.attendanceRate >= 75
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-red-600 dark:text-red-400"
+                      )}
+                    >
                       {t.attendanceRate.toFixed(1)}%
                     </span>
                   </TableCell>
@@ -237,7 +302,14 @@ export function RewardsTeacherTable() {
           )}
         </TableBody>
       </Table>
-      <TablePagination page={page} totalPages={totalPages} total={total} pageSize={pageSize} setPage={setPage} setPageSize={setPageSize} />
+      <TablePagination
+        page={page}
+        totalPages={totalPages}
+        total={total}
+        pageSize={pageSize}
+        setPage={setPage}
+        setPageSize={setPageSize}
+      />
     </div>
   )
 }

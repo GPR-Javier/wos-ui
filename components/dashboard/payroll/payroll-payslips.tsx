@@ -113,7 +113,13 @@ export function PayrollPayslips({ initialRunId = null }: Props) {
           />
         </div>
 
-        <Select value={runFilter} onValueChange={(v) => { setRunFilter(v); setPage(1) }}>
+        <Select
+          value={runFilter}
+          onValueChange={(v) => {
+            setRunFilter(v)
+            setPage(1)
+          }}
+        >
           <SelectTrigger className="h-8 w-52 text-[12px]">
             <SelectValue placeholder="All payroll runs" />
           </SelectTrigger>
@@ -122,14 +128,24 @@ export function PayrollPayslips({ initialRunId = null }: Props) {
               All payroll runs
             </SelectItem>
             {runs.map((r) => (
-              <SelectItem key={r.id} value={String(r.id)} className="text-[12px]">
+              <SelectItem
+                key={r.id}
+                value={String(r.id)}
+                className="text-[12px]"
+              >
                 {r.period}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1) }}>
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => {
+            setStatusFilter(v)
+            setPage(1)
+          }}
+        >
           <SelectTrigger className="h-8 w-36 text-[12px]">
             <SelectValue />
           </SelectTrigger>
@@ -157,7 +173,12 @@ export function PayrollPayslips({ initialRunId = null }: Props) {
                 key={h}
                 className={cn(
                   h === "" ? "text-right" : undefined,
-                  ["Basic Salary", "Incentives", "Deductions", "Net Pay"].includes(h)
+                  [
+                    "Basic Salary",
+                    "Incentives",
+                    "Deductions",
+                    "Net Pay",
+                  ].includes(h)
                     ? "text-right"
                     : undefined
                 )}
@@ -219,16 +240,16 @@ export function PayrollPayslips({ initialRunId = null }: Props) {
                   <TableCell className="text-[12px] text-muted-foreground">
                     {ps.period}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums text-[13px]">
+                  <TableCell className="text-right text-[13px] tabular-nums">
                     {fmt(ps.basicSalary)}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums text-[13px] text-success">
+                  <TableCell className="text-right text-[13px] text-success tabular-nums">
                     {ps.incentives > 0 ? `+${fmt(ps.incentives)}` : "—"}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums text-[13px] text-danger">
+                  <TableCell className="text-right text-[13px] text-danger tabular-nums">
                     -{fmt(ps.totalDeductions)}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums text-[13px] font-semibold">
+                  <TableCell className="text-right text-[13px] font-semibold tabular-nums">
                     {fmt(ps.netPay)}
                   </TableCell>
                   <TableCell>
@@ -240,7 +261,11 @@ export function PayrollPayslips({ initialRunId = null }: Props) {
                     </StatusBadge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button size="xs" variant="outline" onClick={() => setSelectedPayslip(ps)}>
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      onClick={() => setSelectedPayslip(ps)}
+                    >
                       <HugeiconsIcon icon={EyeIcon} size={12} strokeWidth={2} />
                       View
                     </Button>

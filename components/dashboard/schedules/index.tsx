@@ -199,9 +199,7 @@ export function SchedulesSection() {
                 <button
                   key={p.value}
                   onClick={() =>
-                    setDatePreset((prev) =>
-                      prev === p.value ? null : p.value
-                    )
+                    setDatePreset((prev) => (prev === p.value ? null : p.value))
                   }
                   className={cn(
                     "rounded-md px-2.5 py-1 text-[11px] font-medium transition-all",
@@ -269,11 +267,7 @@ export function SchedulesSection() {
                 className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
                 onClick={clearFilters}
               >
-                <HugeiconsIcon
-                  icon={Cancel01Icon}
-                  size={11}
-                  strokeWidth={2}
-                />
+                <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={2} />
                 Clear
               </button>
             )}

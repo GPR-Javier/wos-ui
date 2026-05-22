@@ -48,7 +48,7 @@ function Row({
 function SectionHeader({ title }: { title: string }) {
   return (
     <div className="-mx-6 bg-muted px-6 py-2">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+      <p className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
         {title}
       </p>
     </div>
@@ -64,13 +64,12 @@ interface Props {
 export function PayslipDetail({ payslip, open, onClose }: Props) {
   if (!payslip) return null
 
-  const initials =
-    payslip.employeeName
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
+  const initials = payslip.employeeName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
 
   function handlePdf() {
     payrollApi.downloadPdf(
@@ -100,7 +99,7 @@ export function PayslipDetail({ payslip, open, onClose }: Props) {
         <div className="bg-primary px-6 py-5 text-primary-foreground">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest opacity-70">
+              <p className="text-[10px] font-semibold tracking-widest uppercase opacity-70">
                 Payslip
               </p>
               <p className="mt-1 text-lg font-bold">{payslip.period}</p>
@@ -112,7 +111,12 @@ export function PayslipDetail({ payslip, open, onClose }: Props) {
                 className="rounded-lg border border-white/30 bg-white/15 text-xs text-white hover:bg-white/25"
                 onClick={handlePdf}
               >
-                <HugeiconsIcon icon={Download01Icon} size={13} strokeWidth={2} className="mr-1" />
+                <HugeiconsIcon
+                  icon={Download01Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="mr-1"
+                />
                 PDF
               </Button>
               <Button
@@ -121,12 +125,21 @@ export function PayslipDetail({ payslip, open, onClose }: Props) {
                 className="rounded-lg border border-white/30 bg-white/15 text-xs text-white hover:bg-white/25"
                 onClick={handleExcel}
               >
-                <HugeiconsIcon icon={FileSpreadsheetIcon} size={13} strokeWidth={2} className="mr-1" />
+                <HugeiconsIcon
+                  icon={FileSpreadsheetIcon}
+                  size={13}
+                  strokeWidth={2}
+                  className="mr-1"
+                />
                 Excel
               </Button>
               <DialogClose asChild>
                 <button className="flex size-7 items-center justify-center rounded-lg bg-white/15 text-white transition-colors hover:bg-white/25">
-                  <HugeiconsIcon icon={Cancel01Icon} size={13} strokeWidth={2.5} />
+                  <HugeiconsIcon
+                    icon={Cancel01Icon}
+                    size={13}
+                    strokeWidth={2.5}
+                  />
                   <span className="sr-only">Close</span>
                 </button>
               </DialogClose>
@@ -139,7 +152,9 @@ export function PayslipDetail({ payslip, open, onClose }: Props) {
               {initials}
             </div>
             <div>
-              <p className="text-[14px] font-semibold">{payslip.employeeName}</p>
+              <p className="text-[14px] font-semibold">
+                {payslip.employeeName}
+              </p>
               <p className="text-[12px] opacity-75">
                 {payslip.position} · {payslip.employeeId}
               </p>
@@ -159,7 +174,8 @@ export function PayslipDetail({ payslip, open, onClose }: Props) {
                 dot={false}
                 className="border-white/30 bg-white/15 text-white"
               >
-                {payslip.status.charAt(0).toUpperCase() + payslip.status.slice(1)}
+                {payslip.status.charAt(0).toUpperCase() +
+                  payslip.status.slice(1)}
               </StatusBadge>
             </div>
           </div>
@@ -175,28 +191,36 @@ export function PayslipDetail({ payslip, open, onClose }: Props) {
             value={`+${fmt(payslip.incentives)}`}
             valueClass="text-success"
           />
-          <Row
-            label="Gross Pay"
-            value={fmt(payslip.grossPay)}
-            bold
-          />
+          <Row label="Gross Pay" value={fmt(payslip.grossPay)} bold />
 
           {/* Deductions */}
           <SectionHeader title="Deductions" />
           <Row
             label="Absences"
             value={payslip.absences > 0 ? `-${fmt(payslip.absences)}` : "—"}
-            valueClass={payslip.absences > 0 ? "text-danger" : "text-muted-foreground"}
+            valueClass={
+              payslip.absences > 0 ? "text-danger" : "text-muted-foreground"
+            }
           />
           <Row
             label="Late Penalties"
-            value={payslip.latePenalties > 0 ? `-${fmt(payslip.latePenalties)}` : "—"}
-            valueClass={payslip.latePenalties > 0 ? "text-danger" : "text-muted-foreground"}
+            value={
+              payslip.latePenalties > 0 ? `-${fmt(payslip.latePenalties)}` : "—"
+            }
+            valueClass={
+              payslip.latePenalties > 0
+                ? "text-danger"
+                : "text-muted-foreground"
+            }
           />
           <Row
             label="Cash Advances"
-            value={payslip.cashAdvances > 0 ? `-${fmt(payslip.cashAdvances)}` : "—"}
-            valueClass={payslip.cashAdvances > 0 ? "text-danger" : "text-muted-foreground"}
+            value={
+              payslip.cashAdvances > 0 ? `-${fmt(payslip.cashAdvances)}` : "—"
+            }
+            valueClass={
+              payslip.cashAdvances > 0 ? "text-danger" : "text-muted-foreground"
+            }
           />
           <Row
             label="SSS Contribution"

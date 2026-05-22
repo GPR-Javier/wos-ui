@@ -33,11 +33,17 @@ function AdminRewardsView() {
             Rewards & Ratings
           </h1>
           <p className="text-[12px] text-muted-foreground">
-            Teacher incentive engine — configure rules, track ratings, and manage rewards.
+            Teacher incentive engine — configure rules, track ratings, and
+            manage rewards.
           </p>
         </div>
         <Button size="sm" onClick={() => setUploadOpen(true)}>
-          <HugeiconsIcon icon={CloudUploadIcon} size={13} strokeWidth={2} className="mr-1.5" />
+          <HugeiconsIcon
+            icon={CloudUploadIcon}
+            size={13}
+            strokeWidth={2}
+            className="mr-1.5"
+          />
           Upload ratings
         </Button>
       </div>
@@ -47,7 +53,11 @@ function AdminRewardsView() {
       <Tabs defaultValue="teachers">
         <TabsList>
           <TabsTrigger value="teachers" className="text-[12px]">
-            <HugeiconsIcon icon={ChartBarIncreasingIcon} size={13} strokeWidth={1.8} />
+            <HugeiconsIcon
+              icon={ChartBarIncreasingIcon}
+              size={13}
+              strokeWidth={1.8}
+            />
             Performance
           </TabsTrigger>
           <TabsTrigger value="leaderboard" className="text-[12px]">
@@ -87,7 +97,10 @@ function AdminRewardsView() {
         </TabsContent>
       </Tabs>
 
-      <RewardsUploadDialog open={uploadOpen} onClose={() => setUploadOpen(false)} />
+      <RewardsUploadDialog
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+      />
     </div>
   )
 }

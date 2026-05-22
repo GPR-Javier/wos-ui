@@ -27,7 +27,6 @@ import {
   Sun01Icon,
   Logout01Icon,
   Settings01Icon,
-  TeacherIcon,
   TimeScheduleIcon,
   Award01Icon,
   BarChartIcon,
@@ -58,7 +57,7 @@ const NAV_ICONS: Record<string, IconSvgElement> = {
   recruitment: Briefcase01Icon,
   users: UserMultiple02Icon,
   roles: UserShield01Icon,
-  teachers: TeacherIcon,
+  employees: UserMultiple02Icon,
   schedules: TimeScheduleIcon,
   rewards: Award01Icon,
   reports: BarChartIcon,
@@ -126,7 +125,9 @@ export function Sidebar() {
 
   // Auto-expand groups that contain the active child
   const defaultExpanded = items
-    .filter((item) => item.children && item.children.some((c) => isActive(c.section)))
+    .filter(
+      (item) => item.children && item.children.some((c) => isActive(c.section))
+    )
     .map((item) => item.section)
 
   const [expanded, setExpanded] = useState<string[]>(defaultExpanded)
@@ -152,7 +153,7 @@ export function Sidebar() {
         href={href(item.section)}
         className={cn(
           "group mb-0.5 flex items-center gap-2.5 rounded-lg border border-transparent text-[13px] font-medium transition-all duration-150",
-          indent ? "py-1.5 pl-0 pr-2.5" : "px-2.5 py-2",
+          indent ? "py-1.5 pr-2.5 pl-0" : "px-2.5 py-2",
           active
             ? "border-primary/20 bg-primary text-primary-foreground shadow-sm"
             : "text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
@@ -211,7 +212,9 @@ export function Sidebar() {
           const childActive = isChildActive(item)
 
           if (hasChildren) {
-            const visibleChildren = item.children!.filter((c) => hasAuthority(c.authority))
+            const visibleChildren = item.children!.filter((c) =>
+              hasAuthority(c.authority)
+            )
             const active = isActive(item.section)
             return (
               <div key={item.section}>
@@ -231,7 +234,16 @@ export function Sidebar() {
                       onClick={() => toggleExpanded(item.section)}
                       className="flex flex-1 items-center gap-2.5 px-2.5 py-2 text-[13px] font-medium"
                     >
-                      <span className={cn("shrink-0 transition-colors", active ? "text-primary-foreground" : childActive ? "text-foreground" : "text-muted-foreground/60 group-hover:text-muted-foreground")}>
+                      <span
+                        className={cn(
+                          "shrink-0 transition-colors",
+                          active
+                            ? "text-primary-foreground"
+                            : childActive
+                              ? "text-foreground"
+                              : "text-muted-foreground/60 group-hover:text-muted-foreground"
+                        )}
+                      >
                         <NavIcon section={item.section} />
                       </span>
                       <span className="flex-1 text-left">{item.label}</span>
@@ -241,7 +253,9 @@ export function Sidebar() {
                         strokeWidth={2}
                         className={cn(
                           "transition-transform duration-200",
-                          active ? "text-primary-foreground/70" : "text-muted-foreground/60",
+                          active
+                            ? "text-primary-foreground/70"
+                            : "text-muted-foreground/60",
                           isOpen && "rotate-180"
                         )}
                       />
@@ -252,7 +266,16 @@ export function Sidebar() {
                         href={href(item.section)}
                         className="flex flex-1 items-center gap-2.5 px-2.5 py-2 text-[13px] font-medium"
                       >
-                        <span className={cn("shrink-0 transition-colors", active ? "text-primary-foreground" : childActive ? "text-foreground" : "text-muted-foreground/60 group-hover:text-muted-foreground")}>
+                        <span
+                          className={cn(
+                            "shrink-0 transition-colors",
+                            active
+                              ? "text-primary-foreground"
+                              : childActive
+                                ? "text-foreground"
+                                : "text-muted-foreground/60 group-hover:text-muted-foreground"
+                          )}
+                        >
                           <NavIcon section={item.section} />
                         </span>
                         <span className="flex-1">{item.label}</span>
@@ -267,7 +290,9 @@ export function Sidebar() {
                           strokeWidth={2}
                           className={cn(
                             "transition-transform duration-200",
-                            active ? "text-primary-foreground/70" : "text-muted-foreground/60",
+                            active
+                              ? "text-primary-foreground/70"
+                              : "text-muted-foreground/60",
                             isOpen && "rotate-180"
                           )}
                         />
@@ -285,10 +310,10 @@ export function Sidebar() {
                         <div key={child.section} className="relative">
                           {/* Mask the container border below the branch point on the last item */}
                           {isLast && (
-                            <div className="absolute -left-0.5 top-1/2 bottom-0 z-10 w-1 bg-card" />
+                            <div className="absolute top-1/2 bottom-0 -left-0.5 z-10 w-1 bg-card" />
                           )}
                           {/* Curved ╰─ connector */}
-                          <div className="absolute -left-px top-0 h-1/2 w-4 rounded-bl-[8px] border-b-2 border-l-2 border-border/50" />
+                          <div className="absolute top-0 -left-px h-1/2 w-4 rounded-bl-[8px] border-b-2 border-l-2 border-border/50" />
                           <div className="pl-5">
                             <NavRow item={child} indent />
                           </div>
