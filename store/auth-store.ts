@@ -48,7 +48,9 @@ export const useAuthStore = create<AuthState>()(
           authorities: res.authorities,
         }),
 
-      setUser: (user) => set({ user }),
+      // Also refreshes the authorities cache so permission changes (toggled via
+       // Roles & Permissions) propagate without requiring a fresh login.
+      setUser: (user) => set({ user, authorities: user.authorities }),
 
       setAvailableRoles: (roles, activeId) =>
         set({ availableRoles: roles, activeUserRoleId: activeId }),
@@ -68,16 +70,24 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "wos_auth",
-      // Only persist role metadata — tokens live in HttpOnly cookies managed by the server
+      // Only persist role metadata — tokens live in HttpOnly cookies managed by the server.
+      // `authorities` is intentionally NOT persisted so a stale list never bleeds across permission
+      // changes; it's re-hydrated on mount from /auth/me via useMe().
       partialize: (s) => ({
         apiRole: s.apiRole,
         dashboardRole: s.dashboardRole,
         userRoleNames: s.userRoleNames,
-        authorities: s.authorities,
         user: s.user,
         availableRoles: s.availableRoles,
         activeUserRoleId: s.activeUserRoleId,
       }),
+      // After hydration, seed `authorities` from the persisted user object until the next /me fires.
+      // Avoids the brief flash where role-gated nav items are missing on page load.
+      onRehydrateStorage: () => (state) => {
+        if (state?.user?.authorities) {
+          state.authorities = state.user.authorities
+        }
+      },
     }
   )
 )

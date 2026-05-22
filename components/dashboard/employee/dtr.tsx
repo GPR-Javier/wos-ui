@@ -17,6 +17,7 @@ import {
 import { StatusBadge } from "@/components/custom/status-badge"
 import { DtrChangeModal } from "@/components/custom/dtr-change-modal"
 import { AttendanceCameraCapture } from "@/components/custom/attendance-camera-capture"
+import { useAuthStore } from "@/store/auth-store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -639,6 +640,35 @@ export function DTRSection() {
   const [eodOpen, setEodOpen] = useState(false)
   const [pendingClockOut, setPendingClockOut] = useState<Date | null>(null)
 
+  // Camera-validation gating: roles granted DTR:REQUIRE_CAMERA_VALIDATION must
+  // capture a photo before clock-in/out; others bypass the camera modal.
+  const requiresCameraValidation = useAuthStore((s) =>
+    s.authorities.includes("DTR:REQUIRE_CAMERA_VALIDATION")
+  )
+
+  function applyClockIn() {
+    setClocked(true)
+    setClockInTime(new Date())
+    setClockOutTime(null)
+    setBreaks(INITIAL_BREAKS)
+  }
+
+  function startClockOut() {
+    // Skip the camera but still capture the EOD report before finalising.
+    setPendingClockOut(new Date())
+    setEodOpen(true)
+  }
+
+  function startPunch(type: "in" | "out") {
+    if (requiresCameraValidation) {
+      setCameraPunchType(type)
+    } else if (type === "in") {
+      applyClockIn()
+    } else {
+      startClockOut()
+    }
+  }
+
   const { data: attendanceData, isLoading: attendanceLoading } = useAttendance({
     page: page - 1,
     size: pageSize,
@@ -876,9 +906,9 @@ export function DTRSection() {
                 if (anyBreakActive && activeBreakEntry) {
                   toggleBreak(activeBreakEntry[0])
                 } else if (!clocked) {
-                  setCameraPunchType("in")
+                  startPunch("in")
                 } else {
-                  setCameraPunchType("out")
+                  startPunch("out")
                 }
               }}
               className={cn(
@@ -1281,17 +1311,11 @@ export function DTRSection() {
           onClose={() => setCameraPunchType(null)}
           onCaptured={() => {
             if (cameraPunchType === "in") {
-              setClocked(true)
-              setClockInTime(new Date())
-              setClockOutTime(null)
-              setBreaks(INITIAL_BREAKS)
-              setCameraPunchType(null)
+              applyClockIn()
             } else {
-              // Store the captured time and open EOD report before finalising clock-out
-              setPendingClockOut(new Date())
-              setCameraPunchType(null)
-              setEodOpen(true)
+              startClockOut()
             }
+            setCameraPunchType(null)
           }}
         />
       )}

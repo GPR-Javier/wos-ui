@@ -5,6 +5,7 @@ export interface NavItem {
   section: string
   badge?: number
   authority: string | null // authority required to see this item; null = always visible
+  hideIfAuthority?: string // hide this item if the user *also* has this authority (mutual-exclusion with the admin counterpart)
   children?: NavItem[]
   noPage?: boolean // parent is expand-only — clicking label just toggles children, no navigation
 }

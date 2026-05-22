@@ -42,6 +42,7 @@ export interface MeResponse {
   email: string
   role: string
   userRoleNames: string[]
+  authorities: string[]
   active: boolean
   profilePhoto: string | null
   createdAt: string

@@ -97,6 +97,12 @@ export function Sidebar() {
     return authorities.includes(authority)
   }
 
+  function isVisible(item: { authority: string | null; hideIfAuthority?: string }): boolean {
+    if (!hasAuthority(item.authority)) return false
+    if (item.hideIfAuthority && authorities.includes(item.hideIfAuthority)) return false
+    return true
+  }
+
   const initials = user
     ? `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase()
     : "—"
@@ -105,7 +111,7 @@ export function Sidebar() {
 
   const items = isSettings
     ? settingsNavConfig
-    : navConfig.filter((item) => hasAuthority(item.authority))
+    : navConfig.filter(isVisible)
 
   function isActive(itemSection: string) {
     if (isSettings) return (subSection ?? "general") === itemSection
@@ -212,9 +218,9 @@ export function Sidebar() {
           const childActive = isChildActive(item)
 
           if (hasChildren) {
-            const visibleChildren = item.children!.filter((c) =>
-              hasAuthority(c.authority)
-            )
+            const visibleChildren = item.children!.filter(isVisible)
+            // Hide the parent group entirely when none of its children pass authority gating.
+            if (visibleChildren.length === 0) return null
             const active = isActive(item.section)
             return (
               <div key={item.section}>

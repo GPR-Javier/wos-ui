@@ -14,14 +14,22 @@ export const navConfig: NavItem[] = [
         section: "attendance",
         authority: "ATTENDANCE_MANAGEMENT:VIEW_ALL_ATTENDANCE",
       },
-      { label: "Schedule", section: "schedules", authority: null },
+      {
+        label: "Schedule",
+        section: "schedules",
+        authority: "SCHEDULE_MANAGEMENT:VIEW_SCHEDULES",
+      },
       {
         label: "Leave Management",
         section: "leave",
         authority: "LEAVE_MANAGEMENT:VIEW_ALL_LEAVE_REQUESTS",
         badge: 4,
       },
-      { label: "Employees", section: "employees", authority: null },
+      {
+        label: "Employees",
+        section: "employees",
+        authority: "EMPLOYEE_MANAGEMENT:VIEW_EMPLOYEES",
+      },
     ],
   },
   {
@@ -30,8 +38,16 @@ export const navConfig: NavItem[] = [
     authority: null,
     noPage: true,
     children: [
-      { label: "Payroll", section: "payroll", authority: null },
-      { label: "Rewards & Ratings", section: "rewards", authority: null },
+      {
+        label: "Payroll",
+        section: "payroll",
+        authority: "PAYROLL_MANAGEMENT:VIEW_ALL_PAYSLIPS",
+      },
+      {
+        label: "Rewards & Ratings",
+        section: "rewards",
+        authority: "REWARDS:VIEW_REWARDS",
+      },
     ],
   },
   {
@@ -62,18 +78,25 @@ export const navConfig: NavItem[] = [
     section: "recruitment",
     authority: "RECRUITMENT:VIEW_JOB_POSTINGS",
   },
-  // Hidden until backend authorities are added
+  // Personal / self-service items — visibility driven by authorities
   {
-    label: "Daily Time Record",
+    label: "My Attendance",
     section: "dtr",
     authority: "DTR:VIEW_ATTENDANCE",
     badge: 1,
   },
   {
-    label: "My Request",
+    label: "My Leave",
     section: "request",
     authority: "LEAVE:VIEW_OWN_LEAVE",
     badge: 2,
+  },
+  {
+    label: "My Payslip",
+    section: "payroll",
+    authority: "PAYROLL:VIEW_PAYSLIP",
+    // Admins/HR with payroll management see "Finance → Payroll" instead
+    hideIfAuthority: "PAYROLL_MANAGEMENT:VIEW_ALL_PAYSLIPS",
   },
   {
     label: "Reports",
@@ -108,9 +131,9 @@ export const roleLabels: Record<string, string> = {
 
 export const sectionTitles: Record<string, string> = {
   overview: "Overview",
-  dtr: "Daily Time Record",
+  dtr: "My Attendance",
   payroll: "Payroll",
-  request: "My Request",
+  request: "My Leave",
   leave: "Leave Management",
   team: "Team",
   attendance: "Attendance",

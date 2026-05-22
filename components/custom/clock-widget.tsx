@@ -21,6 +21,7 @@ import {
   StopCircleIcon,
 } from "@hugeicons/core-free-icons"
 import { AttendanceCameraCapture } from "@/components/custom/attendance-camera-capture"
+import { useAuthStore } from "@/store/auth-store"
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
@@ -197,6 +198,35 @@ export function ClockWidget() {
   const [breaks, setBreaks] = useState<Record<string, BreakState>>(INIT_BREAKS)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
+
+  // Camera-validation gating: roles granted DTR:REQUIRE_CAMERA_VALIDATION must
+  // capture a photo before clock-in/out; others bypass the camera modal.
+  const requiresCameraValidation = useAuthStore((s) =>
+    s.authorities.includes("DTR:REQUIRE_CAMERA_VALIDATION")
+  )
+
+  const applyPunch = useCallback((type: "in" | "out") => {
+    if (type === "in") {
+      setClocked(true)
+      setClockInTime(new Date())
+      setBreaks(INIT_BREAKS)
+    } else {
+      setClocked(false)
+      setClockInTime(null)
+      setBreaks(INIT_BREAKS)
+    }
+  }, [])
+
+  const startPunch = useCallback(
+    (type: "in" | "out") => {
+      if (requiresCameraValidation) {
+        setCameraPunchType(type)
+      } else {
+        applyPunch(type)
+      }
+    },
+    [requiresCameraValidation, applyPunch]
+  )
 
   useEffect(() => {
     setNow(new Date())
@@ -388,9 +418,9 @@ export function ClockWidget() {
             if (anyBreakActive && activeBreakEntry) {
               toggleBreak(activeBreakEntry[0])
             } else if (!clocked) {
-              setCameraPunchType("in")
+              startPunch("in")
             } else {
-              setCameraPunchType("out")
+              startPunch("out")
             }
           }}
           className={cn(
@@ -496,15 +526,7 @@ export function ClockWidget() {
           punchType={cameraPunchType}
           onClose={() => setCameraPunchType(null)}
           onCaptured={() => {
-            if (cameraPunchType === "in") {
-              setClocked(true)
-              setClockInTime(new Date())
-              setBreaks(INIT_BREAKS)
-            } else {
-              setClocked(false)
-              setClockInTime(null)
-              setBreaks(INIT_BREAKS)
-            }
+            applyPunch(cameraPunchType)
             setCameraPunchType(null)
           }}
         />
