@@ -66,14 +66,14 @@ export const hrApi = {
     api
       .get<
         PageResponse<LeaveRequest>
-      >("/hr/leave-requests", { params: { page: 0, size: 20, ...params } })
+      >("/leave-requests", { params: { page: 0, size: 20, ...params } })
       .then((r) => r.data),
 
   approveLeave: (id: number) =>
-    api.post(`/hr/leave-requests/${id}/approve`).then((r) => r.data),
+    api.post(`/leave-requests/${id}/approve`).then((r) => r.data),
 
   rejectLeave: (id: number) =>
-    api.post(`/hr/leave-requests/${id}/reject`).then((r) => r.data),
+    api.post(`/leave-requests/${id}/reject`).then((r) => r.data),
 
   jobs: (params: { page?: number; size?: number } = {}) =>
     api

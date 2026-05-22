@@ -12,6 +12,7 @@ const SERVICE_ROUTES: Record<string, string> = {
   schedules: HR_BACKEND,
   attendance: HR_BACKEND,
   leave: HR_BACKEND,
+  "leave-requests": HR_BACKEND,
   recruitment: HR_BACKEND,
   payroll: PAYROLL_BACKEND,
   rewards: PAYROLL_BACKEND,
