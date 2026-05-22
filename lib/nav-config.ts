@@ -28,6 +28,7 @@ export const navConfig: NavItem[] = [
     label: "Finance",
     section: "finance",
     authority: null,
+    noPage: true,
     children: [
       { label: "Payroll", section: "payroll", authority: null },
       { label: "Rewards & Ratings", section: "rewards", authority: null },
@@ -37,6 +38,7 @@ export const navConfig: NavItem[] = [
     label: "System",
     section: "admin",
     authority: "CONFIGURATION:VIEW_CONFIG",
+    noPage: true,
     children: [
       {
         label: "Configuration",
