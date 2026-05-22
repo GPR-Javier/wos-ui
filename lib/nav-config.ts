@@ -62,6 +62,11 @@ export const navConfig: NavItem[] = [
         authority: "CONFIGURATION:VIEW_CONFIG",
       },
       {
+        label: "Schedule Change Requests",
+        section: "schedule-changes",
+        authority: "SCHEDULE_CHANGE_REQUEST:VIEW_ALL",
+      },
+      {
         label: "Roles & Permissions",
         section: "roles",
         authority: "ROLES_AND_PERMISSIONS:VIEW_ROLES",
@@ -149,6 +154,7 @@ export const sectionTitles: Record<string, string> = {
   roles: "Roles & Permissions",
   audit: "Audit Log",
   config: "Configuration",
+  "schedule-changes": "Schedule Change Requests",
   settings: "Settings",
   general: "My Profile",
   security: "Security",

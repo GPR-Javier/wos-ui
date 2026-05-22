@@ -1,8 +1,10 @@
 "use client"
 
-import { Fragment, useEffect, useState } from "react"
+import { Fragment, useEffect, useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
 import { TypewriterEffect } from "@/components/ui/typewriter-effect"
+import { useAttendanceHeatmap } from "@/hooks/use-employee"
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -20,7 +22,6 @@ const MONTHS = [
   "Nov",
   "Dec",
 ]
-const TODAY = new Date(2026, 3, 1) // April 1, 2026
 const GAP = 3
 const DAY_LABEL_W = 28
 const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""]
@@ -65,26 +66,37 @@ const STATUS_LABEL: Record<DayStatus, string> = {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function hashDate(date: Date): number {
-  const str = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash * 31 + str.charCodeAt(i)) & 0x7fffffff
-  }
-  return hash % 100
+function formatDateKey(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  const d = String(date.getDate()).padStart(2, "0")
+  return `${y}-${m}-${d}`
 }
 
-function mockStatus(date: Date): DayStatus {
+const VALID_STATUSES = new Set<DayStatus>([
+  "present",
+  "overtime",
+  "late",
+  "undertime",
+  "absent",
+  "leave",
+])
+
+function normalizeStatus(s: string | null | undefined): DayStatus {
+  if (!s) return "present"
+  const lower = s.toLowerCase() as DayStatus
+  return VALID_STATUSES.has(lower) ? lower : "present"
+}
+
+function statusForDate(
+  date: Date,
+  today: Date,
+  lookup: Map<string, DayStatus>
+): DayStatus {
   const dow = date.getDay()
   if (dow === 0 || dow === 6) return "weekend"
-  if (date > TODAY) return "future"
-  const n = hashDate(date)
-  if (n < 2) return "absent"
-  if (n < 8) return "late"
-  if (n < 13) return "undertime"
-  if (n < 23) return "overtime"
-  if (n < 26) return "leave"
-  return "present"
+  if (date > today) return "future"
+  return lookup.get(formatDateKey(date)) ?? "future" // no record → muted
 }
 
 function formatDay(date: Date): string {
@@ -95,7 +107,11 @@ function formatDay(date: Date): string {
   })
 }
 
-function buildYearData(year: number): DayData[][] {
+function buildYearData(
+  year: number,
+  today: Date,
+  lookup: Map<string, DayStatus>
+): DayData[][] {
   const start = new Date(year, 0, 1)
   const end = new Date(year, 11, 31)
   const days: DayData[] = []
@@ -104,7 +120,7 @@ function buildYearData(year: number): DayData[][] {
 
   const d = new Date(start)
   while (d <= end) {
-    days.push({ date: new Date(d), status: mockStatus(d) })
+    days.push({ date: new Date(d), status: statusForDate(d, today, lookup) })
     d.setDate(d.getDate() + 1)
   }
 
@@ -196,11 +212,43 @@ function MotivationalQuote() {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-const YEARS = [2023, 2024, 2025, 2026]
-
 export function AttendanceHeatmap() {
-  const [year, setYear] = useState(2025)
-  const weeks = buildYearData(year)
+  const { data: heatmapData, isLoading } = useAttendanceHeatmap()
+
+  const lookup = useMemo(() => {
+    const map = new Map<string, DayStatus>()
+    for (const r of heatmapData ?? []) {
+      map.set(r.date, normalizeStatus(r.status))
+    }
+    return map
+  }, [heatmapData])
+
+  // Only show year buttons for years that actually have recorded attendance;
+  // fall back to the current year if the user has no records yet.
+  const years = useMemo(() => {
+    const set = new Set<number>()
+    for (const r of heatmapData ?? []) {
+      const y = parseInt(r.date.slice(0, 4), 10)
+      if (!isNaN(y)) set.add(y)
+    }
+    if (set.size === 0) set.add(new Date().getFullYear())
+    return [...set].sort((a, b) => a - b)
+  }, [heatmapData])
+
+  const [year, setYear] = useState<number | null>(null)
+  useEffect(() => {
+    if (years.length === 0) return
+    if (year == null || !years.includes(year)) {
+      setYear(years[years.length - 1]) // default to latest year with data
+    }
+  }, [years, year])
+
+  const today = useMemo(() => new Date(), [])
+  const activeYear = year ?? years[years.length - 1] ?? today.getFullYear()
+  const weeks = useMemo(
+    () => buildYearData(activeYear, today, lookup),
+    [activeYear, today, lookup]
+  )
   const monthLabels = getMonthLabels(weeks)
   const numWeeks = weeks.length
 
@@ -214,6 +262,23 @@ export function AttendanceHeatmap() {
     overtime: workDays.filter((d) => d.status === "overtime").length,
     late: workDays.filter((d) => d.status === "late").length,
     absent: workDays.filter((d) => d.status === "absent").length,
+  }
+
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div className="mb-3 space-y-1.5">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-3 w-64" />
+        </div>
+        <Skeleton className="h-32 w-full" />
+        <div className="mt-3 flex gap-1.5">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-3 w-3 rounded-sm" />
+          ))}
+        </div>
+      </div>
+    )
   }
 
   const gridStyle: React.CSSProperties = {
@@ -325,13 +390,13 @@ export function AttendanceHeatmap() {
             Year
           </p>
           <div className="flex flex-col gap-0.5">
-            {YEARS.map((y) => (
+            {years.map((y) => (
               <button
                 key={y}
                 onClick={() => setYear(y)}
                 className={cn(
                   "mr-auto w-fit rounded-md px-2.5 py-1 text-left text-[13px] font-semibold transition-colors",
-                  year === y
+                  activeYear === y
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}

@@ -18,7 +18,9 @@ import { AttendanceTab } from "./attendance-tab"
 import { LeaveTab } from "./leave-tab"
 import { ScheduleTab } from "./schedule-tab"
 import { PerformanceTab } from "./performance-tab"
+import { PolicyTab } from "./policy-tab"
 import { employees } from "@/lib/mock-data"
+import { useAuthStore } from "@/store/auth-store"
 
 interface Props {
   employeeId: string
@@ -26,11 +28,25 @@ interface Props {
 
 export function EmployeeDetailView({ employeeId }: Props) {
   const router = useRouter()
+  const canViewSchedulePolicy = useAuthStore((s) =>
+    s.authorities.includes("SCHEDULE_POLICY:VIEW")
+  )
 
   const emp =
     employees.find(
       (e) => e.employeeId === employeeId || String(e.id) === employeeId
     ) ?? employees[0]
+
+  // The policy resolver hits the real backend by numeric user id. The URL param
+  // may be either a numeric id or a string employee code (e.g. "EMP-001"); fall
+  // back to the mock record's id when the URL isn't numeric.
+  const fromUrl = Number(employeeId)
+  const fromMock = Number(emp.id)
+  const policyUserId = Number.isFinite(fromUrl)
+    ? fromUrl
+    : Number.isFinite(fromMock)
+      ? fromMock
+      : 0
 
   const statusVariant =
     emp.status === "active"
@@ -111,6 +127,17 @@ export function EmployeeDetailView({ employeeId }: Props) {
             />
             Schedule
           </TabsTrigger>
+          {canViewSchedulePolicy && (
+            <TabsTrigger value="policy">
+              <HugeiconsIcon
+                icon={Clock01Icon}
+                size={14}
+                strokeWidth={2}
+                className="mr-1.5"
+              />
+              Schedule policy
+            </TabsTrigger>
+          )}
           <TabsTrigger value="performance">
             <HugeiconsIcon
               icon={Audit01Icon}
@@ -134,6 +161,11 @@ export function EmployeeDetailView({ employeeId }: Props) {
         <TabsContent value="schedule" className="mt-4">
           <ScheduleTab />
         </TabsContent>
+        {canViewSchedulePolicy && (
+          <TabsContent value="policy" className="mt-4">
+            <PolicyTab employeeId={policyUserId} employeeName={emp.name} />
+          </TabsContent>
+        )}
         <TabsContent value="performance" className="mt-4">
           <PerformanceTab employee={emp} />
         </TabsContent>

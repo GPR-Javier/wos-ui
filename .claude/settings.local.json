@@ -1,7 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pnpm typecheck *)"
+      "Bash(pnpm typecheck *)",
+      "Bash(cd /c/Users/User/Documents/development/Work-OS/wos-dtr && find . -type f -name \"*.java\" | grep -i entity | head -20)",
+      "Read(//c/Users/User/Documents/development/Work-OS/**)",
+      "Bash(ls -la \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\\" | head -20)",
+      "Read(//c/Users/User/Documents/development/**)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(./mvnw -pl wos-common,wos-hr -am compile -q)",
+      "Bash(mvn --version)",
+      "PowerShell(Set-Location 'C:/Users/User/Documents/development/Work-OS/wos-common'; & ./mvnw.cmd compile -q 2>&1 | Select-Object -Last 40; \"exit=$LASTEXITCODE\")",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Program Files\" -ErrorAction SilentlyContinue | Where-Object { $_.Name -match \"java|jdk|adoptium|microsoft\" } | Select-Object -ExpandProperty FullName; Get-ChildItem -Path \"C:\\\\Program Files \\(x86\\)\" -ErrorAction SilentlyContinue | Where-Object { $_.Name -match \"java|jdk\" } | Select-Object -ExpandProperty FullName; \\(Get-Command java -ErrorAction SilentlyContinue\\).Source)"
     ]
   }
 }

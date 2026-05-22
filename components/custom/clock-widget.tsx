@@ -23,6 +23,14 @@ import {
 import { AttendanceCameraCapture } from "@/components/custom/attendance-camera-capture"
 import { ConfirmPunchModal } from "@/components/custom/confirm-punch-modal"
 import { useAuthStore } from "@/store/auth-store"
+import {
+  useAttendance,
+  useClockIn,
+  useClockOut,
+  useBreakStart,
+  useBreakEnd,
+} from "@/hooks/use-employee"
+import type { AttendanceBreakEntry } from "@/lib/employee-api"
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
@@ -83,6 +91,40 @@ function isBreakInWindow(type: string, now: Date | null): boolean {
   if (type === "afternoon") return mins > 13 * 60 && mins < 18 * 60 // 1:01 – 5:59 PM
   if (type === "dinner") return mins >= 18 * 60 // 6:00 PM+
   return false
+}
+
+// ── Hydration helper ─────────────────────────────────────────────────────────
+
+/**
+ * Folds the server-side breaks for today into the local BreakState map:
+ * - Completed breaks add to `elapsed`
+ * - The single active break (endedAt = null) sets `active` + `startTime`
+ * Unknown break types are ignored so the UI stays in sync with what's defined locally.
+ */
+function hydrateBreaks(
+  initial: Record<string, BreakState>,
+  serverBreaks: AttendanceBreakEntry[] | undefined
+): Record<string, BreakState> {
+  if (!serverBreaks?.length) return initial
+  const result: Record<string, BreakState> = Object.fromEntries(
+    Object.entries(initial).map(([k, v]) => [
+      k,
+      { ...v, elapsed: 0, active: false, startTime: null },
+    ])
+  )
+  for (const br of serverBreaks) {
+    const cur = result[br.type]
+    if (!cur) continue
+    const startMs = new Date(br.startedAt).getTime()
+    if (br.endedAt) {
+      const endMs = new Date(br.endedAt).getTime()
+      const seconds = Math.max(0, Math.floor((endMs - startMs) / 1000))
+      result[br.type] = { ...cur, elapsed: cur.elapsed + seconds }
+    } else {
+      result[br.type] = { ...cur, active: true, startTime: startMs }
+    }
+  }
+  return result
 }
 
 // ── RingButton ────────────────────────────────────────────────────────────────
@@ -209,17 +251,51 @@ export function ClockWidget() {
     s.authorities.includes("DTR:REQUIRE_CAMERA_VALIDATION")
   )
 
-  const applyPunch = useCallback((type: "in" | "out") => {
-    if (type === "in") {
+  // Hydrate from the latest server-side attendance record so a hard refresh
+  // (or login on another device) doesn't lose the clocked-in state.
+  const { data: attendanceData } = useAttendance({ page: 0, size: 1 })
+  useEffect(() => {
+    const latest = attendanceData?.content?.[0]
+    if (latest?.timeIn && !latest.timeOut) {
       setClocked(true)
-      setClockInTime(new Date())
-      setBreaks(INIT_BREAKS)
-    } else {
+      setClockInTime(new Date(latest.timeIn))
+      setBreaks((prev) => hydrateBreaks(prev, latest.breaks))
+    } else if (latest?.timeOut) {
       setClocked(false)
       setClockInTime(null)
       setBreaks(INIT_BREAKS)
     }
-  }, [])
+  }, [attendanceData])
+
+  const clockInMutation = useClockIn()
+  const clockOutMutation = useClockOut()
+  const breakStartMutation = useBreakStart()
+  const breakEndMutation = useBreakEnd()
+  const isClockBusy = clockInMutation.isPending || clockOutMutation.isPending
+  const isBreakBusy =
+    breakStartMutation.isPending || breakEndMutation.isPending
+
+  const applyPunch = useCallback(
+    async (type: "in" | "out") => {
+      try {
+        if (type === "in") {
+          const result = await clockInMutation.mutateAsync()
+          setClocked(true)
+          setClockInTime(result.timeIn ? new Date(result.timeIn) : new Date())
+          setBreaks(INIT_BREAKS)
+        } else {
+          await clockOutMutation.mutateAsync()
+          setClocked(false)
+          setClockInTime(null)
+          setBreaks(INIT_BREAKS)
+        }
+      } catch (err) {
+        // Surface in console for now — caller can layer a toast on top later.
+        console.error(`Clock ${type} failed:`, err)
+      }
+    },
+    [clockInMutation, clockOutMutation]
+  )
 
   const startPunch = useCallback(
     (type: "in" | "out") => {
@@ -252,40 +328,61 @@ export function ClockWidget() {
     }
   }
 
-  const toggleBreak = useCallback((type: string) => {
-    setBreaks((prev) => {
-      const b = prev[type]
-      if (!b) return prev
-      if (!b.active) {
-        const next = Object.fromEntries(
-          Object.entries(prev).map(([k, v]) =>
-            v.active && v.startTime
-              ? [
-                  k,
-                  {
-                    ...v,
-                    elapsed:
-                      v.elapsed + Math.floor((Date.now() - v.startTime) / 1000),
-                    active: false,
-                    startTime: null,
-                  },
-                ]
-              : [k, v]
-          )
-        )
-        next[type] = { ...b, active: true, startTime: Date.now() }
-        return next
-      } else {
-        const elapsed =
-          b.elapsed +
-          (b.startTime ? Math.floor((Date.now() - b.startTime) / 1000) : 0)
-        return {
-          ...prev,
-          [type]: { ...b, elapsed, active: false, startTime: null },
+  const toggleBreak = useCallback(
+    async (type: string) => {
+      const target = breaks[type]
+      if (!target) return
+
+      try {
+        if (target.active) {
+          // Ending the active break.
+          await breakEndMutation.mutateAsync()
+          setBreaks((prev) => {
+            const cur = prev[type]
+            if (!cur) return prev
+            const addedSecs = cur.startTime
+              ? Math.floor((Date.now() - cur.startTime) / 1000)
+              : 0
+            return {
+              ...prev,
+              [type]: {
+                ...cur,
+                elapsed: cur.elapsed + addedSecs,
+                active: false,
+                startTime: null,
+              },
+            }
+          })
+        } else {
+          // Switching to a new break: backend rejects start while another is open,
+          // so end the active one first.
+          const activeEntry = Object.entries(breaks).find(([, v]) => v.active)
+          if (activeEntry) await breakEndMutation.mutateAsync()
+          await breakStartMutation.mutateAsync(type)
+          setBreaks((prev) => {
+            const next = Object.fromEntries(
+              Object.entries(prev).map(([k, v]) => {
+                if (v.active && v.startTime) {
+                  const addedSecs = Math.floor((Date.now() - v.startTime) / 1000)
+                  return [
+                    k,
+                    { ...v, elapsed: v.elapsed + addedSecs, active: false, startTime: null },
+                  ]
+                }
+                return [k, v]
+              })
+            )
+            const cur = next[type]
+            if (cur) next[type] = { ...cur, active: true, startTime: Date.now() }
+            return next
+          })
         }
+      } catch (err) {
+        console.error(`Break toggle (${type}) failed:`, err)
       }
-    })
-  }, [])
+    },
+    [breaks, breakStartMutation, breakEndMutation]
+  )
 
   const getBreakData = (b: BreakState) => {
     const used =
@@ -418,6 +515,7 @@ export function ClockWidget() {
 
         {/* Clock in/out / End break button */}
         <button
+          disabled={isClockBusy || isBreakBusy}
           onClick={() => {
             if (anyBreakActive && activeBreakEntry) {
               toggleBreak(activeBreakEntry[0])
@@ -428,7 +526,7 @@ export function ClockWidget() {
             }
           }}
           className={cn(
-            "mt-3 flex w-full items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition-all duration-150",
+            "mt-3 flex w-full items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60",
             !clocked &&
               "bg-primary text-primary-foreground hover:bg-primary/90",
             clocked &&
@@ -475,7 +573,8 @@ export function ClockWidget() {
                 const hasStarted = b.elapsed > 0 || b.active
                 const inWindow = isBreakInWindow(type, now)
                 const exhausted = !b.active && b.elapsed >= b.allowMins * 60
-                const isDisabled = exhausted || (!b.active && !inWindow)
+                const isDisabled =
+                  exhausted || (!b.active && !inWindow) || isBreakBusy
                 const ringColor =
                   isDisabled || !hasStarted
                     ? "transparent"

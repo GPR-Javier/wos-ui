@@ -1,7 +1,20 @@
 import { api } from "./axios"
 import type { PageResponse } from "./admin-api"
 
+export interface AttendanceBreakEntry {
+  id: number
+  type: string
+  startedAt: string
+  endedAt: string | null
+}
+
+export interface HeatmapEntry {
+  date: string // YYYY-MM-DD
+  status: string | null
+}
+
 export interface AttendanceEntry {
+  id?: number
   date: string
   day: string
   timeIn: string
@@ -18,6 +31,7 @@ export interface AttendanceEntry {
     | "overtime"
     | "overbreak"
     | "undertime"
+  breaks?: AttendanceBreakEntry[]
 }
 
 export interface PayslipEntry {
@@ -72,18 +86,25 @@ export const employeeApi = {
     api
       .get<
         PageResponse<AttendanceEntry>
-      >("/employee/attendance", { params: { page: 0, size: 20, ...params } })
+      >("/attendance/me", { params: { page: 0, size: 20, ...params } })
       .then((r) => r.data),
 
   clockIn: () =>
-    api
-      .post<{ timeIn: string }>("/employee/attendance/clock-in")
-      .then((r) => r.data),
+    api.post<AttendanceEntry>("/attendance/clock-in").then((r) => r.data),
 
   clockOut: () =>
+    api.post<AttendanceEntry>("/attendance/clock-out").then((r) => r.data),
+
+  breakStart: (type: string) =>
     api
-      .post<{ timeOut: string }>("/employee/attendance/clock-out")
+      .post<AttendanceEntry>("/attendance/break-start", { type })
       .then((r) => r.data),
+
+  breakEnd: () =>
+    api.post<AttendanceEntry>("/attendance/break-end").then((r) => r.data),
+
+  attendanceHeatmap: () =>
+    api.get<HeatmapEntry[]>("/attendance/me/heatmap").then((r) => r.data),
 
   payslips: (params: { page?: number; size?: number } = {}) =>
     api

@@ -59,6 +59,7 @@ const NAV_ICONS: Record<string, IconSvgElement> = {
   roles: UserShield01Icon,
   employees: UserMultiple02Icon,
   schedules: TimeScheduleIcon,
+  "schedule-changes": Calendar01Icon,
   rewards: Award01Icon,
   reports: BarChartIcon,
   upload: CloudUploadIcon,

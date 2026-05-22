@@ -10,6 +10,13 @@ export function useAttendance(params: { page?: number; size?: number } = {}) {
   })
 }
 
+export function useAttendanceHeatmap() {
+  return useQuery({
+    queryKey: ["employee", "attendance", "heatmap"],
+    queryFn: () => employeeApi.attendanceHeatmap(),
+  })
+}
+
 export function useClockIn() {
   const qc = useQueryClient()
   return useMutation({
@@ -23,6 +30,24 @@ export function useClockOut() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: () => employeeApi.clockOut(),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["employee", "attendance"] }),
+  })
+}
+
+export function useBreakStart() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (type: string) => employeeApi.breakStart(type),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["employee", "attendance"] }),
+  })
+}
+
+export function useBreakEnd() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => employeeApi.breakEnd(),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["employee", "attendance"] }),
   })

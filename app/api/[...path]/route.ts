@@ -10,6 +10,8 @@ const PAYROLL_BACKEND =
 const SERVICE_ROUTES: Record<string, string> = {
   teachers: HR_BACKEND,
   schedules: HR_BACKEND,
+  "schedule-policies": HR_BACKEND,
+  "schedule-change-requests": HR_BACKEND,
   attendance: HR_BACKEND,
   leave: HR_BACKEND,
   "leave-requests": HR_BACKEND,

@@ -55,9 +55,11 @@ export function StatCard({
           </span>
         )}
       </div>
-      <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">
+      {/* div, not p — `value` may be a JSX node (e.g. Skeleton) which renders a div,
+          and <div> is not a valid descendant of <p>. */}
+      <div className="mt-2 text-2xl font-bold tracking-tight text-foreground">
         {value}
-      </p>
+      </div>
       {delta && (
         <p
           className={cn(

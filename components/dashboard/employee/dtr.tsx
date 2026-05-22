@@ -16,8 +16,11 @@ import {
 } from "@hugeicons/core-free-icons"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { DtrChangeModal } from "@/components/custom/dtr-change-modal"
+import { ScheduleChangeRequestModal } from "@/components/custom/schedule-change-request-modal"
+import { MyPolicyHistoryModal } from "@/components/custom/my-policy-history-modal"
 import { AttendanceCameraCapture } from "@/components/custom/attendance-camera-capture"
 import { ConfirmPunchModal } from "@/components/custom/confirm-punch-modal"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useAuthStore } from "@/store/auth-store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -48,8 +51,15 @@ import { cn } from "@/lib/utils"
 import type { AttendanceRecord } from "@/lib/types"
 import { TablePagination } from "@/components/custom/table-pagination"
 import { AttendanceHeatmap } from "@/components/custom/attendance-heatmap"
-import { useAttendance } from "@/hooks/use-employee"
-import type { AttendanceEntry } from "@/lib/employee-api"
+import {
+  useAttendance,
+  useClockIn,
+  useClockOut,
+  useBreakStart,
+  useBreakEnd,
+} from "@/hooks/use-employee"
+import { useMyPolicy } from "@/hooks/use-schedule-policy"
+import type { AttendanceBreakEntry, AttendanceEntry } from "@/lib/employee-api"
 
 function toAttendanceRecord(e: AttendanceEntry): AttendanceRecord {
   return e as AttendanceRecord
@@ -414,6 +424,42 @@ interface DtrBreak {
   otOnly?: boolean
 }
 
+/**
+ * Folds server breaks for the current attendance record into the local DtrBreak map.
+ * Completed breaks add to `elapsed` and may flip `done` once allowance is consumed;
+ * the one open break (endedAt = null) sets `active` + `startTime`.
+ */
+function hydrateDtrBreaks(
+  initial: Record<string, DtrBreak>,
+  serverBreaks: AttendanceBreakEntry[] | undefined
+): Record<string, DtrBreak> {
+  if (!serverBreaks?.length) return initial
+  const result: Record<string, DtrBreak> = Object.fromEntries(
+    Object.entries(initial).map(([k, v]) => [
+      k,
+      { ...v, elapsed: 0, active: false, startTime: null, done: false },
+    ])
+  )
+  for (const br of serverBreaks) {
+    const cur = result[br.type]
+    if (!cur) continue
+    const startMs = new Date(br.startedAt).getTime()
+    if (br.endedAt) {
+      const endMs = new Date(br.endedAt).getTime()
+      const seconds = Math.max(0, Math.floor((endMs - startMs) / 1000))
+      const elapsed = cur.elapsed + seconds
+      result[br.type] = {
+        ...cur,
+        elapsed,
+        done: elapsed >= cur.allowMins * 60,
+      }
+    } else {
+      result[br.type] = { ...cur, active: true, startTime: startMs }
+    }
+  }
+  return result
+}
+
 const INITIAL_BREAKS: Record<string, DtrBreak> = {
   morning: {
     label: "Morning",
@@ -625,6 +671,8 @@ export function DTRSection() {
   const [clockOutTime, setClockOutTime] = useState<Date | null>(null)
   const [breaks, setBreaks] = useState<Record<string, DtrBreak>>(INITIAL_BREAKS)
   const [dtrOpen, setDtrOpen] = useState(false)
+  const [scheduleChangeOpen, setScheduleChangeOpen] = useState(false)
+  const [scheduleHistoryOpen, setScheduleHistoryOpen] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const clockCardRef = useRef<HTMLDivElement>(null)
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(
@@ -650,11 +698,25 @@ export function DTRSection() {
     s.authorities.includes("DTR:REQUIRE_CAMERA_VALIDATION")
   )
 
-  function applyClockIn() {
-    setClocked(true)
-    setClockInTime(new Date())
-    setClockOutTime(null)
-    setBreaks(INITIAL_BREAKS)
+  const { data: myPolicy } = useMyPolicy()
+  const clockInMutation = useClockIn()
+  const clockOutMutation = useClockOut()
+  const breakStartMutation = useBreakStart()
+  const breakEndMutation = useBreakEnd()
+  const isClockBusy = clockInMutation.isPending || clockOutMutation.isPending
+  const isBreakBusy =
+    breakStartMutation.isPending || breakEndMutation.isPending
+
+  async function applyClockIn() {
+    try {
+      const result = await clockInMutation.mutateAsync()
+      setClocked(true)
+      setClockInTime(result.timeIn ? new Date(result.timeIn) : new Date())
+      setClockOutTime(null)
+      setBreaks(INITIAL_BREAKS)
+    } catch (err) {
+      console.error("Clock in failed:", err)
+    }
   }
 
   function startClockOut() {
@@ -673,10 +735,38 @@ export function DTRSection() {
     }
   }
 
+  async function finalizeClockOut() {
+    try {
+      const result = await clockOutMutation.mutateAsync()
+      setClocked(false)
+      setClockOutTime(result.timeOut ? new Date(result.timeOut) : (pendingClockOut ?? new Date()))
+      setBreaks(INITIAL_BREAKS)
+      setPendingClockOut(null)
+      setEodOpen(false)
+    } catch (err) {
+      console.error("Clock out failed:", err)
+    }
+  }
+
   const { data: attendanceData, isLoading: attendanceLoading } = useAttendance({
     page: page - 1,
     size: pageSize,
   })
+
+  // Hydrate clocked-in state and any in-flight break from the latest server record
+  // so refresh / re-login doesn't drop the in-flight session.
+  useEffect(() => {
+    const latest = attendanceData?.content?.[0]
+    if (latest?.timeIn && !latest.timeOut) {
+      setClocked(true)
+      setClockInTime(new Date(latest.timeIn))
+      setBreaks((prev) => hydrateDtrBreaks(prev, latest.breaks))
+    } else if (latest?.timeOut) {
+      setClocked(false)
+      setClockInTime(null)
+      setBreaks(INITIAL_BREAKS)
+    }
+  }, [attendanceData])
 
   const paginated = (attendanceData?.content ?? []).map(toAttendanceRecord)
   const total = attendanceData?.totalElements ?? 0
@@ -714,47 +804,74 @@ export function DTRSection() {
   }, 0)
 
   const netSecs = Math.max(0, workSecs - breakSecs)
-  const stdSecs = 8 * 3600
+  const requiredHours = myPolicy?.requiredHours ?? 8
+  const stdSecs = requiredHours * 3600
   const otSecs = Math.max(0, netSecs - stdSecs)
   const progressPct = Math.min(100, (netSecs / stdSecs) * 100)
 
-  const toggleBreak = useCallback((type: string) => {
-    setBreaks((prev) => {
-      const b = prev[type]
-      if (!b || b.done) return prev
-      if (!b.active) {
-        // End any other active break first
-        const updated = Object.fromEntries(
-          Object.entries(prev).map(([k, v]) => {
-            if (v.active && v.startTime) {
-              return [
-                k,
-                {
-                  ...v,
-                  elapsed:
-                    v.elapsed + Math.floor((Date.now() - v.startTime) / 1000),
-                  active: false,
-                  startTime: null,
-                },
-              ]
+  const toggleBreak = useCallback(
+    async (type: string) => {
+      const target = breaks[type]
+      if (!target || target.done) return
+
+      try {
+        if (target.active) {
+          // Ending the active break.
+          await breakEndMutation.mutateAsync()
+          setBreaks((prev) => {
+            const cur = prev[type]
+            if (!cur) return prev
+            const addedSecs = cur.startTime
+              ? Math.floor((Date.now() - cur.startTime) / 1000)
+              : 0
+            const elapsed = cur.elapsed + addedSecs
+            return {
+              ...prev,
+              [type]: {
+                ...cur,
+                elapsed,
+                active: false,
+                startTime: null,
+                done: elapsed >= cur.allowMins * 60,
+              },
             }
-            return [k, v]
           })
-        )
-        updated[type] = { ...b, active: true, startTime: Date.now() }
-        return updated
-      } else {
-        const elapsed =
-          b.elapsed +
-          (b.startTime ? Math.floor((Date.now() - b.startTime) / 1000) : 0)
-        const done = elapsed >= b.allowMins * 60 // only lock out if overbreak consumed
-        return {
-          ...prev,
-          [type]: { ...b, elapsed, active: false, startTime: null, done },
+        } else {
+          // Switch breaks: backend rejects start while another is open, so end first.
+          const activeEntry = Object.entries(breaks).find(([, v]) => v.active)
+          if (activeEntry) await breakEndMutation.mutateAsync()
+          await breakStartMutation.mutateAsync(type)
+          setBreaks((prev) => {
+            const next = Object.fromEntries(
+              Object.entries(prev).map(([k, v]) => {
+                if (v.active && v.startTime) {
+                  const addedSecs = Math.floor((Date.now() - v.startTime) / 1000)
+                  const elapsed = v.elapsed + addedSecs
+                  return [
+                    k,
+                    {
+                      ...v,
+                      elapsed,
+                      active: false,
+                      startTime: null,
+                      done: elapsed >= v.allowMins * 60,
+                    },
+                  ]
+                }
+                return [k, v]
+              })
+            )
+            const cur = next[type]
+            if (cur) next[type] = { ...cur, active: true, startTime: Date.now() }
+            return next
+          })
         }
+      } catch (err) {
+        console.error(`Break toggle (${type}) failed:`, err)
       }
-    })
-  }, [])
+    },
+    [breaks, breakStartMutation, breakEndMutation]
+  )
 
   const getBreakRemaining = (b: DtrBreak) => {
     const used =
@@ -906,6 +1023,7 @@ export function DTRSection() {
 
             {/* Clock in / Clock out / End break button */}
             <button
+              disabled={isClockBusy || isBreakBusy}
               onClick={() => {
                 if (anyBreakActive && activeBreakEntry) {
                   toggleBreak(activeBreakEntry[0])
@@ -969,6 +1087,7 @@ export function DTRSection() {
                     const exhausted = b.done // done=true only when overbreak consumed
                     const isDisabled =
                       exhausted ||
+                      isBreakBusy ||
                       (!b.active && (!inWindow || (!!b.otOnly && otSecs === 0)))
                     const hasStarted = b.elapsed > 0 || b.active
                     const breakProgress = Math.max(
@@ -1068,7 +1187,7 @@ export function DTRSection() {
               <div className="flex items-center justify-between text-[13px]">
                 <span className="text-muted-foreground">Standard hours</span>
                 <span className="text-muted-foreground tabular-nums">
-                  8h 00m
+                  {requiredHours}h 00m
                 </span>
               </div>
               {otSecs > 0 && (
@@ -1084,7 +1203,7 @@ export function DTRSection() {
             <div>
               <div className="mb-1.5 flex items-center justify-between text-[11px]">
                 <span className="text-muted-foreground">
-                  Progress toward 8h
+                  Progress toward {requiredHours}h
                 </span>
                 <span className="font-medium tabular-nums">
                   {Math.round(progressPct)}%
@@ -1107,19 +1226,25 @@ export function DTRSection() {
               </p>
               {Object.entries(breaks).map(([type, b]) => {
                 const used = getBreakUsed(b)
+                const hasData = used > 0 || b.active
                 return (
                   <div
                     key={type}
                     className="flex items-center justify-between text-[12px]"
                   >
-                    <span className="text-muted-foreground">{b.label}</span>
+                    <span className="text-muted-foreground">
+                      {b.label}
+                      {b.active && (
+                        <span className="ml-1.5 inline-block size-1.5 animate-pulse rounded-full bg-success" />
+                      )}
+                    </span>
                     <span
                       className={cn(
                         "font-medium tabular-nums",
                         used > b.allowMins * 60 ? "text-danger" : ""
                       )}
                     >
-                      {used > 0 ? fmtDuration(used) : "—"}
+                      {hasData ? fmtDuration(used) : "—"}
                     </span>
                   </div>
                 )
@@ -1127,25 +1252,97 @@ export function DTRSection() {
               <div className="flex items-center justify-between border-t border-border pt-1.5 text-[12px]">
                 <span className="font-medium">Total break</span>
                 <span className="font-semibold tabular-nums">
-                  {breakSecs > 0 ? fmtDuration(breakSecs) : "—"}
+                  {breakSecs > 0 || anyBreakActive ? fmtDuration(breakSecs) : "—"}
                 </span>
               </div>
             </div>
 
             <div className="flex items-center justify-between pt-1">
               <StatusBadge variant={clockStatus}>{clockLabel}</StatusBadge>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-[11px]"
-                onClick={() => setDtrOpen(true)}
-              >
-                Request correction
-              </Button>
+              <div className="flex gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px]"
+                  onClick={() => setScheduleChangeOpen(true)}
+                >
+                  Request schedule change
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px]"
+                  onClick={() => setDtrOpen(true)}
+                >
+                  Request correction
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* ── My schedule (from resolved policy) ─────────────────────── */}
+      {myPolicy && (
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+                My schedule
+              </p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                Your current effective policy. Set by admin; appeal via "Request schedule change".
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-[11px]"
+              onClick={() => setScheduleHistoryOpen(true)}
+            >
+              View history
+            </Button>
+          </div>
+          <div className="grid grid-cols-4 gap-3 text-[12px]">
+            <div>
+              <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                Clock-in window
+              </p>
+              <p className="mt-0.5 tabular-nums">
+                {myPolicy.earliestClockIn ?? "—"} – {myPolicy.latestClockIn ?? "—"}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                Grace {myPolicy.lateGraceMins ?? 0}m
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                Clock-out window
+              </p>
+              <p className="mt-0.5 tabular-nums">
+                {myPolicy.earliestClockOut ?? "—"} – {myPolicy.latestClockOut ?? "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                Required hours
+              </p>
+              <p className="mt-0.5 font-semibold tabular-nums">
+                {myPolicy.requiredHours ?? "—"}h
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                Undertime grace {myPolicy.undertimeGraceMins ?? 0}m
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                Workdays
+              </p>
+              <p className="mt-0.5">{(myPolicy.workdays ?? []).join(", ") || "—"}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Attendance log ── */}
       <div>
@@ -1184,14 +1381,39 @@ export function DTRSection() {
           </TableHeader>
           <TableBody>
             {attendanceLoading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={9}
-                  className="py-8 text-center text-[13px] text-muted-foreground"
-                >
-                  Loading…
-                </TableCell>
-              </TableRow>
+              <>
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <TableRow key={`sk-${i}`}>
+                    <TableCell>
+                      <Skeleton className="h-3 w-20" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-3 w-8" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-3 w-16" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-3 w-16" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="ml-auto h-3 w-12" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="ml-auto h-3 w-12" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-3 w-10" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="ml-auto size-6 rounded-md" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </>
             ) : paginated.length === 0 ? (
               <TableRow>
                 <TableCell
@@ -1349,14 +1571,18 @@ export function DTRSection() {
           setPendingClockOut(null)
         }}
         onSubmit={() => {
-          setClocked(false)
-          setClockOutTime(pendingClockOut ?? new Date())
-          setBreaks(INITIAL_BREAKS)
-          setPendingClockOut(null)
-          setEodOpen(false)
+          void finalizeClockOut()
         }}
       />
       <DtrChangeModal open={dtrOpen} onClose={() => setDtrOpen(false)} />
+      <ScheduleChangeRequestModal
+        open={scheduleChangeOpen}
+        onClose={() => setScheduleChangeOpen(false)}
+      />
+      <MyPolicyHistoryModal
+        open={scheduleHistoryOpen}
+        onClose={() => setScheduleHistoryOpen(false)}
+      />
       <ViewModal
         record={selectedRecord}
         note={selectedRecord ? recordNotes[selectedRecord.date] : undefined}
