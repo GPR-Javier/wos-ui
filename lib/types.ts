@@ -5,6 +5,8 @@ export interface NavItem {
   section: string
   badge?: number
   authority: string | null // authority required to see this item; null = always visible
+  children?: NavItem[]
+  noPage?: boolean // parent is expand-only — clicking label just toggles children, no navigation
 }
 
 export interface Employee {

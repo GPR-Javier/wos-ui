@@ -1,14 +1,32 @@
 import { NextRequest } from "next/server"
 
-const BACKEND_API_BASE =
-  process.env.API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:8081/api"
+// Per-service backend URLs (overridable via env vars).
+const AUTH_BACKEND =
+  process.env.AUTH_API_URL ?? "http://localhost:8081/api"
+const HR_BACKEND =
+  process.env.HR_API_URL ?? "http://localhost:8083/api"
+const PAYROLL_BACKEND =
+  process.env.PAYROLL_API_URL ?? "http://localhost:8082/api"
+
+// Path-prefix → service routing table. First segment after /api/ decides.
+const SERVICE_ROUTES: Record<string, string> = {
+  teachers: HR_BACKEND,
+  schedules: HR_BACKEND,
+  attendance: HR_BACKEND,
+  leave: HR_BACKEND,
+  recruitment: HR_BACKEND,
+  payroll: PAYROLL_BACKEND,
+  rewards: PAYROLL_BACKEND,
+}
+
+function resolveBackend(path: string[]): string {
+  const first = path[0] ?? ""
+  return SERVICE_ROUTES[first] ?? AUTH_BACKEND
+}
 
 function buildTargetUrl(path: string[], requestUrl: string) {
-  const base = BACKEND_API_BASE.endsWith("/")
-    ? BACKEND_API_BASE.slice(0, -1)
-    : BACKEND_API_BASE
+  const backend = resolveBackend(path)
+  const base = backend.endsWith("/") ? backend.slice(0, -1) : backend
   const pathname = path.join("/")
   const incoming = new URL(requestUrl)
   return `${base}/${pathname}${incoming.search}`
@@ -17,11 +35,9 @@ function buildTargetUrl(path: string[], requestUrl: string) {
 function buildForwardHeaders(request: NextRequest) {
   const headers = new Headers(request.headers)
 
-  // Upstream host and content size are recomputed by fetch.
   headers.delete("host")
   headers.delete("content-length")
 
-  // If browser didn't include Authorization, derive it from access_token cookie.
   if (!headers.get("authorization")) {
     const accessToken = request.cookies.get("access_token")?.value
     if (accessToken) headers.set("authorization", `Bearer ${accessToken}`)
@@ -33,7 +49,6 @@ function buildForwardHeaders(request: NextRequest) {
 function buildResponseHeaders(upstream: Response) {
   const headers = new Headers(upstream.headers)
 
-  // Hop-by-hop headers must not be forwarded by proxies.
   headers.delete("connection")
   headers.delete("keep-alive")
   headers.delete("proxy-authenticate")

@@ -4,15 +4,68 @@ import type { NavItem } from "./types"
 export const navConfig: NavItem[] = [
   { label: "Overview", section: "overview", authority: null },
   {
+    label: "Team",
+    section: "team",
+    authority: null,
+    noPage: true,
+    children: [
+      {
+        label: "Attendance",
+        section: "attendance",
+        authority: "ATTENDANCE_MANAGEMENT:VIEW_ALL_ATTENDANCE",
+      },
+      { label: "Schedule", section: "schedules", authority: null },
+      {
+        label: "Leave Management",
+        section: "leave",
+        authority: "LEAVE_MANAGEMENT:VIEW_ALL_LEAVE_REQUESTS",
+        badge: 4,
+      },
+      { label: "Teachers", section: "teachers", authority: null },
+    ],
+  },
+  {
+    label: "Finance",
+    section: "finance",
+    authority: null,
+    children: [
+      { label: "Payroll", section: "payroll", authority: null },
+      { label: "Rewards & Ratings", section: "rewards", authority: null },
+    ],
+  },
+  {
+    label: "System",
+    section: "admin",
+    authority: "CONFIGURATION:VIEW_CONFIG",
+    children: [
+      {
+        label: "Configuration",
+        section: "config",
+        authority: "CONFIGURATION:VIEW_CONFIG",
+      },
+      {
+        label: "Roles & Permissions",
+        section: "roles",
+        authority: "ROLES_AND_PERMISSIONS:VIEW_ROLES",
+      },
+      {
+        label: "Audit Log",
+        section: "audit",
+        authority: "AUDIT_LOG:VIEW_AUDIT_LOGS",
+      },
+    ],
+  },
+  {
+    label: "Recruitment",
+    section: "recruitment",
+    authority: "RECRUITMENT:VIEW_JOB_POSTINGS",
+  },
+  // Hidden until backend authorities are added
+  {
     label: "Daily Time Record",
     section: "dtr",
     authority: "DTR:VIEW_ATTENDANCE",
     badge: 1,
-  },
-  {
-    label: "My Payroll",
-    section: "payroll",
-    authority: "PAYROLL:VIEW_PAYSLIP",
   },
   {
     label: "My Request",
@@ -21,40 +74,19 @@ export const navConfig: NavItem[] = [
     badge: 2,
   },
   {
-    label: "Employees",
-    section: "employees",
-    authority: "EMPLOYEE_MANAGEMENT:VIEW_EMPLOYEES",
+    label: "Reports",
+    section: "reports",
+    authority: "REPORTS:VIEW_REPORTS",
   },
   {
-    label: "Attendance",
-    section: "attendance",
-    authority: "ATTENDANCE_MANAGEMENT:VIEW_ALL_ATTENDANCE",
+    label: "Upload Center",
+    section: "upload",
+    authority: "UPLOAD_CENTER:VIEW_UPLOADS",
   },
   {
-    label: "Leave Management",
-    section: "leave",
-    authority: "LEAVE_MANAGEMENT:VIEW_ALL_LEAVE_REQUESTS",
-    badge: 4,
-  },
-  {
-    label: "Recruitment",
-    section: "recruitment",
-    authority: "RECRUITMENT:VIEW_JOB_POSTINGS",
-  },
-  {
-    label: "Roles & Permissions",
-    section: "roles",
-    authority: "ROLES_AND_PERMISSIONS:VIEW_ROLES",
-  },
-  {
-    label: "Audit Log",
-    section: "audit",
-    authority: "AUDIT_LOG:VIEW_AUDIT_LOGS",
-  },
-  {
-    label: "Configuration",
-    section: "config",
-    authority: "CONFIGURATION:VIEW_CONFIG",
+    label: "Announcements",
+    section: "announcements",
+    authority: "ANNOUNCEMENTS:VIEW_ANNOUNCEMENTS",
   },
 ]
 
@@ -78,9 +110,17 @@ export const sectionTitles: Record<string, string> = {
   payroll: "Payroll",
   request: "My Request",
   leave: "Leave Management",
-  employees: "Employees",
+  team: "Team",
   attendance: "Attendance",
+  teachers: "Teachers",
+  schedules: "Schedules",
+  finance: "Finance",
+  rewards: "Rewards & Ratings",
+  reports: "Reports",
+  upload: "Upload Center",
+  announcements: "Announcements",
   recruitment: "Recruitment",
+  admin: "System",
   roles: "Roles & Permissions",
   audit: "Audit Log",
   config: "Configuration",

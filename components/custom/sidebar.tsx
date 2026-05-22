@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -26,6 +27,13 @@ import {
   Sun01Icon,
   Logout01Icon,
   Settings01Icon,
+  TeacherIcon,
+  TimeScheduleIcon,
+  Award01Icon,
+  BarChartIcon,
+  CloudUploadIcon,
+  Megaphone01Icon,
+  ArrowDown01Icon,
 } from "@hugeicons/core-free-icons"
 import { useAuthStore } from "@/store/auth-store"
 import { useLogout, useMe } from "@/hooks/use-auth"
@@ -39,17 +47,25 @@ const roleVariant: Record<string, "blue" | "purple" | "amber" | "gray"> = {
 const NAV_ICONS: Record<string, IconSvgElement> = {
   overview: GridViewIcon,
   dtr: Clock01Icon,
+  finance: CreditCardIcon,
   payroll: CreditCardIcon,
   leave: Calendar01Icon,
   request: Calendar01Icon,
   profile: UserCircleIcon,
   general: UserCircleIcon,
-  employees: UserGroup02Icon,
+  team: UserGroup02Icon,
   attendance: CheckListIcon,
   recruitment: Briefcase01Icon,
   users: UserMultiple02Icon,
   roles: UserShield01Icon,
+  teachers: TeacherIcon,
+  schedules: TimeScheduleIcon,
+  rewards: Award01Icon,
+  reports: BarChartIcon,
+  upload: CloudUploadIcon,
+  announcements: Megaphone01Icon,
   audit: Audit01Icon,
+  admin: Setting06Icon,
   config: Setting06Icon,
   security: ShieldUserIcon,
   notifications: Notification01Icon,
@@ -68,11 +84,9 @@ export function Sidebar() {
 
   const { user, apiRole, userRoleNames, authorities } = useAuthStore()
 
-  // /dashboard → [2] is undefined (overview); /dashboard/dtr → [2] is "dtr"
-  // /dashboard/settings/security → [2] is "settings", [3] is "security"
   const segments = pathname.split("/")
-  const section = segments[2] // top-level section
-  const subSection = segments[3] // settings sub-section
+  const section = segments[2]
+  const subSection = segments[3]
   const isSettings = section === "settings"
 
   const role = apiRole?.toUpperCase() ?? "EMPLOYEE"
@@ -90,23 +104,83 @@ export function Sidebar() {
   const displayName = user ? `${user.firstName} ${user.lastName}` : "—"
   const employeeId = user?.employeeId ?? ""
 
-  // Choose which nav items to display
   const items = isSettings
     ? settingsNavConfig
     : navConfig.filter((item) => hasAuthority(item.authority))
 
   function isActive(itemSection: string) {
-    if (isSettings) {
-      return (subSection ?? "general") === itemSection
-    }
+    if (isSettings) return (subSection ?? "general") === itemSection
     if (itemSection === "overview") return !section || section === "overview"
     return section === itemSection
+  }
+
+  function isChildActive(item: (typeof items)[number]) {
+    return item.children?.some((c) => isActive(c.section)) ?? false
   }
 
   function href(itemSection: string) {
     if (isSettings) return `/dashboard/settings/${itemSection}`
     if (itemSection === "overview") return "/dashboard"
     return `/dashboard/${itemSection}`
+  }
+
+  // Auto-expand groups that contain the active child
+  const defaultExpanded = items
+    .filter((item) => item.children && item.children.some((c) => isActive(c.section)))
+    .map((item) => item.section)
+
+  const [expanded, setExpanded] = useState<string[]>(defaultExpanded)
+
+  function toggleExpanded(sectionKey: string) {
+    setExpanded((prev) =>
+      prev.includes(sectionKey)
+        ? prev.filter((s) => s !== sectionKey)
+        : [...prev, sectionKey]
+    )
+  }
+
+  function NavRow({
+    item,
+    indent = false,
+  }: {
+    item: (typeof items)[number]
+    indent?: boolean
+  }) {
+    const active = isActive(item.section)
+    return (
+      <Link
+        href={href(item.section)}
+        className={cn(
+          "group mb-0.5 flex items-center gap-2.5 rounded-lg border border-transparent text-[13px] font-medium transition-all duration-150",
+          indent ? "py-1.5 pl-0 pr-2.5" : "px-2.5 py-2",
+          active
+            ? "border-primary/20 bg-primary text-primary-foreground shadow-sm"
+            : "text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
+        )}
+      >
+        <span
+          className={cn(
+            "shrink-0 transition-colors",
+            active
+              ? "text-primary-foreground"
+              : "text-muted-foreground/60 group-hover:text-muted-foreground"
+          )}
+        >
+          <NavIcon section={item.section} />
+        </span>
+        <span className="flex-1">{item.label}</span>
+        {item.badge != null && item.badge > 0 && (
+          <span
+            className={cn(
+              "flex min-w-4.5 items-center justify-center rounded-full px-1.5 py-px text-[10px] font-semibold",
+              active ? "bg-white/20 text-white" : "bg-red-500 text-white"
+            )}
+          >
+            {item.badge}
+          </span>
+        )}
+      </Link>
+    )
   }
 
   return (
@@ -132,41 +206,102 @@ export function Sidebar() {
         </div>
 
         {items.map((item) => {
-          const active = isActive(item.section)
-          return (
-            <Link
-              key={item.section}
-              href={href(item.section)}
-              className={cn(
-                "group mb-0.5 flex items-center gap-2.5 rounded-lg border border-transparent px-2.5 py-2 text-[13px] font-medium transition-all duration-150",
-                active
-                  ? "border-primary/20 bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <span
-                className={cn(
-                  "shrink-0 transition-colors",
-                  active
-                    ? "text-primary-foreground"
-                    : "text-muted-foreground/60 group-hover:text-muted-foreground"
-                )}
-              >
-                <NavIcon section={item.section} />
-              </span>
-              <span className="flex-1">{item.label}</span>
-              {item.badge != null && item.badge > 0 && (
-                <span
+          const hasChildren = item.children && item.children.length > 0
+          const isOpen = expanded.includes(item.section)
+          const childActive = isChildActive(item)
+
+          if (hasChildren) {
+            const visibleChildren = item.children!.filter((c) => hasAuthority(c.authority))
+            const active = isActive(item.section)
+            return (
+              <div key={item.section}>
+                {/* Parent row — noPage: whole row toggles; otherwise link navigates + chevron toggles */}
+                <div
                   className={cn(
-                    "flex min-w-4.5 items-center justify-center rounded-full px-1.5 py-px text-[10px] font-semibold",
-                    active ? "bg-white/20 text-white" : "bg-red-500 text-white"
+                    "group mb-0.5 flex items-center rounded-lg border border-transparent transition-all duration-150",
+                    active
+                      ? "border-primary/20 bg-primary text-primary-foreground shadow-sm"
+                      : childActive
+                        ? "border-border bg-muted text-foreground"
+                        : "text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          )
+                  {item.noPage ? (
+                    <button
+                      onClick={() => toggleExpanded(item.section)}
+                      className="flex flex-1 items-center gap-2.5 px-2.5 py-2 text-[13px] font-medium"
+                    >
+                      <span className={cn("shrink-0 transition-colors", active ? "text-primary-foreground" : childActive ? "text-foreground" : "text-muted-foreground/60 group-hover:text-muted-foreground")}>
+                        <NavIcon section={item.section} />
+                      </span>
+                      <span className="flex-1 text-left">{item.label}</span>
+                      <HugeiconsIcon
+                        icon={ArrowDown01Icon}
+                        size={12}
+                        strokeWidth={2}
+                        className={cn(
+                          "transition-transform duration-200",
+                          active ? "text-primary-foreground/70" : "text-muted-foreground/60",
+                          isOpen && "rotate-180"
+                        )}
+                      />
+                    </button>
+                  ) : (
+                    <>
+                      <Link
+                        href={href(item.section)}
+                        className="flex flex-1 items-center gap-2.5 px-2.5 py-2 text-[13px] font-medium"
+                      >
+                        <span className={cn("shrink-0 transition-colors", active ? "text-primary-foreground" : childActive ? "text-foreground" : "text-muted-foreground/60 group-hover:text-muted-foreground")}>
+                          <NavIcon section={item.section} />
+                        </span>
+                        <span className="flex-1">{item.label}</span>
+                      </Link>
+                      <button
+                        onClick={() => toggleExpanded(item.section)}
+                        className="flex h-full items-center px-2 py-2"
+                      >
+                        <HugeiconsIcon
+                          icon={ArrowDown01Icon}
+                          size={12}
+                          strokeWidth={2}
+                          className={cn(
+                            "transition-transform duration-200",
+                            active ? "text-primary-foreground/70" : "text-muted-foreground/60",
+                            isOpen && "rotate-180"
+                          )}
+                        />
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Children */}
+                {isOpen && (
+                  <div className="mb-1 ml-5 border-l-2 border-border/50">
+                    {visibleChildren.map((child, idx) => {
+                      const isLast = idx === visibleChildren.length - 1
+                      return (
+                        <div key={child.section} className="relative">
+                          {/* Mask the container border below the branch point on the last item */}
+                          {isLast && (
+                            <div className="absolute -left-0.5 top-1/2 bottom-0 z-10 w-1 bg-card" />
+                          )}
+                          {/* Curved ╰─ connector */}
+                          <div className="absolute -left-px top-0 h-1/2 w-4 rounded-bl-[8px] border-b-2 border-l-2 border-border/50" />
+                          <div className="pl-5">
+                            <NavRow item={child} indent />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          }
+
+          return <NavRow key={item.section} item={item} />
         })}
       </nav>
 
