@@ -31,6 +31,8 @@ export interface AttendanceEntry {
     | "overtime"
     | "overbreak"
     | "undertime"
+  lateMinutes?: number | null
+  policySnapshot?: { earliestClockIn?: string | null } | null
   breaks?: AttendanceBreakEntry[]
 }
 

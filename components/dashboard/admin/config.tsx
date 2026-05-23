@@ -5,6 +5,7 @@ import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { SchedulePoliciesSection } from "@/components/dashboard/admin/schedule-policies"
+import { AttendanceConfigSection } from "@/components/dashboard/admin/attendance-config"
 import { useAuthStore } from "@/store/auth-store"
 
 interface PlaceholderItem {
@@ -97,15 +98,7 @@ export function ConfigSection() {
       )}
 
       <TabsContent value="attendance">
-        <PlaceholderSection
-          title="Attendance settings"
-          description="Legacy placeholders — superseded by Schedule policy when active."
-          items={[
-            { label: "Core hours", value: "9:00 AM – 6:00 PM" },
-            { label: "Late threshold", value: "10 minutes grace" },
-            { label: "Half-day cut-off", value: "1:00 PM" },
-          ]}
-        />
+        <AttendanceConfigSection />
       </TabsContent>
 
       <TabsContent value="payroll">

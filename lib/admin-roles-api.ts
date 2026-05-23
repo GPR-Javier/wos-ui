@@ -5,11 +5,14 @@ import { api } from "./axios"
 export interface FunctionalityDef {
   id: number
   name: string
+  controlType?: "employee" | "admin"
 }
 
 export interface AccessRole {
   id: number
-  name: string
+  name?: string
+  pageName?: string
+  navGroup?: string
   functionalities: FunctionalityDef[]
 }
 
@@ -18,6 +21,7 @@ export interface AssignedFunctionality {
   functionalityId: number
   name: string
   enabled: boolean
+  controlType?: "employee" | "admin"
 }
 
 export interface AssignedAccessRole {
@@ -42,6 +46,7 @@ export interface UserRole {
   name: string
   description: string
   color?: string
+  roleType: "ADMIN" | "EMPLOYEE"
   accessRoles: AssignedAccessRole[]
 }
 
@@ -49,6 +54,7 @@ export interface UserRolePayload {
   name: string
   description: string
   color?: string
+  roleType: "ADMIN" | "EMPLOYEE"
 }
 
 // ── API calls ─────────────────────────────────────────────────────────────────

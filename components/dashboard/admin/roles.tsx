@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Fragment } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Add01Icon,
@@ -12,6 +12,7 @@ import {
   Edit01Icon,
   Clock01Icon,
   Calendar01Icon,
+  ArrowDown01Icon,
 } from "@hugeicons/core-free-icons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -85,14 +86,15 @@ function RoleFormInline({
   onCancel,
   isPending,
 }: {
-  initial?: { name: string; description: string; color?: string }
-  onSave: (name: string, description: string, color: string) => void
+  initial?: { name: string; description: string; color?: string; roleType?: "ADMIN" | "EMPLOYEE" }
+  onSave: (name: string, description: string, color: string, roleType: "ADMIN" | "EMPLOYEE") => void
   onCancel: () => void
   isPending: boolean
 }) {
   const [name, setName] = useState(initial?.name ?? "")
   const [desc, setDesc] = useState(initial?.description ?? "")
   const [color, setColor] = useState(initial?.color ?? DEFAULT_ROLE_COLOR)
+  const [isAdmin, setIsAdmin] = useState(initial?.roleType === "ADMIN")
 
   return (
     <div className="space-y-2 rounded-xl border border-border bg-card p-3 shadow-sm">
@@ -105,7 +107,7 @@ function RoleFormInline({
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && name.trim())
-              onSave(name.trim(), desc.trim(), color)
+              onSave(name.trim(), desc.trim(), color, isAdmin ? "ADMIN" : "EMPLOYEE")
             if (e.key === "Escape") onCancel()
           }}
           className="h-8 text-[12px]"
@@ -147,12 +149,26 @@ function RoleFormInline({
           />
         </div>
       </div>
+      <div>
+        <label className="flex cursor-pointer items-center gap-2">
+          <Checkbox
+            checked={isAdmin}
+            onChange={() => setIsAdmin((v) => !v)}
+          />
+          <span className="text-[11px] font-medium text-foreground">
+            Admin role
+          </span>
+          <span className="text-[10px] text-muted-foreground">
+            — grants access to team management pages
+          </span>
+        </label>
+      </div>
       <div className="flex gap-1.5 pt-1">
         <Button
           size="sm"
           className="h-7 flex-1 text-[11px]"
           disabled={!name.trim() || isPending}
-          onClick={() => onSave(name.trim(), desc.trim(), color)}
+          onClick={() => onSave(name.trim(), desc.trim(), color, isAdmin ? "ADMIN" : "EMPLOYEE")}
         >
           {isPending ? "Saving…" : initial ? "Update" : "Create"}
         </Button>
@@ -338,6 +354,9 @@ function fmtDateBadge(startDate?: string | null, endDate?: string | null) {
 
 // ── Main Component ─────────────────────────────────────────────────────────
 
+// Stable order for nav groups so the accordion sections are always predictable
+const GROUP_ORDER = ["Team", "Finance", "System", "Recruitment", "Self Service", "My Requests"]
+
 export function RolesSection() {
   const [activeId, setActiveId] = useState<number | null>(null)
   const [creating, setCreating] = useState(false)
@@ -350,6 +369,16 @@ export function RolesSection() {
   const [tempAccessTarget, setTempAccessTarget] = useState<TempTarget | null>(
     null
   )
+  // All groups open by default; click the header to toggle
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(GROUP_ORDER))
+
+  function toggleGroup(group: string) {
+    setOpenGroups((prev) => {
+      const next = new Set(prev)
+      next.has(group) ? next.delete(group) : next.add(group)
+      return next
+    })
+  }
 
   const rolesQ = useUserRoles()
   const accessRolesQ = useAccessRoles()
@@ -545,11 +574,12 @@ export function RolesSection() {
                   name: r.name,
                   description: r.description,
                   color: r.color,
+                  roleType: r.roleType,
                 }}
                 isPending={updateMutation.isPending}
-                onSave={(name, description, color) =>
+                onSave={(name, description, color, roleType) =>
                   updateMutation.mutate(
-                    { id: r.id, name, description, color },
+                    { id: r.id, name, description, color, roleType },
                     { onSuccess: () => setEditingId(null) }
                   )
                 }
@@ -609,18 +639,18 @@ export function RolesSection() {
                     >
                       {r.name}
                     </p>
-                    {r.color && (
-                      <span
-                        className="shrink-0 rounded-full border px-1.5 py-px text-[9px] leading-tight font-semibold group-hover:hidden"
-                        style={{
-                          backgroundColor: `${r.color}1a`,
-                          borderColor: `${r.color}40`,
-                          color: r.color,
-                        }}
-                      >
-                        {r.name}
-                      </span>
-                    )}
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-full px-1.5 py-px text-[9px] leading-tight font-semibold group-hover:hidden",
+                        (active?.id ?? roles[0]?.id) === r.id
+                          ? "bg-white/20 text-white"
+                          : r.roleType === "ADMIN"
+                            ? "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
+                            : "bg-sky-100 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400"
+                      )}
+                    >
+                      {r.roleType === "ADMIN" ? "Admin" : "Employee"}
+                    </span>
                   </div>
                   {r.description && (
                     <p
@@ -673,9 +703,9 @@ export function RolesSection() {
         {creating && (
           <RoleFormInline
             isPending={createMutation.isPending}
-            onSave={(name, description, color) =>
+            onSave={(name, description, color, roleType) =>
               createMutation.mutate(
-                { name, description, color },
+                { name, description, color, roleType },
                 {
                   onSuccess: (created) => {
                     setActiveId(created.id)
@@ -765,17 +795,35 @@ export function RolesSection() {
                   </p>
                 </div>
               </div>
-              {isMutating && (
-                <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                  <HugeiconsIcon
-                    icon={Loading03Icon}
-                    size={13}
-                    strokeWidth={2}
-                    className="animate-spin"
-                  />
-                  Saving…
+              <div className="flex items-center gap-4">
+                {/* Legend */}
+                <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-3 py-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-amber-400" />
+                    <span className="text-[11px] text-muted-foreground">
+                      Admin control
+                    </span>
+                  </div>
+                  <div className="h-3 w-px bg-border" />
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-sky-400" />
+                    <span className="text-[11px] text-muted-foreground">
+                      Employee control
+                    </span>
+                  </div>
                 </div>
-              )}
+                {isMutating && (
+                  <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                    <HugeiconsIcon
+                      icon={Loading03Icon}
+                      size={13}
+                      strokeWidth={2}
+                      className="animate-spin"
+                    />
+                    Saving…
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Matrix */}
@@ -805,145 +853,256 @@ export function RolesSection() {
                     </tr>
                   </thead>
                   <tbody>
-                    {accessRoles.map((ar) => {
-                      const resolvedAccessRoleId = ar.id
-                      const assigned = getAssigned(resolvedAccessRoleId)
-                      const isAssigned = !!assigned
-                      return (
-                        <tr
-                          key={resolvedAccessRoleId}
-                          className="border-b border-border/40 transition-colors hover:bg-muted/30"
-                        >
-                          <td className="py-3 pr-4 pl-8">
-                            <span className="text-[13px] font-medium">
-                              {catalogAccessRoleLabel(ar)}
-                            </span>
-                          </td>
-                          {/* Row-level toggle */}
-                          <td className="w-20 px-4 py-3 text-center">
-                            <div className="flex justify-center">
-                              <Checkbox
-                                checked={isAssigned}
-                                disabled={isMutating}
-                                onChange={() => {
-                                  if (isAssigned) {
-                                    setConfirmDisable({
-                                      accessRoleId: resolvedAccessRoleId,
-                                      label: catalogAccessRoleLabel(ar),
-                                    })
-                                    return
-                                  }
+                    {(() => {
+                      // Group access roles by navGroup from the backend
+                      const byGroup = new Map<string, typeof accessRoles>()
+                      for (const ar of accessRoles) {
+                        const g = ar.navGroup ?? "Other"
+                        if (!byGroup.has(g)) byGroup.set(g, [])
+                        byGroup.get(g)!.push(ar)
+                      }
+                      const orderedGroups = [
+                        ...GROUP_ORDER.filter((g) => byGroup.has(g)),
+                        ...[...byGroup.keys()].filter(
+                          (g) => !GROUP_ORDER.includes(g)
+                        ),
+                      ]
 
-                                  handleToggleAccessRole(resolvedAccessRoleId)
-                                }}
-                                title={
-                                  isAssigned ? "Remove access" : "Grant access"
-                                }
-                              />
-                            </div>
-                          </td>
-                          {/* Temporary access cell */}
-                          <td className="w-40 px-4 py-3 text-center">
-                            {(() => {
-                              const badge = fmtDateBadge(
-                                assigned?.startDate,
-                                assigned?.endDate
-                              )
-                              return (
-                                <div className="flex justify-center">
-                                  {!isAssigned ? (
-                                    <HugeiconsIcon
-                                      icon={Calendar01Icon}
-                                      size={14}
-                                      strokeWidth={1.8}
-                                      className="text-muted-foreground/30"
-                                    />
-                                  ) : badge ? (
-                                    <button
-                                      onClick={() =>
-                                        setTempAccessTarget({
-                                          accessRoleId: resolvedAccessRoleId,
-                                          label: catalogAccessRoleLabel(ar),
-                                          startDate: assigned?.startDate ?? "",
-                                          endDate: assigned?.endDate ?? "",
-                                          startTime: assigned?.startTime ?? "",
-                                          endTime: assigned?.endTime ?? "",
-                                        })
-                                      }
-                                      className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
-                                    >
-                                      <HugeiconsIcon
-                                        icon={Clock01Icon}
-                                        size={10}
-                                        strokeWidth={2}
-                                      />
-                                      {badge}
-                                    </button>
-                                  ) : (
-                                    <button
-                                      onClick={() =>
-                                        setTempAccessTarget({
-                                          accessRoleId: resolvedAccessRoleId,
-                                          label: catalogAccessRoleLabel(ar),
-                                          startDate: "",
-                                          endDate: "",
-                                          startTime: "",
-                                          endTime: "",
-                                        })
-                                      }
-                                      className="rounded p-1 text-muted-foreground/50 transition-colors hover:bg-muted hover:text-muted-foreground"
-                                      title="Set temporary access"
-                                    >
+                      function renderRow(ar: (typeof accessRoles)[number]) {
+                        const resolvedAccessRoleId = ar.id
+                        const assigned = getAssigned(resolvedAccessRoleId)
+                        const isAssigned = !!assigned
+
+                        const adminFuncs = ar.functionalities.filter(
+                          (f) => !f.controlType || f.controlType === "admin"
+                        )
+                        const employeeFuncs = ar.functionalities.filter(
+                          (f) => f.controlType === "employee"
+                        )
+                        const hasBoth =
+                          adminFuncs.length > 0 && employeeFuncs.length > 0
+
+                        return (
+                          <tr
+                            key={resolvedAccessRoleId}
+                            className="border-b border-border/40 transition-colors hover:bg-muted/30"
+                          >
+                            <td className="py-3 pr-4 pl-10">
+                              <span className="text-[13px] font-medium">
+                                {catalogAccessRoleLabel(ar)}
+                              </span>
+                            </td>
+                            {/* Row-level toggle */}
+                            <td className="w-20 px-4 py-3 text-center">
+                              <div className="flex justify-center">
+                                <Checkbox
+                                  checked={isAssigned}
+                                  disabled={isMutating}
+                                  onChange={() => {
+                                    if (isAssigned) {
+                                      setConfirmDisable({
+                                        accessRoleId: resolvedAccessRoleId,
+                                        label: catalogAccessRoleLabel(ar),
+                                      })
+                                      return
+                                    }
+                                    handleToggleAccessRole(resolvedAccessRoleId)
+                                  }}
+                                  title={
+                                    isAssigned ? "Remove access" : "Grant access"
+                                  }
+                                />
+                              </div>
+                            </td>
+                            {/* Temporary access cell */}
+                            <td className="w-40 px-4 py-3 text-center">
+                              {(() => {
+                                const badge = fmtDateBadge(
+                                  assigned?.startDate,
+                                  assigned?.endDate
+                                )
+                                return (
+                                  <div className="flex justify-center">
+                                    {!isAssigned ? (
                                       <HugeiconsIcon
                                         icon={Calendar01Icon}
                                         size={14}
                                         strokeWidth={1.8}
+                                        className="text-muted-foreground/30"
                                       />
-                                    </button>
-                                  )}
-                                </div>
-                              )
-                            })()}
-                          </td>
-                          <td className="px-4 py-3">
-                            {ar.functionalities.length === 0 ? (
-                              <span className="text-[12px] text-muted-foreground">
-                                No functionalities
-                              </span>
-                            ) : (
-                              <div className="flex flex-wrap gap-2">
-                                {ar.functionalities.map((f) => (
-                                  <label
-                                    key={f.id}
-                                    className="inline-flex items-center gap-2 rounded-md border border-border px-2.5 py-1"
-                                  >
-                                    <Checkbox
-                                      checked={isFuncEnabled(
-                                        resolvedAccessRoleId,
-                                        f.id
-                                      )}
-                                      disabled={isMutating}
-                                      onChange={() => {
-                                        const functionalityId =
-                                          resolveFunctionalityId(f)
-                                        if (functionalityId === null) return
-                                        handleToggleFunctionality(
+                                    ) : badge ? (
+                                      <button
+                                        onClick={() =>
+                                          setTempAccessTarget({
+                                            accessRoleId: resolvedAccessRoleId,
+                                            label: catalogAccessRoleLabel(ar),
+                                            startDate: assigned?.startDate ?? "",
+                                            endDate: assigned?.endDate ?? "",
+                                            startTime: assigned?.startTime ?? "",
+                                            endTime: assigned?.endTime ?? "",
+                                          })
+                                        }
+                                        className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
+                                      >
+                                        <HugeiconsIcon
+                                          icon={Clock01Icon}
+                                          size={10}
+                                          strokeWidth={2}
+                                        />
+                                        {badge}
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() =>
+                                          setTempAccessTarget({
+                                            accessRoleId: resolvedAccessRoleId,
+                                            label: catalogAccessRoleLabel(ar),
+                                            startDate: "",
+                                            endDate: "",
+                                            startTime: "",
+                                            endTime: "",
+                                          })
+                                        }
+                                        className="rounded p-1 text-muted-foreground/50 transition-colors hover:bg-muted hover:text-muted-foreground"
+                                        title="Set temporary access"
+                                      >
+                                        <HugeiconsIcon
+                                          icon={Calendar01Icon}
+                                          size={14}
+                                          strokeWidth={1.8}
+                                        />
+                                      </button>
+                                    )}
+                                  </div>
+                                )
+                              })()}
+                            </td>
+                            {/* Functionalities — split admin / employee */}
+                            <td className="px-4 py-3">
+                              {ar.functionalities.length === 0 ? (
+                                <span className="text-[12px] text-muted-foreground">
+                                  No functionalities
+                                </span>
+                              ) : (
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  {adminFuncs.map((f) => (
+                                    <label
+                                      key={f.id}
+                                      title="Admin control"
+                                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-amber-200/60 bg-amber-50/50 px-2.5 py-1 dark:border-amber-700/30 dark:bg-amber-900/10"
+                                    >
+                                      <span className="size-1.5 shrink-0 rounded-full bg-amber-400" />
+                                      <Checkbox
+                                        checked={isFuncEnabled(
                                           resolvedAccessRoleId,
-                                          functionalityId
-                                        )
-                                      }}
-                                    />
-                                    <span className="text-[12px]">
-                                      {functionalityLabel(f)}
-                                    </span>
-                                  </label>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                        </tr>
+                                          f.id
+                                        )}
+                                        disabled={isMutating}
+                                        onChange={() => {
+                                          const fid = resolveFunctionalityId(f)
+                                          if (fid === null) return
+                                          handleToggleFunctionality(
+                                            resolvedAccessRoleId,
+                                            fid
+                                          )
+                                        }}
+                                      />
+                                      <span className="text-[12px]">
+                                        {functionalityLabel(f)}
+                                      </span>
+                                    </label>
+                                  ))}
+                                  {hasBoth && (
+                                    <div className="mx-1 self-stretch">
+                                      <div className="h-full min-h-6 w-px bg-border" />
+                                    </div>
+                                  )}
+                                  {employeeFuncs.map((f) => (
+                                    <label
+                                      key={f.id}
+                                      title="Employee control"
+                                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-sky-200/60 bg-sky-50/50 px-2.5 py-1 dark:border-sky-700/30 dark:bg-sky-900/10"
+                                    >
+                                      <span className="size-1.5 shrink-0 rounded-full bg-sky-400" />
+                                      <Checkbox
+                                        checked={isFuncEnabled(
+                                          resolvedAccessRoleId,
+                                          f.id
+                                        )}
+                                        disabled={isMutating}
+                                        onChange={() => {
+                                          const fid = resolveFunctionalityId(f)
+                                          if (fid === null) return
+                                          handleToggleFunctionality(
+                                            resolvedAccessRoleId,
+                                            fid
+                                          )
+                                        }}
+                                      />
+                                      <span className="text-[12px]">
+                                        {functionalityLabel(f)}
+                                      </span>
+                                    </label>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      }
+
+                      return (
+                        <>
+                          {orderedGroups.map((group) => {
+                            const rows = byGroup.get(group)!
+                            const isOpen = openGroups.has(group)
+                            const isEmployee =
+                              group === "Self Service" ||
+                              group === "My Requests"
+                            return (
+                              <Fragment key={group}>
+                                {/* Accordion group header */}
+                                <tr>
+                                  <td colSpan={4} className="p-0">
+                                    <button
+                                      onClick={() => toggleGroup(group)}
+                                      className="flex w-full items-center gap-2.5 border-b border-border bg-muted/30 px-5 py-2 text-left transition-colors hover:bg-muted/50"
+                                    >
+                                      <HugeiconsIcon
+                                        icon={ArrowDown01Icon}
+                                        size={11}
+                                        strokeWidth={2.5}
+                                        className={cn(
+                                          "shrink-0 text-muted-foreground transition-transform duration-200",
+                                          !isOpen && "-rotate-90"
+                                        )}
+                                      />
+                                      <span
+                                        className={cn(
+                                          "size-1.5 shrink-0 rounded-full",
+                                          isEmployee
+                                            ? "bg-sky-400"
+                                            : "bg-amber-400"
+                                        )}
+                                      />
+                                      <span className="text-[11px] font-semibold tracking-wider text-foreground/70 uppercase">
+                                        {group}
+                                      </span>
+                                      <span className="ml-auto text-[10px] text-muted-foreground">
+                                        {rows.length}{" "}
+                                        {rows.length === 1 ? "role" : "roles"}
+                                      </span>
+                                    </button>
+                                  </td>
+                                </tr>
+                                {/* Accordion rows */}
+                                {isOpen && rows.map(renderRow)}
+                              </Fragment>
+                            )
+                          })}
+                        </>
                       )
-                    })}
+                    })()}
                   </tbody>
                 </table>
               </div>

@@ -8,6 +8,7 @@ const PAYROLL_BACKEND =
 
 // Path-prefix → service routing table. First segment after /api/ decides.
 const SERVICE_ROUTES: Record<string, string> = {
+  hr: HR_BACKEND,
   teachers: HR_BACKEND,
   schedules: HR_BACKEND,
   "schedule-policies": HR_BACKEND,

@@ -3,7 +3,11 @@
 import { StatCard } from "@/components/custom/stat-card"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardHeader, CardTitle, CardAction, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 import { useAuditLogs, useAdminStats } from "@/hooks/use-admin-audit"
+import { useRouter } from "next/navigation"
 
 const severityVariant: Record<string, "red" | "amber" | "gray"> = {
   critical: "red",
@@ -11,9 +15,16 @@ const severityVariant: Record<string, "red" | "amber" | "gray"> = {
   info: "gray",
 }
 
+const severityDot: Record<string, string> = {
+  critical: "bg-danger",
+  warning: "bg-warning",
+  info: "bg-primary",
+}
+
 export function OverviewSection() {
+  const router = useRouter()
   const statsQ = useAdminStats()
-  const logsQ = useAuditLogs({ size: 4 })
+  const logsQ = useAuditLogs({ size: 5 })
 
   const stats = statsQ.data
   const logs = logsQ.data?.content ?? []
@@ -116,6 +127,60 @@ export function OverviewSection() {
           )}
         </div>
       </div>
+
+      {/* Recent activity timeline */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent activity</CardTitle>
+          <CardAction>
+            <button
+              className="text-xs text-primary hover:underline"
+              onClick={() => router.push("/dashboard/audit")}
+            >
+              View audit log
+            </button>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {logsQ.isLoading ? (
+            [0, 1, 2].map((i) => (
+              <div key={i} className="flex items-start gap-3">
+                <Skeleton className="mt-1 size-2 shrink-0 rounded-full" />
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-3 w-40" />
+                  <Skeleton className="h-2.5 w-64" />
+                </div>
+                <Skeleton className="h-2.5 w-24" />
+              </div>
+            ))
+          ) : logs.length === 0 ? (
+            <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-[12px] text-muted-foreground">
+              No recent activity.
+            </p>
+          ) : (
+            logs.map((log) => (
+              <div key={log.id} className="flex items-start gap-3">
+                <div
+                  className={cn(
+                    "mt-1 size-2 shrink-0 rounded-full",
+                    severityDot[log.severity] ?? "bg-primary"
+                  )}
+                />
+                <div className="flex-1">
+                  <p className="text-[13px] font-medium">{log.action}</p>
+                  <p className="text-[12px] text-muted-foreground">
+                    {log.target}
+                    {log.user ? ` · by ${log.user}` : ""}
+                  </p>
+                </div>
+                <span className="shrink-0 text-[12px] text-muted-foreground">
+                  {log.timestamp}
+                </span>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

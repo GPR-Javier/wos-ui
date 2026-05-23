@@ -52,3 +52,12 @@ export function useHrStats() {
     queryFn: hrApi.stats,
   })
 }
+
+export function useHrEmployee(id: number) {
+  return useQuery({
+    queryKey: ["hr", "employees", id],
+    queryFn: () => hrApi.employee(id),
+    enabled: id > 0,
+    retry: false,
+  })
+}

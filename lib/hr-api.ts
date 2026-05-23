@@ -60,6 +60,9 @@ export const hrApi = {
       >("/hr/employees", { params: { page: 0, size: 20, ...params } })
       .then((r) => r.data),
 
+  employee: (id: number) =>
+    api.get<HrEmployee>(`/hr/employees/${id}`).then((r) => r.data),
+
   leaveRequests: (
     params: { page?: number; size?: number; status?: string } = {}
   ) =>

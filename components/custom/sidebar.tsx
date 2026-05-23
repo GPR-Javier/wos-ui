@@ -33,6 +33,10 @@ import {
   CloudUploadIcon,
   Megaphone01Icon,
   ArrowDown01Icon,
+  Clock03Icon,
+  FileManagementIcon,
+  Certificate01Icon,
+  Timer02Icon,
 } from "@hugeicons/core-free-icons"
 import { useAuthStore } from "@/store/auth-store"
 import { useLogout, useMe } from "@/hooks/use-auth"
@@ -60,6 +64,16 @@ const NAV_ICONS: Record<string, IconSvgElement> = {
   employees: UserMultiple02Icon,
   schedules: TimeScheduleIcon,
   "schedule-changes": Calendar01Icon,
+  "my-requests": CheckListIcon,
+  "my-overtime": Timer02Icon,
+  "my-coe": Certificate01Icon,
+  "my-or": FileManagementIcon,
+  "my-change-time": Clock03Icon,
+  "my-schedule": TimeScheduleIcon,
+  "change-time": Clock03Icon,
+  or: FileManagementIcon,
+  coe: Certificate01Icon,
+  overtime: Timer02Icon,
   rewards: Award01Icon,
   reports: BarChartIcon,
   upload: CloudUploadIcon,

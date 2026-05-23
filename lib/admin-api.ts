@@ -88,7 +88,32 @@ export interface AdminStats {
   criticalAlerts: number
 }
 
+export interface TeamAttendanceRecord {
+  id: number
+  userId: number
+  employeeId: string
+  firstName: string
+  lastName: string
+  date: string          // YYYY-MM-DD
+  day: string           // "Mon", "Tue", ...
+  timeIn: string | null // "hh:mm a"
+  timeOut: string | null
+  hoursWorked: string   // "7h 30m" or "—"
+  status: string        // "present" | "late" | "absent" | "leave" | ...
+  lateMinutes: number | null
+  shift: string         // "day" | "graveyard"
+}
+
 // ── API calls ─────────────────────────────────────────────────────────────────
+
+export const adminAttendanceApi = {
+  team: (params: { date?: string; page?: number; size?: number } = {}) =>
+    api
+      .get<PageResponse<TeamAttendanceRecord>>("/attendance/team", {
+        params: { page: 0, size: 50, ...params },
+      })
+      .then((r) => r.data),
+}
 
 export const adminAuditApi = {
   list: (params: { page?: number; size?: number; search?: string } = {}) =>

@@ -21,9 +21,45 @@ import { PerformanceTab } from "./performance-tab"
 import { PolicyTab } from "./policy-tab"
 import { employees } from "@/lib/mock-data"
 import { useAuthStore } from "@/store/auth-store"
+import { useHrEmployee } from "@/hooks/use-hr"
+import type { HrEmployee } from "@/lib/hr-api"
+import type { Employee } from "@/lib/types"
 
 interface Props {
   employeeId: string
+}
+
+function toEmployee(hr: HrEmployee): Employee {
+  const name = `${hr.firstName} ${hr.lastName}`.trim()
+  const first = hr.firstName?.[0] ?? ""
+  const last = hr.lastName?.[0] ?? ""
+  return {
+    id: String(hr.id),
+    name,
+    initials: (first + last).toUpperCase(),
+    email: hr.email,
+    department: hr.department,
+    position: hr.position,
+    role: "employee",
+    status: hr.status,
+    startDate: hr.startDate,
+    employeeId: hr.employeeId,
+  }
+}
+
+function SkeletonHeader() {
+  return (
+    <div className="flex items-start gap-4">
+      <div className="mt-0.5 size-8 animate-pulse rounded-lg bg-muted" />
+      <div className="flex flex-1 items-center gap-4">
+        <div className="size-12 shrink-0 animate-pulse rounded-full bg-muted" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-40 animate-pulse rounded bg-muted" />
+          <div className="h-3 w-64 animate-pulse rounded bg-muted" />
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function EmployeeDetailView({ employeeId }: Props) {
@@ -32,21 +68,22 @@ export function EmployeeDetailView({ employeeId }: Props) {
     s.authorities.includes("SCHEDULE_POLICY:VIEW")
   )
 
-  const emp =
-    employees.find(
-      (e) => e.employeeId === employeeId || String(e.id) === employeeId
-    ) ?? employees[0]
+  const numericId = Number(employeeId)
+  const isNumeric = Number.isFinite(numericId) && numericId > 0
 
-  // The policy resolver hits the real backend by numeric user id. The URL param
-  // may be either a numeric id or a string employee code (e.g. "EMP-001"); fall
-  // back to the mock record's id when the URL isn't numeric.
-  const fromUrl = Number(employeeId)
-  const fromMock = Number(emp.id)
-  const policyUserId = Number.isFinite(fromUrl)
-    ? fromUrl
-    : Number.isFinite(fromMock)
-      ? fromMock
-      : 0
+  const { data: apiEmployee, isLoading, isError } = useHrEmployee(
+    isNumeric ? numericId : 0
+  )
+
+  // Resolve the employee record: API data takes priority for numeric IDs,
+  // fall back to mock list for employee-code style IDs (e.g. "EMP-2847").
+  const emp: Employee = apiEmployee
+    ? toEmployee(apiEmployee)
+    : (employees.find(
+        (e) => e.employeeId === employeeId || String(e.id) === employeeId
+      ) ?? employees[0])
+
+  const policyUserId = isNumeric ? numericId : Number(emp.id) || 0
 
   const statusVariant =
     emp.status === "active"
@@ -59,6 +96,36 @@ export function EmployeeDetailView({ employeeId }: Props) {
     emp.status === "on-leave"
       ? "On leave"
       : emp.status.charAt(0).toUpperCase() + emp.status.slice(1)
+
+  if (isLoading && isNumeric) {
+    return (
+      <div className="space-y-6">
+        <SkeletonHeader />
+        <div className="h-10 w-full animate-pulse rounded-lg bg-muted" />
+        <div className="h-64 w-full animate-pulse rounded-xl bg-muted" />
+      </div>
+    )
+  }
+
+  if (isError && isNumeric && !apiEmployee) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-start gap-4">
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={() => router.back()}
+            className="mt-0.5 shrink-0"
+          >
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={14} strokeWidth={2} />
+          </Button>
+        </div>
+        <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
+          Employee #{employeeId} not found.
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
