@@ -355,7 +355,7 @@ function fmtDateBadge(startDate?: string | null, endDate?: string | null) {
 // ── Main Component ─────────────────────────────────────────────────────────
 
 // Stable order for nav groups so the accordion sections are always predictable
-const GROUP_ORDER = ["Team", "Finance", "System", "Recruitment", "Self Service", "My Requests"]
+const GROUP_ORDER = ["Team", "Requests", "Finance", "Business", "System", "Recruitment", "Self Service", "Request"]
 
 export function RolesSection() {
   const [activeId, setActiveId] = useState<number | null>(null)
@@ -1058,6 +1058,7 @@ export function RolesSection() {
                             const isOpen = openGroups.has(group)
                             const isEmployee =
                               group === "Self Service" ||
+                              group === "Request" ||
                               group === "My Requests"
                             return (
                               <Fragment key={group}>

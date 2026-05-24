@@ -20,25 +20,28 @@ export const navConfig: NavItem[] = [
         authority: "SCHEDULE_MANAGEMENT:VIEW_SCHEDULES",
       },
       {
+        label: "Employees",
+        section: "employees",
+        authority: "EMPLOYEE_MANAGEMENT:VIEW_EMPLOYEES",
+      },
+    ],
+  },
+  {
+    label: "Requests",
+    section: "requests",
+    authority: null,
+    noPage: true,
+    children: [
+      {
         label: "Leave Management",
         section: "leave",
         authority: "LEAVE_MANAGEMENT:VIEW_ALL_LEAVE_REQUESTS",
         badge: 4,
       },
       {
-        label: "Employees",
-        section: "employees",
-        authority: "EMPLOYEE_MANAGEMENT:VIEW_EMPLOYEES",
-      },
-      {
-        label: "Change Time In/Time Out",
-        section: "change-time",
-        authority: "CHANGE_TIME_MANAGEMENT:VIEW_ALL",
-      },
-      {
-        label: "OR",
-        section: "or",
-        authority: "OR_MANAGEMENT:VIEW_ALL",
+        label: "Overtime",
+        section: "overtime",
+        authority: "OVERTIME_MANAGEMENT:VIEW_ALL",
       },
       {
         label: "COE",
@@ -46,9 +49,19 @@ export const navConfig: NavItem[] = [
         authority: "COE_MANAGEMENT:VIEW_ALL",
       },
       {
-        label: "Overtime",
-        section: "overtime",
-        authority: "OVERTIME_MANAGEMENT:VIEW_ALL",
+        label: "Change Time In/Time Out",
+        section: "change-time",
+        authority: "CHANGE_TIME_MANAGEMENT:VIEW_ALL",
+      },
+      {
+        label: "Schedule Changes",
+        section: "schedule-changes",
+        authority: "SCHEDULE_CHANGE_REQUEST:VIEW_ALL",
+      },
+      {
+        label: "Salary Disputes",
+        section: "salary-disputes",
+        authority: "SALARY_DISPUTE_MANAGEMENT:VIEW_ALL",
       },
     ],
   },
@@ -71,6 +84,39 @@ export const navConfig: NavItem[] = [
     ],
   },
   {
+    label: "Business",
+    section: "business",
+    authority: null,
+    noPage: true,
+    children: [
+      {
+        label: "OR",
+        section: "or",
+        authority: "OR_MANAGEMENT:VIEW_ALL",
+      },
+      {
+        label: "Permits",
+        section: "permits",
+        authority: "PERMITS:VIEW_ALL",
+      },
+      {
+        label: "Business Trip",
+        section: "business-trip",
+        authority: "BUSINESS_TRIP:VIEW_ALL",
+      },
+      {
+        label: "Expense Reports",
+        section: "expenses",
+        authority: "EXPENSE_REPORTS:VIEW_ALL",
+      },
+      {
+        label: "Contracts",
+        section: "contracts",
+        authority: "CONTRACTS:VIEW_ALL",
+      },
+    ],
+  },
+  {
     label: "System",
     section: "admin",
     authority: "CONFIGURATION:VIEW_CONFIG",
@@ -80,11 +126,6 @@ export const navConfig: NavItem[] = [
         label: "Configuration",
         section: "config",
         authority: "CONFIGURATION:VIEW_CONFIG",
-      },
-      {
-        label: "Schedule Change Requests",
-        section: "schedule-changes",
-        authority: "SCHEDULE_CHANGE_REQUEST:VIEW_ALL",
       },
       {
         label: "Roles & Permissions",
@@ -111,13 +152,18 @@ export const navConfig: NavItem[] = [
     badge: 1,
   },
   {
-    label: "My Requests",
+    label: "Request",
     section: "my-requests",
     authority: null,
     noPage: true,
     children: [
       {
-        label: "My Leave",
+        label: "Change Time In/Time Out",
+        section: "my-change-time",
+        authority: "CHANGE_TIME_REQUEST:VIEW_OWN",
+      },
+      {
+        label: "File Leave",
         section: "request",
         authority: "LEAVE:VIEW_OWN_LEAVE",
         badge: 2,
@@ -128,24 +174,19 @@ export const navConfig: NavItem[] = [
         authority: "OVERTIME:VIEW_OWN",
       },
       {
+        label: "Change Schedule",
+        section: "my-schedule",
+        authority: "SCHEDULE_CHANGE_REQUEST:VIEW_OWN",
+      },
+      {
+        label: "Salary Dispute",
+        section: "my-salary-dispute",
+        authority: "SALARY_DISPUTE:VIEW_OWN",
+      },
+      {
         label: "COE",
         section: "my-coe",
         authority: "CERTIFICATE_OF_EMPLOYMENT:VIEW_OWN",
-      },
-      {
-        label: "OR",
-        section: "my-or",
-        authority: "OFFICIAL_BUSINESS:VIEW_OWN",
-      },
-      {
-        label: "Change Time In/Time Out",
-        section: "my-change-time",
-        authority: "CHANGE_TIME_REQUEST:VIEW_OWN",
-      },
-      {
-        label: "Schedule",
-        section: "my-schedule",
-        authority: "SCHEDULE_CHANGE_REQUEST:VIEW_OWN",
       },
     ],
   },
@@ -205,6 +246,15 @@ export const sectionTitles: Record<string, string> = {
   "my-or": "OR Requests",
   "my-change-time": "Change Time In/Time Out",
   "my-schedule": "Schedule Change Request",
+  "my-salary-dispute": "Salary Dispute",
+  "salary-disputes": "Salary Disputes",
+  requests: "Requests",
+  business: "Business",
+  receipts: "Official Receipts",
+  permits: "Permits",
+  "business-trip": "Business Trip",
+  expenses: "Expense Reports",
+  contracts: "Contracts",
   schedules: "Schedules",
   finance: "Finance",
   rewards: "Rewards & Ratings",
