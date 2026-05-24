@@ -40,10 +40,10 @@ function buildForwardHeaders(request: NextRequest) {
   headers.delete("host")
   headers.delete("content-length")
 
-  if (!headers.get("authorization")) {
-    const accessToken = request.cookies.get("access_token")?.value
-    if (accessToken) headers.set("authorization", `Bearer ${accessToken}`)
-  }
+  // The browser's Cookie header (containing access_token) is already forwarded
+  // by new Headers(request.headers) above. All backends read the cookie first,
+  // so adding a duplicate Authorization: Bearer header is redundant and doubles
+  // the header size — the JWT alone is ~7 KB which blows past Tomcat's 8 KB limit.
 
   return headers
 }

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/User/Documents/development/Work-OS/wos-auth/**)",
+      "Read(//c/Users/User/Documents/development/Work-OS/wos-common/**)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-common\\src\\main\\java\\com\\gpm\\common\\converter",
+      "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-common\\src\\main\\java\\com\\gpm\\common\\entity",
+      "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-auth\\src\\main\\java\\com\\gpm\\auth\\security",
+      "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-auth\\src\\main\\java\\com\\gpm\\auth\\service"
+    ]
+  }
+}

@@ -25,6 +25,8 @@ export function useMe() {
     queryFn: authApi.me,
     enabled: !!apiRole,
     retry: false,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   })
 
   useEffect(() => {
@@ -90,15 +92,16 @@ export function useSwitchRole() {
 
 export function useLogout() {
   const qc = useQueryClient()
-  const router = useRouter()
   const { clear } = useAuthStore()
 
   return useMutation({
-    mutationFn: () => authApi.logout(), // server clears cookies; browser sends them automatically
+    mutationFn: () => authApi.logout(),
     onSettled: () => {
       clear()
       qc.clear()
-      router.replace("/auth/login")
+      // Hard redirect: unloads the current page immediately so React never
+      // re-renders the dashboard with cleared auth state (no flash).
+      window.location.replace("/auth/login")
     },
   })
 }
