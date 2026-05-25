@@ -54,20 +54,82 @@ export interface CreateKpiPayload {
   period: string
 }
 
+// ── Salary Grades (admin-configured) ─────────────────────────────────────────
+
+export interface SalaryGrade {
+  id: number
+  code: string              // e.g. "SG-1", "Grade 5"
+  name?: string | null      // e.g. "Entry Level", "Mid Level"
+  minSalary: number
+  maxSalary: number
+  baseSalary: number
+  active: boolean
+}
+
+export interface CreateSalaryGradePayload {
+  code: string
+  name?: string | null
+  minSalary: number
+  baseSalary: number
+  maxSalary: number
+}
+
 // ── Job Positions (admin-configured) ─────────────────────────────────────────
+
+/** A salary grade as embedded inside a JobPosition response */
+export interface PositionSalaryGrade {
+  id: number
+  code: string
+  name?: string | null
+  minSalary: number
+  baseSalary: number
+  maxSalary: number
+  isDefault: boolean
+  effectiveDate?: string | null
+}
 
 export interface JobPosition {
   id: number
   title: string
   department?: string | null
-  level?: string | null       // e.g. "Junior", "Mid", "Senior"
-  isActive: boolean
+  level?: string | null
+  active: boolean
+  /** Many-to-many: all salary grades linked to this position */
+  salaryGrades: PositionSalaryGrade[]
 }
 
 export interface CreateJobPositionPayload {
   title: string
   department?: string | null
   level?: string | null
+}
+
+// ── User Positions (employee ↔ job position junction) ────────────────────────
+
+export interface UserPosition {
+  id: number
+  userId: number
+  position: {
+    id: number
+    title: string
+    department?: string | null
+    level?: string | null
+    salaryGrades: PositionSalaryGrade[]
+  }
+  primary: boolean
+  startDate?: string | null
+  endDate?: string | null
+  active: boolean
+  assignedBy?: string | null
+  assignedAt: string
+  removedBy?: string | null
+  removedAt?: string | null
+}
+
+export interface AssignPositionPayload {
+  jobPositionId: number
+  primary: boolean
+  startDate?: string | null
 }
 
 // ── Career Milestones ─────────────────────────────────────────────────────────
@@ -188,6 +250,38 @@ export const employeeProfileApi = {
 
   deletePosition: (id: number) =>
     api.delete(`/admin/positions/${id}`),
+
+  linkGradeToPosition: (positionId: number, salaryGradeId: number, isDefault: boolean) =>
+    api.post<JobPosition>(`/admin/positions/${positionId}/salary-grades`, { salaryGradeId, isDefault }).then((r) => r.data),
+
+  unlinkGradeFromPosition: (positionId: number, gradeId: number) =>
+    api.delete(`/admin/positions/${positionId}/salary-grades/${gradeId}`),
+
+  // Salary Grades — admin-managed
+  listSalaryGrades: () =>
+    api.get<SalaryGrade[]>("/admin/salary-grades").then((r) => r.data),
+
+  createSalaryGrade: (payload: CreateSalaryGradePayload) =>
+    api.post<SalaryGrade>("/admin/salary-grades", payload).then((r) => r.data),
+
+  updateSalaryGrade: (id: number, payload: Partial<CreateSalaryGradePayload>) =>
+    api.put<SalaryGrade>(`/admin/salary-grades/${id}`, payload).then((r) => r.data),
+
+  deleteSalaryGrade: (id: number) =>
+    api.delete(`/admin/salary-grades/${id}`),
+
+  // User Positions — employee ↔ position junction
+  listUserPositions: (userId: number) =>
+    api.get<UserPosition[]>(`/hr/employees/${userId}/positions`).then((r) => r.data),
+
+  assignPosition: (userId: number, payload: AssignPositionPayload) =>
+    api.post<UserPosition>(`/hr/employees/${userId}/positions`, payload).then((r) => r.data),
+
+  setPrimaryPosition: (userId: number, positionId: number) =>
+    api.patch<UserPosition>(`/hr/employees/${userId}/positions/${positionId}/set-primary`).then((r) => r.data),
+
+  removePosition: (userId: number, positionId: number) =>
+    api.delete(`/hr/employees/${userId}/positions/${positionId}`),
 }
 
 // ── Display helpers ───────────────────────────────────────────────────────────

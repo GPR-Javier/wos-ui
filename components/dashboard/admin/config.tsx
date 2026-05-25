@@ -15,6 +15,11 @@ import {
   TimeScheduleIcon,
   Setting06Icon,
   CheckmarkCircle01Icon,
+  Add01Icon,
+  PencilEdit01Icon,
+  Tick02Icon,
+  Cancel01Icon,
+  Delete02Icon,
 } from "@hugeicons/core-free-icons"
 import {
   Select,
@@ -38,15 +43,11 @@ import {
   useCreateJobPosition,
   useUpdateJobPosition,
   useDeleteJobPosition,
+  useSalaryGrades,
+  useCreateSalaryGrade,
+  useUpdateSalaryGrade,
+  useDeleteSalaryGrade,
 } from "@/hooks/use-employee-profile"
-import { HugeiconsIcon as HI } from "@hugeicons/react"
-import {
-  Add01Icon,
-  PencilEdit01Icon,
-  Tick02Icon,
-  Cancel01Icon,
-  Delete02Icon,
-} from "@hugeicons/core-free-icons"
 
 // ── PlaceholderSection ─────────────────────────────────────────────────────
 
@@ -524,6 +525,7 @@ export function ConfigSection() {
         {canEditPayroll && <TabsTrigger value="payroll">Payroll</TabsTrigger>}
         {canEditLeave && <TabsTrigger value="leave">Leave</TabsTrigger>}
         <TabsTrigger value="positions">Positions</TabsTrigger>
+        <TabsTrigger value="salary-grades">Salary Grades</TabsTrigger>
       </TabsList>
 
       {canViewSchedulePolicy && (
@@ -588,7 +590,228 @@ export function ConfigSection() {
       <TabsContent value="positions">
         <PositionsSection />
       </TabsContent>
+
+      <TabsContent value="salary-grades">
+        <SalaryGradesSection />
+      </TabsContent>
     </Tabs>
+  )
+}
+
+// ── Salary Grades Management ───────────────────────────────────────────────────
+
+function fmtPeso(n: number) {
+  return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(n)
+}
+
+type GradeForm = { code: string; name: string; minSalary: string; maxSalary: string; baseSalary: string }
+const EMPTY_GRADE_FORM: GradeForm = { code: "", name: "", minSalary: "", maxSalary: "", baseSalary: "" }
+
+function SalaryGradesSection() {
+  const { data: grades = [], isLoading } = useSalaryGrades()
+  const createMut = useCreateSalaryGrade()
+  const updateMut = useUpdateSalaryGrade()
+  const deleteMut = useDeleteSalaryGrade()
+
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState<GradeForm>(EMPTY_GRADE_FORM)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editForm, setEditForm] = useState<GradeForm>(EMPTY_GRADE_FORM)
+
+  const busy = createMut.isPending || updateMut.isPending || deleteMut.isPending
+
+  function toPayload(f: GradeForm) {
+    return {
+      code: f.code.trim(),
+      name: f.name.trim() || null,
+      minSalary: Number(f.minSalary) || 0,
+      maxSalary: Number(f.maxSalary) || 0,
+      baseSalary: Number(f.baseSalary) || 0,
+    }
+  }
+
+  function handleCreate() {
+    if (!form.code.trim()) return
+    createMut.mutate(toPayload(form), {
+      onSuccess: () => { setAdding(false); setForm(EMPTY_GRADE_FORM) },
+    })
+  }
+
+  function handleUpdate() {
+    if (!editingId || !editForm.code.trim()) return
+    updateMut.mutate(
+      { id: editingId, payload: toPayload(editForm) },
+      { onSuccess: () => setEditingId(null) }
+    )
+  }
+
+  function GradeFormRow({
+    f,
+    setF,
+    onSave,
+    onCancel,
+  }: {
+    f: GradeForm
+    setF: (v: GradeForm) => void
+    onSave: () => void
+    onCancel: () => void
+  }) {
+    return (
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2.5">
+        <Input
+          autoFocus
+          className="h-8 w-24 text-[13px]"
+          placeholder="Code e.g. SG-1"
+          value={f.code}
+          onChange={(e) => setF({ ...f, code: e.target.value })}
+          onKeyDown={(e) => { if (e.key === "Enter") onSave(); if (e.key === "Escape") onCancel() }}
+        />
+        <Input
+          className="h-8 min-w-28 flex-1 text-[13px]"
+          placeholder="Name e.g. Entry Level (optional)"
+          value={f.name}
+          onChange={(e) => setF({ ...f, name: e.target.value })}
+        />
+        <Input
+          className="h-8 w-32 text-[13px]"
+          placeholder="Min salary"
+          type="number"
+          min={0}
+          value={f.minSalary}
+          onChange={(e) => setF({ ...f, minSalary: e.target.value })}
+        />
+        <Input
+          className="h-8 w-32 text-[13px]"
+          placeholder="Base salary"
+          type="number"
+          min={0}
+          value={f.baseSalary}
+          onChange={(e) => setF({ ...f, baseSalary: e.target.value })}
+        />
+        <Input
+          className="h-8 w-32 text-[13px]"
+          placeholder="Max salary"
+          type="number"
+          min={0}
+          value={f.maxSalary}
+          onChange={(e) => setF({ ...f, maxSalary: e.target.value })}
+        />
+        <button
+          onClick={onSave}
+          disabled={busy || !f.code.trim()}
+          className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
+        >
+          <HugeiconsIcon icon={Tick02Icon} size={13} strokeWidth={2} />
+        </button>
+        <button
+          onClick={onCancel}
+          className="flex size-7 shrink-0 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted"
+        >
+          <HugeiconsIcon icon={Cancel01Icon} size={13} strokeWidth={2} />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[13px] font-semibold">Salary Grades</p>
+          <p className="mt-0.5 text-[12px] text-muted-foreground">
+            Define pay bands per grade. Assign a grade to each Job Position — payroll uses the base salary as the employee&apos;s computed base pay.
+          </p>
+        </div>
+        {!adding && (
+          <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
+            <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} className="mr-1.5" />
+            Add Grade
+          </Button>
+        )}
+      </div>
+
+      {adding && (
+        <GradeFormRow
+          f={form}
+          setF={setForm}
+          onSave={handleCreate}
+          onCancel={() => { setAdding(false); setForm(EMPTY_GRADE_FORM) }}
+        />
+      )}
+
+      {isLoading ? (
+        <p className="text-[13px] text-muted-foreground">Loading grades…</p>
+      ) : grades.length === 0 && !adding ? (
+        <div className="rounded-xl border border-dashed p-8 text-center">
+          <p className="text-[13px] text-muted-foreground">No salary grades configured yet.</p>
+          <p className="mt-1 text-[12px] text-muted-foreground/60">Click &ldquo;Add Grade&rdquo; to define your first pay band.</p>
+        </div>
+      ) : (
+        <div className="rounded-xl border bg-card">
+          {/* Column headers */}
+          <div className="grid grid-cols-[80px_1fr_140px_140px_140px_64px] items-center gap-3 border-b border-border px-4 py-2">
+            <p className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">Code</p>
+            <p className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">Name</p>
+            <p className="text-right text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">Min</p>
+            <p className="text-right text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">Base</p>
+            <p className="text-right text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">Max</p>
+            <span />
+          </div>
+
+          <div className="divide-y divide-border/60">
+            {grades.map((g) => (
+              <div key={g.id}>
+                {editingId === g.id ? (
+                  <div className="px-4 py-2.5">
+                    <GradeFormRow
+                      f={editForm}
+                      setF={setEditForm}
+                      onSave={handleUpdate}
+                      onCancel={() => setEditingId(null)}
+                    />
+                  </div>
+                ) : (
+                  <div className="group grid grid-cols-[80px_1fr_140px_140px_140px_64px] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/30">
+                    <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
+                      {g.code}
+                    </span>
+                    <p className="text-[13px] text-muted-foreground">{g.name ?? <span className="text-muted-foreground/40">—</span>}</p>
+                    <p className="text-right text-[12px] text-muted-foreground">{fmtPeso(g.minSalary)}</p>
+                    <p className="text-right text-[13px] font-medium">{fmtPeso(g.baseSalary)}</p>
+                    <p className="text-right text-[12px] text-muted-foreground">{fmtPeso(g.maxSalary)}</p>
+                    <div className="flex shrink-0 items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        onClick={() => {
+                          setEditingId(g.id)
+                          setEditForm({
+                            code: g.code,
+                            name: g.name ?? "",
+                            minSalary: String(g.minSalary),
+                            maxSalary: String(g.maxSalary),
+                            baseSalary: String(g.baseSalary),
+                          })
+                        }}
+                        className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        <HugeiconsIcon icon={PencilEdit01Icon} size={12} strokeWidth={2} />
+                      </button>
+                      <button
+                        onClick={() => deleteMut.mutate(g.id)}
+                        disabled={busy}
+                        className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 disabled:opacity-40"
+                      >
+                        <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={2} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -596,31 +819,43 @@ export function ConfigSection() {
 
 const LEVEL_OPTIONS = ["", "Junior", "Mid", "Senior", "Lead", "Principal", "Manager", "Director"]
 
+type PosForm = { title: string; department: string; level: string; salaryGradeId: string }
+const EMPTY_POS_FORM: PosForm = { title: "", department: "", level: "", salaryGradeId: "" }
+
 function PositionsSection() {
   const { data: positions = [], isLoading } = useJobPositions()
+  const { data: grades = [] } = useSalaryGrades()
   const createMut = useCreateJobPosition()
   const updateMut = useUpdateJobPosition()
   const deleteMut = useDeleteJobPosition()
 
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ title: "", department: "", level: "" })
+  const [form, setForm] = useState<PosForm>(EMPTY_POS_FORM)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [editForm, setEditForm] = useState({ title: "", department: "", level: "" })
+  const [editForm, setEditForm] = useState<PosForm>(EMPTY_POS_FORM)
 
   const busy = createMut.isPending || updateMut.isPending || deleteMut.isPending
 
+  function toPayload(f: PosForm) {
+    return {
+      title: f.title.trim(),
+      department: f.department.trim() || null,
+      level: f.level || null,
+      salaryGradeId: f.salaryGradeId ? Number(f.salaryGradeId) : null,
+    }
+  }
+
   function handleCreate() {
     if (!form.title.trim()) return
-    createMut.mutate(
-      { title: form.title.trim(), department: form.department.trim() || null, level: form.level || null },
-      { onSuccess: () => { setAdding(false); setForm({ title: "", department: "", level: "" }) } }
-    )
+    createMut.mutate(toPayload(form), {
+      onSuccess: () => { setAdding(false); setForm(EMPTY_POS_FORM) },
+    })
   }
 
   function handleUpdate() {
     if (!editingId || !editForm.title.trim()) return
     updateMut.mutate(
-      { id: editingId, payload: { title: editForm.title.trim(), department: editForm.department.trim() || null, level: editForm.level || null } },
+      { id: editingId, payload: toPayload(editForm) },
       { onSuccess: () => setEditingId(null) }
     )
   }
@@ -641,23 +876,23 @@ function PositionsSection() {
     onSave,
     onCancel,
   }: {
-    f: { title: string; department: string; level: string }
-    setF: (v: { title: string; department: string; level: string }) => void
+    f: PosForm
+    setF: (v: PosForm) => void
     onSave: () => void
     onCancel: () => void
   }) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2.5">
         <Input
           autoFocus
-          className="h-8 flex-1 text-[13px]"
+          className="h-8 min-w-35 flex-1 text-[13px]"
           placeholder="Position title…"
           value={f.title}
           onChange={(e) => setF({ ...f, title: e.target.value })}
           onKeyDown={(e) => { if (e.key === "Enter") onSave(); if (e.key === "Escape") onCancel() }}
         />
         <Input
-          className="h-8 w-36 text-[13px]"
+          className="h-8 w-32 text-[13px]"
           placeholder="Department…"
           value={f.department}
           onChange={(e) => setF({ ...f, department: e.target.value })}
@@ -671,18 +906,30 @@ function PositionsSection() {
             <option key={l} value={l}>{l || "— Level —"}</option>
           ))}
         </select>
+        <select
+          value={f.salaryGradeId}
+          onChange={(e) => setF({ ...f, salaryGradeId: e.target.value })}
+          className="h-8 w-36 rounded-lg border bg-background px-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="">— Salary Grade —</option>
+          {grades.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.code}{g.name ? ` · ${g.name}` : ""}
+            </option>
+          ))}
+        </select>
         <button
           onClick={onSave}
           disabled={busy || !f.title.trim()}
           className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
         >
-          <HI icon={Tick02Icon} size={13} strokeWidth={2} />
+          <HugeiconsIcon icon={Tick02Icon} size={13} strokeWidth={2} />
         </button>
         <button
           onClick={onCancel}
           className="flex size-7 shrink-0 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted"
         >
-          <HI icon={Cancel01Icon} size={13} strokeWidth={2} />
+          <HugeiconsIcon icon={Cancel01Icon} size={13} strokeWidth={2} />
         </button>
       </div>
     )
@@ -700,7 +947,7 @@ function PositionsSection() {
         </div>
         {!adding && (
           <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
-            <HI icon={Add01Icon} size={13} strokeWidth={2} className="mr-1.5" />
+            <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} className="mr-1.5" />
             Add Position
           </Button>
         )}
@@ -753,26 +1000,26 @@ function PositionsSection() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-[13px] font-medium">{p.title}</p>
-                          {p.level && (
-                            <p className="text-[11px] text-muted-foreground">{p.level}</p>
-                          )}
+                          <p className="text-[11px] text-muted-foreground">
+                            {[p.level, p.salaryGrade ? p.salaryGrade.code : (p.salaryGradeId ? `Grade #${p.salaryGradeId}` : null)].filter(Boolean).join(" · ") || ""}
+                          </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                           <button
                             onClick={() => {
                               setEditingId(p.id)
-                              setEditForm({ title: p.title, department: p.department ?? "", level: p.level ?? "" })
+                              setEditForm({ title: p.title, department: p.department ?? "", level: p.level ?? "", salaryGradeId: p.salaryGradeId ? String(p.salaryGradeId) : "" })
                             }}
                             className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                           >
-                            <HI icon={PencilEdit01Icon} size={12} strokeWidth={2} />
+                            <HugeiconsIcon icon={PencilEdit01Icon} size={12} strokeWidth={2} />
                           </button>
                           <button
                             onClick={() => deleteMut.mutate(p.id)}
                             disabled={busy}
                             className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 disabled:opacity-40"
                           >
-                            <HI icon={Delete02Icon} size={12} strokeWidth={2} />
+                            <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={2} />
                           </button>
                         </div>
                       </div>

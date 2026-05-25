@@ -159,7 +159,7 @@ export function RewardsPublic() {
               </div>
               <div className="flex flex-col items-center gap-3 text-center">
                 <div className="flex size-16 items-center justify-center rounded-full bg-amber-400 text-xl font-bold text-white ring-4 ring-amber-300">
-                  {teacher.teacherName
+                  {(teacher.teacherName ?? "")
                     .split(" ")
                     .map((n) => n[0])
                     .join("")

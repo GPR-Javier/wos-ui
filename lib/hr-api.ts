@@ -9,6 +9,21 @@ export interface HrEmployee {
   email: string
   department: string
   position: string
+  jobPositionId?: number | null
+  jobPosition?: {
+    id: number
+    title: string
+    level?: string | null
+    department?: string | null
+    salaryGrade?: {
+      id: number
+      code: string
+      name?: string | null
+      baseSalary: number
+      minSalary: number
+      maxSalary: number
+    } | null
+  } | null
   team?: string | null
   status: "active" | "on-leave" | "inactive"
   startDate: string
@@ -66,6 +81,9 @@ export const hrApi = {
 
   employee: (id: number) =>
     api.get<HrEmployee>(`/hr/employees/${id}`).then((r) => r.data),
+
+  updateEmployee: (id: number, payload: { jobPositionId?: number | null; department?: string; position?: string; team?: string | null }) =>
+    api.patch<HrEmployee>(`/hr/employees/${id}`, payload).then((r) => r.data),
 
   leaveRequests: (
     params: { page?: number; size?: number; status?: string } = {}

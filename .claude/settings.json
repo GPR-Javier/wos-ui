@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const icons = require\\('@hugeicons/core-free-icons'\\); console.log\\(Object.keys\\(icons\\).filter\\(k => k.toLowerCase\\(\\).includes\\('file'\\) && k.toLowerCase\\(\\).includes\\('edit'\\)\\)\\)\")",
+      "Bash(node -e \"const icons = require\\('@hugeicons/core-free-icons'\\); console.log\\(Object.keys\\(icons\\).filter\\(k => k.toLowerCase\\(\\).includes\\('contract'\\) || \\(k.toLowerCase\\(\\).includes\\('file'\\) && k.toLowerCase\\(\\).includes\\('doc'\\)\\)\\)\\)\")",
+      "Bash(node -e \"const icons = require\\('@hugeicons/core-free-icons'\\); console.log\\(Object.keys\\(icons\\).filter\\(k => k.toLowerCase\\(\\).includes\\('file'\\)\\)\\)\")",
+      "Bash(node -e \"const icons = require\\('@hugeicons/core-free-icons'\\); const keys = Object.keys\\(icons\\); console.log\\(keys.length, keys.slice\\(0,30\\)\\)\")",
+      "Bash(node -e \"const icons = require\\('@hugeicons/core-free-icons'\\); console.log\\(JSON.stringify\\(Object.keys\\(icons\\).slice\\(0,5\\)\\)\\)\")"
+    ]
+  }
+}

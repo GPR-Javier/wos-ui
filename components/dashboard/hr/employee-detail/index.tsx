@@ -9,6 +9,7 @@ import {
   Calendar01Icon,
   Clock01Icon,
   Audit01Icon,
+  FileEditIcon,
 } from "@hugeicons/core-free-icons"
 import { Button } from "@/components/ui/button"
 import { StatusBadge } from "@/components/custom/status-badge"
@@ -19,6 +20,7 @@ import { LeaveTab } from "./leave-tab"
 import { ScheduleTab } from "./schedule-tab"
 import { PerformanceTab } from "./performance-tab"
 import { PolicyTab } from "./policy-tab"
+import { ContractTab } from "./contract-tab"
 import { employees } from "@/lib/mock-data"
 import { useAuthStore } from "@/store/auth-store"
 import { useHrEmployee } from "@/hooks/use-hr"
@@ -205,6 +207,15 @@ export function EmployeeDetailView({ employeeId }: Props) {
               Schedule policy
             </TabsTrigger>
           )}
+          <TabsTrigger value="contracts">
+            <HugeiconsIcon
+              icon={FileEditIcon}
+              size={14}
+              strokeWidth={2}
+              className="mr-1.5"
+            />
+            Contracts
+          </TabsTrigger>
           <TabsTrigger value="performance">
             <HugeiconsIcon
               icon={Audit01Icon}
@@ -233,6 +244,9 @@ export function EmployeeDetailView({ employeeId }: Props) {
             <PolicyTab employeeId={policyUserId} employeeName={emp.name} />
           </TabsContent>
         )}
+        <TabsContent value="contracts" className="mt-4">
+          <ContractTab employeeId={policyUserId} />
+        </TabsContent>
         <TabsContent value="performance" className="mt-4">
           <PerformanceTab employee={emp} />
         </TabsContent>

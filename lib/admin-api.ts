@@ -60,6 +60,8 @@ export interface CreateUserPayload {
   lastName: string
   password: string
   userRoleIds: number[]
+  /** Many-to-many: first entry becomes the primary position */
+  jobPositionIds: number[]
 }
 
 export interface ActiveUserRole {

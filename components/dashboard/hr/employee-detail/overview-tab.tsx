@@ -36,6 +36,10 @@ import {
   useUpdateMilestone,
   useDeleteMilestone,
   useJobPositions,
+  useUserPositions,
+  useAssignPosition,
+  useRemovePosition,
+  useSetPrimaryPosition,
 } from "@/hooks/use-employee-profile"
 import {
   ASSIGNMENT_TYPE_LABEL,
@@ -1377,6 +1381,16 @@ export function OverviewTab({ employee, employeeId }: Props) {
   const [editingPersonal, setEditingPersonal] = useState(false)
   const [editingContact, setEditingContact] = useState(false)
 
+  const { data: jobPositions = [] } = useJobPositions()
+  const { data: userPositions = [] } = useUserPositions(employeeId)
+  const assignMut = useAssignPosition(employeeId)
+  const removeMut = useRemovePosition(employeeId)
+  const setPrimaryMut = useSetPrimaryPosition(employeeId)
+
+  const primaryPosition = userPositions.find((up) => up.primary && up.active)
+  const primaryGrade = primaryPosition?.position.salaryGrades.find((g) => g.isDefault)
+    ?? primaryPosition?.position.salaryGrades[0]
+
   const [personal, setPersonal] = useState({
     name: employee.name,
     email: employee.email,
@@ -1387,6 +1401,26 @@ export function OverviewTab({ employee, employeeId }: Props) {
     startDate: employee.startDate,
   })
   const [personalDraft, setPersonalDraft] = useState(personal)
+
+  // For adding a new position assignment
+  const [addingPosition, setAddingPosition] = useState(false)
+  const [newPositionId, setNewPositionId] = useState("")
+  const [newPositionPrimary, setNewPositionPrimary] = useState(false)
+
+  const positionsByDept = jobPositions.reduce<Record<string, typeof jobPositions>>((acc, p) => {
+    const dept = p.department ?? "General"
+    if (!acc[dept]) acc[dept] = []
+    acc[dept]!.push(p)
+    return acc
+  }, {})
+
+  function handleAssignPosition() {
+    if (!newPositionId) return
+    assignMut.mutate(
+      { jobPositionId: Number(newPositionId), primary: newPositionPrimary },
+      { onSuccess: () => { setAddingPosition(false); setNewPositionId(""); setNewPositionPrimary(false) } }
+    )
+  }
 
   const [contact, setContact] = useState({
     phone: "+63 917 123 4567",
@@ -1432,7 +1466,6 @@ export function OverviewTab({ employee, employeeId }: Props) {
               <EditField label="Full Name" value={personalDraft.name} onChange={(v) => setPersonalDraft((d) => ({ ...d, name: v }))} />
               <EditField label="Email" value={personalDraft.email} onChange={(v) => setPersonalDraft((d) => ({ ...d, email: v }))} />
               <EditField label="Employee ID" value={personalDraft.employeeId} onChange={(v) => setPersonalDraft((d) => ({ ...d, employeeId: v }))} />
-              <EditField label="Position" value={personalDraft.position} onChange={(v) => setPersonalDraft((d) => ({ ...d, position: v }))} />
               <EditField label="Department" value={personalDraft.department} onChange={(v) => setPersonalDraft((d) => ({ ...d, department: v }))} />
               <EditField label="Team" value={personalDraft.team} onChange={(v) => setPersonalDraft((d) => ({ ...d, team: v }))} />
               <EditField label="Start Date" type="date" value={personalDraft.startDate} onChange={(v) => setPersonalDraft((d) => ({ ...d, startDate: v }))} />
@@ -1442,7 +1475,6 @@ export function OverviewTab({ employee, employeeId }: Props) {
               <InfoRow label="Full Name" value={personal.name} />
               <InfoRow label="Email" value={personal.email} />
               <InfoRow label="Employee ID" value={personal.employeeId} />
-              <InfoRow label="Position" value={personal.position} />
               <InfoRow label="Department" value={personal.department} />
               <InfoRow label="Team" value={personal.team || "—"} />
               <InfoRow label="Start Date" value={personal.startDate} />
@@ -1512,10 +1544,122 @@ export function OverviewTab({ employee, employeeId }: Props) {
         </div>
       </div>
 
-      {/* Row 2: Work Record */}
+      {/* Row 2: Job Positions */}
+      <div className="rounded-xl border bg-card p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-[13px] font-semibold">Job Positions</h3>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Assigned positions and linked salary grades</p>
+          </div>
+          {!addingPosition && (
+            <button
+              onClick={() => setAddingPosition(true)}
+              className="flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <HugeiconsIcon icon={Add01Icon} size={11} strokeWidth={2} /> Assign Position
+            </button>
+          )}
+        </div>
+
+        {addingPosition && (
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2.5">
+            <select
+              value={newPositionId}
+              onChange={(e) => setNewPositionId(e.target.value)}
+              className="h-8 flex-1 rounded-lg border bg-background px-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">— Select position —</option>
+              {Object.keys(positionsByDept).sort().map((dept) => (
+                <optgroup key={dept} label={dept}>
+                  {positionsByDept[dept]!.map((p) => (
+                    <option key={p.id} value={p.id}>{p.title}{p.level ? ` (${p.level})` : ""}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <label className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+              <input type="checkbox" checked={newPositionPrimary} onChange={(e) => setNewPositionPrimary(e.target.checked)} />
+              Primary
+            </label>
+            <button
+              onClick={handleAssignPosition}
+              disabled={!newPositionId || assignMut.isPending}
+              className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:opacity-40"
+            >
+              <HugeiconsIcon icon={Tick02Icon} size={13} strokeWidth={2} />
+            </button>
+            <button
+              onClick={() => { setAddingPosition(false); setNewPositionId("") }}
+              className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground hover:bg-muted"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} size={13} strokeWidth={2} />
+            </button>
+          </div>
+        )}
+
+        {userPositions.length === 0 && !addingPosition ? (
+          <p className="py-4 text-center text-[13px] text-muted-foreground">No positions assigned yet.</p>
+        ) : (
+          <div className="divide-y divide-border/60">
+            {userPositions.filter((up) => up.active).map((up) => {
+              const defaultGrade = up.position.salaryGrades.find((g) => g.isDefault) ?? up.position.salaryGrades[0]
+              return (
+                <div key={up.id} className="group flex items-center gap-3 py-2.5">
+                  {up.primary && (
+                    <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold text-primary-foreground">PRIMARY</span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-medium">{up.position.title}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {up.position.department && <span className="text-[11px] text-muted-foreground">{up.position.department}</span>}
+                      {up.position.level && <span className="text-[11px] text-muted-foreground">· {up.position.level}</span>}
+                    </div>
+                  </div>
+                  {defaultGrade && (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">{defaultGrade.code}</span>
+                      <span className="text-[12px] font-medium">
+                        {new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(defaultGrade.baseSalary)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    {!up.primary && (
+                      <button
+                        onClick={() => setPrimaryMut.mutate(up.id)}
+                        className="rounded-lg border px-2 py-1 text-[10px] text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        Set primary
+                      </button>
+                    )}
+                    <button
+                      onClick={() => removeMut.mutate(up.id)}
+                      className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                    >
+                      <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={2} />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {primaryGrade && (
+          <div className="mt-3 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
+            <span className="text-[11px] text-muted-foreground">Payroll base pay resolves to</span>
+            <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary">{primaryGrade.code}</span>
+            <span className="text-[12px] font-semibold text-foreground">
+              {new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(primaryGrade.baseSalary)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Row 3: Work Record */}
       <WorkRecordCard startDate={personal.startDate} employeeId={employeeId} />
 
-      {/* Row 3: Employment Stage */}
+      {/* Row 4: Employment Stage */}
       <EmploymentStageCard />
 
       {/* Row 3: Work Assignments */}
