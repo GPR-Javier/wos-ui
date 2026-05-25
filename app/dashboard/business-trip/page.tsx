@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
-import { ComingSoon } from "@/components/custom/coming-soon"
+import { BusinessTripManagementSection } from "@/components/dashboard/admin/business-trip-management"
 
 export const metadata: Metadata = { title: "Business Trip" }
 
 export default function BusinessTripPage() {
-  return <ComingSoon title="Business Trip" description="Review and approve business travel requests." />
+  return <BusinessTripManagementSection />
 }
