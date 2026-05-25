@@ -12,6 +12,8 @@ export interface AccessRole {
   id: number
   name?: string
   pageName?: string
+  code?: string
+  pageCode?: string
   navGroup?: string
   functionalities: FunctionalityDef[]
 }

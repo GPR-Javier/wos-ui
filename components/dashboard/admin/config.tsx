@@ -33,6 +33,20 @@ import {
   type PayFrequency,
 } from "@/components/dashboard/payroll/payroll-schedule"
 import { useAuthStore } from "@/store/auth-store"
+import {
+  useJobPositions,
+  useCreateJobPosition,
+  useUpdateJobPosition,
+  useDeleteJobPosition,
+} from "@/hooks/use-employee-profile"
+import { HugeiconsIcon as HI } from "@hugeicons/react"
+import {
+  Add01Icon,
+  PencilEdit01Icon,
+  Tick02Icon,
+  Cancel01Icon,
+  Delete02Icon,
+} from "@hugeicons/core-free-icons"
 
 // ── PlaceholderSection ─────────────────────────────────────────────────────
 
@@ -497,7 +511,7 @@ export function ConfigSection() {
     if (canEditAttendance) return "attendance"
     if (canEditPayroll) return "payroll"
     if (canEditLeave) return "leave"
-    return "schedule"
+    return "positions"
   }, [canViewSchedulePolicy, canEditAttendance, canEditPayroll, canEditLeave])
 
   const [payrollConfig, setPayrollConfig] = useState<PayrollScheduleConfig>(DEFAULT_PAYROLL_CONFIG)
@@ -509,6 +523,7 @@ export function ConfigSection() {
         {canEditAttendance && <TabsTrigger value="attendance">Attendance</TabsTrigger>}
         {canEditPayroll && <TabsTrigger value="payroll">Payroll</TabsTrigger>}
         {canEditLeave && <TabsTrigger value="leave">Leave</TabsTrigger>}
+        <TabsTrigger value="positions">Positions</TabsTrigger>
       </TabsList>
 
       {canViewSchedulePolicy && (
@@ -569,6 +584,206 @@ export function ConfigSection() {
           />
         </TabsContent>
       )}
+
+      <TabsContent value="positions">
+        <PositionsSection />
+      </TabsContent>
     </Tabs>
+  )
+}
+
+// ── Positions Management ───────────────────────────────────────────────────────
+
+const LEVEL_OPTIONS = ["", "Junior", "Mid", "Senior", "Lead", "Principal", "Manager", "Director"]
+
+function PositionsSection() {
+  const { data: positions = [], isLoading } = useJobPositions()
+  const createMut = useCreateJobPosition()
+  const updateMut = useUpdateJobPosition()
+  const deleteMut = useDeleteJobPosition()
+
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState({ title: "", department: "", level: "" })
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editForm, setEditForm] = useState({ title: "", department: "", level: "" })
+
+  const busy = createMut.isPending || updateMut.isPending || deleteMut.isPending
+
+  function handleCreate() {
+    if (!form.title.trim()) return
+    createMut.mutate(
+      { title: form.title.trim(), department: form.department.trim() || null, level: form.level || null },
+      { onSuccess: () => { setAdding(false); setForm({ title: "", department: "", level: "" }) } }
+    )
+  }
+
+  function handleUpdate() {
+    if (!editingId || !editForm.title.trim()) return
+    updateMut.mutate(
+      { id: editingId, payload: { title: editForm.title.trim(), department: editForm.department.trim() || null, level: editForm.level || null } },
+      { onSuccess: () => setEditingId(null) }
+    )
+  }
+
+  // Group by department for display
+  const grouped = positions.reduce<Record<string, typeof positions>>((acc, p) => {
+    const dept = p.department ?? "General"
+    if (!acc[dept]) acc[dept] = []
+    acc[dept]!.push(p)
+    return acc
+  }, {})
+
+  const sortedDepts = Object.keys(grouped).sort()
+
+  function FormRow({
+    f,
+    setF,
+    onSave,
+    onCancel,
+  }: {
+    f: { title: string; department: string; level: string }
+    setF: (v: { title: string; department: string; level: string }) => void
+    onSave: () => void
+    onCancel: () => void
+  }) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2.5">
+        <Input
+          autoFocus
+          className="h-8 flex-1 text-[13px]"
+          placeholder="Position title…"
+          value={f.title}
+          onChange={(e) => setF({ ...f, title: e.target.value })}
+          onKeyDown={(e) => { if (e.key === "Enter") onSave(); if (e.key === "Escape") onCancel() }}
+        />
+        <Input
+          className="h-8 w-36 text-[13px]"
+          placeholder="Department…"
+          value={f.department}
+          onChange={(e) => setF({ ...f, department: e.target.value })}
+        />
+        <select
+          value={f.level}
+          onChange={(e) => setF({ ...f, level: e.target.value })}
+          className="h-8 w-28 rounded-lg border bg-background px-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          {LEVEL_OPTIONS.map((l) => (
+            <option key={l} value={l}>{l || "— Level —"}</option>
+          ))}
+        </select>
+        <button
+          onClick={onSave}
+          disabled={busy || !f.title.trim()}
+          className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
+        >
+          <HI icon={Tick02Icon} size={13} strokeWidth={2} />
+        </button>
+        <button
+          onClick={onCancel}
+          className="flex size-7 shrink-0 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted"
+        >
+          <HI icon={Cancel01Icon} size={13} strokeWidth={2} />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[13px] font-semibold">Job Positions</p>
+          <p className="mt-0.5 text-[12px] text-muted-foreground">
+            Configure roles and positions available in the organization. These populate the Promotion dropdown in employee career milestones.
+          </p>
+        </div>
+        {!adding && (
+          <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
+            <HI icon={Add01Icon} size={13} strokeWidth={2} className="mr-1.5" />
+            Add Position
+          </Button>
+        )}
+      </div>
+
+      {/* Add form */}
+      {adding && (
+        <FormRow
+          f={form}
+          setF={setForm}
+          onSave={handleCreate}
+          onCancel={() => { setAdding(false); setForm({ title: "", department: "", level: "" }) }}
+        />
+      )}
+
+      {/* List */}
+      {isLoading ? (
+        <p className="text-[13px] text-muted-foreground">Loading positions…</p>
+      ) : positions.length === 0 && !adding ? (
+        <div className="rounded-xl border border-dashed p-8 text-center">
+          <p className="text-[13px] text-muted-foreground">No positions configured yet.</p>
+          <p className="mt-1 text-[12px] text-muted-foreground/60">Click &ldquo;Add Position&rdquo; to create the first one.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {sortedDepts.map((dept) => (
+            <div key={dept} className="rounded-xl border bg-card">
+              {/* Department header */}
+              <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+                <p className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">{dept}</p>
+                <span className="text-[11px] text-muted-foreground">{grouped[dept]!.length} position{grouped[dept]!.length !== 1 ? "s" : ""}</span>
+              </div>
+
+              <div className="divide-y divide-border/60">
+                {grouped[dept]!.map((p) => (
+                  <div key={p.id}>
+                    {editingId === p.id ? (
+                      <div className="px-4 py-2.5">
+                        <FormRow
+                          f={editForm}
+                          setF={setEditForm}
+                          onSave={handleUpdate}
+                          onCancel={() => setEditingId(null)}
+                        />
+                      </div>
+                    ) : (
+                      <div className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/30">
+                        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-[10px] font-bold text-primary">
+                          {p.title.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[13px] font-medium">{p.title}</p>
+                          {p.level && (
+                            <p className="text-[11px] text-muted-foreground">{p.level}</p>
+                          )}
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                          <button
+                            onClick={() => {
+                              setEditingId(p.id)
+                              setEditForm({ title: p.title, department: p.department ?? "", level: p.level ?? "" })
+                            }}
+                            className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          >
+                            <HI icon={PencilEdit01Icon} size={12} strokeWidth={2} />
+                          </button>
+                          <button
+                            onClick={() => deleteMut.mutate(p.id)}
+                            disabled={busy}
+                            className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 disabled:opacity-40"
+                          >
+                            <HI icon={Delete02Icon} size={12} strokeWidth={2} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }

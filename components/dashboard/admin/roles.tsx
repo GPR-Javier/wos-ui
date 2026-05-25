@@ -370,15 +370,16 @@ const GROUP_ITEM_ORDER: Record<string, string[]> = {
     "official business",
     "salary dispute",
   ],
-  // Admin request management pages
+  // Admin request management pages — order mirrors nav Requests section
   Requests: [
     "change time",
-    "leave management",
     "schedule change",
-    "overtime",
-    "salary dispute",
+    "leave management",
     "coe",
     "certificate of employment",
+    "overtime",
+    "salary dispute",
+    "hr dispute",
   ],
   Finance: [
     "payroll",

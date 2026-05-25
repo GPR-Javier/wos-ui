@@ -99,6 +99,7 @@ export interface TeamAttendanceRecord {
   timeIn: string | null // "hh:mm a"
   timeOut: string | null
   hoursWorked: string   // "7h 30m" or "—"
+  overtimeHours: string | null  // "1h 30m" or null
   status: string        // "present" | "late" | "absent" | "leave" | ...
   lateMinutes: number | null
   shift: string         // "day" | "graveyard"

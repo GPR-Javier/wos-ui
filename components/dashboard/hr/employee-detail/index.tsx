@@ -217,7 +217,7 @@ export function EmployeeDetailView({ employeeId }: Props) {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
-          <OverviewTab employee={emp} />
+          <OverviewTab employee={emp} employeeId={policyUserId} />
         </TabsContent>
         <TabsContent value="attendance" className="mt-4">
           <AttendanceTab />

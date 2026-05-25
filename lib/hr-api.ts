@@ -9,6 +9,7 @@ export interface HrEmployee {
   email: string
   department: string
   position: string
+  team?: string | null
   status: "active" | "on-leave" | "inactive"
   startDate: string
 }
@@ -44,12 +45,15 @@ export interface HrStats {
   totalEmployees: number
   presentToday: number
   attendanceRate: number
+  lateToday: number
   onLeave: number
   approvedLeave: number
   pendingLeave: number
   openRequests: number
+  pendingRequests: number
   leaveRequests: number
   dtrRequests: number
+  otHoursToday: number   // total OT hours across team today (decimal, e.g. 12.5)
 }
 
 export const hrApi = {

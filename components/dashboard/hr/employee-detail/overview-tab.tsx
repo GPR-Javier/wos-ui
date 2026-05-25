@@ -6,137 +6,112 @@ import { attendanceRecords } from "@/lib/mock-data"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   PencilEdit01Icon,
   Tick02Icon,
   Cancel01Icon,
+  Add01Icon,
+  Delete02Icon,
+  Calendar01Icon,
+  BriefcaseIcon,
+  Target01Icon,
+  Clock01Icon,
+  CheckmarkCircle02Icon,
+  Alert01Icon,
+  Award01Icon,
 } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
+import {
+  useEmployeeAssignments,
+  useCreateAssignment,
+  useUpdateAssignment,
+  useDeleteAssignment,
+  useEmployeeKpis,
+  useCreateKpi,
+  useUpdateKpi,
+  useDeleteKpi,
+  useEmployeeMilestones,
+  useCreateMilestone,
+  useUpdateMilestone,
+  useDeleteMilestone,
+  useJobPositions,
+} from "@/hooks/use-employee-profile"
+import {
+  ASSIGNMENT_TYPE_LABEL,
+  ASSIGNMENT_TYPE_COLOR,
+  ASSIGNMENT_STATUS_LABEL,
+  ASSIGNMENT_STATUS_VARIANT,
+  KPI_STATUS_LABEL,
+  KPI_STATUS_VARIANT,
+  MILESTONE_TYPE_LABEL,
+  MILESTONE_TYPES,
+  MILESTONE_TYPE_STYLE,
+  type AssignmentType,
+  type AssignmentStatus,
+  type KpiStatus,
+  type MilestoneType,
+  type EmployeeAssignment,
+  type EmployeeKpi,
+  type EmployeeCareerMilestone,
+} from "@/lib/employee-profile-api"
 
 interface Props {
   employee: Employee
+  employeeId: number
 }
 
-// ── Shared attendance + performance data (mirrors the other tabs) ──────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const MONTH_SHORT = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
+const ASSIGNMENT_TYPES: AssignmentType[] = [
+  "PROJECT", "TEAM", "SERVICE_AREA", "BRANCH", "WORKSTATION", "OPERATIONAL_ROLE",
 ]
+const ASSIGNMENT_STATUSES: AssignmentStatus[] = ["ACTIVE", "UPCOMING", "ON_HOLD", "COMPLETED"]
+const KPI_STATUSES: KpiStatus[] = ["ON_TRACK", "AT_RISK", "BEHIND", "COMPLETED"]
 
-const ATTEND_STATS = [
+const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+const MOCK_ATTENDANCE = [
   { present: 18, late: 1, absent: 0, leave: 1, ot: 4.5, workDays: 20 },
   { present: 16, late: 2, absent: 1, leave: 1, ot: 3.25, workDays: 20 },
   { present: 17, late: 2, absent: 0, leave: 2, ot: 6.75, workDays: 21 },
   { present: 13, late: 1, absent: 1, leave: 2, ot: 2.5, workDays: 17 },
 ]
 
-const PERF_STATS = [
-  {
-    openSlots: 4,
-    bookedClasses: 36,
-    studentPct: 91,
-    totalReviews: 28,
-    fiveStar: 19,
-    lowStar: 2,
-  },
-  {
-    openSlots: 6,
-    bookedClasses: 34,
-    studentPct: 87,
-    totalReviews: 26,
-    fiveStar: 17,
-    lowStar: 3,
-  },
-  {
-    openSlots: 3,
-    bookedClasses: 37,
-    studentPct: 93,
-    totalReviews: 31,
-    fiveStar: 22,
-    lowStar: 1,
-  },
-  {
-    openSlots: 7,
-    bookedClasses: 33,
-    studentPct: 84,
-    totalReviews: 24,
-    fiveStar: 14,
-    lowStar: 4,
-  },
-]
-
-const NOW_MONTH = new Date().getMonth()
-
-const statusVariant: Record<
-  string,
-  "green" | "red" | "amber" | "gray" | "blue" | "purple"
-> = {
-  present: "green",
-  late: "amber",
-  leave: "blue",
-  restday: "gray",
-  overtime: "purple",
-  overbreak: "amber",
-  undertime: "red",
-  absent: "red",
+function fmtDate(d: string) {
+  return new Date(d + "T00:00:00").toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
 }
 
-// ── Employment stages ──────────────────────────────────────────────────────────
+function daysUntil(deadline: string): number {
+  const now = new Date()
+  const d = new Date(deadline + "T00:00:00")
+  return Math.ceil((d.getTime() - now.getTime()) / 86_400_000)
+}
 
-const STAGES = [
-  {
-    key: "trainee",
-    label: "Trainee",
-    color:
-      "bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700",
-  },
-  {
-    key: "probationary",
-    label: "Probationary",
-    color:
-      "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700",
-  },
-  {
-    key: "regular",
-    label: "Regular",
-    color:
-      "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700",
-  },
-  {
-    key: "senior",
-    label: "Senior",
-    color:
-      "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700",
-  },
-  {
-    key: "resigned",
-    label: "Resigned",
-    color:
-      "bg-gray-100 text-gray-500 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700",
-  },
-  {
-    key: "terminated",
-    label: "Terminated",
-    color:
-      "bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700",
-  },
-]
+function calcTenure(startDate: string): { years: number; months: number; totalMonths: number } {
+  const start = new Date(startDate + "T00:00:00")
+  const now = new Date()
+  let years = now.getFullYear() - start.getFullYear()
+  let months = now.getMonth() - start.getMonth()
+  if (now.getDate() < start.getDate()) months--
+  if (months < 0) { years--; months += 12 }
+  return { years, months, totalMonths: years * 12 + months }
+}
 
-// ── Sub-components ─────────────────────────────────────────────────────────────
+function fmtHireDate(d: string) {
+  return new Date(d + "T00:00:00").toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  })
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -144,7 +119,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
         {label}
       </span>
-      <span className="text-[13px]">{value}</span>
+      <span className="text-[13px]">{value || "—"}</span>
     </div>
   )
 }
@@ -153,10 +128,12 @@ function EditField({
   label,
   value,
   onChange,
+  type = "text",
 }: {
   label: string
   value: string
   onChange: (v: string) => void
+  type?: string
 }) {
   return (
     <div className="flex flex-col gap-1">
@@ -164,6 +141,7 @@ function EditField({
         {label}
       </span>
       <Input
+        type={type}
         className="h-8 text-[13px]"
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -172,212 +150,1219 @@ function EditField({
   )
 }
 
-function Section({
+function SectionCard({
   title,
-  editing,
-  onEdit,
-  onSave,
-  onCancel,
+  icon,
   children,
+  action,
 }: {
   title: string
-  editing?: boolean
-  onEdit?: () => void
-  onSave?: () => void
-  onCancel?: () => void
+  icon?: React.ReactNode
   children: React.ReactNode
+  action?: React.ReactNode
 }) {
   return (
     <div className="rounded-xl border bg-card p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-[13px] font-semibold">{title}</h3>
-        {editing ? (
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={onSave}
-              className="flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              <HugeiconsIcon icon={Tick02Icon} size={11} strokeWidth={2} />
-              Save
-            </button>
-            <button
-              onClick={onCancel}
-              className="flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={2} />
-              Cancel
-            </button>
-          </div>
-        ) : onEdit ? (
-          <button
-            onClick={onEdit}
-            className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <HugeiconsIcon icon={PencilEdit01Icon} size={13} strokeWidth={2} />
-          </button>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {icon && (
+            <span className="text-muted-foreground">{icon}</span>
+          )}
+          <h3 className="text-[13px] font-semibold">{title}</h3>
+        </div>
+        {action}
       </div>
       {children}
     </div>
   )
 }
 
-function MiniStatCard({
-  label,
-  value,
-  sub,
-  accent,
+// ── Work Record ───────────────────────────────────────────────────────────────
+
+type MilestoneForm = {
+  type: MilestoneType
+  title: string
+  date: string
+  notes: string
+}
+
+const BLANK_MILESTONE: MilestoneForm = {
+  type: "PROMOTION",
+  title: "",
+  date: new Date().toISOString().split("T")[0]!,
+  notes: "",
+}
+
+function MilestoneFormRow({
+  f,
+  setF,
+  onSave,
+  onCancel,
+  busy,
 }: {
-  label: string
-  value: string
-  sub?: string
-  accent?: string
+  f: MilestoneForm
+  setF: (v: MilestoneForm) => void
+  onSave: () => void
+  onCancel: () => void
+  busy: boolean
 }) {
+  const { data: positions = [], isLoading: posLoading } = useJobPositions()
+  const isPromotion = f.type === "PROMOTION"
+
+  // Group positions by department for the optgroup display
+  const grouped = positions.reduce<Record<string, typeof positions>>((acc, p) => {
+    const dept = p.department ?? "General"
+    if (!acc[dept]) acc[dept] = []
+    acc[dept]!.push(p)
+    return acc
+  }, {})
+
   return (
-    <div className="rounded-lg border bg-background p-3">
-      <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-        {label}
-      </p>
-      <p
-        className={cn(
-          "mt-0.5 text-xl font-semibold tabular-nums",
-          accent ?? "text-foreground"
-        )}
-      >
-        {value}
-      </p>
-      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
+    <div className="space-y-3 rounded-lg border border-dashed border-border bg-muted/20 p-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {/* Type */}
+        <div>
+          <label className="mb-1 block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Type</label>
+          <select
+            value={f.type}
+            onChange={(e) => setF({ ...f, type: e.target.value as MilestoneType, title: "" })}
+            className="h-8 w-full rounded-lg border bg-background px-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            {MILESTONE_TYPES.map((t) => (
+              <option key={t} value={t}>{MILESTONE_TYPE_LABEL[t]}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Title — dropdown when Promotion, free text otherwise */}
+        <div className="sm:col-span-2">
+          <div className="mb-1 flex items-center justify-between">
+            <label className="block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+              {isPromotion ? "Promoted To" : "Title"}
+            </label>
+            {isPromotion && (
+              <span className="text-[10px] text-muted-foreground">
+                {posLoading ? "Loading…" : `${positions.length} role${positions.length !== 1 ? "s" : ""} available`}
+              </span>
+            )}
+          </div>
+
+          {isPromotion ? (
+            positions.length === 0 && !posLoading ? (
+              <div className="flex h-8 items-center gap-2 rounded-lg border border-dashed bg-background px-2">
+                <span className="text-[12px] text-muted-foreground">No positions configured.</span>
+                <span className="text-[11px] text-muted-foreground/60">Add from Configuration → Positions.</span>
+              </div>
+            ) : (
+              <select
+                value={f.title}
+                onChange={(e) => setF({ ...f, title: e.target.value })}
+                disabled={posLoading}
+                className="h-8 w-full rounded-lg border bg-background px-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                <option value="">— Select position —</option>
+                {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([dept, deptPositions]) => (
+                  <optgroup key={dept} label={dept}>
+                    {deptPositions.map((p) => (
+                      <option key={p.id} value={p.title}>
+                        {p.title}{p.level ? ` (${p.level})` : ""}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            )
+          ) : (
+            <Input
+              className="h-8 text-[13px]"
+              placeholder={
+                f.type === "HIRED" ? "e.g. Joined as Junior Developer…"
+                : f.type === "REGULAR" ? "e.g. Regularized as Frontend Engineer…"
+                : f.type === "TRANSFER" ? "e.g. Transferred to Design Team…"
+                : f.type === "AWARD" ? "e.g. Employee of the Month…"
+                : f.type === "TRAINING" ? "e.g. Completed AWS Certification…"
+                : "Milestone title…"
+              }
+              value={f.title}
+              onChange={(e) => setF({ ...f, title: e.target.value })}
+            />
+          )}
+        </div>
+
+        {/* Date */}
+        <div>
+          <label className="mb-1 block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Date</label>
+          <Input type="date" className="h-8 text-[13px]" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} />
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Notes (optional)</label>
+        <Input
+          className="h-8 text-[13px]"
+          placeholder="Additional context…"
+          value={f.notes}
+          onChange={(e) => setF({ ...f, notes: e.target.value })}
+        />
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <Button size="xs" variant="outline" onClick={onCancel} disabled={busy}>Cancel</Button>
+        <Button size="xs" onClick={onSave} disabled={busy || !f.title.trim()}>Save</Button>
+      </div>
     </div>
   )
 }
 
-function AttendanceSummary() {
-  const latestIdx = ATTEND_STATS.length - 1
-  const latest = ATTEND_STATS[latestIdx]!
-  const prev = ATTEND_STATS[latestIdx - 1]
-  const monthLabel =
-    MONTH_SHORT[Math.min(NOW_MONTH, latestIdx)] ?? MONTH_SHORT[latestIdx]!
+function WorkRecordCard({
+  startDate,
+  employeeId,
+}: {
+  startDate: string
+  employeeId: number
+}) {
+  const { years, months, totalMonths } = calcTenure(startDate)
 
-  const attendPct =
-    latest.workDays > 0
-      ? Math.round(((latest.present + latest.late) / latest.workDays) * 100)
-      : 0
+  const tenureLabel =
+    totalMonths === 0
+      ? "Just started"
+      : years === 0
+        ? `${months} month${months !== 1 ? "s" : ""}`
+        : months === 0
+          ? `${years} year${years !== 1 ? "s" : ""}`
+          : `${years} year${years !== 1 ? "s" : ""}, ${months} month${months !== 1 ? "s" : ""}`
 
-  const prevPct =
-    prev && prev.workDays > 0
-      ? Math.round(((prev.present + prev.late) / prev.workDays) * 100)
-      : null
+  const seniorityLabel =
+    totalMonths < 3 ? "Onboarding"
+    : totalMonths < 6 ? "Probationary"
+    : totalMonths < 12 ? "Junior"
+    : totalMonths < 36 ? "Regular"
+    : totalMonths < 60 ? "Senior"
+    : "Veteran"
 
-  const trend = prevPct !== null ? attendPct - prevPct : null
+  const seniorityColor =
+    totalMonths < 3
+      ? "bg-gray-100 text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
+      : totalMonths < 6
+        ? "bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700"
+        : totalMonths < 12
+          ? "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700"
+          : totalMonths < 36
+            ? "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700"
+            : totalMonths < 60
+              ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700"
+              : "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700"
 
-  // Month-over-month mini bars
-  const maxPresent = Math.max(...ATTEND_STATS.map((s) => s.present), 1)
+  // Milestones
+  const { data: milestones = [], isLoading: mlLoading } = useEmployeeMilestones(employeeId)
+  const createMut = useCreateMilestone(employeeId)
+  const updateMut = useUpdateMilestone(employeeId)
+  const deleteMut = useDeleteMilestone(employeeId)
+
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState<MilestoneForm>(BLANK_MILESTONE)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editForm, setEditForm] = useState<MilestoneForm>(BLANK_MILESTONE)
+
+  const busy = createMut.isPending || updateMut.isPending || deleteMut.isPending
+
+  function handleCreate() {
+    if (!form.title.trim()) return
+    createMut.mutate(
+      { type: form.type, title: form.title.trim(), date: form.date, notes: form.notes.trim() || null },
+      { onSuccess: () => { setAdding(false); setForm(BLANK_MILESTONE) } }
+    )
+  }
+
+  function startEdit(m: EmployeeCareerMilestone) {
+    setEditingId(m.id)
+    setEditForm({ type: m.type, title: m.title, date: m.date, notes: m.notes ?? "" })
+  }
+
+  function handleUpdate() {
+    if (!editingId || !editForm.title.trim()) return
+    updateMut.mutate(
+      { milestoneId: editingId, payload: { type: editForm.type, title: editForm.title.trim(), date: editForm.date, notes: editForm.notes.trim() || null } },
+      { onSuccess: () => setEditingId(null) }
+    )
+  }
+
+  // Sort chronologically oldest → newest (pin HIRED first)
+  const sorted = [...milestones].sort((a, b) => {
+    if (a.type === "HIRED") return -1
+    if (b.type === "HIRED") return 1
+    return a.date < b.date ? -1 : 1
+  })
+
+  // Build combined timeline: synthetic "Hired" entry from startDate if no HIRED milestone exists
+  const hasHiredMilestone = milestones.some((m) => m.type === "HIRED")
+  const syntheticHired: EmployeeCareerMilestone = {
+    id: -1,
+    employeeId,
+    type: "HIRED",
+    title: "Hired",
+    date: startDate,
+    notes: null,
+  }
+  const timeline = hasHiredMilestone ? sorted : [syntheticHired, ...sorted]
 
   return (
-    <div className="space-y-4">
-      {/* KPI row */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <MiniStatCard
-          label="Attendance Rate"
-          value={`${attendPct}%`}
-          sub={
-            trend !== null
-              ? trend >= 0
-                ? `↑ +${trend}% vs last month`
-                : `↓ ${trend}% vs last month`
-              : monthLabel
-          }
-          accent={
-            attendPct >= 90
-              ? "text-green-600"
-              : attendPct >= 75
-                ? "text-amber-500"
-                : "text-red-500"
-          }
-        />
-        <MiniStatCard
-          label="Present"
-          value={String(latest.present)}
-          sub={`of ${latest.workDays} work days`}
-        />
-        <MiniStatCard
-          label="Late / Absent"
-          value={`${latest.late} / ${latest.absent}`}
-          sub="this month"
-        />
-        <MiniStatCard
-          label="OT Hours"
-          value={`${latest.ot}h`}
-          sub="this month"
-        />
+    <div className="rounded-xl border bg-card p-5">
+      {/* Header */}
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+            <HugeiconsIcon icon={Award01Icon} size={20} strokeWidth={1.6} className="text-primary" />
+          </div>
+          <div>
+            <h3 className="text-[13px] font-semibold">Work Record</h3>
+            <p className="text-[11px] text-muted-foreground">Company tenure &amp; career milestones</p>
+          </div>
+        </div>
+        <span className={cn("shrink-0 rounded-full border px-3 py-1 text-[12px] font-semibold", seniorityColor)}>
+          {seniorityLabel}
+        </span>
       </div>
 
-      {/* Month-over-month bar comparison */}
-      <div>
-        <p className="mb-2 text-[11px] font-medium text-muted-foreground">
-          Present days — last {ATTEND_STATS.length} months
-        </p>
-        <div className="flex items-end gap-2">
-          {ATTEND_STATS.map((s, i) => {
-            const barPct = (s.present / maxPresent) * 100
-            const isLast = i === latestIdx
-            return (
-              <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                <div
-                  className="relative w-full overflow-hidden rounded-t-md bg-muted"
-                  style={{ height: 52 }}
-                >
-                  <div
-                    className={cn(
-                      "absolute bottom-0 w-full rounded-t-md transition-all",
-                      isLast ? "bg-primary" : "bg-primary/30"
-                    )}
-                    style={{ height: `${barPct}%` }}
-                  />
-                </div>
-                <span
-                  className={cn(
-                    "text-[10px] tabular-nums",
-                    isLast
-                      ? "font-semibold text-foreground"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {MONTH_SHORT[i]}
-                </span>
-              </div>
-            )
-          })}
+      {/* Tenure stats */}
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="col-span-2 rounded-xl border bg-muted/30 px-4 py-3">
+          <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">Date Hired</p>
+          <p className="mt-0.5 text-[14px] font-semibold text-foreground">{fmtDate(startDate)}</p>
+          <p className="text-[11px] text-muted-foreground">{fmtHireDate(startDate).split(",")[0]}</p>
+        </div>
+        <div className="rounded-xl border bg-muted/30 px-4 py-3">
+          <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">Years</p>
+          <p className="mt-0.5 text-3xl font-bold tabular-nums text-foreground">{years}</p>
+          <p className="text-[11px] text-muted-foreground">year{years !== 1 ? "s" : ""} in company</p>
+        </div>
+        <div className="rounded-xl border bg-muted/30 px-4 py-3">
+          <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">Months</p>
+          <p className="mt-0.5 text-3xl font-bold tabular-nums text-foreground">{months}</p>
+          <p className="text-[11px] text-muted-foreground">month{months !== 1 ? "s" : ""} this year</p>
         </div>
       </div>
 
-      {/* Recent records */}
-      <div>
-        <p className="mb-2 text-[11px] font-medium text-muted-foreground">
-          Recent records
+      {/* Total tenure */}
+      <div className="mb-6 flex items-center gap-3 rounded-xl border bg-primary/5 px-4 py-3">
+        <HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} className="shrink-0 text-primary" />
+        <p className="text-[13px] font-medium text-foreground">
+          Total tenure:{" "}
+          <span className="font-bold text-primary">{tenureLabel}</span>
+          <span className="ml-2 text-[12px] font-normal text-muted-foreground">
+            ({totalMonths} month{totalMonths !== 1 ? "s" : ""} total)
+          </span>
         </p>
-        <div className="divide-y rounded-lg border">
-          {attendanceRecords.slice(0, 5).map((rec, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between px-3 py-2"
+      </div>
+
+      {/* Career Milestones — dynamic vertical timeline */}
+      <div>
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">Career Milestones</p>
+          {!adding && (
+            <button
+              onClick={() => setAdding(true)}
+              className="flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              <div className="flex items-center gap-2">
-                <span className="w-12 text-[12px] font-medium tabular-nums">
-                  {rec.date}
-                </span>
-                <span className="text-[11px] text-muted-foreground">
-                  {rec.day}
-                </span>
+              <HugeiconsIcon icon={Add01Icon} size={11} strokeWidth={2} /> Add Milestone
+            </button>
+          )}
+        </div>
+
+        {adding && (
+          <div className="mb-3">
+            <MilestoneFormRow
+              f={form}
+              setF={setForm}
+              onSave={handleCreate}
+              onCancel={() => { setAdding(false); setForm(BLANK_MILESTONE) }}
+              busy={busy}
+            />
+          </div>
+        )}
+
+        {mlLoading ? (
+          <p className="text-[13px] text-muted-foreground">Loading…</p>
+        ) : timeline.length === 0 ? (
+          <p className="py-4 text-center text-[13px] text-muted-foreground">
+            No milestones yet. Click &ldquo;Add Milestone&rdquo; to record career events.
+          </p>
+        ) : (
+          <div className="relative">
+            {/* Vertical connector line */}
+            <div className="absolute left-3.75 top-4 bottom-4 w-px bg-border" />
+
+            <div className="space-y-0">
+              {timeline.map((m, i) => {
+                const style = MILESTONE_TYPE_STYLE[m.type]
+                const isLast = i === timeline.length - 1
+                const isSynthetic = m.id === -1
+
+                if (editingId === m.id) {
+                  return (
+                    <div key={m.id} className="relative pl-10 pb-4">
+                      <div className={cn("absolute left-0 top-1 size-7.5 rounded-full border-2 border-background ring-2 flex items-center justify-center", style.dot, style.ring)}>
+                        <svg viewBox="0 0 10 10" className="size-3 text-white">
+                          <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                      <MilestoneFormRow
+                        f={editForm}
+                        setF={setEditForm}
+                        onSave={handleUpdate}
+                        onCancel={() => setEditingId(null)}
+                        busy={busy}
+                      />
+                    </div>
+                  )
+                }
+
+                return (
+                  <div key={m.id} className={cn("group relative flex items-start gap-4 pl-10", !isLast && "pb-5")}>
+                    {/* Dot */}
+                    <div
+                      className={cn(
+                        "absolute left-0 top-1 flex size-7.5 shrink-0 items-center justify-center rounded-full border-2 border-background ring-2",
+                        style.dot,
+                        style.ring
+                      )}
+                    >
+                      <HugeiconsIcon icon={Award01Icon} size={12} strokeWidth={2.2} className="text-white" />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex min-w-0 flex-1 items-start justify-between gap-2 rounded-xl border bg-card px-3 py-2.5 transition-colors group-hover:bg-muted/30">
+                      <div className="min-w-0">
+                        <div className="mb-0.5 flex flex-wrap items-center gap-2">
+                          <span className={cn("text-[11px] font-semibold uppercase tracking-wider", style.label)}>
+                            {MILESTONE_TYPE_LABEL[m.type]}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground tabular-nums">
+                            {fmtDate(m.date)}
+                          </span>
+                        </div>
+                        <p className="text-[13px] font-medium text-foreground">{m.title}</p>
+                        {m.notes && (
+                          <p className="mt-0.5 text-[12px] text-muted-foreground">{m.notes}</p>
+                        )}
+                      </div>
+
+                      {/* Actions — hide for synthetic hired dot */}
+                      {!isSynthetic && (
+                        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                          <button
+                            onClick={() => startEdit(m)}
+                            className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                          >
+                            <HugeiconsIcon icon={PencilEdit01Icon} size={12} strokeWidth={2} />
+                          </button>
+                          <button
+                            onClick={() => deleteMut.mutate(m.id)}
+                            className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                          >
+                            <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={2} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Employment Stage ──────────────────────────────────────────────────────────
+
+const STAGES = [
+  { key: "trainee", label: "Trainee", color: "bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700" },
+  { key: "probationary", label: "Probationary", color: "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700" },
+  { key: "regular", label: "Regular", color: "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700" },
+  { key: "senior", label: "Senior", color: "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700" },
+  { key: "resigned", label: "Resigned", color: "bg-gray-100 text-gray-500 border-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700" },
+  { key: "terminated", label: "Terminated", color: "bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700" },
+]
+
+function EmploymentStageCard() {
+  const [stage, setStage] = useState("probationary")
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState("probationary")
+  const currentStage = STAGES.find((s) => s.key === stage)!
+
+  return (
+    <div className="rounded-xl border bg-card p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h3 className="text-[13px] font-semibold">Employment Stage</h3>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">Current standing of this employee</p>
+        </div>
+        {editing ? (
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => { setStage(draft); setEditing(false) }}
+              className="flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              <HugeiconsIcon icon={Tick02Icon} size={11} strokeWidth={2} /> Save
+            </button>
+            <button
+              onClick={() => { setDraft(stage); setEditing(false) }}
+              className="flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={2} /> Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => { setDraft(stage); setEditing(true) }}
+            className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <HugeiconsIcon icon={PencilEdit01Icon} size={13} strokeWidth={2} />
+          </button>
+        )}
+      </div>
+
+      {editing ? (
+        <div className="flex flex-wrap gap-2">
+          {STAGES.map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setDraft(s.key)}
+              className={cn(
+                "rounded-lg border px-4 py-2 text-[12px] font-medium transition-all",
+                draft === s.key ? `${s.color} ring-2 ring-primary/30` : "border-border bg-background text-muted-foreground hover:bg-muted"
+              )}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="flex items-center gap-4">
+          <div className="flex flex-1 items-center gap-0">
+            {STAGES.slice(0, 4).map((s, i) => {
+              const stageIdx = STAGES.findIndex((x) => x.key === stage)
+              const thisIdx = STAGES.findIndex((x) => x.key === s.key)
+              const isPast = thisIdx < stageIdx
+              const isCurrent = s.key === stage
+              const isLast = i === 3
+              return (
+                <div key={s.key} className="flex flex-1 items-center">
+                  <div className="flex flex-col items-center gap-1.5">
+                    <div className={cn(
+                      "flex size-8 items-center justify-center rounded-full border-2 text-[11px] font-bold transition-all",
+                      isCurrent ? `${s.color} border-current` : isPast ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground"
+                    )}>
+                      {isPast ? (
+                        <svg viewBox="0 0 10 10" className="size-3">
+                          <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      ) : i + 1}
+                    </div>
+                    <span className={cn("text-[10px] font-medium", isCurrent ? "text-foreground" : isPast ? "text-primary" : "text-muted-foreground")}>
+                      {s.label}
+                    </span>
+                  </div>
+                  {!isLast && (
+                    <div className={cn("mx-1 mb-4 h-0.5 flex-1", thisIdx < stageIdx ? "bg-primary" : "bg-border")} />
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <span className={cn("shrink-0 rounded-full border px-3 py-1 text-[12px] font-semibold", currentStage.color)}>
+            {currentStage.label}
+          </span>
+        </div>
+      )}
+
+      {(stage === "resigned" || stage === "terminated") && !editing && (
+        <div className={cn("mt-3 rounded-lg border px-4 py-2.5 text-[12px] font-medium", currentStage.color)}>
+          This employee is marked as <strong>{currentStage.label}</strong>.
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Work Assignments Section ──────────────────────────────────────────────────
+
+type AssignmentForm = {
+  type: AssignmentType
+  name: string
+  description: string
+  startDate: string
+  deadline: string
+  status: AssignmentStatus
+}
+
+const BLANK_ASSIGNMENT: AssignmentForm = {
+  type: "PROJECT",
+  name: "",
+  description: "",
+  startDate: new Date().toISOString().split("T")[0]!,
+  deadline: "",
+  status: "ACTIVE",
+}
+
+function WorkAssignmentsSection({ employeeId }: { employeeId: number }) {
+  const { data: assignments = [], isLoading } = useEmployeeAssignments(employeeId)
+  const createMut = useCreateAssignment(employeeId)
+  const updateMut = useUpdateAssignment(employeeId)
+  const deleteMut = useDeleteAssignment(employeeId)
+
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState<AssignmentForm>(BLANK_ASSIGNMENT)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editForm, setEditForm] = useState<AssignmentForm>(BLANK_ASSIGNMENT)
+
+  function handleCreate() {
+    if (!form.name.trim()) return
+    createMut.mutate(
+      {
+        type: form.type,
+        name: form.name.trim(),
+        description: form.description.trim() || undefined,
+        startDate: form.startDate,
+        deadline: form.deadline || null,
+        status: form.status,
+      },
+      { onSuccess: () => { setAdding(false); setForm(BLANK_ASSIGNMENT) } }
+    )
+  }
+
+  function startEdit(a: EmployeeAssignment) {
+    setEditingId(a.id)
+    setEditForm({
+      type: a.type,
+      name: a.name,
+      description: a.description ?? "",
+      startDate: a.startDate,
+      deadline: a.deadline ?? "",
+      status: a.status,
+    })
+  }
+
+  function handleUpdate() {
+    if (!editingId || !editForm.name.trim()) return
+    updateMut.mutate(
+      {
+        assignmentId: editingId,
+        payload: {
+          type: editForm.type,
+          name: editForm.name.trim(),
+          description: editForm.description.trim() || undefined,
+          startDate: editForm.startDate,
+          deadline: editForm.deadline || null,
+          status: editForm.status,
+        },
+      },
+      { onSuccess: () => setEditingId(null) }
+    )
+  }
+
+  const busy = createMut.isPending || updateMut.isPending || deleteMut.isPending
+
+  // Separate active/upcoming from completed
+  const active = assignments.filter((a) => a.status !== "COMPLETED")
+  const completed = assignments.filter((a) => a.status === "COMPLETED")
+
+  function AssignmentFormRow({
+    f,
+    setF,
+    onSave,
+    onCancel,
+  }: {
+    f: AssignmentForm
+    setF: (v: AssignmentForm) => void
+    onSave: () => void
+    onCancel: () => void
+  }) {
+    return (
+      <div className="space-y-3 rounded-lg border border-dashed border-border bg-muted/20 p-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div>
+            <label className="mb-1 block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Type</label>
+            <select
+              value={f.type}
+              onChange={(e) => setF({ ...f, type: e.target.value as AssignmentType })}
+              className="h-8 w-full rounded-lg border bg-background px-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              {ASSIGNMENT_TYPES.map((t) => (
+                <option key={t} value={t}>{ASSIGNMENT_TYPE_LABEL[t]}</option>
+              ))}
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Name</label>
+            <Input
+              className="h-8 text-[13px]"
+              placeholder="Assignment name…"
+              value={f.name}
+              onChange={(e) => setF({ ...f, name: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Start Date</label>
+            <Input type="date" className="h-8 text-[13px]" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Deadline (optional)</label>
+            <Input type="date" className="h-8 text-[13px]" value={f.deadline} onChange={(e) => setF({ ...f, deadline: e.target.value })} />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Status</label>
+            <select
+              value={f.status}
+              onChange={(e) => setF({ ...f, status: e.target.value as AssignmentStatus })}
+              className="h-8 w-full rounded-lg border bg-background px-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              {ASSIGNMENT_STATUSES.map((s) => (
+                <option key={s} value={s}>{ASSIGNMENT_STATUS_LABEL[s]}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="mb-1 block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Description (optional)</label>
+          <Input
+            className="h-8 text-[13px]"
+            placeholder="Brief description…"
+            value={f.description}
+            onChange={(e) => setF({ ...f, description: e.target.value })}
+          />
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button size="xs" variant="outline" onClick={onCancel} disabled={busy}>Cancel</Button>
+          <Button size="xs" onClick={onSave} disabled={busy || !f.name.trim()}>Save</Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <SectionCard
+      title="Work Assignments"
+      icon={<HugeiconsIcon icon={BriefcaseIcon} size={15} strokeWidth={1.8} />}
+      action={
+        !adding && (
+          <button
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <HugeiconsIcon icon={Add01Icon} size={12} strokeWidth={2} /> Add
+          </button>
+        )
+      }
+    >
+      <div className="space-y-2">
+        {adding && (
+          <AssignmentFormRow
+            f={form}
+            setF={setForm}
+            onSave={handleCreate}
+            onCancel={() => { setAdding(false); setForm(BLANK_ASSIGNMENT) }}
+          />
+        )}
+
+        {isLoading ? (
+          <p className="text-[13px] text-muted-foreground">Loading…</p>
+        ) : assignments.length === 0 && !adding ? (
+          <p className="py-4 text-center text-[13px] text-muted-foreground">
+            No assignments yet. Click &ldquo;Add&rdquo; to create one.
+          </p>
+        ) : (
+          <>
+            {active.map((a) => (
+              <div key={a.id}>
+                {editingId === a.id ? (
+                  <AssignmentFormRow
+                    f={editForm}
+                    setF={setEditForm}
+                    onSave={handleUpdate}
+                    onCancel={() => setEditingId(null)}
+                  />
+                ) : (
+                  <div className="flex items-start gap-3 rounded-lg border border-border bg-background px-3 py-2.5">
+                    <div className="mt-0.5">
+                      <StatusBadge variant={ASSIGNMENT_TYPE_COLOR[a.type]} dot={false} className="text-[10px]">
+                        {ASSIGNMENT_TYPE_LABEL[a.type]}
+                      </StatusBadge>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-medium">{a.name}</p>
+                      {a.description && (
+                        <p className="text-[11px] text-muted-foreground">{a.description}</p>
+                      )}
+                      <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                        <span>Started {fmtDate(a.startDate)}</span>
+                        {a.deadline && (
+                          <span className={cn(
+                            "flex items-center gap-0.5",
+                            daysUntil(a.deadline) <= 7 && daysUntil(a.deadline) >= 0 ? "text-amber-500 font-medium" : ""
+                          )}>
+                            <HugeiconsIcon icon={Calendar01Icon} size={11} strokeWidth={2} />
+                            Due {fmtDate(a.deadline)}
+                            {daysUntil(a.deadline) <= 7 && daysUntil(a.deadline) >= 0 && (
+                              <span className="ml-0.5">({daysUntil(a.deadline)}d left)</span>
+                            )}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <StatusBadge variant={ASSIGNMENT_STATUS_VARIANT[a.status]}>
+                        {ASSIGNMENT_STATUS_LABEL[a.status]}
+                      </StatusBadge>
+                      <button
+                        onClick={() => startEdit(a)}
+                        className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        <HugeiconsIcon icon={PencilEdit01Icon} size={12} strokeWidth={2} />
+                      </button>
+                      <button
+                        onClick={() => deleteMut.mutate(a.id)}
+                        className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                      >
+                        <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={2} />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-[11px] text-muted-foreground tabular-nums">
-                  {rec.timeIn} – {rec.timeOut}
-                </span>
-                <StatusBadge variant={statusVariant[rec.status] ?? "gray"}>
+            ))}
+
+            {completed.length > 0 && (
+              <details className="group">
+                <summary className="cursor-pointer select-none py-1 text-[12px] text-muted-foreground hover:text-foreground">
+                  {completed.length} completed assignment{completed.length !== 1 ? "s" : ""}
+                </summary>
+                <div className="mt-2 space-y-1.5">
+                  {completed.map((a) => (
+                    <div key={a.id} className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2 opacity-60">
+                      <StatusBadge variant="gray" dot={false} className="text-[10px]">
+                        {ASSIGNMENT_TYPE_LABEL[a.type]}
+                      </StatusBadge>
+                      <p className="flex-1 text-[13px] line-through">{a.name}</p>
+                      <StatusBadge variant="gray">Completed</StatusBadge>
+                      <button onClick={() => deleteMut.mutate(a.id)} className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:text-red-500">
+                        <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={2} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+          </>
+        )}
+      </div>
+    </SectionCard>
+  )
+}
+
+// ── KPI Section ───────────────────────────────────────────────────────────────
+
+type KpiForm = {
+  name: string
+  target: string
+  current: string
+  unit: string
+  status: KpiStatus
+  period: string
+}
+
+const BLANK_KPI: KpiForm = {
+  name: "",
+  target: "",
+  current: "0",
+  unit: "",
+  status: "ON_TRACK",
+  period: "",
+}
+
+function KpiSection({ employeeId }: { employeeId: number }) {
+  const { data: kpis = [], isLoading } = useEmployeeKpis(employeeId)
+  const createMut = useCreateKpi(employeeId)
+  const updateMut = useUpdateKpi(employeeId)
+  const deleteMut = useDeleteKpi(employeeId)
+
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState<KpiForm>(BLANK_KPI)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editForm, setEditForm] = useState<KpiForm>(BLANK_KPI)
+
+  const busy = createMut.isPending || updateMut.isPending || deleteMut.isPending
+
+  function handleCreate() {
+    if (!form.name.trim() || !form.target) return
+    createMut.mutate(
+      {
+        name: form.name.trim(),
+        target: Number(form.target),
+        current: Number(form.current),
+        unit: form.unit.trim() || undefined,
+        status: form.status,
+        period: form.period.trim() || new Date().toLocaleString("en-US", { month: "long", year: "numeric" }),
+      },
+      { onSuccess: () => { setAdding(false); setForm(BLANK_KPI) } }
+    )
+  }
+
+  function startEdit(k: EmployeeKpi) {
+    setEditingId(k.id)
+    setEditForm({
+      name: k.name,
+      target: String(k.target),
+      current: String(k.current),
+      unit: k.unit ?? "",
+      status: k.status,
+      period: k.period,
+    })
+  }
+
+  function handleUpdate() {
+    if (!editingId || !editForm.name.trim() || !editForm.target) return
+    updateMut.mutate(
+      {
+        kpiId: editingId,
+        payload: {
+          name: editForm.name.trim(),
+          target: Number(editForm.target),
+          current: Number(editForm.current),
+          unit: editForm.unit.trim() || undefined,
+          status: editForm.status,
+          period: editForm.period,
+        },
+      },
+      { onSuccess: () => setEditingId(null) }
+    )
+  }
+
+  function KpiFormRow({
+    f,
+    setF,
+    onSave,
+    onCancel,
+  }: {
+    f: KpiForm
+    setF: (v: KpiForm) => void
+    onSave: () => void
+    onCancel: () => void
+  }) {
+    return (
+      <div className="space-y-3 rounded-lg border border-dashed border-border bg-muted/20 p-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">KPI Name</label>
+            <Input className="h-8 text-[13px]" placeholder="e.g. Sales Target, Tasks Completed…" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Target</label>
+            <Input type="number" className="h-8 text-[13px]" placeholder="100" value={f.target} onChange={(e) => setF({ ...f, target: e.target.value })} />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Current</label>
+            <Input type="number" className="h-8 text-[13px]" placeholder="0" value={f.current} onChange={(e) => setF({ ...f, current: e.target.value })} />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Unit (optional)</label>
+            <Input className="h-8 text-[13px]" placeholder="%, calls, units…" value={f.unit} onChange={(e) => setF({ ...f, unit: e.target.value })} />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Period</label>
+            <Input className="h-8 text-[13px]" placeholder="Q2 2025, May 2025…" value={f.period} onChange={(e) => setF({ ...f, period: e.target.value })} />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Status</label>
+            <select
+              value={f.status}
+              onChange={(e) => setF({ ...f, status: e.target.value as KpiStatus })}
+              className="h-8 w-full rounded-lg border bg-background px-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              {KPI_STATUSES.map((s) => (
+                <option key={s} value={s}>{KPI_STATUS_LABEL[s]}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button size="xs" variant="outline" onClick={onCancel} disabled={busy}>Cancel</Button>
+          <Button size="xs" onClick={onSave} disabled={busy || !f.name.trim() || !f.target}>Save</Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <SectionCard
+      title="KPI / Performance"
+      icon={<HugeiconsIcon icon={Target01Icon} size={15} strokeWidth={1.8} />}
+      action={
+        !adding && (
+          <button
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <HugeiconsIcon icon={Add01Icon} size={12} strokeWidth={2} /> Add KPI
+          </button>
+        )
+      }
+    >
+      <div className="space-y-2">
+        {adding && (
+          <KpiFormRow
+            f={form}
+            setF={setForm}
+            onSave={handleCreate}
+            onCancel={() => { setAdding(false); setForm(BLANK_KPI) }}
+          />
+        )}
+
+        {isLoading ? (
+          <p className="text-[13px] text-muted-foreground">Loading…</p>
+        ) : kpis.length === 0 && !adding ? (
+          <p className="py-4 text-center text-[13px] text-muted-foreground">
+            No KPIs defined yet. Click &ldquo;Add KPI&rdquo; to track performance.
+          </p>
+        ) : (
+          kpis.map((k) => {
+            const pct = k.target > 0 ? Math.min(100, Math.round((k.current / k.target) * 100)) : 0
+            const progressColor =
+              k.status === "COMPLETED" ? "bg-blue-500"
+              : k.status === "ON_TRACK" ? "bg-green-500"
+              : k.status === "AT_RISK" ? "bg-amber-500"
+              : "bg-red-500"
+
+            return (
+              <div key={k.id}>
+                {editingId === k.id ? (
+                  <KpiFormRow
+                    f={editForm}
+                    setF={setEditForm}
+                    onSave={handleUpdate}
+                    onCancel={() => setEditingId(null)}
+                  />
+                ) : (
+                  <div className="rounded-lg border border-border bg-background px-3 py-3">
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-medium">{k.name}</p>
+                        <p className="text-[11px] text-muted-foreground">{k.period}</p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <StatusBadge variant={KPI_STATUS_VARIANT[k.status]}>
+                          {KPI_STATUS_LABEL[k.status]}
+                        </StatusBadge>
+                        <button onClick={() => startEdit(k)} className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
+                          <HugeiconsIcon icon={PencilEdit01Icon} size={12} strokeWidth={2} />
+                        </button>
+                        <button onClick={() => deleteMut.mutate(k.id)} className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20">
+                          <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={2} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                        <div className={cn("h-full rounded-full transition-all", progressColor)} style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="shrink-0 text-[12px] font-semibold tabular-nums">
+                        {k.current}{k.unit ? k.unit : ""} / {k.target}{k.unit ? k.unit : ""}
+                        <span className="ml-1 font-normal text-muted-foreground">({pct}%)</span>
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })
+        )}
+      </div>
+    </SectionCard>
+  )
+}
+
+// ── Attendance Summary Widget ─────────────────────────────────────────────────
+
+function AttendanceSummaryWidget() {
+  const latestIdx = MOCK_ATTENDANCE.length - 1
+  const latest = MOCK_ATTENDANCE[latestIdx]!
+  const nowMonth = new Date().getMonth()
+  const monthLabel = MONTH_SHORT[Math.min(nowMonth, latestIdx)] ?? MONTH_SHORT[latestIdx]!
+  const attendPct = latest.workDays > 0 ? Math.round(((latest.present + latest.late) / latest.workDays) * 100) : 0
+  const maxPresent = Math.max(...MOCK_ATTENDANCE.map((s) => s.present), 1)
+
+  return (
+    <SectionCard title="Attendance Summary" icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} size={15} strokeWidth={1.8} />}>
+      <div className="space-y-4">
+        {/* Mini KPI row */}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[
+            { label: "Rate", value: `${attendPct}%`, accent: attendPct >= 90 ? "text-green-600" : attendPct >= 75 ? "text-amber-500" : "text-red-500" },
+            { label: "Present", value: `${latest.present}/${latest.workDays}`, accent: "" },
+            { label: "Late / Absent", value: `${latest.late}/${latest.absent}`, accent: "" },
+            { label: "OT Hours", value: `${latest.ot}h`, accent: "" },
+          ].map((s) => (
+            <div key={s.label} className="rounded-lg border bg-background p-3">
+              <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">{s.label}</p>
+              <p className={cn("mt-0.5 text-lg font-semibold tabular-nums", s.accent || "text-foreground")}>{s.value}</p>
+              <p className="text-[10px] text-muted-foreground">{monthLabel}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Bar chart */}
+        <div>
+          <p className="mb-2 text-[11px] font-medium text-muted-foreground">Present days — last {MOCK_ATTENDANCE.length} months</p>
+          <div className="flex items-end gap-2">
+            {MOCK_ATTENDANCE.map((s, i) => {
+              const isLast = i === latestIdx
+              return (
+                <div key={i} className="flex flex-1 flex-col items-center gap-1">
+                  <div className="relative w-full overflow-hidden rounded-t-md bg-muted" style={{ height: 44 }}>
+                    <div
+                      className={cn("absolute bottom-0 w-full rounded-t-md", isLast ? "bg-primary" : "bg-primary/30")}
+                      style={{ height: `${(s.present / maxPresent) * 100}%` }}
+                    />
+                  </div>
+                  <span className={cn("text-[10px] tabular-nums", isLast ? "font-semibold text-foreground" : "text-muted-foreground")}>
+                    {MONTH_SHORT[i]}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Recent records */}
+        <div>
+          <p className="mb-2 text-[11px] font-medium text-muted-foreground">Recent records</p>
+          <div className="divide-y rounded-lg border">
+            {attendanceRecords.slice(0, 4).map((rec, i) => (
+              <div key={i} className="flex items-center justify-between px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-12 text-[12px] font-medium tabular-nums">{rec.date}</span>
+                  <span className="text-[11px] text-muted-foreground">{rec.day}</span>
+                </div>
+                <StatusBadge variant={
+                  rec.status === "present" ? "green"
+                  : rec.status === "late" ? "amber"
+                  : rec.status === "leave" ? "blue"
+                  : rec.status === "absent" ? "red"
+                  : "gray"
+                }>
                   {rec.status.charAt(0).toUpperCase() + rec.status.slice(1)}
                 </StatusBadge>
               </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </SectionCard>
+  )
+}
+
+// ── Dashboard Widgets Sidebar ─────────────────────────────────────────────────
+
+function DashboardWidgets({ employeeId }: { employeeId: number }) {
+  const { data: assignments = [] } = useEmployeeAssignments(employeeId)
+  const { data: kpis = [] } = useEmployeeKpis(employeeId)
+
+  const currentAssignment = assignments.find((a) => a.status === "ACTIVE")
+  const upcomingDeadlines = assignments
+    .filter((a) => a.deadline && a.status !== "COMPLETED")
+    .sort((a, b) => (a.deadline! < b.deadline! ? -1 : 1))
+    .slice(0, 4)
+
+  const kpiAtRisk = kpis.filter((k) => k.status === "AT_RISK" || k.status === "BEHIND")
+
+  return (
+    <div className="space-y-4">
+      {/* Current Assignment */}
+      <div className="rounded-xl border bg-card p-4">
+        <p className="mb-3 text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">Current Assignment</p>
+        {currentAssignment ? (
+          <div>
+            <div className="mb-1.5 flex items-start gap-2">
+              <StatusBadge variant={ASSIGNMENT_TYPE_COLOR[currentAssignment.type]} dot={false} className="text-[10px] shrink-0">
+                {ASSIGNMENT_TYPE_LABEL[currentAssignment.type]}
+              </StatusBadge>
+              <StatusBadge variant="green" className="text-[10px] shrink-0">Active</StatusBadge>
+            </div>
+            <p className="text-[14px] font-semibold">{currentAssignment.name}</p>
+            {currentAssignment.description && (
+              <p className="mt-0.5 text-[12px] text-muted-foreground">{currentAssignment.description}</p>
+            )}
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Started {fmtDate(currentAssignment.startDate)}
+              {currentAssignment.deadline && ` · Due ${fmtDate(currentAssignment.deadline)}`}
+            </p>
+          </div>
+        ) : (
+          <p className="text-[13px] text-muted-foreground">No active assignment.</p>
+        )}
+      </div>
+
+      {/* Upcoming Deadlines */}
+      <div className="rounded-xl border bg-card p-4">
+        <p className="mb-3 text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">Upcoming Deadlines</p>
+        {upcomingDeadlines.length === 0 ? (
+          <p className="text-[13px] text-muted-foreground">No upcoming deadlines.</p>
+        ) : (
+          <div className="space-y-2">
+            {upcomingDeadlines.map((a) => {
+              const days = daysUntil(a.deadline!)
+              const urgent = days <= 7
+              return (
+                <div key={a.id} className="flex items-center gap-2.5">
+                  <div className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg border text-[11px] font-bold tabular-nums", urgent ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-400" : "border-border bg-muted text-muted-foreground")}>
+                    {days}d
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-[12px] font-medium">{a.name}</p>
+                    <p className="text-[11px] text-muted-foreground">{fmtDate(a.deadline!)}</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* KPI Alerts */}
+      {kpiAtRisk.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/10">
+          <div className="mb-2 flex items-center gap-1.5">
+            <HugeiconsIcon icon={Alert01Icon} size={13} strokeWidth={2} className="text-amber-600 dark:text-amber-400" />
+            <p className="text-[11px] font-semibold tracking-widest text-amber-700 dark:text-amber-400 uppercase">KPI Alerts</p>
+          </div>
+          <div className="space-y-1.5">
+            {kpiAtRisk.map((k) => {
+              const pct = k.target > 0 ? Math.round((k.current / k.target) * 100) : 0
+              return (
+                <div key={k.id} className="flex items-center justify-between">
+                  <p className="text-[12px] font-medium text-amber-800 dark:text-amber-300">{k.name}</p>
+                  <span className="text-[11px] text-amber-600 dark:text-amber-400 tabular-nums">{pct}%</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Pending Requests placeholder */}
+      <div className="rounded-xl border bg-card p-4">
+        <p className="mb-3 text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">Pending Requests</p>
+        <div className="space-y-1.5">
+          {[
+            { label: "Leave Request", status: "Pending", color: "amber" },
+            { label: "OT Request", status: "Approved", color: "green" },
+          ].map((r) => (
+            <div key={r.label} className="flex items-center justify-between">
+              <p className="text-[12px]">{r.label}</p>
+              <StatusBadge variant={r.color as "amber" | "green"}>{r.status}</StatusBadge>
             </div>
           ))}
         </div>
@@ -386,315 +1371,23 @@ function AttendanceSummary() {
   )
 }
 
-function PerformanceSummary() {
-  const latestIdx = PERF_STATS.length - 1
-  const latest = PERF_STATS[latestIdx]!
-  const prev = PERF_STATS[latestIdx - 1]
-  const monthLabel =
-    MONTH_SHORT[Math.min(NOW_MONTH, latestIdx)] ?? MONTH_SHORT[latestIdx]!
+// ── Main ──────────────────────────────────────────────────────────────────────
 
-  const totalSlots = latest.openSlots + latest.bookedClasses
-  const bookingRate =
-    totalSlots > 0 ? Math.round((latest.bookedClasses / totalSlots) * 100) : 0
-  const fiveStarPct =
-    latest.totalReviews > 0
-      ? Math.round((latest.fiveStar / latest.totalReviews) * 100)
-      : 0
-
-  const prevBooking =
-    prev && prev.openSlots + prev.bookedClasses > 0
-      ? Math.round(
-          (prev.bookedClasses / (prev.openSlots + prev.bookedClasses)) * 100
-        )
-      : null
-  const bookingTrend = prevBooking !== null ? bookingRate - prevBooking : null
-
-  // Sparkline for student pct
-  const maxPct = Math.max(...PERF_STATS.map((p) => p.studentPct), 1)
-
-  return (
-    <div className="space-y-4">
-      {/* KPI row */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-        <MiniStatCard
-          label="Open Slots"
-          value={String(latest.openSlots)}
-          sub={`of ${totalSlots} total`}
-          accent={latest.openSlots > 5 ? "text-amber-500" : "text-foreground"}
-        />
-        <MiniStatCard
-          label="Booked Classes"
-          value={String(latest.bookedClasses)}
-          sub={
-            bookingTrend !== null
-              ? bookingTrend >= 0
-                ? `↑ +${bookingTrend}% fill rate`
-                : `↓ ${bookingTrend}% fill rate`
-              : `${bookingRate}% fill rate`
-          }
-        />
-        <MiniStatCard
-          label="Student's %"
-          value={`${latest.studentPct}%`}
-          sub={
-            latest.studentPct >= 90
-              ? "Excellent"
-              : latest.studentPct >= 75
-                ? "Good"
-                : "Needs attention"
-          }
-          accent={
-            latest.studentPct >= 90
-              ? "text-green-600"
-              : latest.studentPct >= 75
-                ? "text-amber-500"
-                : "text-red-500"
-          }
-        />
-        <MiniStatCard
-          label="Total Reviews"
-          value={String(latest.totalReviews)}
-          sub={monthLabel}
-        />
-        <MiniStatCard
-          label="5-Star Ratings"
-          value={String(latest.fiveStar)}
-          sub={`${fiveStarPct}% of reviews`}
-          accent="text-amber-500"
-        />
-        <MiniStatCard
-          label="2★ and Below"
-          value={String(latest.lowStar)}
-          sub="low ratings"
-          accent={
-            latest.lowStar > 3
-              ? "text-red-500"
-              : latest.lowStar > 0
-                ? "text-amber-500"
-                : "text-green-600"
-          }
-        />
-      </div>
-
-      {/* Student % trend */}
-      <div>
-        <p className="mb-2 text-[11px] font-medium text-muted-foreground">
-          Student attendance % — last {PERF_STATS.length} months
-        </p>
-        <div className="flex items-end gap-2">
-          {PERF_STATS.map((p, i) => {
-            const barPct = (p.studentPct / maxPct) * 100
-            const isLast = i === latestIdx
-            return (
-              <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                <span
-                  className={cn(
-                    "text-[10px] tabular-nums",
-                    isLast
-                      ? "font-semibold text-foreground"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {p.studentPct > 0 ? `${p.studentPct}%` : ""}
-                </span>
-                <div
-                  className="relative w-full overflow-hidden rounded-t-md bg-muted"
-                  style={{ height: 52 }}
-                >
-                  <div
-                    className={cn(
-                      "absolute bottom-0 w-full rounded-t-md transition-all",
-                      isLast ? "bg-emerald-500" : "bg-emerald-500/30"
-                    )}
-                    style={{ height: `${barPct}%` }}
-                  />
-                </div>
-                <span
-                  className={cn(
-                    "text-[10px] tabular-nums",
-                    isLast
-                      ? "font-semibold text-foreground"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {MONTH_SHORT[i]}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Rating snapshot */}
-      <div>
-        <p className="mb-2 text-[11px] font-medium text-muted-foreground">
-          Rating snapshot — {monthLabel}
-        </p>
-        <div className="flex items-center gap-4 rounded-lg border bg-background px-4 py-3">
-          <div className="text-center">
-            <p className="text-3xl font-bold text-amber-500 tabular-nums">
-              {latest.totalReviews > 0
-                ? ((latest.fiveStar * 5) / latest.totalReviews).toFixed(1)
-                : "—"}
-            </p>
-            <div className="mt-1 flex justify-center gap-0.5">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <svg
-                  key={n}
-                  viewBox="0 0 12 12"
-                  className={cn(
-                    "size-3",
-                    n <=
-                      Math.round(
-                        (latest.fiveStar * 5) / (latest.totalReviews || 1)
-                      )
-                      ? "fill-amber-400"
-                      : "fill-muted"
-                  )}
-                >
-                  <path d="M6 1l1.2 3.6H11L8.1 6.8l1.2 3.6L6 8.2l-3.3 2.2 1.2-3.6L1 4.6h3.8z" />
-                </svg>
-              ))}
-            </div>
-            <p className="mt-0.5 text-[10px] text-muted-foreground">
-              {latest.totalReviews} reviews
-            </p>
-          </div>
-          <div className="flex flex-1 flex-col gap-1">
-            {[
-              { label: "5 ★", value: latest.fiveStar, color: "bg-amber-400" },
-              {
-                label: "3–4 ★",
-                value: latest.totalReviews - latest.fiveStar - latest.lowStar,
-                color: "bg-amber-300",
-              },
-              { label: "≤2 ★", value: latest.lowStar, color: "bg-red-400" },
-            ].map(({ label, value, color }) => {
-              const pct =
-                latest.totalReviews > 0
-                  ? (value / latest.totalReviews) * 100
-                  : 0
-              return (
-                <div key={label} className="flex items-center gap-2">
-                  <span className="w-10 text-[10px] text-muted-foreground">
-                    {label}
-                  </span>
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className={cn("h-full rounded-full", color)}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <span className="w-5 text-right text-[10px] text-muted-foreground tabular-nums">
-                    {value}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Main ───────────────────────────────────────────────────────────────────────
-
-const POINTS_OPTIONS = [5, 25, 40, 50, 60, 70, 80, 90, 100]
-
-const DEFAULT_CURRICULA = ["BCT", "Smart Juniors", "Callan", "REMS"]
-
-interface EmploymentFlags {
-  flexibleTime: boolean
-  overtimeAllowed: boolean
-  remoteWork: boolean
-  nightDifferential: boolean
-  holidayPay: boolean
-}
-
-const FLAG_LABELS: {
-  key: keyof EmploymentFlags
-  label: string
-  description: string
-}[] = [
-  {
-    key: "flexibleTime",
-    label: "Flexible Time",
-    description: "Employee may set their own clock-in window",
-  },
-  {
-    key: "overtimeAllowed",
-    label: "Overtime Allowed",
-    description: "Eligible to render and log overtime hours",
-  },
-  {
-    key: "remoteWork",
-    label: "Remote Work",
-    description: "Permitted to work outside the office",
-  },
-  {
-    key: "nightDifferential",
-    label: "Night Differential",
-    description: "Receives night-shift pay differential",
-  },
-  {
-    key: "holidayPay",
-    label: "Holiday Pay",
-    description: "Entitled to holiday premium pay",
-  },
-]
-
-export function OverviewTab({ employee }: Props) {
-  const [subTab, setSubTab] = useState<"attendance" | "performance">(
-    "attendance"
-  )
-  const [points, setPoints] = useState<number>(25)
-  const [curricula, setCurricula] = useState<string[]>(["BCT"])
-  const [extraCurricula, setExtraCurricula] = useState<string[]>([])
-  const [newCurriculum, setNewCurriculum] = useState("")
-  const [addingNew, setAddingNew] = useState(false)
-
-  // Stage
-  const [stage, setStage] = useState("probationary")
-  const [editingStage, setEditingStage] = useState(false)
-  const [stageDraft, setStageDraft] = useState("probationary")
-
-  // Per-card edit states
+export function OverviewTab({ employee, employeeId }: Props) {
   const [editingPersonal, setEditingPersonal] = useState(false)
-  const [editingEmployment, setEditingEmployment] = useState(false)
   const [editingContact, setEditingContact] = useState(false)
-  const [editingDocs, setEditingDocs] = useState(false)
 
-  // Employment flags
-  const [flags, setFlags] = useState<EmploymentFlags>({
-    flexibleTime: false,
-    overtimeAllowed: true,
-    remoteWork: false,
-    nightDifferential: false,
-    holidayPay: true,
-  })
-  const [flagsDraft, setFlagsDraft] = useState<EmploymentFlags>(flags)
-
-  // Grace period
-  const [gracePeriodMins, setGracePeriodMins] = useState(5)
-  const [gracePeriodDraft, setGracePeriodDraft] = useState(5)
-
-  // Employment draft (for cancel)
-  const [pointsDraft, setPointsDraft] = useState(25)
-  const [curriculaDraft, setCurriculaDraft] = useState<string[]>(["BCT"])
-
-  // Personal fields
   const [personal, setPersonal] = useState({
     name: employee.name,
     email: employee.email,
     employeeId: employee.employeeId,
-    role: employee.role,
-    status: employee.status,
+    department: employee.department,
+    position: employee.position,
+    team: "",
     startDate: employee.startDate,
   })
   const [personalDraft, setPersonalDraft] = useState(personal)
 
-  // Contact fields
   const [contact, setContact] = useState({
     phone: "+63 917 123 4567",
     address: "Makati City, Metro Manila",
@@ -703,650 +1396,141 @@ export function OverviewTab({ employee }: Props) {
   })
   const [contactDraft, setContactDraft] = useState(contact)
 
-  function toggleCurriculum(name: string) {
-    setCurricula((prev) =>
-      prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
-    )
-  }
-
-  function addCurriculum() {
-    const trimmed = newCurriculum.trim()
-    if (!trimmed) return
-    setExtraCurricula((prev) => [...prev, trimmed])
-    setCurricula((prev) => [...prev, trimmed])
-    setNewCurriculum("")
-    setAddingNew(false)
-  }
-
-  const allCurricula = [...DEFAULT_CURRICULA, ...extraCurricula]
-  const currentStage = STAGES.find((s) => s.key === stage)!
+  const [editingDocs, setEditingDocs] = useState(false)
 
   return (
     <div className="space-y-4">
-      {/* Employment Stage — full width */}
-      <div className="rounded-xl border bg-card p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h3 className="text-[13px] font-semibold">Employment Stage</h3>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Current standing of this employee
-            </p>
-          </div>
-          {editingStage ? (
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => {
-                  setStage(stageDraft)
-                  setEditingStage(false)
-                }}
-                className="flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                <HugeiconsIcon icon={Tick02Icon} size={11} strokeWidth={2} />
-                Save
-              </button>
-              <button
-                onClick={() => {
-                  setStageDraft(stage)
-                  setEditingStage(false)
-                }}
-                className="flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted"
-              >
-                <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={2} />
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => {
-                setStageDraft(stage)
-                setEditingStage(true)
-              }}
-              className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <HugeiconsIcon
-                icon={PencilEdit01Icon}
-                size={13}
-                strokeWidth={2}
-              />
-            </button>
-          )}
-        </div>
-
-        {editingStage ? (
-          <div className="flex flex-wrap gap-2">
-            {STAGES.map((s) => (
-              <button
-                key={s.key}
-                onClick={() => setStageDraft(s.key)}
-                className={cn(
-                  "rounded-lg border px-4 py-2 text-[12px] font-medium transition-all",
-                  stageDraft === s.key
-                    ? `${s.color} ring-2 ring-primary/30`
-                    : "border-border bg-background text-muted-foreground hover:bg-muted"
-                )}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="flex items-center gap-4">
-            {/* Stage progress strip */}
-            <div className="flex flex-1 items-center gap-0">
-              {STAGES.slice(0, 4).map((s, i) => {
-                const stageIdx = STAGES.findIndex((x) => x.key === stage)
-                const thisIdx = STAGES.findIndex((x) => x.key === s.key)
-                const isPast = thisIdx < stageIdx
-                const isCurrent = s.key === stage
-                const isLast = i === 3
-                return (
-                  <div key={s.key} className="flex flex-1 items-center">
-                    <div className="flex flex-col items-center gap-1.5">
-                      <div
-                        className={cn(
-                          "flex size-8 items-center justify-center rounded-full border-2 text-[11px] font-bold transition-all",
-                          isCurrent
-                            ? `${s.color} border-current`
-                            : isPast
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "border-border bg-background text-muted-foreground"
-                        )}
-                      >
-                        {isPast ? (
-                          <svg viewBox="0 0 10 10" className="size-3">
-                            <path
-                              d="M1.5 5l2.5 2.5 4.5-4.5"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              fill="none"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        ) : (
-                          i + 1
-                        )}
-                      </div>
-                      <span
-                        className={cn(
-                          "text-[10px] font-medium",
-                          isCurrent
-                            ? "text-foreground"
-                            : isPast
-                              ? "text-primary"
-                              : "text-muted-foreground"
-                        )}
-                      >
-                        {s.label}
-                      </span>
-                    </div>
-                    {!isLast && (
-                      <div
-                        className={cn(
-                          "mx-1 mb-4 h-0.5 flex-1",
-                          thisIdx < stageIdx ? "bg-primary" : "bg-border"
-                        )}
-                      />
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Current badge */}
-            <span
-              className={cn(
-                "shrink-0 rounded-full border px-3 py-1 text-[12px] font-semibold",
-                currentStage.color
-              )}
-            >
-              {currentStage.label}
-            </span>
-          </div>
-        )}
-
-        {/* Resigned / Terminated shown separately */}
-        {(stage === "resigned" || stage === "terminated") && !editingStage && (
-          <div
-            className={cn(
-              "mt-3 rounded-lg border px-4 py-2.5 text-[12px] font-medium",
-              currentStage.color
-            )}
-          >
-            This employee is marked as <strong>{currentStage.label}</strong>.
-          </div>
-        )}
-      </div>
-
-      {/* Profile cards */}
+      {/* Row 1: Personal Info + Contact Details */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Section
-          title="Personal Information"
-          editing={editingPersonal}
-          onEdit={() => {
-            setPersonalDraft(personal)
-            setEditingPersonal(true)
-          }}
-          onSave={() => {
-            setPersonal(personalDraft)
-            setEditingPersonal(false)
-          }}
-          onCancel={() => {
-            setPersonalDraft(personal)
-            setEditingPersonal(false)
-          }}
-        >
+        {/* Personal Info */}
+        <div className="rounded-xl border bg-card p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-[13px] font-semibold">Personal Information</h3>
+            {editingPersonal ? (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => { setPersonal(personalDraft); setEditingPersonal(false) }}
+                  className="flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  <HugeiconsIcon icon={Tick02Icon} size={11} strokeWidth={2} /> Save
+                </button>
+                <button
+                  onClick={() => { setPersonalDraft(personal); setEditingPersonal(false) }}
+                  className="flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted"
+                >
+                  <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={2} /> Cancel
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => { setPersonalDraft(personal); setEditingPersonal(true) }} className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground hover:bg-muted hover:text-foreground">
+                <HugeiconsIcon icon={PencilEdit01Icon} size={13} strokeWidth={2} />
+              </button>
+            )}
+          </div>
           {editingPersonal ? (
             <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-              <EditField
-                label="Full Name"
-                value={personalDraft.name}
-                onChange={(v) => setPersonalDraft((d) => ({ ...d, name: v }))}
-              />
-              <EditField
-                label="Email"
-                value={personalDraft.email}
-                onChange={(v) => setPersonalDraft((d) => ({ ...d, email: v }))}
-              />
-              <EditField
-                label="Employee ID"
-                value={personalDraft.employeeId}
-                onChange={(v) =>
-                  setPersonalDraft((d) => ({ ...d, employeeId: v }))
-                }
-              />
-              <EditField
-                label="Role"
-                value={personalDraft.role}
-                onChange={(v) =>
-                  setPersonalDraft((d) => ({
-                    ...d,
-                    role: v as "employee" | "hr" | "admin",
-                  }))
-                }
-              />
-              <EditField
-                label="Status"
-                value={personalDraft.status}
-                onChange={(v) =>
-                  setPersonalDraft((d) => ({
-                    ...d,
-                    status: v as "active" | "on-leave" | "inactive",
-                  }))
-                }
-              />
-              <EditField
-                label="Start Date"
-                value={personalDraft.startDate}
-                onChange={(v) =>
-                  setPersonalDraft((d) => ({ ...d, startDate: v }))
-                }
-              />
+              <EditField label="Full Name" value={personalDraft.name} onChange={(v) => setPersonalDraft((d) => ({ ...d, name: v }))} />
+              <EditField label="Email" value={personalDraft.email} onChange={(v) => setPersonalDraft((d) => ({ ...d, email: v }))} />
+              <EditField label="Employee ID" value={personalDraft.employeeId} onChange={(v) => setPersonalDraft((d) => ({ ...d, employeeId: v }))} />
+              <EditField label="Position" value={personalDraft.position} onChange={(v) => setPersonalDraft((d) => ({ ...d, position: v }))} />
+              <EditField label="Department" value={personalDraft.department} onChange={(v) => setPersonalDraft((d) => ({ ...d, department: v }))} />
+              <EditField label="Team" value={personalDraft.team} onChange={(v) => setPersonalDraft((d) => ({ ...d, team: v }))} />
+              <EditField label="Start Date" type="date" value={personalDraft.startDate} onChange={(v) => setPersonalDraft((d) => ({ ...d, startDate: v }))} />
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <InfoRow label="Full Name" value={personal.name} />
               <InfoRow label="Email" value={personal.email} />
               <InfoRow label="Employee ID" value={personal.employeeId} />
-              <InfoRow label="Role" value={personal.role} />
-              <InfoRow label="Status" value={personal.status} />
+              <InfoRow label="Position" value={personal.position} />
+              <InfoRow label="Department" value={personal.department} />
+              <InfoRow label="Team" value={personal.team || "—"} />
               <InfoRow label="Start Date" value={personal.startDate} />
+              <InfoRow label="Status" value={employee.status === "on-leave" ? "On Leave" : employee.status.charAt(0).toUpperCase() + employee.status.slice(1)} />
             </div>
           )}
-        </Section>
-
-        <Section
-          title="Employment Details"
-          editing={editingEmployment}
-          onEdit={() => {
-            setPointsDraft(points)
-            setCurriculaDraft(curricula)
-            setFlagsDraft(flags)
-            setGracePeriodDraft(gracePeriodMins)
-            setEditingEmployment(true)
-          }}
-          onSave={() => {
-            setPoints(pointsDraft)
-            setCurricula(curriculaDraft)
-            setFlags(flagsDraft)
-            setGracePeriodMins(gracePeriodDraft)
-            setEditingEmployment(false)
-          }}
-          onCancel={() => {
-            setFlagsDraft(flags)
-            setGracePeriodDraft(gracePeriodMins)
-            setEditingEmployment(false)
-          }}
-        >
-          {editingEmployment ? (
-            <div className="space-y-5">
-              {/* Points */}
-              <div className="space-y-2">
-                <Label className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                  Points
-                </Label>
-                <div className="flex flex-wrap gap-1.5">
-                  {POINTS_OPTIONS.map((pt) => (
-                    <button
-                      key={pt}
-                      onClick={() => setPointsDraft(pt)}
-                      className={cn(
-                        "rounded-lg border px-3 py-1.5 text-[12px] font-medium tabular-nums transition-colors",
-                        pointsDraft === pt
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground"
-                      )}
-                    >
-                      {pt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="h-px bg-border" />
-
-              {/* Curriculum */}
-              <div className="space-y-2">
-                <Label className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                  Curriculum
-                </Label>
-                <div className="flex flex-wrap gap-x-4 gap-y-2">
-                  {allCurricula.map((name) => {
-                    const checked = curriculaDraft.includes(name)
-                    return (
-                      <label
-                        key={name}
-                        className="flex cursor-pointer items-center gap-2"
-                      >
-                        <div
-                          onClick={() =>
-                            setCurriculaDraft((prev) =>
-                              prev.includes(name)
-                                ? prev.filter((c) => c !== name)
-                                : [...prev, name]
-                            )
-                          }
-                          className={cn(
-                            "flex size-4 shrink-0 items-center justify-center rounded border-2 transition-colors",
-                            checked
-                              ? "border-primary bg-primary"
-                              : "border-border bg-background"
-                          )}
-                        >
-                          {checked && (
-                            <svg viewBox="0 0 10 10" className="size-2.5">
-                              <path
-                                d="M1.5 5l2.5 2.5 4.5-4.5"
-                                stroke="white"
-                                strokeWidth="1.5"
-                                fill="none"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          )}
-                        </div>
-                        <span
-                          onClick={() =>
-                            setCurriculaDraft((prev) =>
-                              prev.includes(name)
-                                ? prev.filter((c) => c !== name)
-                                : [...prev, name]
-                            )
-                          }
-                          className={cn(
-                            "text-[13px] select-none",
-                            checked
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          )}
-                        >
-                          {name}
-                        </span>
-                      </label>
-                    )
-                  })}
-                </div>
-                {addingNew ? (
-                  <div className="flex items-center gap-2 pt-1">
-                    <Input
-                      autoFocus
-                      className="h-8 w-40 text-[12px]"
-                      placeholder="Curriculum name…"
-                      value={newCurriculum}
-                      onChange={(e) => setNewCurriculum(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") addCurriculum()
-                        if (e.key === "Escape") {
-                          setAddingNew(false)
-                          setNewCurriculum("")
-                        }
-                      }}
-                    />
-                    <Button
-                      size="xs"
-                      onClick={addCurriculum}
-                      disabled={!newCurriculum.trim()}
-                    >
-                      Add
-                    </Button>
-                    <button
-                      onClick={() => {
-                        setAddingNew(false)
-                        setNewCurriculum("")
-                      }}
-                      className="text-[12px] text-muted-foreground hover:text-foreground"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setAddingNew(true)}
-                    className="mt-1 flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground"
-                  >
-                    <span className="text-base leading-none">+</span> Add
-                    curriculum
-                  </button>
-                )}
-              </div>
-
-              <div className="h-px bg-border" />
-
-              {/* Work policy toggles */}
-              <div className="space-y-3">
-                <Label className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                  Work Policy
-                </Label>
-                <div className="space-y-3">
-                  {FLAG_LABELS.map(({ key, label, description }) => (
-                    <div
-                      key={key}
-                      className="flex items-center justify-between gap-4"
-                    >
-                      <div>
-                        <p className="text-[13px] font-medium">{label}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {description}
-                        </p>
-                      </div>
-                      <Switch
-                        checked={flagsDraft[key]}
-                        onCheckedChange={(v) =>
-                          setFlagsDraft((f) => ({ ...f, [key]: v }))
-                        }
-                      />
-                    </div>
-                  ))}
-
-                  {/* Grace period — always visible in edit mode */}
-                  <div className="flex items-center justify-between gap-4 border-t border-border pt-3">
-                    <div>
-                      <p className="text-[13px] font-medium">
-                        Late Grace Period
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">
-                        Minutes allowed after shift start before marked late
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <Input
-                        type="number"
-                        min={0}
-                        max={60}
-                        className="h-8 w-16 text-center text-[13px] tabular-nums"
-                        value={gracePeriodDraft}
-                        onChange={(e) =>
-                          setGracePeriodDraft(
-                            Math.min(60, Math.max(0, Number(e.target.value)))
-                          )
-                        }
-                      />
-                      <span className="text-[12px] text-muted-foreground">
-                        min
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                <InfoRow label="Points" value={`${points} pts`} />
-                <InfoRow
-                  label="Curriculum"
-                  value={
-                    curricula.length > 0
-                      ? curricula.join(", ")
-                      : "None selected"
-                  }
-                />
-              </div>
-              <div className="h-px bg-border" />
-              <div>
-                <p className="mb-2.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                  Work Policy
-                </p>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
-                  {FLAG_LABELS.map(({ key, label }) => (
-                    <div key={key} className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "size-2 shrink-0 rounded-full",
-                          flags[key] ? "bg-green-500" : "bg-muted-foreground/30"
-                        )}
-                      />
-                      <span
-                        className={cn(
-                          "text-[12px]",
-                          flags[key]
-                            ? "text-foreground"
-                            : "text-muted-foreground line-through decoration-muted-foreground/40"
-                        )}
-                      >
-                        {label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
-                  <span className="size-2 shrink-0 rounded-full bg-amber-400" />
-                  <span className="text-[12px] text-muted-foreground">
-                    Late Grace Period
-                  </span>
-                  <span className="text-[12px] font-semibold tabular-nums">
-                    {gracePeriodMins} min{gracePeriodMins !== 1 ? "s" : ""}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </Section>
-
-        <Section
-          title="Contact Details"
-          editing={editingContact}
-          onEdit={() => {
-            setContactDraft(contact)
-            setEditingContact(true)
-          }}
-          onSave={() => {
-            setContact(contactDraft)
-            setEditingContact(false)
-          }}
-          onCancel={() => {
-            setContactDraft(contact)
-            setEditingContact(false)
-          }}
-        >
-          {editingContact ? (
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-              <EditField
-                label="Phone"
-                value={contactDraft.phone}
-                onChange={(v) => setContactDraft((d) => ({ ...d, phone: v }))}
-              />
-              <EditField
-                label="Address"
-                value={contactDraft.address}
-                onChange={(v) => setContactDraft((d) => ({ ...d, address: v }))}
-              />
-              <EditField
-                label="Emergency Contact"
-                value={contactDraft.emergencyContact}
-                onChange={(v) =>
-                  setContactDraft((d) => ({ ...d, emergencyContact: v }))
-                }
-              />
-              <EditField
-                label="Relationship"
-                value={contactDraft.relationship}
-                onChange={(v) =>
-                  setContactDraft((d) => ({ ...d, relationship: v }))
-                }
-              />
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-              <InfoRow label="Phone" value={contact.phone} />
-              <InfoRow label="Address" value={contact.address} />
-              <InfoRow
-                label="Emergency Contact"
-                value={contact.emergencyContact}
-              />
-              <InfoRow label="Relationship" value={contact.relationship} />
-            </div>
-          )}
-        </Section>
-
-        <Section
-          title="Documents & Files"
-          editing={editingDocs}
-          onEdit={() => setEditingDocs(true)}
-          onSave={() => setEditingDocs(false)}
-          onCancel={() => setEditingDocs(false)}
-        >
-          {editingDocs ? (
-            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border px-4 py-8 text-center transition-colors hover:border-primary/50 hover:bg-muted/30">
-              <svg
-                viewBox="0 0 24 24"
-                className="size-8 text-muted-foreground"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path
-                  d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 3v12m0-12l-4 4m4-4l4 4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span className="text-[12px] text-muted-foreground">
-                Click to upload a file
-              </span>
-              <input type="file" className="hidden" />
-            </label>
-          ) : (
-            <p className="text-[13px] text-muted-foreground">
-              No documents uploaded yet.
-            </p>
-          )}
-        </Section>
-      </div>
-
-      {/* Summary sub-tabs */}
-      <div className="rounded-xl border bg-card">
-        {/* Sub-tab header */}
-        <div className="flex border-b">
-          {(["attendance", "performance"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setSubTab(tab)}
-              className={cn(
-                "relative flex-1 py-3 text-[13px] font-medium capitalize transition-colors",
-                subTab === tab
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {tab === "attendance"
-                ? "Attendance Summary"
-                : "Performance Summary"}
-              {subTab === tab && (
-                <span className="absolute bottom-0 left-0 h-0.5 w-full rounded-full bg-primary" />
-              )}
-            </button>
-          ))}
         </div>
 
-        {/* Sub-tab content */}
-        <div className="p-5">
-          {subTab === "attendance" ? (
-            <AttendanceSummary />
-          ) : (
-            <PerformanceSummary />
-          )}
+        {/* Contact + Docs */}
+        <div className="flex flex-col gap-4">
+          {/* Contact Details */}
+          <div className="rounded-xl border bg-card p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-[13px] font-semibold">Contact Details</h3>
+              {editingContact ? (
+                <div className="flex items-center gap-1.5">
+                  <button onClick={() => { setContact(contactDraft); setEditingContact(false) }} className="flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90">
+                    <HugeiconsIcon icon={Tick02Icon} size={11} strokeWidth={2} /> Save
+                  </button>
+                  <button onClick={() => { setContactDraft(contact); setEditingContact(false) }} className="flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted">
+                    <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={2} /> Cancel
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => { setContactDraft(contact); setEditingContact(true) }} className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground hover:bg-muted hover:text-foreground">
+                  <HugeiconsIcon icon={PencilEdit01Icon} size={13} strokeWidth={2} />
+                </button>
+              )}
+            </div>
+            {editingContact ? (
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <EditField label="Phone" value={contactDraft.phone} onChange={(v) => setContactDraft((d) => ({ ...d, phone: v }))} />
+                <EditField label="Address" value={contactDraft.address} onChange={(v) => setContactDraft((d) => ({ ...d, address: v }))} />
+                <EditField label="Emergency Contact" value={contactDraft.emergencyContact} onChange={(v) => setContactDraft((d) => ({ ...d, emergencyContact: v }))} />
+                <EditField label="Relationship" value={contactDraft.relationship} onChange={(v) => setContactDraft((d) => ({ ...d, relationship: v }))} />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                <InfoRow label="Phone" value={contact.phone} />
+                <InfoRow label="Address" value={contact.address} />
+                <InfoRow label="Emergency Contact" value={contact.emergencyContact} />
+                <InfoRow label="Relationship" value={contact.relationship} />
+              </div>
+            )}
+          </div>
+
+          {/* Documents */}
+          <div className="rounded-xl border bg-card p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-[13px] font-semibold">Documents & Files</h3>
+              <button onClick={() => setEditingDocs((v) => !v)} className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground hover:bg-muted hover:text-foreground">
+                <HugeiconsIcon icon={editingDocs ? Cancel01Icon : Add01Icon} size={13} strokeWidth={2} />
+              </button>
+            </div>
+            {editingDocs ? (
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border px-4 py-6 text-center transition-colors hover:border-primary/50 hover:bg-muted/30">
+                <svg viewBox="0 0 24 24" className="size-7 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 3v12m0-12l-4 4m4-4l4 4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span className="text-[12px] text-muted-foreground">Click to upload a file</span>
+                <input type="file" className="hidden" />
+              </label>
+            ) : (
+              <p className="text-[13px] text-muted-foreground">No documents uploaded yet.</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Row 2: Work Record */}
+      <WorkRecordCard startDate={personal.startDate} employeeId={employeeId} />
+
+      {/* Row 3: Employment Stage */}
+      <EmploymentStageCard />
+
+      {/* Row 3: Work Assignments */}
+      <WorkAssignmentsSection employeeId={employeeId} />
+
+      {/* Row 4: KPI */}
+      <KpiSection employeeId={employeeId} />
+
+      {/* Row 5: Attendance Summary + Dashboard Widgets */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <AttendanceSummaryWidget />
+        </div>
+        <div>
+          <DashboardWidgets employeeId={employeeId} />
         </div>
       </div>
     </div>

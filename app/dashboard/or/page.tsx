@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
-import { ComingSoon } from "@/components/custom/coming-soon"
+import { OrManagement } from "@/components/dashboard/admin/or-management"
 
-export const metadata: Metadata = { title: "OR Requests" }
+export const metadata: Metadata = { title: "Official Receipts" }
 
 export default function OrPage() {
-  return <ComingSoon title="OR Requests" description="Review and act on employee official business requests." />
+  return <OrManagement />
 }

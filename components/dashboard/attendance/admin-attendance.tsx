@@ -91,6 +91,7 @@ function TableView({ records }: { records: TeamAttendanceRecord[] }) {
               "Time In",
               "Time Out",
               "Hours Worked",
+              "Overtime",
               "Status",
               "Time Late",
             ].map((h) => (
@@ -102,7 +103,7 @@ function TableView({ records }: { records: TeamAttendanceRecord[] }) {
           {records.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={7}
+                colSpan={8}
                 className="py-10 text-center text-[13px] text-muted-foreground"
               >
                 No attendance records for this date.
@@ -145,6 +146,15 @@ function TableView({ records }: { records: TeamAttendanceRecord[] }) {
                   {r.timeOut ?? "—"}
                 </TableCell>
                 <TableCell className="tabular-nums">{r.hoursWorked}</TableCell>
+                <TableCell className="tabular-nums text-[13px]">
+                  {r.overtimeHours ? (
+                    <span className="font-medium text-purple-600 dark:text-purple-400">
+                      {r.overtimeHours}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </TableCell>
                 <TableCell>
                   <StatusBadge variant={STATUS_VARIANT[r.status] ?? "gray"}>
                     {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
@@ -227,6 +237,17 @@ function CardView({ records }: { records: TeamAttendanceRecord[] }) {
               <p className="font-medium tabular-nums">{r.hoursWorked}</p>
             </div>
             <div>
+              <p className="text-muted-foreground">Overtime</p>
+              <p
+                className={cn(
+                  "font-medium tabular-nums",
+                  r.overtimeHours ? "text-purple-600 dark:text-purple-400" : ""
+                )}
+              >
+                {r.overtimeHours ?? "—"}
+              </p>
+            </div>
+            <div>
               <p className="text-muted-foreground">Time Late</p>
               <p
                 className={cn(
@@ -257,6 +278,7 @@ type StatusFilter =
   | "late"
   | "absent"
   | "leave"
+  | "overtime"
   | "graveyard"
   | "day"
 
@@ -266,6 +288,7 @@ const FILTER_TABS: { key: StatusFilter; label: string }[] = [
   { key: "late", label: "Late" },
   { key: "absent", label: "Absent" },
   { key: "leave", label: "On Leave" },
+  { key: "overtime", label: "Overtime" },
   { key: "graveyard", label: "Graveyard" },
   { key: "day", label: "Day Shift" },
 ]
@@ -285,6 +308,7 @@ export function AdminAttendance() {
       late: records.filter((r) => r.status === "late").length,
       absent: records.filter((r) => r.status === "absent").length,
       leave: records.filter((r) => r.status === "leave").length,
+      overtime: records.filter((r) => !!r.overtimeHours).length,
       graveyard: records.filter((r) => r.shift === "graveyard").length,
       day: records.filter((r) => r.shift === "day").length,
     }),
@@ -295,6 +319,7 @@ export function AdminAttendance() {
     if (filter === "all") return records
     if (filter === "graveyard") return records.filter((r) => r.shift === "graveyard")
     if (filter === "day") return records.filter((r) => r.shift === "day")
+    if (filter === "overtime") return records.filter((r) => !!r.overtimeHours)
     return records.filter((r) => r.status === filter)
   }, [records, filter])
 
@@ -372,6 +397,7 @@ export function AdminAttendance() {
           <StatChip label="Late" count={counts.late} accent="bg-amber-500" />
           <StatChip label="Absent" count={counts.absent} accent="bg-red-500" />
           <StatChip label="On Leave" count={counts.leave} accent="bg-blue-500" />
+          <StatChip label="Overtime" count={counts.overtime} accent="bg-purple-500" />
           <StatChip label="Graveyard" count={counts.graveyard} accent="bg-indigo-500" />
           <StatChip label="Day Shift" count={counts.day} accent="bg-orange-400" />
         </div>

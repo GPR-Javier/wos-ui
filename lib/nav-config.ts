@@ -24,6 +24,24 @@ export const navConfig: NavItem[] = [
         section: "schedules",
         authority: "SCHEDULE_MANAGEMENT:VIEW_SCHEDULES",
       },
+    ],
+  },
+  {
+    label: "Requests",
+    section: "requests",
+    authority: null,
+    noPage: true,
+    children: [
+      {
+        label: "Change Time In/Time Out",
+        section: "change-time",
+        authority: "CHANGE_TIME_MANAGEMENT:VIEW_ALL",
+      },
+      {
+        label: "Schedule Changes",
+        section: "schedule-changes",
+        authority: "SCHEDULE_CHANGE_REQUEST:VIEW_ALL",
+      },
       {
         label: "Leave Management",
         section: "leave",
@@ -44,24 +62,6 @@ export const navConfig: NavItem[] = [
         label: "HR Disputes",
         section: "salary-disputes",
         authority: "SALARY_DISPUTE_MANAGEMENT:VIEW_ALL",
-      },
-    ],
-  },
-  {
-    label: "Requests",
-    section: "requests",
-    authority: null,
-    noPage: true,
-    children: [
-      {
-        label: "Change Time In/Time Out",
-        section: "change-time",
-        authority: "CHANGE_TIME_MANAGEMENT:VIEW_ALL",
-      },
-      {
-        label: "Schedule Changes",
-        section: "schedule-changes",
-        authority: "SCHEDULE_CHANGE_REQUEST:VIEW_ALL",
       },
     ],
   },

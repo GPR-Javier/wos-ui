@@ -3,6 +3,14 @@
 import { StatCard } from "@/components/custom/stat-card"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
+import { HugeiconsIcon } from "@hugeicons/react"
+import {
+  CheckmarkCircle02Icon,
+  Clock01Icon,
+  Calendar01Icon,
+  Alert01Icon,
+  UserCircleIcon,
+} from "@hugeicons/core-free-icons"
 import { useHrStats, useLeaveRequests } from "@/hooks/use-hr"
 import { useApproveLeave, useRejectLeave } from "@/hooks/use-hr"
 
@@ -18,39 +26,48 @@ export function OverviewSection() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-4 gap-4">
+      {/* ── Workforce KPIs ── */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         <StatCard
-          title="Total employees"
-          value={stats ? String(stats.totalEmployees) : "—"}
-          delta="2 this month"
-          deltaUp={true}
-          accent="blue"
-        />
-        <StatCard
-          title="Present today"
+          title="Present Today"
           value={stats ? String(stats.presentToday) : "—"}
-          meta={stats ? `${stats.attendanceRate}% attendance rate` : ""}
+          meta={stats ? `${stats.attendanceRate}% attendance rate` : "Workforce currently active"}
           accent="green"
+          icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} strokeWidth={1.8} />}
         />
         <StatCard
-          title="On leave"
-          value={stats ? String(stats.onLeave) : "—"}
-          meta={
-            stats
-              ? `${stats.approvedLeave} approved · ${stats.pendingLeave} pending`
-              : ""
-          }
+          title="Late Employees"
+          value={stats ? String(stats.lateToday) : "—"}
+          meta="Attendance issues"
           accent="amber"
+          icon={<HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} />}
         />
         <StatCard
-          title="Open requests"
-          value={stats ? String(stats.openRequests) : "—"}
-          meta={
-            stats
-              ? `${stats.leaveRequests} leave · ${stats.dtrRequests} DTR`
-              : ""
-          }
+          title="On Leave"
+          value={stats ? String(stats.onLeave) : "—"}
+          meta={stats ? `${stats.approvedLeave} approved · ${stats.pendingLeave} pending` : "Leave visibility"}
+          accent="blue"
+          icon={<HugeiconsIcon icon={Calendar01Icon} size={16} strokeWidth={1.8} />}
+        />
+        <StatCard
+          title="Pending Requests"
+          value={stats ? String(stats.pendingRequests) : "—"}
+          meta={stats ? `${stats.leaveRequests} leave · ${stats.dtrRequests} DTR` : "Needs approval"}
           accent="red"
+          icon={<HugeiconsIcon icon={Alert01Icon} size={16} strokeWidth={1.8} />}
+        />
+        <StatCard
+          title="OT Hours Today"
+          value={
+            stats
+              ? stats.otHoursToday > 0
+                ? `${stats.otHoursToday.toFixed(1)}h`
+                : "0h"
+              : "—"
+          }
+          meta="Overtime monitoring"
+          accent={stats && stats.otHoursToday > 0 ? "amber" : "green"}
+          icon={<HugeiconsIcon icon={UserCircleIcon} size={16} strokeWidth={1.8} />}
         />
       </div>
 

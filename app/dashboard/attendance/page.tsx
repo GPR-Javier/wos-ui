@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { AttendanceSection } from "@/components/dashboard/attendance"
 
-export const metadata: Metadata = { title: "Attendance" }
+export const metadata: Metadata = { title: "Attendance Logs" }
 
 export default function AttendancePage() {
   return (
