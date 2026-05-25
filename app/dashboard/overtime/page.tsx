@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
-import { ComingSoon } from "@/components/custom/coming-soon"
+import { OvertimeManagementSection } from "@/components/dashboard/admin/overtime-management"
 
-export const metadata: Metadata = { title: "Overtime" }
+export const metadata: Metadata = { title: "Overtime Management" }
 
 export default function OvertimePage() {
-  return <ComingSoon title="Overtime" description="Review and act on employee overtime requests." />
+  return <OvertimeManagementSection />
 }

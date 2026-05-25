@@ -33,25 +33,15 @@ export const navConfig: NavItem[] = [
     noPage: true,
     children: [
       {
+        label: "Change Time In/Time Out",
+        section: "change-time",
+        authority: "CHANGE_TIME_MANAGEMENT:VIEW_ALL",
+      },
+      {
         label: "Leave Management",
         section: "leave",
         authority: "LEAVE_MANAGEMENT:VIEW_ALL_LEAVE_REQUESTS",
         badge: 4,
-      },
-      {
-        label: "Overtime",
-        section: "overtime",
-        authority: "OVERTIME_MANAGEMENT:VIEW_ALL",
-      },
-      {
-        label: "COE",
-        section: "coe",
-        authority: "COE_MANAGEMENT:VIEW_ALL",
-      },
-      {
-        label: "Change Time In/Time Out",
-        section: "change-time",
-        authority: "CHANGE_TIME_MANAGEMENT:VIEW_ALL",
       },
       {
         label: "Schedule Changes",
@@ -59,9 +49,19 @@ export const navConfig: NavItem[] = [
         authority: "SCHEDULE_CHANGE_REQUEST:VIEW_ALL",
       },
       {
+        label: "Overtime",
+        section: "overtime",
+        authority: "OVERTIME_MANAGEMENT:VIEW_ALL",
+      },
+      {
         label: "Salary Disputes",
         section: "salary-disputes",
         authority: "SALARY_DISPUTE_MANAGEMENT:VIEW_ALL",
+      },
+      {
+        label: "COE",
+        section: "coe",
+        authority: "COE_MANAGEMENT:VIEW_ALL",
       },
     ],
   },
@@ -81,24 +81,6 @@ export const navConfig: NavItem[] = [
         section: "rewards",
         authority: "REWARDS:VIEW_REWARDS",
       },
-    ],
-  },
-  {
-    label: "Business",
-    section: "business",
-    authority: null,
-    noPage: true,
-    children: [
-      {
-        label: "OR",
-        section: "or",
-        authority: "OR_MANAGEMENT:VIEW_ALL",
-      },
-      {
-        label: "Permits",
-        section: "permits",
-        authority: "PERMITS:VIEW_ALL",
-      },
       {
         label: "Business Trip",
         section: "business-trip",
@@ -108,6 +90,19 @@ export const navConfig: NavItem[] = [
         label: "Expense Reports",
         section: "expenses",
         authority: "EXPENSE_REPORTS:VIEW_ALL",
+      },
+    ],
+  },
+  {
+    label: "Business",
+    section: "business",
+    authority: null,
+    noPage: true,
+    children: [
+      {
+        label: "Official Receipts",
+        section: "or",
+        authority: "OFFICIAL_RECEIPTS:VIEW_ALL",
       },
       {
         label: "Contracts",
@@ -119,13 +114,13 @@ export const navConfig: NavItem[] = [
   {
     label: "System",
     section: "admin",
-    authority: "CONFIGURATION:VIEW_CONFIG",
+    authority: null,
     noPage: true,
     children: [
       {
         label: "Configuration",
         section: "config",
-        authority: "CONFIGURATION:VIEW_CONFIG",
+        authority: "SCHEDULE_POLICY:VIEW",
       },
       {
         label: "Roles & Permissions",
@@ -179,14 +174,14 @@ export const navConfig: NavItem[] = [
         authority: "SCHEDULE_CHANGE_REQUEST:VIEW_OWN",
       },
       {
-        label: "Salary Dispute",
-        section: "my-salary-dispute",
-        authority: "SALARY_DISPUTE:VIEW_OWN",
-      },
-      {
         label: "COE",
         section: "my-coe",
         authority: "CERTIFICATE_OF_EMPLOYMENT:VIEW_OWN",
+      },
+      {
+        label: "Salary Dispute",
+        section: "my-salary-dispute",
+        authority: "SALARY_DISPUTE:VIEW_OWN",
       },
     ],
   },
@@ -238,7 +233,7 @@ export const sectionTitles: Record<string, string> = {
   attendance: "Attendance",
   employees: "Employees",
   "change-time": "Change Time In/Time Out",
-  or: "OR Requests",
+  or: "Official Receipts",
   coe: "COE Requests",
   overtime: "Overtime",
   "my-overtime": "Overtime",
@@ -246,8 +241,8 @@ export const sectionTitles: Record<string, string> = {
   "my-or": "OR Requests",
   "my-change-time": "Change Time In/Time Out",
   "my-schedule": "Schedule Change Request",
-  "my-salary-dispute": "Salary Dispute",
   "salary-disputes": "Salary Disputes",
+  "my-salary-dispute": "Salary Dispute",
   requests: "Requests",
   business: "Business",
   receipts: "Official Receipts",

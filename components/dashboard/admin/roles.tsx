@@ -357,6 +357,65 @@ function fmtDateBadge(startDate?: string | null, endDate?: string | null) {
 // Stable order for nav groups so the accordion sections are always predictable
 const GROUP_ORDER = ["Team", "Requests", "Finance", "Business", "System", "Recruitment", "Self Service", "Request"]
 
+// Desired item order within specific groups (matched against pageName or name, case-insensitive substring)
+const GROUP_ITEM_ORDER: Record<string, string[]> = {
+  // Employee request pages — matches nav-config Request children order
+  Request: [
+    "change time",
+    "leave",
+    "overtime",
+    "change schedule",
+    "coe",
+    "certificate",
+    "official business",
+    "salary dispute",
+  ],
+  // Admin request management pages
+  Requests: [
+    "change time",
+    "leave management",
+    "schedule change",
+    "overtime",
+    "salary dispute",
+    "coe",
+    "certificate of employment",
+  ],
+  Finance: [
+    "payroll",
+    "rewards",
+    "business trip",
+    "expense",
+  ],
+  Business: [
+    "official receipt",
+    "contracts",
+  ],
+  System: [
+    "configuration",
+    "schedule policy",
+    "attendance",
+    "payroll",
+    "leave",
+    "user management",
+    "roles",
+    "audit",
+  ],
+}
+
+function sortGroupItems<T extends { pageName?: string; name?: string }>(group: string, items: T[]): T[] {
+  const order = GROUP_ITEM_ORDER[group]
+  if (!order) return items
+  return [...items].sort((a, b) => {
+    const nameA = (a.pageName ?? a.name ?? "").toLowerCase()
+    const nameB = (b.pageName ?? b.name ?? "").toLowerCase()
+    const idxA = order.findIndex((k) => nameA.includes(k))
+    const idxB = order.findIndex((k) => nameB.includes(k))
+    const rankA = idxA === -1 ? order.length : idxA
+    const rankB = idxB === -1 ? order.length : idxB
+    return rankA - rankB
+  })
+}
+
 export function RolesSection() {
   const [activeId, setActiveId] = useState<number | null>(null)
   const [creating, setCreating] = useState(false)
@@ -839,7 +898,7 @@ export function RolesSection() {
                   <thead className="sticky top-0 z-10 bg-card">
                     <tr className="border-b border-border">
                       <th className="py-3 pr-4 pl-6 text-left text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                        Access role
+                        Page
                       </th>
                       <th className="w-20 px-4 py-3 text-center text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                         Enabled
@@ -856,10 +915,17 @@ export function RolesSection() {
                     {(() => {
                       // Group access roles by navGroup from the backend
                       const byGroup = new Map<string, typeof accessRoles>()
+                      const HIDDEN_PAGE_CODES = new Set(["TEACHER_MANAGEMENT", "OR_MANAGEMENT", "SCHEDULE_POLICY", "ATTENDANCE_CONFIG", "PAYROLL_CONFIG", "LEAVE_CONFIG", "PERMITS"])
                       for (const ar of accessRoles) {
                         const g = ar.navGroup ?? "Other"
+                        if (g === "Deprecated") continue
+                        if (HIDDEN_PAGE_CODES.has(ar.pageCode ?? "")) continue
                         if (!byGroup.has(g)) byGroup.set(g, [])
                         byGroup.get(g)!.push(ar)
+                      }
+                      // Apply desired item order within each group
+                      for (const [g, items] of byGroup) {
+                        byGroup.set(g, sortGroupItems(g, items))
                       }
                       const orderedGroups = [
                         ...GROUP_ORDER.filter((g) => byGroup.has(g)),
