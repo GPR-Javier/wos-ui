@@ -1,4 +1,4 @@
-import { api } from "./axios"
+import { api } from "./api"
 import type { PageResponse } from "./admin-api"
 
 export type DisputeCategory =
@@ -61,21 +61,21 @@ export const salaryDisputeApi = {
   // Employee
   createMine: (body: CreateDisputePayload) =>
     api
-      .post<SalaryDispute>("/salary-disputes", body)
+      .post<SalaryDispute>("/hr/salary-disputes", body)
       .then((r) => r.data),
 
   listMine: (
     params: { status?: DisputeStatus; page?: number; size?: number } = {}
   ) =>
     api
-      .get<PageResponse<SalaryDispute>>("/salary-disputes/me", {
+      .get<PageResponse<SalaryDispute>>("/hr/salary-disputes/me", {
         params: { page: 0, size: 20, ...params },
       })
       .then((r) => r.data),
 
   cancelMine: (id: number) =>
     api
-      .post<SalaryDispute>(`/salary-disputes/${id}/cancel`)
+      .post<SalaryDispute>(`/hr/salary-disputes/${id}/cancel`)
       .then((r) => r.data),
 
   // Admin / Payroll
@@ -88,42 +88,42 @@ export const salaryDisputeApi = {
     } = {}
   ) =>
     api
-      .get<PageResponse<SalaryDispute>>("/salary-disputes", {
+      .get<PageResponse<SalaryDispute>>("/hr/salary-disputes", {
         params: { page: 0, size: 20, ...params },
       })
       .then((r) => r.data),
 
   markUnderReview: (id: number, resolutionNotes?: string | null) =>
     api
-      .post<SalaryDispute>(`/salary-disputes/${id}/review`, {
+      .post<SalaryDispute>(`/hr/salary-disputes/${id}/review`, {
         resolutionNotes: resolutionNotes ?? null,
       })
       .then((r) => r.data),
 
   requestDocuments: (id: number, resolutionNotes: string) =>
     api
-      .post<SalaryDispute>(`/salary-disputes/${id}/request-documents`, {
+      .post<SalaryDispute>(`/hr/salary-disputes/${id}/request-documents`, {
         resolutionNotes,
       })
       .then((r) => r.data),
 
   approve: (id: number, resolutionNotes?: string | null) =>
     api
-      .post<SalaryDispute>(`/salary-disputes/${id}/approve`, {
+      .post<SalaryDispute>(`/hr/salary-disputes/${id}/approve`, {
         resolutionNotes: resolutionNotes ?? null,
       })
       .then((r) => r.data),
 
   reject: (id: number, resolutionNotes?: string | null) =>
     api
-      .post<SalaryDispute>(`/salary-disputes/${id}/reject`, {
+      .post<SalaryDispute>(`/hr/salary-disputes/${id}/reject`, {
         resolutionNotes: resolutionNotes ?? null,
       })
       .then((r) => r.data),
 
   close: (id: number, resolutionNotes?: string | null) =>
     api
-      .post<SalaryDispute>(`/salary-disputes/${id}/close`, {
+      .post<SalaryDispute>(`/hr/salary-disputes/${id}/close`, {
         resolutionNotes: resolutionNotes ?? null,
       })
       .then((r) => r.data),

@@ -1,4 +1,4 @@
-import { api } from "./axios"
+import { api } from "./api"
 import type { PageResponse } from "./admin-api"
 
 // ── Types ──────────────────────────────────────────────────────────────────

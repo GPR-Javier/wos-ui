@@ -1,4 +1,4 @@
-import { api } from "./axios"
+import { api } from "./api"
 import type { PageResponse } from "./admin-api"
 
 export interface AttendanceBreakEntry {
@@ -88,38 +88,38 @@ export const employeeApi = {
     api
       .get<
         PageResponse<AttendanceEntry>
-      >("/attendance/me", { params: { page: 0, size: 20, ...params } })
+      >("/hr/attendance/me", { params: { page: 0, size: 20, ...params } })
       .then((r) => r.data),
 
   clockIn: () =>
-    api.post<AttendanceEntry>("/attendance/clock-in").then((r) => r.data),
+    api.post<AttendanceEntry>("/hr/attendance/clock-in").then((r) => r.data),
 
   clockOut: () =>
-    api.post<AttendanceEntry>("/attendance/clock-out").then((r) => r.data),
+    api.post<AttendanceEntry>("/hr/attendance/clock-out").then((r) => r.data),
 
   breakStart: (type: string) =>
     api
-      .post<AttendanceEntry>("/attendance/break-start", { type })
+      .post<AttendanceEntry>("/hr/attendance/break-start", { type })
       .then((r) => r.data),
 
   breakEnd: () =>
-    api.post<AttendanceEntry>("/attendance/break-end").then((r) => r.data),
+    api.post<AttendanceEntry>("/hr/attendance/break-end").then((r) => r.data),
 
   attendanceHeatmap: () =>
-    api.get<HeatmapEntry[]>("/attendance/me/heatmap").then((r) => r.data),
+    api.get<HeatmapEntry[]>("/hr/attendance/me/heatmap").then((r) => r.data),
 
   payslips: (params: { page?: number; size?: number } = {}) =>
     api
       .get<
         PageResponse<PayslipEntry>
-      >("/employee/payslips", { params: { page: 0, size: 20, ...params } })
+      >("/hr/employee/payslips", { params: { page: 0, size: 20, ...params } })
       .then((r) => r.data),
 
-  stats: () => api.get<EmployeeStats>("/employee/stats").then((r) => r.data),
+  stats: () => api.get<EmployeeStats>("/hr/employee/stats").then((r) => r.data),
 
   profile: () =>
-    api.get<EmployeeProfile>("/employee/profile").then((r) => r.data),
+    api.get<EmployeeProfile>("/hr/employee/profile").then((r) => r.data),
 
   leaveBalances: () =>
-    api.get<LeaveBalance[]>("/employee/leave-balances").then((r) => r.data),
+    api.get<LeaveBalance[]>("/hr/employee/leave-balances").then((r) => r.data),
 }

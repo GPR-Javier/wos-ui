@@ -384,11 +384,11 @@ const GROUP_ITEM_ORDER: Record<string, string[]> = {
   Finance: [
     "payroll",
     "rewards",
+    "official receipt",
     "business trip",
     "expense",
   ],
   Business: [
-    "official receipt",
     "contracts",
   ],
   System: [

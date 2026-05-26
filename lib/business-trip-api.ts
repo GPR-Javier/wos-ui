@@ -1,4 +1,4 @@
-import { api } from "./axios"
+import { api } from "./api"
 import type { PageResponse } from "./admin-api"
 
 export type TripPurpose =
@@ -77,41 +77,41 @@ export interface CreateTripPayload {
 export const businessTripApi = {
   // Employee
   createMine: (body: CreateTripPayload) =>
-    api.post<BusinessTrip>("/business-trips", body).then((r) => r.data),
+    api.post<BusinessTrip>("/hr/business-trips", body).then((r) => r.data),
 
   listMine: (params: { status?: TripStatus; page?: number; size?: number } = {}) =>
     api
-      .get<PageResponse<BusinessTrip>>("/business-trips/me", {
+      .get<PageResponse<BusinessTrip>>("/hr/business-trips/me", {
         params: { page: 0, size: 20, ...params },
       })
       .then((r) => r.data),
 
   cancelMine: (id: number) =>
-    api.post<BusinessTrip>(`/business-trips/${id}/cancel`).then((r) => r.data),
+    api.post<BusinessTrip>(`/hr/business-trips/${id}/cancel`).then((r) => r.data),
 
   // Admin / HR
   listAll: (
     params: { status?: TripStatus; search?: string; page?: number; size?: number } = {}
   ) =>
     api
-      .get<PageResponse<BusinessTrip>>("/business-trips", {
+      .get<PageResponse<BusinessTrip>>("/hr/business-trips", {
         params: { page: 0, size: 20, ...params },
       })
       .then((r) => r.data),
 
   approve: (id: number, reviewNote?: string | null) =>
     api
-      .post<BusinessTrip>(`/business-trips/${id}/approve`, { reviewNote: reviewNote ?? null })
+      .post<BusinessTrip>(`/hr/business-trips/${id}/approve`, { reviewNote: reviewNote ?? null })
       .then((r) => r.data),
 
   reject: (id: number, reviewNote?: string | null) =>
     api
-      .post<BusinessTrip>(`/business-trips/${id}/reject`, { reviewNote: reviewNote ?? null })
+      .post<BusinessTrip>(`/hr/business-trips/${id}/reject`, { reviewNote: reviewNote ?? null })
       .then((r) => r.data),
 
   markCompleted: (id: number, reviewNote?: string | null) =>
     api
-      .post<BusinessTrip>(`/business-trips/${id}/complete`, { reviewNote: reviewNote ?? null })
+      .post<BusinessTrip>(`/hr/business-trips/${id}/complete`, { reviewNote: reviewNote ?? null })
       .then((r) => r.data),
 }
 

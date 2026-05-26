@@ -1,4 +1,4 @@
-import { api } from "./axios"
+import { api } from "./api"
 import type { PageResponse } from "./admin-api"
 
 export type ExpenseCategory =
@@ -65,23 +65,23 @@ export const expenseApi = {
       if (body.isDraft != null) fd.append("isDraft", String(body.isDraft))
       files.forEach((f) => fd.append("attachments", f))
       return api
-        .post<ExpenseReport>("/expense-reports", fd, {
+        .post<ExpenseReport>("/hr/expense-reports", fd, {
           headers: { "Content-Type": "multipart/form-data" },
         })
         .then((r) => r.data)
     }
-    return api.post<ExpenseReport>("/expense-reports", body).then((r) => r.data)
+    return api.post<ExpenseReport>("/hr/expense-reports", body).then((r) => r.data)
   },
 
   listMine: (params: { status?: ExpenseStatus; page?: number; size?: number } = {}) =>
     api
-      .get<PageResponse<ExpenseReport>>("/expense-reports/me", {
+      .get<PageResponse<ExpenseReport>>("/hr/expense-reports/me", {
         params: { page: 0, size: 20, ...params },
       })
       .then((r) => r.data),
 
   cancelMine: (id: number) =>
-    api.post<ExpenseReport>(`/expense-reports/${id}/cancel`).then((r) => r.data),
+    api.post<ExpenseReport>(`/hr/expense-reports/${id}/cancel`).then((r) => r.data),
 
   // Admin / Finance
   listAll: (
@@ -94,24 +94,24 @@ export const expenseApi = {
     } = {}
   ) =>
     api
-      .get<PageResponse<ExpenseReport>>("/expense-reports", {
+      .get<PageResponse<ExpenseReport>>("/hr/expense-reports", {
         params: { page: 0, size: 20, ...params },
       })
       .then((r) => r.data),
 
   approve: (id: number, reviewNote?: string | null) =>
     api
-      .post<ExpenseReport>(`/expense-reports/${id}/approve`, { reviewNote: reviewNote ?? null })
+      .post<ExpenseReport>(`/hr/expense-reports/${id}/approve`, { reviewNote: reviewNote ?? null })
       .then((r) => r.data),
 
   reject: (id: number, reviewNote?: string | null) =>
     api
-      .post<ExpenseReport>(`/expense-reports/${id}/reject`, { reviewNote: reviewNote ?? null })
+      .post<ExpenseReport>(`/hr/expense-reports/${id}/reject`, { reviewNote: reviewNote ?? null })
       .then((r) => r.data),
 
   markReimbursed: (id: number, reviewNote?: string | null) =>
     api
-      .post<ExpenseReport>(`/expense-reports/${id}/reimburse`, { reviewNote: reviewNote ?? null })
+      .post<ExpenseReport>(`/hr/expense-reports/${id}/reimburse`, { reviewNote: reviewNote ?? null })
       .then((r) => r.data),
 }
 

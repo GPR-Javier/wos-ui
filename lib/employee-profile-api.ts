@@ -1,4 +1,4 @@
-import { api } from "./axios"
+import { api } from "./api"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -56,22 +56,31 @@ export interface CreateKpiPayload {
 
 // ── Salary Grades (admin-configured) ─────────────────────────────────────────
 
+export type SalaryTypeValue = "MONTHLY" | "WEEKLY" | "DAILY" | "HOURLY"
+
 export interface SalaryGrade {
   id: number
-  code: string              // e.g. "SG-1", "Grade 5"
-  name?: string | null      // e.g. "Entry Level", "Mid Level"
+  code: string
+  name?: string | null
+  currency: string          // ISO 4217 e.g. "PHP", "USD"
+  salaryType: SalaryTypeValue
   minSalary: number
-  maxSalary: number
   baseSalary: number
+  maxSalary: number
+  effectiveDate?: string | null   // "YYYY-MM-DD"
   active: boolean
+  employeeCount: number
 }
 
 export interface CreateSalaryGradePayload {
   code: string
   name?: string | null
+  currency?: string
+  salaryType?: SalaryTypeValue
   minSalary: number
   baseSalary: number
   maxSalary: number
+  effectiveDate?: string | null
 }
 
 // ── Job Positions (admin-configured) ─────────────────────────────────────────
@@ -240,35 +249,35 @@ export const employeeProfileApi = {
 
   // Job Positions — admin-managed
   listPositions: () =>
-    api.get<JobPosition[]>("/admin/positions").then((r) => r.data),
+    api.get<JobPosition[]>("/hr/positions").then((r) => r.data),
 
   createPosition: (payload: CreateJobPositionPayload) =>
-    api.post<JobPosition>("/admin/positions", payload).then((r) => r.data),
+    api.post<JobPosition>("/hr/positions", payload).then((r) => r.data),
 
   updatePosition: (id: number, payload: Partial<CreateJobPositionPayload>) =>
-    api.put<JobPosition>(`/admin/positions/${id}`, payload).then((r) => r.data),
+    api.put<JobPosition>(`/hr/positions/${id}`, payload).then((r) => r.data),
 
   deletePosition: (id: number) =>
-    api.delete(`/admin/positions/${id}`),
+    api.delete(`/hr/positions/${id}`),
 
   linkGradeToPosition: (positionId: number, salaryGradeId: number, isDefault: boolean) =>
-    api.post<JobPosition>(`/admin/positions/${positionId}/salary-grades`, { salaryGradeId, isDefault }).then((r) => r.data),
+    api.post<JobPosition>(`/hr/positions/${positionId}/salary-grades`, { salaryGradeId, isDefault }).then((r) => r.data),
 
   unlinkGradeFromPosition: (positionId: number, gradeId: number) =>
-    api.delete(`/admin/positions/${positionId}/salary-grades/${gradeId}`),
+    api.delete(`/hr/positions/${positionId}/salary-grades/${gradeId}`),
 
   // Salary Grades — admin-managed
   listSalaryGrades: () =>
-    api.get<SalaryGrade[]>("/admin/salary-grades").then((r) => r.data),
+    api.get<SalaryGrade[]>("/hr/salary-grades").then((r) => r.data),
 
   createSalaryGrade: (payload: CreateSalaryGradePayload) =>
-    api.post<SalaryGrade>("/admin/salary-grades", payload).then((r) => r.data),
+    api.post<SalaryGrade>("/hr/salary-grades", payload).then((r) => r.data),
 
   updateSalaryGrade: (id: number, payload: Partial<CreateSalaryGradePayload>) =>
-    api.put<SalaryGrade>(`/admin/salary-grades/${id}`, payload).then((r) => r.data),
+    api.put<SalaryGrade>(`/hr/salary-grades/${id}`, payload).then((r) => r.data),
 
   deleteSalaryGrade: (id: number) =>
-    api.delete(`/admin/salary-grades/${id}`),
+    api.delete(`/hr/salary-grades/${id}`),
 
   // User Positions — employee ↔ position junction
   listUserPositions: (userId: number) =>

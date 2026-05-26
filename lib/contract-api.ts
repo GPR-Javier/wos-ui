@@ -1,4 +1,4 @@
-import { api } from "./axios"
+import { api } from "./api"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -114,7 +114,7 @@ export interface UpdateContractPayload {
 const base = (userId: number) => `/hr/employees/${userId}/contracts`
 
 export const listAllContracts = () =>
-  api.get<EmploymentContract[]>("/admin/contracts").then((r) => r.data)
+  api.get<EmploymentContract[]>("/hr/contracts").then((r) => r.data)
 
 export const listContracts = (userId: number) =>
   api.get<EmploymentContract[]>(base(userId)).then((r) => r.data)

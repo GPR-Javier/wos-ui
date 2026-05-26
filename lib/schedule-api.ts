@@ -1,4 +1,4 @@
-import { api } from "./axios"
+import { api } from "./api"
 import type { PageResponse } from "./admin-api"
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -78,20 +78,20 @@ export interface UploadSchedulePayload {
 
 export const scheduleApi = {
   versions: () =>
-    api.get<ScheduleVersion[]>("/schedules/versions").then((r) => r.data),
+    api.get<ScheduleVersion[]>("/hr/schedules/versions").then((r) => r.data),
 
   activateVersion: (id: number) =>
     api
-      .patch<ScheduleVersion>(`/schedules/versions/${id}/activate`)
+      .patch<ScheduleVersion>(`/hr/schedules/versions/${id}/activate`)
       .then((r) => r.data),
 
   archiveVersion: (id: number) =>
     api
-      .patch<ScheduleVersion>(`/schedules/versions/${id}/archive`)
+      .patch<ScheduleVersion>(`/hr/schedules/versions/${id}/archive`)
       .then((r) => r.data),
 
   downloadVersion: async (id: number, fileName: string) => {
-    const res = await api.get(`/schedules/versions/${id}/download`, {
+    const res = await api.get(`/hr/schedules/versions/${id}/download`, {
       responseType: "blob",
     })
     const url = URL.createObjectURL(res.data as Blob)
@@ -104,7 +104,7 @@ export const scheduleApi = {
 
   entries: (params: ScheduleFilters = {}) =>
     api
-      .get<PageResponse<ScheduleEntry>>("/schedules/entries", {
+      .get<PageResponse<ScheduleEntry>>("/hr/schedules/entries", {
         params: { page: 0, size: 25, ...params },
       })
       .then((r) => r.data),
@@ -115,7 +115,7 @@ export const scheduleApi = {
     form.append("title", payload.title)
     if (payload.notes) form.append("notes", payload.notes)
     return api
-      .post<ScheduleVersion>("/schedules/upload", form, {
+      .post<ScheduleVersion>("/hr/schedules/upload", form, {
         headers: { "Content-Type": "multipart/form-data" },
         timeout: 120_000,
       })

@@ -1,4 +1,4 @@
-import { api } from "./axios"
+import { api } from "./api"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -64,10 +64,10 @@ export interface UserRolePayload {
 export const adminRolesApi = {
   // User Roles CRUD
   listUserRoles: () =>
-    api.get<UserRole[]>("/admin/user-roles").then((r) => r.data),
+    api.get<UserRole[]>("/auth/user-roles").then((r) => r.data),
 
   createUserRole: (payload: UserRolePayload) =>
-    api.post<UserRole>("/admin/user-roles", payload).then((r) => r.data),
+    api.post<UserRole>("/auth/user-roles", payload).then((r) => r.data),
 
   updateUserRole: (id: number, payload: UserRolePayload) =>
     api.put<UserRole>(`/admin/user-roles/${id}`, payload).then((r) => r.data),
@@ -112,5 +112,5 @@ export const adminRolesApi = {
 
   // Available access roles (for the permission matrix)
   listAccessRoles: () =>
-    api.get<AccessRole[]>("/admin/access-roles").then((r) => r.data),
+    api.get<AccessRole[]>("/auth/access-roles").then((r) => r.data),
 }

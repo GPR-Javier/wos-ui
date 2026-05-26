@@ -1,4 +1,4 @@
-import { api } from "./axios"
+import { api } from "./api"
 import type { PageResponse } from "./admin-api"
 
 export type OvertimeType =
@@ -48,25 +48,25 @@ export interface CreateOvertimePayload {
 export const overtimeApi = {
   // Employee
   createMine: (body: CreateOvertimePayload) =>
-    api.post<OvertimeRequest>("/overtime-requests", body).then((r) => r.data),
+    api.post<OvertimeRequest>("/hr/overtime-requests", body).then((r) => r.data),
 
   listMine: (
     params: { status?: OvertimeStatus; page?: number; size?: number } = {}
   ) =>
     api
-      .get<PageResponse<OvertimeRequest>>("/overtime-requests/me", {
+      .get<PageResponse<OvertimeRequest>>("/hr/overtime-requests/me", {
         params: { page: 0, size: 20, ...params },
       })
       .then((r) => r.data),
 
   submitDraft: (id: number) =>
     api
-      .post<OvertimeRequest>(`/overtime-requests/${id}/submit`)
+      .post<OvertimeRequest>(`/hr/overtime-requests/${id}/submit`)
       .then((r) => r.data),
 
   cancelMine: (id: number) =>
     api
-      .post<OvertimeRequest>(`/overtime-requests/${id}/cancel`)
+      .post<OvertimeRequest>(`/hr/overtime-requests/${id}/cancel`)
       .then((r) => r.data),
 
   // Admin / HR
@@ -79,21 +79,21 @@ export const overtimeApi = {
     } = {}
   ) =>
     api
-      .get<PageResponse<OvertimeRequest>>("/overtime-requests", {
+      .get<PageResponse<OvertimeRequest>>("/hr/overtime-requests", {
         params: { page: 0, size: 20, ...params },
       })
       .then((r) => r.data),
 
   approve: (id: number, reviewNote?: string | null) =>
     api
-      .post<OvertimeRequest>(`/overtime-requests/${id}/approve`, {
+      .post<OvertimeRequest>(`/hr/overtime-requests/${id}/approve`, {
         reviewNote: reviewNote ?? null,
       })
       .then((r) => r.data),
 
   reject: (id: number, reviewNote?: string | null) =>
     api
-      .post<OvertimeRequest>(`/overtime-requests/${id}/reject`, {
+      .post<OvertimeRequest>(`/hr/overtime-requests/${id}/reject`, {
         reviewNote: reviewNote ?? null,
       })
       .then((r) => r.data),

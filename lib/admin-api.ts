@@ -1,4 +1,4 @@
-import { api } from "./axios"
+import { api } from "./api"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -112,7 +112,7 @@ export interface TeamAttendanceRecord {
 export const adminAttendanceApi = {
   team: (params: { date?: string; page?: number; size?: number } = {}) =>
     api
-      .get<PageResponse<TeamAttendanceRecord>>("/attendance/team", {
+      .get<PageResponse<TeamAttendanceRecord>>("/hr/attendance/team", {
         params: { page: 0, size: 50, ...params },
       })
       .then((r) => r.data),
@@ -123,12 +123,12 @@ export const adminAuditApi = {
     api
       .get<
         PageResponse<AuditLog>
-      >("/admin/audit-logs", { params: { page: 0, size: 20, ...params } })
+      >("/auth/audit-logs", { params: { page: 0, size: 20, ...params } })
       .then((r) => r.data),
 }
 
 export const adminStatsApi = {
-  get: () => api.get<AdminStats>("/admin/stats").then((r) => r.data),
+  get: () => api.get<AdminStats>("/auth/stats").then((r) => r.data),
 }
 
 export const adminUsersApi = {
@@ -136,16 +136,16 @@ export const adminUsersApi = {
     api
       .get<
         PageResponse<AdminUser>
-      >("/admin/users", { params: { page: 0, size: 20, ...params } })
+      >("/auth/users", { params: { page: 0, size: 20, ...params } })
       .then((r) => r.data),
 
   create: (payload: CreateUserPayload) =>
-    api.post<AdminUser>("/admin/users", payload).then((r) => r.data),
+    api.post<AdminUser>("/auth/users", payload).then((r) => r.data),
 
   listActiveUserRoles: () =>
-    api.get<ActiveUserRole[]>("/admin/user-roles/active").then((r) => r.data),
+    api.get<ActiveUserRole[]>("/auth/user-roles/active").then((r) => r.data),
 
-  delete: (id: number) => api.delete(`/admin/users/${id}`),
+  delete: (id: number) => api.delete(`/auth/users/${id}`),
 
   assignRoles: (id: number, userRoleIds: number[]) =>
     api
@@ -162,7 +162,7 @@ export const adminUsersApi = {
   ) =>
     api
       .put<TempRoleAccessResponse>(
-        `/admin/users/${userId}/employee-roles/${roleId}/temporary-access`,
+        `/auth/users/${userId}/employee-roles/${roleId}/temporary-access`,
         payload
       )
       .then((r) => r.data),

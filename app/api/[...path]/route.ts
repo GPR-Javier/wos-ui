@@ -1,37 +1,29 @@
 import { NextRequest } from "next/server"
 
 // Per-service backend URLs (overridable via env vars).
-const AUTH_BACKEND = process.env.AUTH_API_URL ?? "http://localhost:8081/api"
-const HR_BACKEND = process.env.HR_API_URL ?? "http://localhost:8083/api"
-const PAYROLL_BACKEND =
-  process.env.PAYROLL_API_URL ?? "http://localhost:8082/api"
-
-// Path-prefix → service routing table. First segment after /api/ decides.
-const SERVICE_ROUTES: Record<string, string> = {
-  hr: HR_BACKEND,
-  teachers: HR_BACKEND,
-  schedules: HR_BACKEND,
-  "schedule-policies": HR_BACKEND,
-  "schedule-change-requests": HR_BACKEND,
-  attendance: HR_BACKEND,
-  leave: HR_BACKEND,
-  "leave-requests": HR_BACKEND,
-  recruitment: HR_BACKEND,
-  payroll: PAYROLL_BACKEND,
-  rewards: PAYROLL_BACKEND,
+// Each service's context-path matches the prefix used here:
+//   wos-auth     → /api/auth/*
+//   wos-hr       → /api/hr/*
+//   wos-payroll  → /api/payroll/*
+//   wos-analytics→ /api/analytics/*
+const BACKENDS: Record<string, string> = {
+  auth: process.env.AUTH_API_URL ?? "http://localhost:8081",
+  hr: process.env.HR_API_URL ?? "http://localhost:8083",
+  payroll: process.env.PAYROLL_API_URL ?? "http://localhost:8082",
+  analytics: process.env.ANALYTICS_API_URL ?? "http://localhost:8084",
 }
 
 function resolveBackend(path: string[]): string {
-  const first = path[0] ?? ""
-  return SERVICE_ROUTES[first] ?? AUTH_BACKEND
+  const service = path[0] ?? ""
+  return BACKENDS[service] ?? BACKENDS.auth
 }
 
 function buildTargetUrl(path: string[], requestUrl: string) {
-  const backend = resolveBackend(path)
-  const base = backend.endsWith("/") ? backend.slice(0, -1) : backend
-  const pathname = path.join("/")
+  const base = resolveBackend(path).replace(/\/$/, "")
+  // path already includes the service name which matches the context-path segment,
+  // so /api/hr/employees forwards to http://localhost:8083/api/hr/employees
   const incoming = new URL(requestUrl)
-  return `${base}/${pathname}${incoming.search}`
+  return `${base}/api/${path.join("/")}${incoming.search}`
 }
 
 function buildForwardHeaders(request: NextRequest) {

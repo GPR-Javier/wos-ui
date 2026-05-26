@@ -1,4 +1,4 @@
-import { api } from "./axios"
+import { api } from "./api"
 import type { PageResponse } from "./admin-api"
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -147,43 +147,43 @@ export interface RewardHistoryFilters {
 }
 
 export const rewardsApi = {
-  stats: () => api.get<RewardStats>("/rewards/stats").then((r) => r.data),
+  stats: () => api.get<RewardStats>("/payroll/rewards/stats").then((r) => r.data),
 
   teachers: (params: TeacherRatingFilters = {}) =>
     api
-      .get<PageResponse<TeacherRatingSummary>>("/rewards/teachers", {
+      .get<PageResponse<TeacherRatingSummary>>("/payroll/rewards/teachers", {
         params: { page: 0, size: 25, ...params },
       })
       .then((r) => r.data),
 
   leaderboard: (period: LeaderboardPeriod = "monthly") =>
     api
-      .get<LeaderboardEntry[]>("/rewards/leaderboard", { params: { period } })
+      .get<LeaderboardEntry[]>("/payroll/rewards/leaderboard", { params: { period } })
       .then((r) => r.data),
 
-  rules: () => api.get<RewardRule[]>("/rewards/rules").then((r) => r.data),
+  rules: () => api.get<RewardRule[]>("/payroll/rewards/rules").then((r) => r.data),
 
   createRule: (payload: RewardRulePayload) =>
-    api.post<RewardRule>("/rewards/rules", payload).then((r) => r.data),
+    api.post<RewardRule>("/payroll/rewards/rules", payload).then((r) => r.data),
 
   updateRule: (id: number, payload: RewardRulePayload) =>
-    api.put<RewardRule>(`/rewards/rules/${id}`, payload).then((r) => r.data),
+    api.put<RewardRule>(`/payroll/rewards/rules/${id}`, payload).then((r) => r.data),
 
   toggleRule: (id: number) =>
-    api.patch<RewardRule>(`/rewards/rules/${id}/toggle`).then((r) => r.data),
+    api.patch<RewardRule>(`/payroll/rewards/rules/${id}/toggle`).then((r) => r.data),
 
   history: (params: RewardHistoryFilters = {}) =>
     api
-      .get<PageResponse<RewardHistory>>("/rewards/history", {
+      .get<PageResponse<RewardHistory>>("/payroll/rewards/history", {
         params: { page: 0, size: 25, ...params },
       })
       .then((r) => r.data),
 
   publicDashboard: () =>
-    api.get<PublicDashboardData>("/rewards/public").then((r) => r.data),
+    api.get<PublicDashboardData>("/payroll/rewards/public").then((r) => r.data),
 
   ratingVersions: () =>
-    api.get<RatingVersion[]>("/rewards/ratings/versions").then((r) => r.data),
+    api.get<RatingVersion[]>("/payroll/rewards/ratings/versions").then((r) => r.data),
 
   uploadRatings: (payload: { file: File; title: string; notes?: string }) => {
     const form = new FormData()
@@ -191,7 +191,7 @@ export const rewardsApi = {
     form.append("title", payload.title)
     if (payload.notes) form.append("notes", payload.notes)
     return api
-      .post<RatingVersion>("/rewards/ratings/upload", form, {
+      .post<RatingVersion>("/payroll/rewards/ratings/upload", form, {
         headers: { "Content-Type": "multipart/form-data" },
         timeout: 120_000,
       })

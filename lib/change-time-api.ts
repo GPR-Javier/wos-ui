@@ -1,4 +1,4 @@
-import { api } from "./axios"
+import { api } from "./api"
 import type { PageResponse } from "./admin-api"
 
 export type ChangeTimeRequestType = "TIME_IN" | "TIME_OUT" | "BOTH"
@@ -52,24 +52,24 @@ export const changeTimeApi = {
   // Employee
   createMine: (body: CreateChangeTimePayload) =>
     api
-      .post<ChangeTimeRequest>("/change-time-requests", body)
+      .post<ChangeTimeRequest>("/hr/change-time-requests", body)
       .then((r) => r.data),
 
   listMine: (params: { status?: ChangeTimeStatus; page?: number; size?: number } = {}) =>
     api
-      .get<PageResponse<ChangeTimeRequest>>("/change-time-requests/me", {
+      .get<PageResponse<ChangeTimeRequest>>("/hr/change-time-requests/me", {
         params: { page: 0, size: 20, ...params },
       })
       .then((r) => r.data),
 
   submitDraft: (id: number) =>
     api
-      .post<ChangeTimeRequest>(`/change-time-requests/${id}/submit`)
+      .post<ChangeTimeRequest>(`/hr/change-time-requests/${id}/submit`)
       .then((r) => r.data),
 
   cancelMine: (id: number) =>
     api
-      .post<ChangeTimeRequest>(`/change-time-requests/${id}/cancel`)
+      .post<ChangeTimeRequest>(`/hr/change-time-requests/${id}/cancel`)
       .then((r) => r.data),
 
   // Admin
@@ -80,28 +80,28 @@ export const changeTimeApi = {
     size?: number
   } = {}) =>
     api
-      .get<PageResponse<ChangeTimeRequest>>("/change-time-requests", {
+      .get<PageResponse<ChangeTimeRequest>>("/hr/change-time-requests", {
         params: { page: 0, size: 20, ...params },
       })
       .then((r) => r.data),
 
   approve: (id: number, reviewNote?: string | null) =>
     api
-      .post<ChangeTimeRequest>(`/change-time-requests/${id}/approve`, {
+      .post<ChangeTimeRequest>(`/hr/change-time-requests/${id}/approve`, {
         reviewNote: reviewNote ?? null,
       })
       .then((r) => r.data),
 
   reject: (id: number, reviewNote?: string | null) =>
     api
-      .post<ChangeTimeRequest>(`/change-time-requests/${id}/reject`, {
+      .post<ChangeTimeRequest>(`/hr/change-time-requests/${id}/reject`, {
         reviewNote: reviewNote ?? null,
       })
       .then((r) => r.data),
 
   returnForRevision: (id: number, reviewNote: string) =>
     api
-      .post<ChangeTimeRequest>(`/change-time-requests/${id}/return`, {
+      .post<ChangeTimeRequest>(`/hr/change-time-requests/${id}/return`, {
         reviewNote,
       })
       .then((r) => r.data),
