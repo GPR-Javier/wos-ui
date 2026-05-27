@@ -8,6 +8,8 @@ import {
   type CreateMilestonePayload,
   type CreateJobPositionPayload,
   type CreateSalaryGradePayload,
+  type CreatePayrollSetupPayload,
+  type CreateDepartmentPayload,
   type AssignPositionPayload,
 } from "@/lib/employee-profile-api"
 
@@ -187,6 +189,15 @@ export function useDeleteJobPosition() {
   })
 }
 
+export function useLinkGradeToPosition() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ positionId, salaryGradeId }: { positionId: number; salaryGradeId: number }) =>
+      employeeProfileApi.linkGradeToPosition(positionId, salaryGradeId, true),
+    onSuccess: () => qc.invalidateQueries({ queryKey: POSITIONS_KEY }),
+  })
+}
+
 // ── Salary Grades ─────────────────────────────────────────────────────────────
 
 const SALARY_GRADES_KEY = ["salary-grades"] as const
@@ -225,12 +236,85 @@ export function useDeleteSalaryGrade() {
   })
 }
 
-export function useLinkGradeToPosition() {
+
+// ── Departments ───────────────────────────────────────────────────────────────
+
+const DEPARTMENTS_KEY = ["departments"] as const
+
+export function useDepartments() {
+  return useQuery({
+    queryKey: DEPARTMENTS_KEY,
+    queryFn: () => employeeProfileApi.listDepartments(),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useCreateDepartment() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ positionId, gradeId, isDefault }: { positionId: number; gradeId: number; isDefault: boolean }) =>
-      employeeProfileApi.linkGradeToPosition(positionId, gradeId, isDefault),
-    onSuccess: () => qc.invalidateQueries({ queryKey: POSITIONS_KEY }),
+    mutationFn: (payload: CreateDepartmentPayload) =>
+      employeeProfileApi.createDepartment(payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: DEPARTMENTS_KEY }),
+  })
+}
+
+export function useUpdateDepartment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number
+      payload: Partial<CreateDepartmentPayload> & { active?: boolean }
+    }) => employeeProfileApi.updateDepartment(id, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: DEPARTMENTS_KEY }),
+  })
+}
+
+export function useDeleteDepartment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => employeeProfileApi.deleteDepartment(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: DEPARTMENTS_KEY }),
+  })
+}
+
+// ── Payroll Setup ─────────────────────────────────────────────────────────────
+
+const PAYROLL_SETUP_KEY = ["payroll-setup"] as const
+
+export function usePayrollSetups() {
+  return useQuery({
+    queryKey: PAYROLL_SETUP_KEY,
+    queryFn: () => employeeProfileApi.listPayrollSetups(),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useCreatePayrollSetup() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: CreatePayrollSetupPayload) =>
+      employeeProfileApi.createPayrollSetup(payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: PAYROLL_SETUP_KEY }),
+  })
+}
+
+export function useUpdatePayrollSetup() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Partial<CreatePayrollSetupPayload> }) =>
+      employeeProfileApi.updatePayrollSetup(id, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: PAYROLL_SETUP_KEY }),
+  })
+}
+
+export function useDeletePayrollSetup() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => employeeProfileApi.deletePayrollSetup(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: PAYROLL_SETUP_KEY }),
   })
 }
 

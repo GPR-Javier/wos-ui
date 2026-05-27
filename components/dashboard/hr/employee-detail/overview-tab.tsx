@@ -1617,9 +1617,9 @@ export function OverviewTab({ employee, employeeId }: Props) {
                   </div>
                   {defaultGrade && (
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">{defaultGrade.code}</span>
+                      <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">{defaultGrade.name}</span>
                       <span className="text-[12px] font-medium">
-                        {new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(defaultGrade.baseSalary)}
+                        {new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(defaultGrade.salaryAmount)}
                       </span>
                     </div>
                   )}
@@ -1648,9 +1648,9 @@ export function OverviewTab({ employee, employeeId }: Props) {
         {primaryGrade && (
           <div className="mt-3 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
             <span className="text-[11px] text-muted-foreground">Payroll base pay resolves to</span>
-            <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary">{primaryGrade.code}</span>
+            <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary">{primaryGrade.name}</span>
             <span className="text-[12px] font-semibold text-foreground">
-              {new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(primaryGrade.baseSalary)}
+              {new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(primaryGrade.salaryAmount)}
             </span>
           </div>
         )}

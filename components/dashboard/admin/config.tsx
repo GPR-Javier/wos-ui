@@ -8,43 +8,31 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  Coins01Icon,
-  Timer02Icon,
-  CreditCardIcon,
-  Calendar01Icon,
-  TimeScheduleIcon,
-  Setting06Icon,
   CheckmarkCircle01Icon,
   Add01Icon,
   PencilEdit01Icon,
-  Tick02Icon,
   Cancel01Icon,
   Delete02Icon,
+  FloppyDiskIcon,
+  Search01Icon,
+  Briefcase01Icon,
+  EyeIcon,
 } from "@hugeicons/core-free-icons"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { SchedulePoliciesSection } from "@/components/dashboard/admin/schedule-policies"
 import { AttendanceConfigSection } from "@/components/dashboard/admin/attendance-config"
 import { SalaryGradesSection } from "@/components/dashboard/admin/salary-grades"
-import {
-  PayrollSchedule,
-  DEFAULT_PAYROLL_CONFIG,
-  type PayrollScheduleConfig,
-  type PayType,
-  type PayFrequency,
-} from "@/components/dashboard/payroll/payroll-schedule"
+import { PayrollSetupSection } from "@/components/dashboard/admin/payroll-setup"
+import { DepartmentsSection } from "@/components/dashboard/admin/departments"
 import { useAuthStore } from "@/store/auth-store"
+import { currencySymbol } from "@/lib/employee-profile-api"
 import {
   useJobPositions,
   useCreateJobPosition,
   useUpdateJobPosition,
   useDeleteJobPosition,
+  useLinkGradeToPosition,
   useSalaryGrades,
+  useDepartments,
 } from "@/hooks/use-employee-profile"
 
 // ── PlaceholderSection ─────────────────────────────────────────────────────
@@ -78,416 +66,6 @@ function PlaceholderSection({ title, description, items }: {
   )
 }
 
-// ── form helpers ───────────────────────────────────────────────────────────
-
-function ordinal(n: number) {
-  const s = ["th","st","nd","rd"]
-  const v = n % 100
-  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`
-}
-
-
-const WEEKDAY_OPTIONS = [
-  { value: "0", label: "Sunday" },
-  { value: "1", label: "Monday" },
-  { value: "2", label: "Tuesday" },
-  { value: "3", label: "Wednesday" },
-  { value: "4", label: "Thursday" },
-  { value: "5", label: "Friday" },
-  { value: "6", label: "Saturday" },
-]
-
-const MONTH_OPTIONS = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December",
-].map((m, i) => ({ value: String(i + 1), label: m }))
-
-// Days 1–28 for cutoff (safe across all months)
-const CUTOFF_DAY_OPTIONS = Array.from({ length: 28 }, (_, i) => ({
-  value: String(i + 1),
-  label: `${ordinal(i + 1)} of each month`,
-}))
-
-// Days 1–31 + last day for payout
-const PAYOUT_DAY_OPTIONS = [
-  { value: "0", label: "Last day of month" },
-  ...Array.from({ length: 31 }, (_, i) => ({
-    value: String(i + 1),
-    label: `${ordinal(i + 1)} of each month`,
-  })),
-]
-
-const WORKING_DAYS_OPTIONS = Array.from({ length: 7 }, (_, i) => ({
-  value: String(i + 1),
-  label: `${i + 1} day${i > 0 ? "s" : ""}`,
-}))
-
-function SmallSelect({ value, onChange, options, wide }: {
-  value: string
-  onChange: (v: string) => void
-  options: { value: string; label: string }[]
-  wide?: boolean
-}) {
-  return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className={`h-8 text-[12px] ${wide ? "w-56" : "w-48"}`}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent className="max-h-60">
-        {options.map((o) => (
-          <SelectItem key={o.value} value={o.value} className="text-[12px]">{o.label}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )
-}
-
-// ── PayrollSettingsCard ────────────────────────────────────────────────────
-
-const PAY_TYPES: { value: PayType; label: string; desc: string; icon: React.ComponentProps<typeof HugeiconsIcon>["icon"]; color: string }[] = [
-  { value: "fixed",      label: "Fixed Salary",     desc: "Standard monthly or bi-monthly pay",  icon: Coins01Icon,    color: "text-blue-500"   },
-  { value: "daily",      label: "Daily Rate",        desc: "Paid per day worked",                  icon: Timer02Icon,    color: "text-green-500"  },
-  { value: "commission", label: "Commission-based",  desc: "Base salary + % on sales or revenue",  icon: CreditCardIcon, color: "text-violet-500" },
-]
-
-const PAY_FREQS: { value: PayFrequency; label: string; sub: string }[] = [
-  { value: "weekly",        label: "Weekly",       sub: "Every 7 days"     },
-  { value: "semi-monthly",  label: "Semi-monthly", sub: "Every 15th"       },
-  { value: "monthly",       label: "Monthly",      sub: "Once a month"     },
-  { value: "yearly",        label: "Yearly",       sub: "Once a year"      },
-]
-
-function SubCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-border bg-muted/20 p-4">
-      <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-      <div className="space-y-3">{children}</div>
-    </div>
-  )
-}
-
-function FormRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-[13px] text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-1.5">{children}</div>
-    </div>
-  )
-}
-
-function SummaryCell({ label, value, accent }: { label: string; value: string; accent?: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={cn("mt-0.5 text-[13px] font-semibold", accent ?? "text-foreground")}>{value}</p>
-    </div>
-  )
-}
-
-function PayrollSettingsCard({
-  value, onChange,
-}: {
-  value: PayrollScheduleConfig
-  onChange: (cfg: PayrollScheduleConfig) => void
-}) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState<PayrollScheduleConfig>(value)
-
-  function startEdit() { setDraft(value); setEditing(true) }
-  function save() { onChange(draft); setEditing(false) }
-  function cancel() { setDraft(value); setEditing(false) }
-  function set<K extends keyof PayrollScheduleConfig>(key: K, val: PayrollScheduleConfig[K]) {
-    setDraft((p) => ({ ...p, [key]: val }))
-  }
-function setCommission<K extends keyof PayrollScheduleConfig["commission"]>(key: K, val: PayrollScheduleConfig["commission"][K]) {
-    setDraft((p) => ({ ...p, commission: { ...p.commission, [key]: val } }))
-  }
-
-  const weekdays = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
-  const pd2 = value.payoutDay2 === 0 ? "Last day" : ordinal(value.payoutDay2)
-  const mpd = value.monthPayoutDay === 0 ? "Last day" : ordinal(value.monthPayoutDay)
-
-  return (
-    <div className="rounded-xl border border-border bg-card shadow-sm">
-      {/* ── header ── */}
-      <div className="flex items-center justify-between border-b border-border px-5 py-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
-            <HugeiconsIcon icon={Setting06Icon} size={15} strokeWidth={1.8} className="text-muted-foreground" />
-          </div>
-          <div>
-            <p className="text-[13px] font-semibold text-foreground">Payroll settings</p>
-            <p className="text-[11px] text-muted-foreground">Compensation type, pay schedule &amp; overtime rules</p>
-          </div>
-        </div>
-        {!editing ? (
-          <Button size="xs" variant="outline" onClick={startEdit}>Edit settings</Button>
-        ) : (
-          <div className="flex gap-2">
-            <Button size="xs" variant="ghost" onClick={cancel}>Cancel</Button>
-            <Button size="xs" onClick={save}>Save changes</Button>
-          </div>
-        )}
-      </div>
-
-      <div className="p-5">
-        {!editing ? (
-          // ── view mode ─────────────────────────────────────────────────────
-          <div className="space-y-4">
-            {/* Type + Frequency hero row */}
-            <div className="flex flex-wrap items-center gap-3">
-              {(() => {
-                const t = PAY_TYPES.find((p) => p.value === value.payType)!
-                return (
-                  <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
-                    <HugeiconsIcon icon={t.icon} size={14} strokeWidth={1.8} className={t.color} />
-                    <span className="text-[13px] font-semibold text-foreground">{t.label}</span>
-                  </div>
-                )
-              })()}
-              {(() => {
-                const f = PAY_FREQS.find((p) => p.value === value.payFrequency)!
-                return (
-                  <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
-                    <HugeiconsIcon icon={Calendar01Icon} size={14} strokeWidth={1.8} className="text-primary" />
-                    <span className="text-[13px] font-semibold text-foreground">{f.label}</span>
-                    <span className="text-[11px] text-muted-foreground">({f.sub})</span>
-                  </div>
-                )
-              })()}
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
-                <span className="text-[12px] text-muted-foreground">OT</span>
-                <span className="text-[13px] font-semibold text-foreground">{value.overtimeMultiplier.toFixed(2)}×</span>
-              </div>
-            </div>
-
-            {/* Schedule summary grid */}
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {value.payFrequency === "semi-monthly" && (<>
-                <SummaryCell label="Period 1 Cutoff" value={ordinal(value.cutoffDay1)} />
-                <SummaryCell label="Period 1 Payout" value={ordinal(value.payoutDay1)} accent="text-green-500" />
-                <SummaryCell label="Period 2 Cutoff" value={ordinal(value.cutoffDay2)} />
-                <SummaryCell label="Period 2 Payout" value={pd2} accent="text-green-500" />
-              </>)}
-              {value.payFrequency === "weekly" && (<>
-                <SummaryCell label="Cutoff Day" value={weekdays[value.weekCutoffDay]} />
-                <SummaryCell label="Payout Day" value={weekdays[value.weekPayoutDay]} accent="text-green-500" />
-              </>)}
-              {value.payFrequency === "monthly" && (<>
-                <SummaryCell label="Cutoff Day" value={ordinal(value.monthCutoffDay)} />
-                <SummaryCell label="Payout Day" value={mpd} accent="text-green-500" />
-              </>)}
-              {value.payFrequency === "yearly" && (<>
-                <SummaryCell label="Payout Month" value={MONTH_OPTIONS[value.yearPayoutMonth - 1]?.label ?? ""} />
-                <SummaryCell label="Payout Day" value={ordinal(value.yearPayoutDay)} accent="text-green-500" />
-              </>)}
-            </div>
-
-            {/* Type-specific summary */}
-            {value.payType === "daily" && (
-              <div className="grid grid-cols-2 gap-2">
-                <SummaryCell label="Daily Rate" value={`₱${value.dailyRate.toLocaleString("en-PH")}`} accent="text-primary" />
-                <SummaryCell label="Working Days / Week" value={`${value.workingDaysPerWeek} days`} />
-              </div>
-            )}
-            {value.payType === "commission" && (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <SummaryCell label="Base Salary" value={`₱${value.commission.baseSalary.toLocaleString("en-PH")}`} />
-                <SummaryCell label="Commission Rate" value={`${value.commission.commissionRate}%`} accent="text-primary" />
-                <SummaryCell label="Basis" value={{ per_sale: "Per sale", revenue_pct: "% revenue", per_unit: "Per unit" }[value.commission.commissionBasis]} />
-                <SummaryCell label="Cap" value={value.commission.cap > 0 ? `₱${value.commission.cap.toLocaleString("en-PH")}` : "No cap"} />
-              </div>
-            )}
-          </div>
-        ) : (
-          // ── edit mode ─────────────────────────────────────────────────────
-          <div className="space-y-5">
-
-            {/* ── 1. Compensation Type ─────────────────────────────────── */}
-            <div>
-              <div className="mb-3 flex items-center gap-2">
-                <HugeiconsIcon icon={Coins01Icon} size={13} strokeWidth={2} className="text-muted-foreground" />
-                <p className="text-[12px] font-semibold text-foreground">Compensation Type</p>
-              </div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {PAY_TYPES.map((t) => (
-                  <button
-                    key={t.value}
-                    type="button"
-                    onClick={() => set("payType", t.value)}
-                    className={cn(
-                      "flex flex-col gap-2.5 rounded-xl border p-3.5 text-left transition-all",
-                      draft.payType === t.value
-                        ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                        : "border-border bg-card hover:border-primary/40 hover:bg-muted/30",
-                    )}
-                  >
-                    <div className={cn(
-                      "flex h-7 w-7 items-center justify-center rounded-lg",
-                      draft.payType === t.value ? "bg-primary/10" : "bg-muted",
-                    )}>
-                      <HugeiconsIcon icon={t.icon} size={14} strokeWidth={1.8} className={draft.payType === t.value ? "text-primary" : t.color} />
-                    </div>
-                    <div>
-                      <p className={cn("text-[12px] font-semibold leading-tight", draft.payType === t.value ? "text-primary" : "text-foreground")}>
-                        {t.label}
-                      </p>
-                      <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">{t.desc}</p>
-                    </div>
-                    {draft.payType === t.value && (
-                      <HugeiconsIcon icon={CheckmarkCircle01Icon} size={13} strokeWidth={2} className="ml-auto text-primary" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* ── Compensation sub-fields ──────────────────────────────── */}
-            {draft.payType === "daily" && (
-              <SubCard title="Daily Rate Configuration">
-                <FormRow label="Daily rate">
-                  <span className="text-[12px] text-muted-foreground">₱</span>
-                  <Input type="number" min={0} value={draft.dailyRate} onChange={(e) => set("dailyRate", Number(e.target.value))} className="h-8 w-32 text-[12px]" />
-                  <span className="text-[12px] text-muted-foreground">per day</span>
-                </FormRow>
-                <FormRow label="Working days / week">
-                  <SmallSelect value={String(draft.workingDaysPerWeek)} onChange={(v) => set("workingDaysPerWeek", Number(v))} options={WORKING_DAYS_OPTIONS} />
-                </FormRow>
-              </SubCard>
-            )}
-
-
-            {draft.payType === "commission" && (
-              <SubCard title="Commission Configuration">
-                <FormRow label="Base salary">
-                  <span className="text-[12px] text-muted-foreground">₱</span>
-                  <Input type="number" min={0} value={draft.commission.baseSalary} onChange={(e) => setCommission("baseSalary", Number(e.target.value))} className="h-8 w-32 text-[12px]" />
-                </FormRow>
-                <FormRow label="Commission rate">
-                  <Input type="number" min={0} max={100} step={0.5} value={draft.commission.commissionRate} onChange={(e) => setCommission("commissionRate", Number(e.target.value))} className="h-8 w-24 text-[12px]" />
-                  <span className="text-[12px] text-muted-foreground">%</span>
-                </FormRow>
-                <FormRow label="Commission basis">
-                  <SmallSelect
-                    value={draft.commission.commissionBasis}
-                    onChange={(v) => setCommission("commissionBasis", v as "per_sale" | "revenue_pct" | "per_unit")}
-                    options={[
-                      { value: "per_sale", label: "Per sale" },
-                      { value: "revenue_pct", label: "% of revenue" },
-                      { value: "per_unit", label: "Per unit" },
-                    ]}
-                  />
-                </FormRow>
-                <FormRow label="Commission cap">
-                  <span className="text-[12px] text-muted-foreground">₱</span>
-                  <Input type="number" min={0} value={draft.commission.cap} onChange={(e) => setCommission("cap", Number(e.target.value))} className="h-8 w-32 text-[12px]" />
-                  <span className="text-[12px] text-muted-foreground">(0 = no cap)</span>
-                </FormRow>
-              </SubCard>
-            )}
-
-            {/* ── 2. Pay Frequency ─────────────────────────────────────── */}
-            <div>
-              <div className="mb-3 flex items-center gap-2">
-                <HugeiconsIcon icon={Calendar01Icon} size={13} strokeWidth={2} className="text-muted-foreground" />
-                <p className="text-[12px] font-semibold text-foreground">Pay Frequency</p>
-              </div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {PAY_FREQS.map((f) => (
-                  <button
-                    key={f.value}
-                    type="button"
-                    onClick={() => set("payFrequency", f.value)}
-                    className={cn(
-                      "flex flex-col gap-1.5 rounded-xl border p-3.5 text-left transition-all",
-                      draft.payFrequency === f.value
-                        ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                        : "border-border bg-card hover:border-primary/40 hover:bg-muted/30",
-                    )}
-                  >
-                    <p className={cn("text-[12px] font-semibold", draft.payFrequency === f.value ? "text-primary" : "text-foreground")}>{f.label}</p>
-                    <p className="text-[10px] text-muted-foreground">{f.sub}</p>
-                    {draft.payFrequency === f.value && (
-                      <HugeiconsIcon icon={CheckmarkCircle01Icon} size={13} strokeWidth={2} className="ml-auto text-primary" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* ── Pay schedule detail ──────────────────────────────────── */}
-            {draft.payFrequency === "weekly" && (
-              <SubCard title="Weekly Schedule">
-                <FormRow label="Cutoff day">
-                  <SmallSelect value={String(draft.weekCutoffDay)} onChange={(v) => set("weekCutoffDay", Number(v))} options={WEEKDAY_OPTIONS} />
-                </FormRow>
-                <FormRow label="Payout day">
-                  <SmallSelect value={String(draft.weekPayoutDay)} onChange={(v) => set("weekPayoutDay", Number(v))} options={WEEKDAY_OPTIONS} />
-                </FormRow>
-              </SubCard>
-            )}
-
-            {draft.payFrequency === "semi-monthly" && (
-              <SubCard title="Semi-monthly Schedule">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <FormRow label="Period 1 cutoff">
-                    <SmallSelect value={String(draft.cutoffDay1)} onChange={(v) => set("cutoffDay1", Number(v))} options={CUTOFF_DAY_OPTIONS} />
-                  </FormRow>
-                  <FormRow label="Period 1 payout">
-                    <SmallSelect value={String(draft.payoutDay1)} onChange={(v) => set("payoutDay1", Number(v))} options={CUTOFF_DAY_OPTIONS} />
-                  </FormRow>
-                  <FormRow label="Period 2 cutoff">
-                    <SmallSelect value={String(draft.cutoffDay2)} onChange={(v) => set("cutoffDay2", Number(v))} options={CUTOFF_DAY_OPTIONS} />
-                  </FormRow>
-                  <FormRow label="Period 2 payout">
-                    <SmallSelect value={String(draft.payoutDay2)} onChange={(v) => set("payoutDay2", Number(v))} options={PAYOUT_DAY_OPTIONS} />
-                  </FormRow>
-                </div>
-              </SubCard>
-            )}
-
-            {draft.payFrequency === "monthly" && (
-              <SubCard title="Monthly Schedule">
-                <FormRow label="Cutoff day">
-                  <SmallSelect value={String(draft.monthCutoffDay)} onChange={(v) => set("monthCutoffDay", Number(v))} options={CUTOFF_DAY_OPTIONS} />
-                </FormRow>
-                <FormRow label="Payout day">
-                  <SmallSelect value={String(draft.monthPayoutDay)} onChange={(v) => set("monthPayoutDay", Number(v))} options={PAYOUT_DAY_OPTIONS} />
-                </FormRow>
-              </SubCard>
-            )}
-
-            {draft.payFrequency === "yearly" && (
-              <SubCard title="Yearly Schedule">
-                <FormRow label="Payout month">
-                  <SmallSelect value={String(draft.yearPayoutMonth)} onChange={(v) => set("yearPayoutMonth", Number(v))} options={MONTH_OPTIONS} />
-                </FormRow>
-                <FormRow label="Payout day">
-                  <SmallSelect value={String(draft.yearPayoutDay)} onChange={(v) => set("yearPayoutDay", Number(v))} options={CUTOFF_DAY_OPTIONS} />
-                </FormRow>
-              </SubCard>
-            )}
-
-            {/* ── 3. Other Rules ───────────────────────────────────────── */}
-            <div>
-              <div className="mb-3 flex items-center gap-2">
-                <HugeiconsIcon icon={TimeScheduleIcon} size={13} strokeWidth={2} className="text-muted-foreground" />
-                <p className="text-[12px] font-semibold text-foreground">Other Rules</p>
-              </div>
-              <SubCard title="Overtime">
-                <FormRow label="Overtime multiplier">
-                  <Input type="number" min={1} max={3} step={0.05} value={draft.overtimeMultiplier} onChange={(e) => set("overtimeMultiplier", Number(e.target.value))} className="h-8 w-24 text-center text-[12px]" />
-                  <span className="text-[12px] text-muted-foreground">× hourly rate</span>
-                </FormRow>
-              </SubCard>
-            </div>
-
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
 
 // ── ConfigSection ──────────────────────────────────────────────────────────
 
@@ -498,9 +76,6 @@ export function ConfigSection() {
   const canEditAttendance = useAuthStore((s) =>
     s.authorities.includes("CONFIGURATION:EDIT_ATTENDANCE_SETTINGS")
   )
-  const canEditPayroll = useAuthStore((s) =>
-    s.authorities.includes("CONFIGURATION:EDIT_PAYROLL_SETTINGS")
-  )
   const canEditLeave = useAuthStore((s) =>
     s.authorities.includes("CONFIGURATION:EDIT_LEAVE_SETTINGS")
   )
@@ -508,22 +83,20 @@ export function ConfigSection() {
   const defaultTab = useMemo(() => {
     if (canViewSchedulePolicy) return "schedule"
     if (canEditAttendance) return "attendance"
-    if (canEditPayroll) return "payroll"
     if (canEditLeave) return "leave"
-    return "positions"
-  }, [canViewSchedulePolicy, canEditAttendance, canEditPayroll, canEditLeave])
-
-  const [payrollConfig, setPayrollConfig] = useState<PayrollScheduleConfig>(DEFAULT_PAYROLL_CONFIG)
+    return "salary-grades"
+  }, [canViewSchedulePolicy, canEditAttendance, canEditLeave])
 
   return (
     <Tabs defaultValue={defaultTab} className="gap-6">
       <TabsList variant="line" className="border-b border-border">
         {canViewSchedulePolicy && <TabsTrigger value="schedule">Schedule policy</TabsTrigger>}
         {canEditAttendance && <TabsTrigger value="attendance">Attendance</TabsTrigger>}
-        {canEditPayroll && <TabsTrigger value="payroll">Payroll</TabsTrigger>}
         {canEditLeave && <TabsTrigger value="leave">Leave</TabsTrigger>}
-        <TabsTrigger value="positions">Positions</TabsTrigger>
         <TabsTrigger value="salary-grades">Salary Grades</TabsTrigger>
+        <TabsTrigger value="departments">Departments</TabsTrigger>
+        <TabsTrigger value="positions">Job Positions</TabsTrigger>
+        <TabsTrigger value="payroll-setup">Payroll Setup</TabsTrigger>
       </TabsList>
 
       {canViewSchedulePolicy && (
@@ -545,32 +118,6 @@ export function ConfigSection() {
         </TabsContent>
       )}
 
-      {canEditPayroll && (
-        <TabsContent value="payroll">
-          <Tabs defaultValue="settings" className="gap-5">
-            <TabsList variant="line" className="border-b border-border">
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-              <TabsTrigger value="forecast">Schedule & Forecast</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="settings">
-              <PayrollSettingsCard value={payrollConfig} onChange={setPayrollConfig} />
-            </TabsContent>
-
-            <TabsContent value="forecast" className="space-y-1">
-              <div>
-                <p className="text-[13px] font-semibold">Schedule & Forecasting</p>
-                <p className="mt-0.5 text-[12px] text-muted-foreground">
-                  Calendar, upcoming pay periods, cash flow forecast, and 13th month tracker —
-                  driven by the Payroll Settings tab.
-                </p>
-              </div>
-              <PayrollSchedule config={payrollConfig} />
-            </TabsContent>
-          </Tabs>
-        </TabsContent>
-      )}
-
       {canEditLeave && (
         <TabsContent value="leave">
           <PlaceholderSection
@@ -585,6 +132,10 @@ export function ConfigSection() {
         </TabsContent>
       )}
 
+      <TabsContent value="departments">
+        <DepartmentsSection />
+      </TabsContent>
+
       <TabsContent value="positions">
         <PositionsSection />
       </TabsContent>
@@ -592,224 +143,551 @@ export function ConfigSection() {
       <TabsContent value="salary-grades">
         <SalaryGradesSection />
       </TabsContent>
+
+      <TabsContent value="payroll-setup">
+        <PayrollSetupSection />
+      </TabsContent>
     </Tabs>
   )
 }
 
 // ── Positions Management ───────────────────────────────────────────────────────
 
-const LEVEL_OPTIONS = ["", "Junior", "Mid", "Senior", "Lead", "Principal", "Manager", "Director"]
+const LEVEL_OPTIONS = ["Junior", "Mid", "Senior", "Lead", "Principal", "Manager", "Director"]
 
-type PosForm = { title: string; department: string; level: string; salaryGradeId: string }
-const EMPTY_POS_FORM: PosForm = { title: "", department: "", level: "", salaryGradeId: "" }
+type PosForm = {
+  title: string
+  department: string
+  level: string
+  salaryGradeId: string
+  active: boolean
+}
+type PosErrors = Partial<Record<"title", string>>
+const EMPTY_POS_FORM: PosForm = { title: "", department: "", level: "", salaryGradeId: "", active: true }
+
+// ── Position Modal ─────────────────────────────────────────────────────────────
+
+function PosModal({
+  editingId,
+  form,
+  errors,
+  busy,
+  departments,
+  grades,
+  onClose,
+  onSubmit,
+  setForm,
+}: {
+  editingId: number | null
+  form: PosForm
+  errors: PosErrors
+  busy: boolean
+  departments: { id: number; name: string; active: boolean }[]
+  grades: { id: number; name: string; currency?: string; salaryAmount?: number; active: boolean }[]
+  onClose: () => void
+  onSubmit: () => void
+  setForm: (v: PosForm) => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md animate-in rounded-2xl border border-border bg-card p-6 shadow-xl duration-200 zoom-in-95 fade-in">
+        {/* Header */}
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-[15px] font-semibold">
+            {editingId ? "Edit Job Position" : "New Job Position"}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
+          </button>
+        </div>
+
+        {/* Fields */}
+        <div className="space-y-4">
+          {/* Title */}
+          <div className="space-y-1.5">
+            <label className="text-[12px] text-muted-foreground">Position Title *</label>
+            <Input
+              autoFocus
+              className={cn("h-9 text-[13px]", errors.title && "border-destructive")}
+              placeholder="e.g. Software Engineer, Marketing Manager"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              onKeyDown={(e) => e.key === "Enter" && onSubmit()}
+            />
+            {errors.title && <p className="text-[11px] font-medium text-destructive">{errors.title}</p>}
+          </div>
+
+          {/* Department + Level */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-[12px] text-muted-foreground">Department</label>
+              <select
+                value={form.department}
+                onChange={(e) => setForm({ ...form, department: e.target.value })}
+                className="h-9 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">None</option>
+                {departments.filter((d) => d.active).map((d) => (
+                  <option key={d.id} value={d.name}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[12px] text-muted-foreground">Level</label>
+              <select
+                value={form.level}
+                onChange={(e) => setForm({ ...form, level: e.target.value })}
+                className="h-9 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">None</option>
+                {LEVEL_OPTIONS.map((l) => (
+                  <option key={l} value={l}>{l}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Salary Grade */}
+          <div className="space-y-1.5">
+            <label className="text-[12px] text-muted-foreground">Salary Grade</label>
+            <select
+              value={form.salaryGradeId}
+              onChange={(e) => setForm({ ...form, salaryGradeId: e.target.value })}
+              className="h-9 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">None</option>
+              {grades.filter((g) => g.active || String(g.id) === form.salaryGradeId).map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}{g.salaryAmount != null ? ` — ${currencySymbol(g.currency)}${g.salaryAmount.toLocaleString("en-PH")}` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Status — edit only */}
+          {editingId && (
+            <div className="space-y-1.5">
+              <label className="text-[12px] text-muted-foreground">Status</label>
+              <select
+                value={form.active ? "active" : "inactive"}
+                onChange={(e) => setForm({ ...form, active: e.target.value === "active" })}
+                className="h-9 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 flex items-center justify-between gap-3">
+          <p className="text-[11px] text-muted-foreground">* Required fields</p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={onClose} disabled={busy}>Cancel</Button>
+            <Button size="sm" onClick={onSubmit} disabled={busy}>
+              <HugeiconsIcon icon={FloppyDiskIcon} size={13} strokeWidth={2} className="mr-1.5" />
+              {busy ? "Saving…" : editingId ? "Update" : "Save"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── PositionsSection ───────────────────────────────────────────────────────────
 
 function PositionsSection() {
   const { data: positions = [], isLoading } = useJobPositions()
   const { data: grades = [] } = useSalaryGrades()
+  const { data: departments = [] } = useDepartments()
   const createMut = useCreateJobPosition()
   const updateMut = useUpdateJobPosition()
   const deleteMut = useDeleteJobPosition()
+  const linkGradeMut = useLinkGradeToPosition()
 
-  const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState<PosForm>(EMPTY_POS_FORM)
+  const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [editForm, setEditForm] = useState<PosForm>(EMPTY_POS_FORM)
+  const [form, setForm] = useState<PosForm>(EMPTY_POS_FORM)
+  const [errors, setErrors] = useState<PosErrors>({})
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null)
+  const [search, setSearch] = useState("")
+  const [filterDept, setFilterDept] = useState("")
+  const [filterStatus, setFilterStatus] = useState<"active" | "inactive" | "all">("active")
+  const [viewingItem, setViewingItem] = useState<(typeof positions)[0] | null>(null)
 
-  const busy = createMut.isPending || updateMut.isPending || deleteMut.isPending
+  const busy = createMut.isPending || updateMut.isPending || deleteMut.isPending || linkGradeMut.isPending
 
-  function toPayload(f: PosForm) {
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase()
+    return positions.filter((p) => {
+      const matchSearch = !q || p.title.toLowerCase().includes(q) || (p.level ?? "").toLowerCase().includes(q)
+      const matchDept = !filterDept || (p.department ?? "") === filterDept
+      const matchStatus = filterStatus === "all" || (filterStatus === "active" ? p.active : !p.active)
+      return matchSearch && matchDept && matchStatus
+    })
+  }, [positions, search, filterDept, filterStatus])
+
+  const grouped = useMemo(() => {
+    const acc: Record<string, typeof filtered> = {}
+    for (const p of filtered) {
+      const dept = p.department ?? "No Department"
+      if (!acc[dept]) acc[dept] = []
+      acc[dept]!.push(p)
+    }
+    return acc
+  }, [filtered])
+
+  const sortedDepts = Object.keys(grouped).sort()
+  const activeCount = positions.filter((p) => p.active).length
+  const inactiveCount = positions.filter((p) => !p.active).length
+  const allDepts = [...new Set(positions.map((p) => p.department ?? ""))].filter(Boolean).sort()
+
+  function showToast(msg: string, type: "success" | "error") {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3500)
+  }
+
+  function validate(): boolean {
+    const errs: PosErrors = {}
+    if (!form.title.trim()) errs.title = "Position title is required"
+    setErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
+  function toPayload(f: PosForm, isEdit: boolean) {
     return {
       title: f.title.trim(),
       department: f.department.trim() || null,
       level: f.level || null,
       salaryGradeId: f.salaryGradeId ? Number(f.salaryGradeId) : null,
+      ...(isEdit && { active: f.active }),
     }
   }
 
-  function handleCreate() {
-    if (!form.title.trim()) return
-    createMut.mutate(toPayload(form), {
-      onSuccess: () => { setAdding(false); setForm(EMPTY_POS_FORM) },
+  function openCreate() {
+    setEditingId(null)
+    setForm(EMPTY_POS_FORM)
+    setErrors({})
+    setShowForm(true)
+  }
+
+  function openEdit(p: (typeof positions)[0]) {
+    setEditingId(p.id)
+    const defaultGrade = p.salaryGrades?.find((g) => g.isDefault) ?? p.salaryGrades?.[0]
+    setForm({
+      title: p.title,
+      department: p.department ?? "",
+      level: p.level ?? "",
+      salaryGradeId: defaultGrade ? String(defaultGrade.id) : "",
+      active: p.active,
     })
+    setErrors({})
+    setShowForm(true)
   }
 
-  function handleUpdate() {
-    if (!editingId || !editForm.title.trim()) return
-    updateMut.mutate(
-      { id: editingId, payload: toPayload(editForm) },
-      { onSuccess: () => setEditingId(null) }
-    )
+  function closeForm() {
+    setShowForm(false)
+    setEditingId(null)
+    setForm(EMPTY_POS_FORM)
+    setErrors({})
   }
 
-  // Group by department for display
-  const grouped = positions.reduce<Record<string, typeof positions>>((acc, p) => {
-    const dept = p.department ?? "General"
-    if (!acc[dept]) acc[dept] = []
-    acc[dept]!.push(p)
-    return acc
-  }, {})
+  function handleSubmit() {
+    if (!validate()) return
+    const payload = toPayload(form, !!editingId)
+    const gradeId = form.salaryGradeId ? Number(form.salaryGradeId) : null
 
-  const sortedDepts = Object.keys(grouped).sort()
+    function linkGradeIfSelected(positionId: number) {
+      if (gradeId) linkGradeMut.mutate({ positionId, salaryGradeId: gradeId })
+    }
 
-  function FormRow({
-    f,
-    setF,
-    onSave,
-    onCancel,
-  }: {
-    f: PosForm
-    setF: (v: PosForm) => void
-    onSave: () => void
-    onCancel: () => void
-  }) {
-    return (
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2.5">
-        <Input
-          autoFocus
-          className="h-8 min-w-35 flex-1 text-[13px]"
-          placeholder="Position title…"
-          value={f.title}
-          onChange={(e) => setF({ ...f, title: e.target.value })}
-          onKeyDown={(e) => { if (e.key === "Enter") onSave(); if (e.key === "Escape") onCancel() }}
-        />
-        <Input
-          className="h-8 w-32 text-[13px]"
-          placeholder="Department…"
-          value={f.department}
-          onChange={(e) => setF({ ...f, department: e.target.value })}
-        />
-        <select
-          value={f.level}
-          onChange={(e) => setF({ ...f, level: e.target.value })}
-          className="h-8 w-28 rounded-lg border bg-background px-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          {LEVEL_OPTIONS.map((l) => (
-            <option key={l} value={l}>{l || "— Level —"}</option>
-          ))}
-        </select>
-        <select
-          value={f.salaryGradeId}
-          onChange={(e) => setF({ ...f, salaryGradeId: e.target.value })}
-          className="h-8 w-36 rounded-lg border bg-background px-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option value="">— Salary Grade —</option>
-          {grades.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.code}{g.name ? ` · ${g.name}` : ""}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={onSave}
-          disabled={busy || !f.title.trim()}
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
-        >
-          <HugeiconsIcon icon={Tick02Icon} size={13} strokeWidth={2} />
-        </button>
-        <button
-          onClick={onCancel}
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted"
-        >
-          <HugeiconsIcon icon={Cancel01Icon} size={13} strokeWidth={2} />
-        </button>
-      </div>
-    )
+    if (editingId) {
+      updateMut.mutate({ id: editingId, payload }, {
+        onSuccess: () => {
+          linkGradeIfSelected(editingId)
+          closeForm()
+          showToast("Position updated.", "success")
+        },
+        onError: () => showToast("Failed to update position.", "error"),
+      })
+    } else {
+      createMut.mutate(payload, {
+        onSuccess: (created) => {
+          linkGradeIfSelected(created.id)
+          closeForm()
+          showToast("Position created.", "success")
+        },
+        onError: () => showToast("Failed to create position.", "error"),
+      })
+    }
+  }
+
+  function handleDelete(p: (typeof positions)[0]) {
+    if (!confirm(`Delete "${p.title}"? This cannot be undone.`)) return
+    deleteMut.mutate(p.id, {
+      onSuccess: () => showToast("Position deleted.", "success"),
+      onError: () => showToast("Failed to delete.", "error"),
+    })
   }
 
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[13px] font-semibold">Job Positions</p>
+          <p className="text-[14px] font-semibold">Job Positions</p>
           <p className="mt-0.5 text-[12px] text-muted-foreground">
-            Configure roles and positions available in the organization. These populate the Promotion dropdown in employee career milestones.
+            Configure roles and positions available in the organization.
           </p>
+          <div className="mt-2 flex items-center gap-3">
+            <span className="text-[11px] font-medium text-green-600 dark:text-green-400">{activeCount} active</span>
+            {inactiveCount > 0 && <span className="text-[11px] text-muted-foreground">{inactiveCount} inactive</span>}
+          </div>
         </div>
-        {!adding && (
-          <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
-            <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} className="mr-1.5" />
-            Add Position
-          </Button>
-        )}
+        <Button size="sm" onClick={openCreate}>
+          <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} className="mr-1.5" />
+          New Position
+        </Button>
       </div>
 
-      {/* Add form */}
-      {adding && (
-        <FormRow
-          f={form}
-          setF={setForm}
-          onSave={handleCreate}
-          onCancel={() => { setAdding(false); setForm({ title: "", department: "", level: "" }) }}
-        />
+      {/* Toast */}
+      {toast && (
+        <div className="flex justify-end">
+          <div className={cn(
+            "flex items-center gap-2 rounded-lg px-4 py-2.5 text-[13px] font-medium shadow-md",
+            toast.type === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white"
+          )}>
+            <HugeiconsIcon icon={toast.type === "success" ? CheckmarkCircle01Icon : Cancel01Icon} size={14} strokeWidth={2} />
+            {toast.msg}
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      {positions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1" style={{ minWidth: 200 }}>
+            <HugeiconsIcon icon={Search01Icon} size={13} strokeWidth={2} className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="h-8 pl-8 text-[13px]"
+              placeholder="Search position…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          {allDepts.length > 0 && (
+            <select
+              value={filterDept}
+              onChange={(e) => setFilterDept(e.target.value)}
+              className="h-8 rounded-lg border bg-background px-2.5 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">All Departments</option>
+              {allDepts.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+          )}
+          <div className="flex items-center gap-1.5">
+            {(["active", "inactive", "all"] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setFilterStatus(s)}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-medium capitalize transition-colors",
+                  filterStatus === s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                )}
+              >
+                {s === "active" ? `Active (${activeCount})` : s === "inactive" ? `Inactive (${inactiveCount})` : `All (${positions.length})`}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* List */}
       {isLoading ? (
-        <p className="text-[13px] text-muted-foreground">Loading positions…</p>
-      ) : positions.length === 0 && !adding ? (
-        <div className="rounded-xl border border-dashed p-8 text-center">
-          <p className="text-[13px] text-muted-foreground">No positions configured yet.</p>
-          <p className="mt-1 text-[12px] text-muted-foreground/60">Click &ldquo;Add Position&rdquo; to create the first one.</p>
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => <div key={i} className="h-12 animate-pulse rounded-xl bg-muted" />)}
+        </div>
+      ) : positions.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-card py-16 text-center">
+          <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-muted">
+            <HugeiconsIcon icon={Briefcase01Icon} size={22} strokeWidth={1.5} className="text-muted-foreground/60" />
+          </div>
+          <p className="text-[14px] font-semibold">No positions yet</p>
+          <p className="mt-1 max-w-xs text-[12px] text-muted-foreground">
+            Create your first job position to link roles to departments and salary grades.
+          </p>
+          <Button size="sm" className="mt-5" onClick={openCreate}>
+            <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} className="mr-1.5" />
+            New Position
+          </Button>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-xl border border-dashed py-10 text-center text-[13px] text-muted-foreground">
+          No positions match your filters.
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {sortedDepts.map((dept) => (
-            <div key={dept} className="rounded-xl border bg-card">
+            <div key={dept} className="overflow-hidden rounded-xl border bg-card shadow-sm">
               {/* Department header */}
-              <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-                <p className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">{dept}</p>
-                <span className="text-[11px] text-muted-foreground">{grouped[dept]!.length} position{grouped[dept]!.length !== 1 ? "s" : ""}</span>
+              <div className="flex items-center justify-between border-b bg-muted/40 px-4 py-2.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{dept}</p>
+                <span className="text-[11px] text-muted-foreground">
+                  {grouped[dept]!.length} position{grouped[dept]!.length !== 1 ? "s" : ""}
+                </span>
               </div>
 
               <div className="divide-y divide-border/60">
                 {grouped[dept]!.map((p) => (
-                  <div key={p.id}>
-                    {editingId === p.id ? (
-                      <div className="px-4 py-2.5">
-                        <FormRow
-                          f={editForm}
-                          setF={setEditForm}
-                          onSave={handleUpdate}
-                          onCancel={() => setEditingId(null)}
-                        />
-                      </div>
-                    ) : (
-                      <div className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/30">
-                        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-[10px] font-bold text-primary">
-                          {p.title.slice(0, 2).toUpperCase()}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-medium">{p.title}</p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {[p.level, p.salaryGrade ? p.salaryGrade.code : (p.salaryGradeId ? `Grade #${p.salaryGradeId}` : null)].filter(Boolean).join(" · ") || ""}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                          <button
-                            onClick={() => {
-                              setEditingId(p.id)
-                              setEditForm({ title: p.title, department: p.department ?? "", level: p.level ?? "", salaryGradeId: p.salaryGradeId ? String(p.salaryGradeId) : "" })
-                            }}
-                            className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                          >
-                            <HugeiconsIcon icon={PencilEdit01Icon} size={12} strokeWidth={2} />
-                          </button>
-                          <button
-                            onClick={() => deleteMut.mutate(p.id)}
-                            disabled={busy}
-                            className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 disabled:opacity-40"
-                          >
-                            <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={2} />
-                          </button>
-                        </div>
-                      </div>
+                  <div
+                    key={p.id}
+                    className={cn(
+                      "group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30",
+                      !p.active && "opacity-60"
                     )}
+                  >
+                    {/* Avatar */}
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-[11px] font-bold text-primary">
+                      {p.title.slice(0, 2).toUpperCase()}
+                    </div>
+
+                    {/* Info */}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-medium">{p.title}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {[
+                          p.level,
+                          p.salaryGrade?.name ?? (p.salaryGradeId ? `Grade #${p.salaryGradeId}` : null),
+                        ].filter(Boolean).join(" · ") || <span className="italic">No level or grade</span>}
+                      </p>
+                    </div>
+
+                    {/* Status badge */}
+                    <span className={cn(
+                      "shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold",
+                      p.active
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {p.active ? "Active" : "Inactive"}
+                    </span>
+
+                    {/* Actions */}
+                    <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        type="button"
+                        title="View"
+                        onClick={() => setViewingItem(p)}
+                        className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        <HugeiconsIcon icon={EyeIcon} size={12} strokeWidth={2} />
+                      </button>
+                      <button
+                        type="button"
+                        title="Edit"
+                        onClick={() => openEdit(p)}
+                        disabled={busy}
+                        className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
+                      >
+                        <HugeiconsIcon icon={PencilEdit01Icon} size={12} strokeWidth={2} />
+                      </button>
+                      <button
+                        type="button"
+                        title="Delete"
+                        onClick={() => handleDelete(p)}
+                        disabled={busy}
+                        className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 disabled:opacity-30"
+                      >
+                        <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={2} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           ))}
+
+          <div className="text-right text-[11px] text-muted-foreground">
+            {filtered.length} of {positions.length} position{positions.length !== 1 ? "s" : ""}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showForm && (
+        <PosModal
+          editingId={editingId}
+          form={form}
+          errors={errors}
+          busy={busy}
+          departments={departments}
+          grades={grades}
+          onClose={closeForm}
+          onSubmit={handleSubmit}
+          setForm={setForm}
+        />
+      )}
+
+      {/* View Modal */}
+      {viewingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setViewingItem(null)} />
+          <div className="relative w-full max-w-sm animate-in rounded-2xl border border-border bg-card p-6 shadow-xl duration-200 zoom-in-95 fade-in">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-[15px] font-semibold">Job Position Details</h2>
+              <button type="button" onClick={() => setViewingItem(null)}
+                className="flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground">
+                <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
+              </button>
+            </div>
+            <div className="space-y-3 text-[13px]">
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-muted-foreground">Title</span>
+                <span className="font-medium">{viewingItem.title}</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-muted-foreground">Department</span>
+                <span className="font-medium">{viewingItem.department ?? "—"}</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-muted-foreground">Level</span>
+                <span className="font-medium">{viewingItem.level ?? "—"}</span>
+              </div>
+              {viewingItem.salaryGrades && viewingItem.salaryGrades.length > 0 && (
+                <div className="flex flex-col gap-1.5 border-b pb-2">
+                  <span className="text-muted-foreground">Salary Grades</span>
+                  {viewingItem.salaryGrades.map((g) => (
+                    <div key={g.id} className="flex items-center justify-between rounded-md bg-muted/40 px-2 py-1">
+                      <span className="font-medium">{g.name}</span>
+                      {g.isDefault && (
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Default</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Status</span>
+                <span className={cn(
+                  "rounded-full px-2.5 py-0.5 text-[10px] font-semibold",
+                  viewingItem.active
+                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                    : "bg-muted text-muted-foreground"
+                )}>
+                  {viewingItem.active ? "Active" : "Inactive"}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

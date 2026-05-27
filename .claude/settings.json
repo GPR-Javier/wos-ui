@@ -5,7 +5,25 @@
       "Bash(node -e \"const icons = require\\('@hugeicons/core-free-icons'\\); console.log\\(Object.keys\\(icons\\).filter\\(k => k.toLowerCase\\(\\).includes\\('contract'\\) || \\(k.toLowerCase\\(\\).includes\\('file'\\) && k.toLowerCase\\(\\).includes\\('doc'\\)\\)\\)\\)\")",
       "Bash(node -e \"const icons = require\\('@hugeicons/core-free-icons'\\); console.log\\(Object.keys\\(icons\\).filter\\(k => k.toLowerCase\\(\\).includes\\('file'\\)\\)\\)\")",
       "Bash(node -e \"const icons = require\\('@hugeicons/core-free-icons'\\); const keys = Object.keys\\(icons\\); console.log\\(keys.length, keys.slice\\(0,30\\)\\)\")",
-      "Bash(node -e \"const icons = require\\('@hugeicons/core-free-icons'\\); console.log\\(JSON.stringify\\(Object.keys\\(icons\\).slice\\(0,5\\)\\)\\)\")"
+      "Bash(node -e \"const icons = require\\('@hugeicons/core-free-icons'\\); console.log\\(JSON.stringify\\(Object.keys\\(icons\\).slice\\(0,5\\)\\)\\)\")",
+      "Bash(jar tf *)",
+      "PowerShell($env:PGPASSWORD = \"root\"; & psql -U postgres -d workos -h localhost -c \"UPDATE salary_grades SET salary_amount = base_salary WHERE salary_amount IS NULL AND base_salary IS NOT NULL; ALTER TABLE salary_grades DROP COLUMN base_salary;\" 2>&1)",
+      "Read(//c/Program Files/PostgreSQL/**)",
+      "Read(//c/Program Files/**)",
+      "PowerShell($env:PGPASSWORD = \"root\"; & \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -U postgres -d workos -h localhost -c \"UPDATE salary_grades SET salary_amount = base_salary WHERE salary_amount IS NULL AND base_salary IS NOT NULL; ALTER TABLE salary_grades DROP COLUMN base_salary;\" 2>&1)",
+      "PowerShell($env:PGPASSWORD = \"root\"; & \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -U postgres -d workos -h localhost -c \"\\\\d salary_grades\" 2>&1)",
+      "PowerShell($env:PGPASSWORD = \"root\"; & \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -U postgres -d workos -h localhost -c \"ALTER TABLE salary_grades DROP COLUMN code, DROP COLUMN max_salary, DROP COLUMN min_salary, DROP COLUMN salary_type;\" 2>&1)",
+      "PowerShell($env:PGPASSWORD = \"root\"; $psql = \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\"; $tables = @\\(\"departments\",\"job_positions\",\"position_salary_grades\",\"user_positions\",\"employment_contracts\"\\); foreach \\($t in $tables\\) { Write-Host \"=== $t ===\"; & $psql -U postgres -d workos -h localhost -c \"\\\\d $t\" 2>&1; Write-Host \"\" })",
+      "PowerShell($env:PGPASSWORD = \"root\"; & \"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\" -U postgres -d workos -h localhost -c \"SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND is_nullable = 'NO' AND column_name NOT IN \\('id','created_at','is_active','is_primary','is_default','linked_at','assigned_at'\\) ORDER BY table_name, column_name;\" 2>&1)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; $env:PATH = \"$env:JAVA_HOME\\\\bin;$env:PATH\"; cd \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; .\\\\mvnw compile -q 2>&1 | Select-Object -Last 30)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; $env:PATH = \"$env:JAVA_HOME\\\\bin;$env:PATH\"; cd \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; .\\\\mvnw compile 2>&1 | Select-Object -Last 20)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; $env:PATH = \"$env:JAVA_HOME\\\\bin;$env:PATH\"; cd \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; .\\\\mvnw dependency:tree 2>&1 | Select-String -Pattern \"jackson|json\" -CaseSensitive:$false | Select-Object -First 20)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; $env:PATH = \"$env:JAVA_HOME\\\\bin;$env:PATH\"; cd \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; .\\\\mvnw compile 2>&1 | Select-Object -Last 15)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; $env:PATH = \"$env:JAVA_HOME\\\\bin;$env:PATH\"; cd \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; .\\\\mvnw spring-boot:run 2>&1 | Select-String -Pattern \"Started|ERROR|Exception|payroll_setup|alter table\" | Select-Object -First 15)",
+      "PowerShell(Get-Process -Id 31124 -ErrorAction SilentlyContinue)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; cd \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; .\\\\mvnw spring-boot:run 2>&1 | Select-Object -First 120)",
+      "PowerShell($p = netstat -ano | findstr \":8083\"; $p; $pid8083 = \\($p -split '\\\\s+'\\)[-1]; Write-Host \"PID on 8083: $pid8083\"; if \\($pid8083\\) { Stop-Process -Id $pid8083 -Force -ErrorAction SilentlyContinue; Write-Host \"Killed $pid8083\" })",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; cd \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; .\\\\mvnw spring-boot:run 2>&1 | Select-Object -First 150)"
     ]
   }
 }

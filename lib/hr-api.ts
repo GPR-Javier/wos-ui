@@ -17,11 +17,8 @@ export interface HrEmployee {
     department?: string | null
     salaryGrade?: {
       id: number
-      code: string
       name?: string | null
-      baseSalary: number
-      minSalary: number
-      maxSalary: number
+      salaryAmount: number
     } | null
   } | null
   team?: string | null

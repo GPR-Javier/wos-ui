@@ -284,9 +284,9 @@ function CreateUserModal({ onClose }: CreateModalProps) {
                     {defaultGrade && (
                       <>
                         <span className="text-muted-foreground">·</span>
-                        <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">{defaultGrade.code}</span>
+                        <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">{defaultGrade.name}</span>
                         <span className="ml-auto text-[11px] text-muted-foreground">
-                          {new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(defaultGrade.baseSalary)}
+                          {new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(defaultGrade.salaryAmount)}
                         </span>
                       </>
                     )}

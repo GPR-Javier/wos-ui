@@ -265,9 +265,8 @@ export function ContractTab({ employeeId }: Props) {
                     .filter((g) => g.active)
                     .map((g) => (
                       <SelectItem key={g.id} value={g.id.toString()} className="text-[13px]">
-                        {g.code}
-                        {g.name ? ` — ${g.name}` : ""}
-                        {` (₱${g.baseSalary.toLocaleString("en-PH")})`}
+                        {g.name}
+                        {` (₱${g.salaryAmount.toLocaleString("en-PH")})`}
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -422,7 +421,7 @@ function ContractCard({
             {fmt(c.startDate)} →{" "}
             {c.endDate ? fmt(c.endDate) : <span className="italic">Open-ended</span>}
             {c.jobPosition && ` · ${c.jobPosition.title}`}
-            {c.salaryGrade && ` · ${c.salaryGrade.code}`}
+            {c.salaryGrade && ` · ${c.salaryGrade.name}`}
           </p>
         </div>
         <HugeiconsIcon
@@ -458,7 +457,7 @@ function ContractCard({
             {c.salaryGrade && (
               <Field
                 label="Salary Grade"
-                value={`${c.salaryGrade.code}${c.salaryGrade.name ? ` — ${c.salaryGrade.name}` : ""} (₱${c.salaryGrade.baseSalary.toLocaleString("en-PH")})`}
+                value={`${c.salaryGrade.name} (₱${c.salaryGrade.salaryAmount.toLocaleString("en-PH")})`}
               />
             )}
           </div>

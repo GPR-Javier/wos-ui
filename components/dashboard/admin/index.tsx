@@ -4,6 +4,7 @@ import { StatCard } from "@/components/custom/stat-card"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   CheckmarkCircle02Icon,
@@ -11,10 +12,13 @@ import {
   Calendar01Icon,
   Alert01Icon,
   UserCircleIcon,
+  BarChartIcon,
+  DashboardSquare01Icon,
 } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
 import { useHrStats, useLeaveRequests, useApproveLeave, useRejectLeave } from "@/hooks/use-hr"
 import { useTeamAttendance } from "@/hooks/use-admin-attendance"
+import { PayrollSchedule, DEFAULT_PAYROLL_CONFIG } from "@/components/dashboard/payroll/payroll-schedule"
 
 const today = new Date().toISOString().split("T")[0]!
 
@@ -97,6 +101,25 @@ export function OverviewSection() {
           {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
         </p>
       </div>
+
+      <Tabs defaultValue="overview">
+        <TabsList>
+          <TabsTrigger value="overview" className="text-[12px]">
+            <HugeiconsIcon icon={DashboardSquare01Icon} size={13} strokeWidth={1.8} />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="schedule" className="text-[12px]">
+            <HugeiconsIcon icon={BarChartIcon} size={13} strokeWidth={1.8} />
+            Schedule & Forecast
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="schedule" className="mt-5">
+          <PayrollSchedule config={DEFAULT_PAYROLL_CONFIG} />
+        </TabsContent>
+
+        <TabsContent value="overview" className="mt-5">
+        <div className="space-y-6">
 
       {/* ── 1. Workforce KPIs ────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
@@ -390,6 +413,10 @@ export function OverviewSection() {
           ))}
         </div>
       </div>
+
+        </div>
+        </TabsContent>
+      </Tabs>
 
     </div>
   )

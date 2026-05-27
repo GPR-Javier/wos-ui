@@ -50,9 +50,8 @@ export interface ContractPositionSummary {
 
 export interface ContractGradeSummary {
   id: number
-  code: string
-  name?: string | null
-  baseSalary: number
+  name: string
+  salaryAmount: number
 }
 
 export interface ContractEmployeeSummary {

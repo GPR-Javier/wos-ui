@@ -219,9 +219,9 @@ export function ContractsManagement() {
                       <p>{c.jobPosition?.title ?? <span className="opacity-40">—</span>}</p>
                       {c.salaryGrade && (
                         <p className="text-[11px] text-muted-foreground">
-                          {c.salaryGrade.code}
-                          {c.salaryGrade.baseSalary
-                            ? ` · ₱${c.salaryGrade.baseSalary.toLocaleString("en-PH")}`
+                          {c.salaryGrade.name}
+                          {c.salaryGrade.salaryAmount
+                            ? ` · ₱${c.salaryGrade.salaryAmount.toLocaleString("en-PH")}`
                             : ""}
                         </p>
                       )}
