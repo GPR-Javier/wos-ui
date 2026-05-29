@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
@@ -70,6 +71,9 @@ function PlaceholderSection({ title, description, items }: {
 // ── ConfigSection ──────────────────────────────────────────────────────────
 
 export function ConfigSection() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
   const canViewSchedulePolicy = useAuthStore((s) =>
     s.authorities.includes("SCHEDULE_POLICY:VIEW")
   )
@@ -87,8 +91,14 @@ export function ConfigSection() {
     return "salary-grades"
   }, [canViewSchedulePolicy, canEditAttendance, canEditLeave])
 
+  const activeTab = searchParams.get("tab") ?? defaultTab
+
+  function handleTabChange(tab: string) {
+    router.replace(`/dashboard/config?tab=${tab}`)
+  }
+
   return (
-    <Tabs defaultValue={defaultTab} className="gap-6">
+    <Tabs value={activeTab} onValueChange={handleTabChange} className="gap-6">
       <TabsList variant="line" className="border-b border-border">
         {canViewSchedulePolicy && <TabsTrigger value="schedule">Schedule policy</TabsTrigger>}
         {canEditAttendance && <TabsTrigger value="attendance">Attendance</TabsTrigger>}

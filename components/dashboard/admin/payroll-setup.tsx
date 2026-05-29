@@ -408,8 +408,15 @@ function SetupModal({
   setField: <K extends keyof SetupForm>(k: K, v: SetupForm[K]) => void
 }) {
   const cutoffOptions = CUTOFF_PERIOD_OPTIONS[form.compensationBasis] ?? []
-  const selectedGradeCurrency = grades.find((g) => String(g.id) === form.salaryGradeId)?.currency
+  const selectedGrade = grades.find((g) => String(g.id) === form.salaryGradeId)
+  const selectedGradeCurrency = selectedGrade?.currency
   const symbol = currencySymbol(selectedGradeCurrency)
+  const selectedPosition = positions.find((p) => String(p.id) === form.jobPositionId)
+  const positionHasGrade = !!(selectedPosition && (
+    selectedPosition.salaryGradeId
+    ?? selectedPosition.salaryGrades?.find((g) => g.isDefault)?.id
+    ?? selectedPosition.salaryGrades?.[0]?.id
+  ))
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -457,23 +464,36 @@ function SetupModal({
               </FieldWrap>
 
               <FieldWrap label="Salary Grade *" error={errors.salaryGradeId}>
-                <Select value={form.salaryGradeId} onValueChange={(v) => setField("salaryGradeId", v)}>
-                  <SelectTrigger className={cn("h-9 text-[13px]", errors.salaryGradeId && "border-destructive")}>
-                    <SelectValue placeholder="Select grade…" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {grades.filter((g) => g.active || String(g.id) === form.salaryGradeId).map((g) => (
-                      <SelectItem key={g.id} value={String(g.id)} className="text-[13px]">
-                        {g.name}
-                        {g.salaryAmount != null && (
-                          <span className="ml-2 text-muted-foreground">
-                            — {currencySymbol(g.currency)}{g.salaryAmount.toLocaleString("en-PH")}
-                          </span>
-                        )}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {positionHasGrade ? (
+                  <div className="flex h-9 items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 text-[13px] cursor-not-allowed">
+                    <span className="flex-1 truncate text-foreground">
+                      {selectedGrade
+                        ? `${selectedGrade.name}${selectedGrade.salaryAmount != null ? ` — ${currencySymbol(selectedGrade.currency)}${selectedGrade.salaryAmount.toLocaleString("en-PH")}` : ""}`
+                        : "—"}
+                    </span>
+                    <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      from position
+                    </span>
+                  </div>
+                ) : (
+                  <Select value={form.salaryGradeId} onValueChange={(v) => setField("salaryGradeId", v)}>
+                    <SelectTrigger className={cn("h-9 text-[13px]", errors.salaryGradeId && "border-destructive")}>
+                      <SelectValue placeholder="Select grade…" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {grades.filter((g) => g.active || String(g.id) === form.salaryGradeId).map((g) => (
+                        <SelectItem key={g.id} value={String(g.id)} className="text-[13px]">
+                          {g.name}
+                          {g.salaryAmount != null && (
+                            <span className="ml-2 text-muted-foreground">
+                              — {currencySymbol(g.currency)}{g.salaryAmount.toLocaleString("en-PH")}
+                            </span>
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </FieldWrap>
             </div>
           </FormCard>
