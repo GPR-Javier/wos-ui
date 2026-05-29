@@ -94,13 +94,10 @@ export default function LoginPage() {
         <div className="relative flex w-full flex-col lg:w-[55%]">
           {/* Top bar */}
           <div className="flex items-center justify-between px-8 pt-8">
-            <Logo />
+            <Link href="/"><Logo /></Link>
             <p className="text-[13px] text-muted-foreground">
               Don&apos;t have an account?{" "}
-              <Link
-                href="/auth/register"
-                className="font-medium text-primary hover:underline"
-              >
+              <Link href="/auth/register" className="font-medium text-primary hover:underline">
                 Register
               </Link>
             </p>
@@ -289,18 +286,8 @@ export default function LoginPage() {
               &copy; {new Date().getFullYear()} WorkOS. All rights reserved.
             </p>
             <div className="flex items-center gap-4">
-              <a
-                href="#"
-                className="text-[11px] text-muted-foreground hover:text-foreground"
-              >
-                Privacy
-              </a>
-              <a
-                href="#"
-                className="text-[11px] text-muted-foreground hover:text-foreground"
-              >
-                Terms
-              </a>
+              <a href="#" className="text-[11px] text-muted-foreground hover:text-foreground">Privacy</a>
+              <a href="#" className="text-[11px] text-muted-foreground hover:text-foreground">Terms</a>
             </div>
           </div>
         </div>

@@ -55,7 +55,16 @@ export interface SwitchRolePayload {
   userRoleId: number
 }
 
+export interface RegisterPayload {
+  firstName: string
+  lastName: string
+  email: string
+  password: string
+}
+
 export const authApi = {
+  register: (payload: RegisterPayload) =>
+    api.post<AuthResponse>("/auth/register", payload).then((r) => r.data),
   login: (payload: LoginPayload) =>
     api.post<LoginResponse>("/auth/login", payload).then((r) => r.data),
   selectRole: (payload: SelectRolePayload) =>

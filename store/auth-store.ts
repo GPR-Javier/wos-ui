@@ -8,6 +8,7 @@ function toDashboardRole(apiRole: string): Role {
   const r = apiRole.toUpperCase()
   if (r === "ADMIN") return "admin"
   if (r === "HR") return "hr"
+  if (r === "APPLICANT") return "applicant"
   return "employee"
 }
 

@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { hrApi } from "@/lib/hr-api"
+import type { CreateJobPayload } from "@/lib/hr-api"
 
 export function useHrEmployees(
   params: { page?: number; size?: number; search?: string } = {}
@@ -43,6 +44,40 @@ export function useJobs(params: { page?: number; size?: number } = {}) {
   return useQuery({
     queryKey: ["hr", "jobs", params],
     queryFn: () => hrApi.jobs(params),
+  })
+}
+
+/** No auth required — safe to call on the public careers page. */
+export function usePublicJobs(params: { page?: number; size?: number } = {}) {
+  return useQuery({
+    queryKey: ["public", "jobs", params],
+    queryFn: () => hrApi.publicJobs(params),
+    retry: false,
+  })
+}
+
+export function useCreateJob() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: CreateJobPayload) => hrApi.createJob(payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["hr", "jobs"] }),
+  })
+}
+
+export function useUpdateJob() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Partial<CreateJobPayload> }) =>
+      hrApi.updateJob(id, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["hr", "jobs"] }),
+  })
+}
+
+export function useDeleteJob() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => hrApi.deleteJob(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["hr", "jobs"] }),
   })
 }
 

@@ -7,6 +7,7 @@ import {
   authApi,
   AuthResponse,
   LoginPayload,
+  RegisterPayload,
   SelectRolePayload,
   SwitchRolePayload,
 } from "@/lib/auth-api"
@@ -108,6 +109,27 @@ export function useLogout() {
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
-function redirectByRole(_role: string, router: ReturnType<typeof useRouter>) {
-  router.replace("/dashboard")
+function redirectByRole(role: string, router: ReturnType<typeof useRouter>) {
+  if (role.toUpperCase() === "APPLICANT") {
+    router.replace("/careers")
+  } else {
+    router.replace("/dashboard")
+  }
+}
+
+// ── Register (creates Applicant account) ─────────────────────────────────────
+
+export function useRegister() {
+  const qc = useQueryClient()
+  const router = useRouter()
+  const { setFromAuth } = useAuthStore()
+
+  return useMutation({
+    mutationFn: (payload: RegisterPayload) => authApi.register(payload),
+    onSuccess: (data) => {
+      setFromAuth(data)
+      qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
+      router.replace("/careers")
+    },
+  })
 }

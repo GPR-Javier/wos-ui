@@ -1,4 +1,4 @@
-export type Role = "employee" | "hr" | "admin" | "settings"
+export type Role = "employee" | "hr" | "admin" | "settings" | "applicant"
 
 export interface NavItem {
   label: string

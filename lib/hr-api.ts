@@ -1,4 +1,4 @@
-import { api } from "./api"
+import { api, publicApi } from "./api"
 import type { PageResponse } from "./admin-api"
 
 export interface HrEmployee {
@@ -40,16 +40,45 @@ export interface LeaveRequest {
   filedAt: string
 }
 
+export type WorkType = "remote" | "hybrid" | "onsite"
+export type SalaryPeriod = "hourly" | "weekly" | "semi-monthly" | "monthly" | "fixed-price"
+
 export interface JobPosting {
   id: number
   jobCode: string
   title: string
   department: string
-  location: string
+  location?: string | null
   type: string
-  salaryRange: string
+  workType: WorkType
+  description?: string | null
+  salaryCurrency?: string | null
+  salaryFrom?: number | null
+  salaryTo?: number | null
+  salaryPeriod?: SalaryPeriod | null
+  salaryGradeFromId?: number | null
+  salaryGradeFromName?: string | null
+  salaryGradeToId?: number | null
+  salaryGradeToName?: string | null
   status: "new" | "urgent" | "open" | "closed"
   applicantsCount: number
+  tags: string[]
+}
+
+export interface CreateJobPayload {
+  title: string
+  department: string
+  location?: string | null
+  type: string
+  workType: WorkType
+  description?: string | null
+  salaryCurrency?: string | null
+  salaryFrom?: number | null
+  salaryTo?: number | null
+  salaryPeriod?: SalaryPeriod | null
+  salaryGradeFromId?: number | null
+  salaryGradeToId?: number | null
+  status: "new" | "urgent" | "open" | "closed"
   tags: string[]
 }
 
@@ -99,10 +128,23 @@ export const hrApi = {
 
   jobs: (params: { page?: number; size?: number } = {}) =>
     api
-      .get<
-        PageResponse<JobPosting>
-      >("/hr/jobs", { params: { page: 0, size: 20, ...params } })
+      .get<PageResponse<JobPosting>>("/hr/jobs", { params: { page: 0, size: 20, ...params } })
       .then((r) => r.data),
+
+  /** Public — no auth required, no 401 redirect. Used on the careers page. */
+  publicJobs: (params: { page?: number; size?: number } = {}) =>
+    publicApi
+      .get<PageResponse<JobPosting>>("/hr/jobs", { params: { page: 0, size: 50, ...params } })
+      .then((r) => r.data),
+
+  createJob: (payload: CreateJobPayload) =>
+    api.post<JobPosting>("/hr/jobs", payload).then((r) => r.data),
+
+  updateJob: (id: number, payload: Partial<CreateJobPayload>) =>
+    api.put<JobPosting>(`/hr/jobs/${id}`, payload).then((r) => r.data),
+
+  deleteJob: (id: number) =>
+    api.delete(`/hr/jobs/${id}`),
 
   stats: () => api.get<HrStats>("/hr/stats").then((r) => r.data),
 }

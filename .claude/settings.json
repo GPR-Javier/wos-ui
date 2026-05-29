@@ -23,7 +23,17 @@
       "PowerShell(Get-Process -Id 31124 -ErrorAction SilentlyContinue)",
       "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; cd \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; .\\\\mvnw spring-boot:run 2>&1 | Select-Object -First 120)",
       "PowerShell($p = netstat -ano | findstr \":8083\"; $p; $pid8083 = \\($p -split '\\\\s+'\\)[-1]; Write-Host \"PID on 8083: $pid8083\"; if \\($pid8083\\) { Stop-Process -Id $pid8083 -Force -ErrorAction SilentlyContinue; Write-Host \"Killed $pid8083\" })",
-      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; cd \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; .\\\\mvnw spring-boot:run 2>&1 | Select-Object -First 150)"
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; cd \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; .\\\\mvnw spring-boot:run 2>&1 | Select-Object -First 150)",
+      "Bash(npm install *)",
+      "Bash(cat \"C:/Users/User/AppData/Local/npm-cache/_logs/2026-05-29T03_01_43_708Z-debug-0.log\" 2>&1 | grep \"error\" | head -20)",
+      "Read(//c/Users/User/AppData/Local/npm-cache/_logs/**)",
+      "Bash(pnpm add *)",
+      "Bash(xargs grep -l -i \"job\\\\|JobPosting\\\\|JobRequest\")",
+      "Bash(xargs grep -l -i \"recruitment\\\\|JobPosting\\\\|JobListing\\\\|Career\\\\|/jobs\")",
+      "Bash(xargs grep -l \"ResourceNotFoundException\\\\|exception\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-auth\\src\\main\\java\\com\\gpm\\auth\\controller"
     ]
   }
 }
