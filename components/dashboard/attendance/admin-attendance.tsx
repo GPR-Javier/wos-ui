@@ -146,7 +146,7 @@ function TableView({ records }: { records: TeamAttendanceRecord[] }) {
                   {r.timeOut ?? "—"}
                 </TableCell>
                 <TableCell className="tabular-nums">{r.hoursWorked}</TableCell>
-                <TableCell className="tabular-nums text-[13px]">
+                <TableCell className="text-[13px] tabular-nums">
                   {r.overtimeHours ? (
                     <span className="font-medium text-purple-600 dark:text-purple-400">
                       {r.overtimeHours}
@@ -160,7 +160,7 @@ function TableView({ records }: { records: TeamAttendanceRecord[] }) {
                     {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
                   </StatusBadge>
                 </TableCell>
-                <TableCell className="tabular-nums text-[13px]">
+                <TableCell className="text-[13px] tabular-nums">
                   {r.lateMinutes && r.lateMinutes > 0
                     ? `${r.lateMinutes} min`
                     : "—"}
@@ -188,10 +188,7 @@ function CardView({ records }: { records: TeamAttendanceRecord[] }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {records.map((r) => (
-        <div
-          key={r.id}
-          className="rounded-xl border bg-card p-4 space-y-3"
-        >
+        <div key={r.id} className="space-y-3 rounded-xl border bg-card p-4">
           {/* Header */}
           <div className="flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[12px] font-semibold text-primary">
@@ -201,7 +198,9 @@ function CardView({ records }: { records: TeamAttendanceRecord[] }) {
               <p className="truncate text-[13px] font-semibold">
                 {r.firstName} {r.lastName}
               </p>
-              <p className="text-[11px] text-muted-foreground">{r.employeeId}</p>
+              <p className="text-[11px] text-muted-foreground">
+                {r.employeeId}
+              </p>
             </div>
           </div>
 
@@ -317,7 +316,8 @@ export function AdminAttendance() {
 
   const filtered = useMemo(() => {
     if (filter === "all") return records
-    if (filter === "graveyard") return records.filter((r) => r.shift === "graveyard")
+    if (filter === "graveyard")
+      return records.filter((r) => r.shift === "graveyard")
     if (filter === "day") return records.filter((r) => r.shift === "day")
     if (filter === "overtime") return records.filter((r) => !!r.overtimeHours)
     return records.filter((r) => r.status === filter)
@@ -334,14 +334,18 @@ export function AdminAttendance() {
       {/* Date nav + view toggle */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon-sm" onClick={() => shiftDate(-1)}>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={() => shiftDate(-1)}
+          >
             <HugeiconsIcon icon={ArrowLeft01Icon} size={13} strokeWidth={2} />
           </Button>
           <input
             type="date"
             value={date}
             onChange={(e) => e.target.value && setDate(e.target.value)}
-            className="h-8 rounded-lg border bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="h-8 rounded-lg border bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
           />
           <Button
             variant="outline"
@@ -393,13 +397,33 @@ export function AdminAttendance() {
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
-          <StatChip label="Present" count={counts.present} accent="bg-green-500" />
+          <StatChip
+            label="Present"
+            count={counts.present}
+            accent="bg-green-500"
+          />
           <StatChip label="Late" count={counts.late} accent="bg-amber-500" />
           <StatChip label="Absent" count={counts.absent} accent="bg-red-500" />
-          <StatChip label="On Leave" count={counts.leave} accent="bg-blue-500" />
-          <StatChip label="Overtime" count={counts.overtime} accent="bg-purple-500" />
-          <StatChip label="Graveyard" count={counts.graveyard} accent="bg-indigo-500" />
-          <StatChip label="Day Shift" count={counts.day} accent="bg-orange-400" />
+          <StatChip
+            label="On Leave"
+            count={counts.leave}
+            accent="bg-blue-500"
+          />
+          <StatChip
+            label="Overtime"
+            count={counts.overtime}
+            accent="bg-purple-500"
+          />
+          <StatChip
+            label="Graveyard"
+            count={counts.graveyard}
+            accent="bg-indigo-500"
+          />
+          <StatChip
+            label="Day Shift"
+            count={counts.day}
+            accent="bg-orange-400"
+          />
         </div>
       )}
 
@@ -410,7 +434,7 @@ export function AdminAttendance() {
             key={tab.key}
             onClick={() => setFilter(tab.key)}
             className={cn(
-              "relative pb-2 px-3 text-[13px] font-medium transition-colors",
+              "relative px-3 pb-2 text-[13px] font-medium transition-colors",
               filter === tab.key
                 ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground"

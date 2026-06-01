@@ -13,6 +13,10 @@ export interface AuthResponse {
   role: string
   userRoleNames: string[]
   authorities: string[]
+  /** True once the active role's onboarding is completed or fully skipped. */
+  onboarded: boolean
+  /** Screen keys already onboarded for the active role, e.g. ["dashboard","careers"]. */
+  onboardingDone: string[]
   requiresRoleSelection: false
 }
 
@@ -43,6 +47,9 @@ export interface MeResponse {
   role: string
   userRoleNames: string[]
   authorities: string[]
+  /** Onboarding state for the active role (from /auth/me). */
+  onboarded: boolean
+  onboardingDone: string[]
   active: boolean
   profilePhoto: string | null
   createdAt: string
@@ -76,4 +83,18 @@ export const authApi = {
   logout: () => api.post("/auth/logout"),
   me: () => api.get<MeResponse>("/auth/me").then((r) => r.data),
   refresh: () => api.post("/auth/refresh"),
+}
+
+// ── Onboarding ────────────────────────────────────────────────────────────────
+// The active role is resolved server-side from the JWT, so these take no role id.
+
+export const onboardingApi = {
+  /** Mark one screen's tour completed/skipped for the active role. */
+  completeScreen: (screenKey: string) =>
+    api
+      .post<AuthResponse>(`/auth/onboarding/screen/${screenKey}/complete`)
+      .then((r) => r.data),
+  /** Skip all remaining onboarding for the active role. */
+  skipAll: () =>
+    api.post<AuthResponse>("/auth/onboarding/skip-all").then((r) => r.data),
 }

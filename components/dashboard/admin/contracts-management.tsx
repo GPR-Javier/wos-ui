@@ -37,7 +37,13 @@ function fmt(date?: string | null) {
   })
 }
 
-const ALL_STATUSES: ContractStatus[] = ["ACTIVE", "DRAFT", "EXPIRED", "TERMINATED", "SUPERSEDED"]
+const ALL_STATUSES: ContractStatus[] = [
+  "ACTIVE",
+  "DRAFT",
+  "EXPIRED",
+  "TERMINATED",
+  "SUPERSEDED",
+]
 const ALL_TYPES: EmploymentType[] = [
   "REGULAR",
   "PROBATIONARY",
@@ -52,17 +58,22 @@ export function ContractsManagement() {
   const router = useRouter()
 
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<ContractStatus | "ALL">("ALL")
+  const [statusFilter, setStatusFilter] = useState<ContractStatus | "ALL">(
+    "ALL"
+  )
   const [typeFilter, setTypeFilter] = useState<EmploymentType | "ALL">("ALL")
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
     return contracts.filter((c) => {
-      const name = `${c.employee?.firstName ?? ""} ${c.employee?.lastName ?? ""}`.toLowerCase()
+      const name =
+        `${c.employee?.firstName ?? ""} ${c.employee?.lastName ?? ""}`.toLowerCase()
       const empId = (c.employee?.employeeId ?? "").toLowerCase()
       const cn = (c.contractNumber ?? "").toLowerCase()
-      const matchSearch = !q || name.includes(q) || empId.includes(q) || cn.includes(q)
-      const matchStatus = statusFilter === "ALL" || c.contractStatus === statusFilter
+      const matchSearch =
+        !q || name.includes(q) || empId.includes(q) || cn.includes(q)
+      const matchStatus =
+        statusFilter === "ALL" || c.contractStatus === statusFilter
       const matchType = typeFilter === "ALL" || c.employmentType === typeFilter
       return matchSearch && matchStatus && matchType
     })
@@ -102,7 +113,9 @@ export function ContractsManagement() {
             )}
           >
             {s === "ALL" ? "All" : CONTRACT_STATUS_LABELS[s]}{" "}
-            <span className="ml-1 tabular-nums opacity-70">{counts[s] ?? 0}</span>
+            <span className="ml-1 tabular-nums opacity-70">
+              {counts[s] ?? 0}
+            </span>
           </button>
         ))}
       </div>
@@ -128,11 +141,18 @@ export function ContractsManagement() {
           onValueChange={(v) => setTypeFilter(v as EmploymentType | "ALL")}
         >
           <SelectTrigger className="h-8 w-44 text-[13px]">
-            <HugeiconsIcon icon={FilterIcon} size={12} strokeWidth={2} className="mr-1.5" />
+            <HugeiconsIcon
+              icon={FilterIcon}
+              size={12}
+              strokeWidth={2}
+              className="mr-1.5"
+            />
             <SelectValue placeholder="Employment type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL" className="text-[13px]">All types</SelectItem>
+            <SelectItem value="ALL" className="text-[13px]">
+              All types
+            </SelectItem>
             {ALL_TYPES.map((t) => (
               <SelectItem key={t} value={t} className="text-[13px]">
                 {EMPLOYMENT_TYPE_LABELS[t]}
@@ -153,7 +173,7 @@ export function ContractsManagement() {
         <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
           <table className="w-full text-[13px]">
             <thead>
-              <tr className="border-b bg-muted/40 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <tr className="border-b bg-muted/40 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                 <th className="px-4 py-3 text-left">Employee</th>
                 <th className="px-4 py-3 text-left">Contract #</th>
                 <th className="px-4 py-3 text-left">Type</th>
@@ -166,7 +186,8 @@ export function ContractsManagement() {
             </thead>
             <tbody className="divide-y">
               {filtered.map((c) => {
-                const name = `${c.employee?.firstName ?? ""} ${c.employee?.lastName ?? ""}`.trim()
+                const name =
+                  `${c.employee?.firstName ?? ""} ${c.employee?.lastName ?? ""}`.trim()
                 const initials = name
                   .split(" ")
                   .map((n) => n[0])
@@ -177,13 +198,19 @@ export function ContractsManagement() {
                 return (
                   <tr
                     key={c.id}
-                    className="group hover:bg-muted/30 transition-colors"
+                    className="group transition-colors hover:bg-muted/30"
                   >
                     {/* Employee */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
-                          {initials || <HugeiconsIcon icon={UserCircleIcon} size={14} strokeWidth={1.5} />}
+                          {initials || (
+                            <HugeiconsIcon
+                              icon={UserCircleIcon}
+                              size={14}
+                              strokeWidth={1.5}
+                            />
+                          )}
                         </div>
                         <div>
                           <p className="font-medium">{name || "—"}</p>
@@ -196,11 +223,15 @@ export function ContractsManagement() {
 
                     {/* Contract # */}
                     <td className="px-4 py-3 text-muted-foreground">
-                      {c.contractNumber ?? <span className="italic opacity-50">N/A</span>}
+                      {c.contractNumber ?? (
+                        <span className="italic opacity-50">N/A</span>
+                      )}
                     </td>
 
                     {/* Type */}
-                    <td className="px-4 py-3">{EMPLOYMENT_TYPE_LABELS[c.employmentType]}</td>
+                    <td className="px-4 py-3">
+                      {EMPLOYMENT_TYPE_LABELS[c.employmentType]}
+                    </td>
 
                     {/* Status */}
                     <td className="px-4 py-3">
@@ -216,7 +247,11 @@ export function ContractsManagement() {
 
                     {/* Position / Grade */}
                     <td className="px-4 py-3">
-                      <p>{c.jobPosition?.title ?? <span className="opacity-40">—</span>}</p>
+                      <p>
+                        {c.jobPosition?.title ?? (
+                          <span className="opacity-40">—</span>
+                        )}
+                      </p>
                       {c.salaryGrade && (
                         <p className="text-[11px] text-muted-foreground">
                           {c.salaryGrade.name}
@@ -228,9 +263,15 @@ export function ContractsManagement() {
                     </td>
 
                     {/* Dates */}
-                    <td className="px-4 py-3 text-muted-foreground">{fmt(c.startDate)}</td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {c.endDate ? fmt(c.endDate) : <span className="italic opacity-50">Open</span>}
+                      {fmt(c.startDate)}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {c.endDate ? (
+                        fmt(c.endDate)
+                      ) : (
+                        <span className="italic opacity-50">Open</span>
+                      )}
                     </td>
 
                     {/* Action */}
@@ -238,13 +279,20 @@ export function ContractsManagement() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 text-[11px] opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="h-7 text-[11px] opacity-0 transition-opacity group-hover:opacity-100"
                         onClick={() =>
-                          router.push(`/dashboard/employees/${c.employee?.id}?tab=contracts`)
+                          router.push(
+                            `/dashboard/employees/${c.employee?.id}?tab=contracts`
+                          )
                         }
                       >
                         View
-                        <HugeiconsIcon icon={ArrowDown01Icon} size={11} strokeWidth={2} className="ml-1 -rotate-90" />
+                        <HugeiconsIcon
+                          icon={ArrowDown01Icon}
+                          size={11}
+                          strokeWidth={2}
+                          className="ml-1 -rotate-90"
+                        />
                       </Button>
                     </td>
                   </tr>

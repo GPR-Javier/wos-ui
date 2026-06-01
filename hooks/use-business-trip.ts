@@ -19,7 +19,12 @@ export function useMyBusinessTrips(
 }
 
 export function useAllBusinessTrips(
-  params: { status?: TripStatus; search?: string; page?: number; size?: number } = {}
+  params: {
+    status?: TripStatus
+    search?: string
+    page?: number
+    size?: number
+  } = {}
 ) {
   return useQuery({
     queryKey: [...KEY, "all", params],
@@ -46,8 +51,13 @@ export function useCancelBusinessTrip() {
 export function useApproveBusinessTrip() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, reviewNote }: { id: number; reviewNote?: string | null }) =>
-      businessTripApi.approve(id, reviewNote),
+    mutationFn: ({
+      id,
+      reviewNote,
+    }: {
+      id: number
+      reviewNote?: string | null
+    }) => businessTripApi.approve(id, reviewNote),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }
@@ -55,8 +65,13 @@ export function useApproveBusinessTrip() {
 export function useRejectBusinessTrip() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, reviewNote }: { id: number; reviewNote?: string | null }) =>
-      businessTripApi.reject(id, reviewNote),
+    mutationFn: ({
+      id,
+      reviewNote,
+    }: {
+      id: number
+      reviewNote?: string | null
+    }) => businessTripApi.reject(id, reviewNote),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }
@@ -64,8 +79,13 @@ export function useRejectBusinessTrip() {
 export function useCompleteBusinessTrip() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, reviewNote }: { id: number; reviewNote?: string | null }) =>
-      businessTripApi.markCompleted(id, reviewNote),
+    mutationFn: ({
+      id,
+      reviewNote,
+    }: {
+      id: number
+      reviewNote?: string | null
+    }) => businessTripApi.markCompleted(id, reviewNote),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }

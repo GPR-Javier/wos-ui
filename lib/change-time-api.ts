@@ -55,7 +55,9 @@ export const changeTimeApi = {
       .post<ChangeTimeRequest>("/hr/change-time-requests", body)
       .then((r) => r.data),
 
-  listMine: (params: { status?: ChangeTimeStatus; page?: number; size?: number } = {}) =>
+  listMine: (
+    params: { status?: ChangeTimeStatus; page?: number; size?: number } = {}
+  ) =>
     api
       .get<PageResponse<ChangeTimeRequest>>("/hr/change-time-requests/me", {
         params: { page: 0, size: 20, ...params },
@@ -73,12 +75,14 @@ export const changeTimeApi = {
       .then((r) => r.data),
 
   // Admin
-  listAll: (params: {
-    status?: ChangeTimeStatus
-    search?: string
-    page?: number
-    size?: number
-  } = {}) =>
+  listAll: (
+    params: {
+      status?: ChangeTimeStatus
+      search?: string
+      page?: number
+      size?: number
+    } = {}
+  ) =>
     api
       .get<PageResponse<ChangeTimeRequest>>("/hr/change-time-requests", {
         params: { page: 0, size: 20, ...params },

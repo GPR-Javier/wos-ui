@@ -5,7 +5,7 @@ import { api } from "./api"
 export interface FunctionalityDef {
   id: number
   name: string
-  controlType?: "employee" | "admin"
+  controlType?: "employee" | "admin" | "applicant"
 }
 
 export interface AccessRole {
@@ -23,7 +23,7 @@ export interface AssignedFunctionality {
   functionalityId: number
   name: string
   enabled: boolean
-  controlType?: "employee" | "admin"
+  controlType?: "employee" | "admin" | "applicant"
 }
 
 export interface AssignedAccessRole {
@@ -48,7 +48,7 @@ export interface UserRole {
   name: string
   description: string
   color?: string
-  roleType: "ADMIN" | "EMPLOYEE"
+  roleType: "ADMIN" | "EMPLOYEE" | "APPLICANT"
   accessRoles: AssignedAccessRole[]
 }
 

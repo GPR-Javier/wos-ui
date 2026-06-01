@@ -2,7 +2,7 @@ import type { NavItem } from "./types"
 
 // All dashboard nav items — sidebar filters by user's authorities
 export const navConfig: NavItem[] = [
-  { label: "Overview", section: "overview", authority: null },
+  { label: "Dashboard", section: "overview", authority: null },
   {
     label: "Management",
     section: "team",
@@ -179,6 +179,27 @@ export const navConfig: NavItem[] = [
     section: "recruitment",
     authority: "RECRUITMENT:VIEW_JOB_POSTINGS",
   },
+  // Applicant portal — visibility driven by authorities (APPLICANT control)
+  {
+    label: "Careers",
+    section: "careers",
+    authority: "CAREERS:VIEW_JOBS",
+  },
+  {
+    label: "My Applications",
+    section: "my-applications",
+    authority: "MY_APPLICATIONS:VIEW_OWN_APPLICATIONS",
+  },
+  {
+    label: "Interviews",
+    section: "interviews",
+    authority: "APPLICANT_INTERVIEWS:VIEW_INTERVIEWS",
+  },
+  {
+    label: "Offers",
+    section: "offers",
+    authority: "APPLICANT_OFFERS:VIEW_OFFERS",
+  },
   // Personal / self-service items — visibility driven by authorities
   {
     label: "My Attendance",
@@ -259,6 +280,28 @@ export const navConfig: NavItem[] = [
   },
 ]
 
+/**
+ * Resolves the landing route after login from the user's authorities, following the
+ * same config that drives the sidebar. Returns the first *gated* nav page the user can
+ * access (skipping the universal Overview and expand-only parents). Falls back to the
+ * dashboard overview when no specific page is authorized.
+ */
+export function resolveLandingPath(authorities: string[]): string {
+  const can = (a: string | null | undefined) => !!a && authorities.includes(a)
+
+  for (const item of navConfig) {
+    if (item.children?.length) {
+      const child = item.children.find((c) => can(c.authority))
+      if (child) return `/dashboard/${child.section}`
+      continue
+    }
+    if (item.noPage || item.section === "overview") continue
+    if (can(item.authority)) return `/dashboard/${item.section}`
+  }
+
+  return "/dashboard"
+}
+
 // Settings nav (always shown on /dashboard/settings/*)
 export const settingsNavConfig: NavItem[] = [
   { label: "Profile", section: "general", authority: null },
@@ -274,7 +317,7 @@ export const roleLabels: Record<string, string> = {
 }
 
 export const sectionTitles: Record<string, string> = {
-  overview: "Overview",
+  overview: "Dashboard",
   dtr: "My Attendance",
   payroll: "Payroll",
   request: "My Leave",
@@ -316,6 +359,10 @@ export const sectionTitles: Record<string, string> = {
   upload: "Upload Center",
   announcements: "Announcements",
   recruitment: "Recruitment",
+  careers: "Careers",
+  "my-applications": "My Applications",
+  interviews: "Interviews",
+  offers: "Offers",
   admin: "System",
   roles: "Roles & Permissions",
   audit: "Audit Log",

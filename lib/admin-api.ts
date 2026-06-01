@@ -96,15 +96,15 @@ export interface TeamAttendanceRecord {
   employeeId: string
   firstName: string
   lastName: string
-  date: string          // YYYY-MM-DD
-  day: string           // "Mon", "Tue", ...
+  date: string // YYYY-MM-DD
+  day: string // "Mon", "Tue", ...
   timeIn: string | null // "hh:mm a"
   timeOut: string | null
-  hoursWorked: string   // "7h 30m" or "—"
-  overtimeHours: string | null  // "1h 30m" or null
-  status: string        // "present" | "late" | "absent" | "leave" | ...
+  hoursWorked: string // "7h 30m" or "—"
+  overtimeHours: string | null // "1h 30m" or null
+  status: string // "present" | "late" | "absent" | "leave" | ...
   lateMinutes: number | null
-  shift: string         // "day" | "graveyard"
+  shift: string // "day" | "graveyard"
 }
 
 // ── API calls ─────────────────────────────────────────────────────────────────

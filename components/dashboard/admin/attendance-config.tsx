@@ -15,7 +15,10 @@ import type { UserRole, AccessRole } from "@/lib/admin-roles-api"
 
 // Normalize names for comparison: lowercase, collapse spaces/underscores
 function norm(s: string) {
-  return s.toLowerCase().replace(/[\s_-]+/g, " ").trim()
+  return s
+    .toLowerCase()
+    .replace(/[\s_-]+/g, " ")
+    .trim()
 }
 
 function findAccessRole(
@@ -24,8 +27,7 @@ function findAccessRole(
 ): AccessRole | null {
   for (const variant of nameVariants) {
     const found = catalog.find(
-      (ar) =>
-        norm(ar.pageName ?? ar.name ?? "") === norm(variant)
+      (ar) => norm(ar.pageName ?? ar.name ?? "") === norm(variant)
     )
     if (found) return found
   }
@@ -103,7 +105,11 @@ interface FeatureCardProps {
   catalogAR: AccessRole | null
   userRoles: UserRole[]
   isMutating: boolean
-  onToggle: (userRoleId: number, accessRoleId: number, currentlyEnabled: boolean) => void
+  onToggle: (
+    userRoleId: number,
+    accessRoleId: number,
+    currentlyEnabled: boolean
+  ) => void
 }
 
 function FeatureCard({
@@ -119,9 +125,11 @@ function FeatureCard({
     <div className="space-y-3 rounded-xl border border-border p-5">
       <div>
         <p className="text-[13px] font-semibold">{title}</p>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">{description}</p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">
+          {description}
+        </p>
         {hint && (
-          <p className="mt-1 text-[11px] italic text-muted-foreground/60">
+          <p className="mt-1 text-[11px] text-muted-foreground/60 italic">
             {hint}
           </p>
         )}
@@ -133,7 +141,7 @@ function FeatureCard({
           Permissions to confirm the access role name.
         </p>
       ) : userRoles.length === 0 ? (
-        <p className="text-[12px] italic text-muted-foreground">
+        <p className="text-[12px] text-muted-foreground italic">
           No user roles defined yet.
         </p>
       ) : (
@@ -174,7 +182,7 @@ export function AttendanceConfigSection() {
   const teamAttendanceAR = useMemo(
     () =>
       findAccessRole(catalog, [
-        "Attendance",           // current seeder pageName
+        "Attendance", // current seeder pageName
         "Attendance Management",
         "Team Attendance",
       ]),
@@ -186,7 +194,7 @@ export function AttendanceConfigSection() {
   const dtrAR = useMemo(
     () =>
       findAccessRole(catalog, [
-        "My Attendance",        // current seeder pageName
+        "My Attendance", // current seeder pageName
         "DTR",
         "Dtr",
       ]),

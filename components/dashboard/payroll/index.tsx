@@ -2,10 +2,7 @@
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  PieChart01Icon,
-  CheckListIcon,
-} from "@hugeicons/core-free-icons"
+import { PieChart01Icon, CheckListIcon } from "@hugeicons/core-free-icons"
 import { PayrollOverview } from "./payroll-overview"
 import { PayrollPayslips } from "./payroll-payslips"
 

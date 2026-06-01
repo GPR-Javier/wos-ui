@@ -20,13 +20,20 @@ import {
   Clock01Icon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons"
+import { useNextStep } from "nextstepjs"
 import { usePublicJobs } from "@/hooks/use-hr"
 import { useAuthStore } from "@/store/auth-store"
 import type { JobPosting } from "@/lib/hr-api"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type ApplyForm = { name: string; email: string; phone: string; message: string; resume: File | null }
+type ApplyForm = {
+  name: string
+  email: string
+  phone: string
+  message: string
+  resume: File | null
+}
 type ApplyStep = "form" | "success"
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -38,15 +45,32 @@ const STATUS_VARIANT: Record<string, "green" | "amber" | "blue" | "gray"> = {
   closed: "gray",
 }
 
-const EMPTY_FORM: ApplyForm = { name: "", email: "", phone: "", message: "", resume: null }
+const EMPTY_FORM: ApplyForm = {
+  name: "",
+  email: "",
+  phone: "",
+  message: "",
+  resume: null,
+}
 
 const ACCEPTED_RESUME_TYPES = ".pdf,.doc,.docx"
 const MAX_RESUME_BYTES = 5 * 1024 * 1024 // 5 MB
 
 // ── Apply Modal ───────────────────────────────────────────────────────────────
 
-function ApplyModal({ job, onClose }: { job: JobPosting; onClose: () => void }) {
-  const [form, setForm] = useState<ApplyForm>(EMPTY_FORM)
+function ApplyModal({
+  job,
+  onClose,
+}: {
+  job: JobPosting
+  onClose: () => void
+}) {
+  const user = useAuthStore((s) => s.user)
+  const [form, setForm] = useState<ApplyForm>(() => ({
+    ...EMPTY_FORM,
+    name: user ? `${user.firstName} ${user.lastName}`.trim() : "",
+    email: user?.email ?? "",
+  }))
   const [step, setStep] = useState<ApplyStep>("form")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -69,11 +93,11 @@ function ApplyModal({ job, onClose }: { job: JobPosting; onClose: () => void }) 
     setError(null)
     try {
       const body = new FormData()
-      body.append("name",  form.name.trim())
+      body.append("name", form.name.trim())
       body.append("email", form.email.trim())
-      if (form.phone.trim())   body.append("phone",   form.phone.trim())
+      if (form.phone.trim()) body.append("phone", form.phone.trim())
       if (form.message.trim()) body.append("message", form.message.trim())
-      if (form.resume)         body.append("resume",  form.resume)
+      if (form.resume) body.append("resume", form.resume)
 
       await fetch(`/api/hr/jobs/${job.id}/apply`, { method: "POST", body })
       setStep("success")
@@ -86,26 +110,41 @@ function ApplyModal({ job, onClose }: { job: JobPosting; onClose: () => void }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div className="relative w-full max-w-md animate-in rounded-2xl border border-border bg-card shadow-xl duration-200 zoom-in-95 fade-in">
         {step === "success" ? (
           <div className="flex flex-col items-center px-8 py-10 text-center">
             <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-green-500/10">
-              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={32} strokeWidth={1.5} className="text-green-500" />
+              <HugeiconsIcon
+                icon={CheckmarkCircle01Icon}
+                size={32}
+                strokeWidth={1.5}
+                className="text-green-500"
+              />
             </div>
-            <h3 className="text-[17px] font-semibold">Application submitted!</h3>
+            <h3 className="text-[17px] font-semibold">
+              Application submitted!
+            </h3>
             <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-              Thanks for applying to <span className="font-semibold text-foreground">{job.title}</span>.
-              We&apos;ll review your application and reach out soon.
+              Thanks for applying to{" "}
+              <span className="font-semibold text-foreground">{job.title}</span>
+              . We&apos;ll review your application and reach out soon.
             </p>
-            <Button className="mt-7 w-full" onClick={onClose}>Done</Button>
+            <Button className="mt-7 w-full" onClick={onClose}>
+              Done
+            </Button>
           </div>
         ) : (
           <div className="p-6">
             {/* Header */}
             <div className="mb-5 flex items-start justify-between">
               <div>
-                <h3 className="text-[15px] font-semibold">Apply — {job.title}</h3>
+                <h3 className="text-[15px] font-semibold">
+                  Apply — {job.title}
+                </h3>
                 <p className="mt-0.5 text-[12px] text-muted-foreground">
                   {job.department} · {job.location} · {job.type}
                 </p>
@@ -130,7 +169,10 @@ function ApplyModal({ job, onClose }: { job: JobPosting; onClose: () => void }) 
             {/* Fields */}
             <div className="space-y-3.5">
               <div className="space-y-1.5">
-                <Label htmlFor="apply-name" className="text-[12px] text-muted-foreground">
+                <Label
+                  htmlFor="apply-name"
+                  className="text-[12px] text-muted-foreground"
+                >
                   Full Name *
                 </Label>
                 <Input
@@ -139,13 +181,18 @@ function ApplyModal({ job, onClose }: { job: JobPosting; onClose: () => void }) 
                   className="h-9 text-[13px]"
                   placeholder="Your full name"
                   value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, name: e.target.value }))
+                  }
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="apply-email" className="text-[12px] text-muted-foreground">
+                  <Label
+                    htmlFor="apply-email"
+                    className="text-[12px] text-muted-foreground"
+                  >
                     Email *
                   </Label>
                   <Input
@@ -154,12 +201,17 @@ function ApplyModal({ job, onClose }: { job: JobPosting; onClose: () => void }) 
                     className="h-9 text-[13px]"
                     placeholder="you@email.com"
                     value={form.email}
-                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, email: e.target.value }))
+                    }
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="apply-phone" className="text-[12px] text-muted-foreground">
+                  <Label
+                    htmlFor="apply-phone"
+                    className="text-[12px] text-muted-foreground"
+                  >
                     Phone
                   </Label>
                   <Input
@@ -168,28 +220,37 @@ function ApplyModal({ job, onClose }: { job: JobPosting; onClose: () => void }) 
                     className="h-9 text-[13px]"
                     placeholder="+63 9XX XXX XXXX"
                     value={form.phone}
-                    onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, phone: e.target.value }))
+                    }
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="apply-msg" className="text-[12px] text-muted-foreground">
+                <Label
+                  htmlFor="apply-msg"
+                  className="text-[12px] text-muted-foreground"
+                >
                   Cover letter / message
                 </Label>
                 <textarea
                   id="apply-msg"
                   rows={3}
                   placeholder="Tell us a bit about yourself and why you're a great fit…"
-                  className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none"
                   value={form.message}
-                  onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, message: e.target.value }))
+                  }
                 />
               </div>
 
               {/* Resume upload */}
               <div className="space-y-1.5">
-                <Label className="text-[12px] text-muted-foreground">Resume</Label>
+                <Label className="text-[12px] text-muted-foreground">
+                  Resume
+                </Label>
 
                 <input
                   ref={fileInputRef}
@@ -201,8 +262,19 @@ function ApplyModal({ job, onClose }: { job: JobPosting; onClose: () => void }) 
 
                 {form.resume ? (
                   <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-primary">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="shrink-0 text-primary"
+                    >
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
                     </svg>
                     <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
                       {form.resume.name}
@@ -215,16 +287,27 @@ function ApplyModal({ job, onClose }: { job: JobPosting; onClose: () => void }) 
                       onClick={() => setForm((f) => ({ ...f, resume: null }))}
                       className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
                     >
-                      <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={2.5} />
+                      <HugeiconsIcon
+                        icon={Cancel01Icon}
+                        size={12}
+                        strokeWidth={2.5}
+                      />
                     </button>
                   </div>
                 ) : (
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      setDragOver(true)
+                    }}
                     onDragLeave={() => setDragOver(false)}
-                    onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]) }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      setDragOver(false)
+                      handleFile(e.dataTransfer.files[0])
+                    }}
                     className={cn(
                       "flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-5 text-center transition-colors",
                       dragOver
@@ -232,14 +315,29 @@ function ApplyModal({ job, onClose }: { job: JobPosting; onClose: () => void }) 
                         : "border-border bg-background hover:border-primary/50 hover:bg-muted/30"
                     )}
                   >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-muted-foreground"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
                     </svg>
                     <div>
                       <p className="text-[13px] font-medium text-foreground">
-                        Click to upload <span className="text-primary">or drag & drop</span>
+                        Click to upload{" "}
+                        <span className="text-primary">or drag & drop</span>
                       </p>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">PDF, DOC, DOCX — max 5 MB</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        PDF, DOC, DOCX — max 5 MB
+                      </p>
                     </div>
                   </button>
                 )}
@@ -253,12 +351,20 @@ function ApplyModal({ job, onClose }: { job: JobPosting; onClose: () => void }) 
             )}
 
             <div className="mt-5 flex items-center justify-between gap-3">
-              <p className="text-[11px] text-muted-foreground">* Required fields</p>
+              <p className="text-[11px] text-muted-foreground">
+                * Required fields
+              </p>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={onClose} disabled={busy}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onClose}
+                  disabled={busy}
+                >
                   Cancel
                 </Button>
                 <Button
+                  data-tour="apply-submit"
                   size="sm"
                   disabled={!form.name.trim() || !form.email.trim() || busy}
                   onClick={handleSubmit}
@@ -276,7 +382,17 @@ function ApplyModal({ job, onClose }: { job: JobPosting; onClose: () => void }) 
 
 // ── Job Card ──────────────────────────────────────────────────────────────────
 
-function JobCard({ job, onApply, onApplyAuth }: { job: JobPosting; onApply: () => void; onApplyAuth: () => void }) {
+function JobCard({
+  job,
+  onApply,
+  onApplyAuth,
+  embedded = false,
+}: {
+  job: JobPosting
+  onApply: () => void
+  onApplyAuth: () => void
+  embedded?: boolean
+}) {
   return (
     <div className="group flex flex-col gap-4 rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/30 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1">
@@ -288,7 +404,11 @@ function JobCard({ job, onApply, onApplyAuth }: { job: JobPosting; onApply: () =
           </StatusBadge>
           {job.workType && (
             <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-              {{ remote: "Remote", hybrid: "Hybrid", onsite: "On-site" }[job.workType]}
+              {
+                { remote: "Remote", hybrid: "Hybrid", onsite: "On-site" }[
+                  job.workType
+                ]
+              }
             </span>
           )}
           {job.tags.map((t) => (
@@ -308,7 +428,11 @@ function JobCard({ job, onApply, onApplyAuth }: { job: JobPosting; onApply: () =
             <>
               <span className="hidden size-1 rounded-full bg-border sm:block" />
               <span className="flex items-center gap-1">
-                <HugeiconsIcon icon={Location01Icon} size={11} strokeWidth={1.8} />
+                <HugeiconsIcon
+                  icon={Location01Icon}
+                  size={11}
+                  strokeWidth={1.8}
+                />
                 {job.location}
               </span>
             </>
@@ -318,43 +442,74 @@ function JobCard({ job, onApply, onApplyAuth }: { job: JobPosting; onApply: () =
             <HugeiconsIcon icon={Clock01Icon} size={11} strokeWidth={1.8} />
             {job.type}
           </span>
-          {(job.salaryGradeFromName ?? job.salaryFrom) && (() => {
-            const sym = job.salaryCurrency
-              ? ({ PHP:"₱",USD:"$",EUR:"€",GBP:"£",SGD:"S$",AUD:"A$",JPY:"¥" } as Record<string,string>)[job.salaryCurrency] ?? job.salaryCurrency
-              : "₱"
-            const amount = job.salaryGradeFromName
-              ? `${job.salaryGradeFromName}${job.salaryGradeToName ? ` – ${job.salaryGradeToName}` : ""}`
-              : job.salaryFrom != null
-                ? `${sym}${job.salaryFrom.toLocaleString()}${job.salaryTo != null ? ` – ${sym}${job.salaryTo.toLocaleString()}` : ""}`
-                : null
-            const periodLabel = { hourly: "hr", weekly: "wk", "semi-monthly": "semi-mo", monthly: "mo", "fixed-price": "fixed" } as Record<string,string>
-            return amount ? (
-              <>
-                <span className="hidden size-1 rounded-full bg-border sm:block" />
-                <span className="font-semibold text-foreground">
-                  {amount}
-                  {job.salaryPeriod && (
-                    <span className="ml-1 font-normal text-muted-foreground">/ {periodLabel[job.salaryPeriod] ?? job.salaryPeriod}</span>
-                  )}
-                </span>
-              </>
-            ) : null
-          })()}
+          {(job.salaryGradeFromName ?? job.salaryFrom) &&
+            (() => {
+              const sym = job.salaryCurrency
+                ? ((
+                    {
+                      PHP: "₱",
+                      USD: "$",
+                      EUR: "€",
+                      GBP: "£",
+                      SGD: "S$",
+                      AUD: "A$",
+                      JPY: "¥",
+                    } as Record<string, string>
+                  )[job.salaryCurrency] ?? job.salaryCurrency)
+                : "₱"
+              const amount = job.salaryGradeFromName
+                ? `${job.salaryGradeFromName}${job.salaryGradeToName ? ` – ${job.salaryGradeToName}` : ""}`
+                : job.salaryFrom != null
+                  ? `${sym}${job.salaryFrom.toLocaleString()}${job.salaryTo != null ? ` – ${sym}${job.salaryTo.toLocaleString()}` : ""}`
+                  : null
+              const periodLabel = {
+                hourly: "hr",
+                weekly: "wk",
+                "semi-monthly": "semi-mo",
+                monthly: "mo",
+                "fixed-price": "fixed",
+              } as Record<string, string>
+              return amount ? (
+                <>
+                  <span className="hidden size-1 rounded-full bg-border sm:block" />
+                  <span className="font-semibold text-foreground">
+                    {amount}
+                    {job.salaryPeriod && (
+                      <span className="ml-1 font-normal text-muted-foreground">
+                        / {periodLabel[job.salaryPeriod] ?? job.salaryPeriod}
+                      </span>
+                    )}
+                  </span>
+                </>
+              ) : null
+            })()}
         </div>
       </div>
 
       {/* Right side */}
       <div className="flex shrink-0 items-center gap-3">
         <span className="hidden text-[12px] text-muted-foreground sm:block">
-          <HugeiconsIcon icon={UserGroupIcon} size={12} strokeWidth={1.8} className="mr-1 inline" />
+          <HugeiconsIcon
+            icon={UserGroupIcon}
+            size={12}
+            strokeWidth={1.8}
+            className="mr-1 inline"
+          />
           {job.applicantsCount} applicant{job.applicantsCount !== 1 ? "s" : ""}
         </span>
-        <Button size="sm" variant="outline" onClick={onApply}>
-          Quick apply
-        </Button>
-        <Button size="sm" onClick={onApplyAuth}>
+        {!embedded && (
+          <Button size="sm" variant="outline" onClick={onApply}>
+            Quick apply
+          </Button>
+        )}
+        <Button data-tour="careers-apply" size="sm" onClick={onApplyAuth}>
           Apply
-          <HugeiconsIcon icon={ArrowRight01Icon} size={13} strokeWidth={2} className="ml-1.5" />
+          <HugeiconsIcon
+            icon={ArrowRight01Icon}
+            size={13}
+            strokeWidth={2}
+            className="ml-1.5"
+          />
         </Button>
       </div>
     </div>
@@ -363,14 +518,21 @@ function JobCard({ job, onApply, onApplyAuth }: { job: JobPosting; onApply: () =
 
 // ── Sign-up prompt modal ──────────────────────────────────────────────────────
 
-function SignUpPromptModal({ job, onClose, onQuickApply }: {
+function SignUpPromptModal({
+  job,
+  onClose,
+  onQuickApply,
+}: {
   job: JobPosting
   onClose: () => void
   onQuickApply: () => void
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div className="relative w-full max-w-sm animate-in rounded-2xl border border-border bg-card p-6 shadow-xl duration-200 zoom-in-95 fade-in">
         <button
           type="button"
@@ -381,19 +543,30 @@ function SignUpPromptModal({ job, onClose, onQuickApply }: {
         </button>
 
         <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-primary/10">
-          <HugeiconsIcon icon={Briefcase01Icon} size={18} strokeWidth={1.8} className="text-primary" />
+          <HugeiconsIcon
+            icon={Briefcase01Icon}
+            size={18}
+            strokeWidth={1.8}
+            className="text-primary"
+          />
         </div>
 
         <h3 className="mt-3 text-[15px] font-semibold">Apply to {job.title}</h3>
         <p className="mt-1 text-[13px] text-muted-foreground">
-          Create a free account to track your application, get interview updates, and apply to multiple roles.
+          Create a free account to track your application, get interview
+          updates, and apply to multiple roles.
         </p>
 
         <div className="mt-5 space-y-2">
           <Link href="/auth/register" className="block">
             <Button className="w-full" size="sm">
               Create an account
-              <HugeiconsIcon icon={ArrowRight01Icon} size={13} strokeWidth={2} className="ml-1.5" />
+              <HugeiconsIcon
+                icon={ArrowRight01Icon}
+                size={13}
+                strokeWidth={2}
+                className="ml-1.5"
+              />
             </Button>
           </Link>
           <Link href="/auth/login" className="block">
@@ -420,12 +593,13 @@ function SignUpPromptModal({ job, onClose, onQuickApply }: {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-export function CareersPage() {
+export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { data, isLoading, isError } = usePublicJobs({ size: 100 })
   const allJobs = data?.content ?? []
   const openJobs = allJobs.filter((j) => j.status !== "closed")
   const { apiRole } = useAuthStore()
   const isApplicant = apiRole?.toUpperCase() === "APPLICANT"
+  const { currentStep, setCurrentStep, isNextStepVisible } = useNextStep()
 
   const [search, setSearch] = useState("")
   const [filterDept, setFilterDept] = useState("")
@@ -449,7 +623,7 @@ export function CareersPage() {
         !q ||
         j.title.toLowerCase().includes(q) ||
         j.department.toLowerCase().includes(q) ||
-        j.location.toLowerCase().includes(q) ||
+        (j.location?.toLowerCase().includes(q) ?? false) ||
         j.tags.some((t) => t.toLowerCase().includes(q))
       const matchDept = !filterDept || j.department === filterDept
       const matchType = !filterType || j.type === filterType
@@ -460,18 +634,33 @@ export function CareersPage() {
   const hasFilters = !!search || !!filterDept || !!filterType
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <PublicHeader
-        right={
-          <Link href="/auth/login">
-            <Button variant="outline" size="sm" className="text-[13px]">
-              Employee login
-            </Button>
-          </Link>
-        }
-      />
+    <div className={cn("flex flex-col", embedded ? "" : "min-h-screen bg-background")}>
+      {!embedded && (
+        <PublicHeader
+          right={
+            <Link href="/auth/login">
+              <Button variant="outline" size="sm" className="text-[13px]">
+                Employee login
+              </Button>
+            </Link>
+          }
+        />
+      )}
+
+      {/* ── Embedded heading (dashboard) ── */}
+      {embedded && (
+        <div className="px-6 pt-6 pb-1">
+          <h1 className="text-lg font-semibold">Open Positions</h1>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            Browse open roles and apply directly.
+            {!isLoading &&
+              ` ${openJobs.length} open position${openJobs.length !== 1 ? "s" : ""}.`}
+          </p>
+        </div>
+      )}
 
       {/* ── Hero ── */}
+      {!embedded && (
       <div className="relative overflow-hidden border-b border-border bg-primary/5">
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.04]"
@@ -503,12 +692,23 @@ export function CareersPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* ── Filter bar ── */}
-      <div className="sticky top-16.25 z-30 border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="mx-auto max-w-6xl px-6 py-3">
+      <div
+        className={cn(
+          "z-30 border-b border-border",
+          embedded
+            ? "bg-card"
+            : "sticky top-16.25 bg-background/80 backdrop-blur-md"
+        )}
+      >
+        <div className={cn("py-3", embedded ? "px-6" : "mx-auto max-w-6xl px-6")}>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="relative min-w-50 flex-1">
+            <div
+              data-tour="careers-search"
+              className="relative min-w-50 flex-1"
+            >
               <HugeiconsIcon
                 icon={Search01Icon}
                 size={13}
@@ -523,29 +723,38 @@ export function CareersPage() {
               />
             </div>
             <select
+              data-tour="careers-filters"
               value={filterDept}
               onChange={(e) => setFilterDept(e.target.value)}
-              className="h-9 rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="h-9 rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
             >
               <option value="">All departments</option>
               {departments.map((d) => (
-                <option key={d} value={d}>{d}</option>
+                <option key={d} value={d}>
+                  {d}
+                </option>
               ))}
             </select>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="h-9 rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="h-9 rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
             >
               <option value="">All types</option>
               {types.map((t) => (
-                <option key={t} value={t}>{t}</option>
+                <option key={t} value={t}>
+                  {t}
+                </option>
               ))}
             </select>
             {hasFilters && (
               <button
                 type="button"
-                onClick={() => { setSearch(""); setFilterDept(""); setFilterType("") }}
+                onClick={() => {
+                  setSearch("")
+                  setFilterDept("")
+                  setFilterType("")
+                }}
                 className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={2} />
@@ -557,7 +766,12 @@ export function CareersPage() {
       </div>
 
       {/* ── Job list ── */}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
+      <main
+        className={cn(
+          "w-full flex-1 px-6",
+          embedded ? "py-6" : "mx-auto max-w-6xl py-10"
+        )}
+      >
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3, 4].map((i) => (
@@ -567,18 +781,34 @@ export function CareersPage() {
         ) : isError ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-muted">
-              <HugeiconsIcon icon={Briefcase01Icon} size={24} strokeWidth={1.5} className="text-muted-foreground/60" />
+              <HugeiconsIcon
+                icon={Briefcase01Icon}
+                size={24}
+                strokeWidth={1.5}
+                className="text-muted-foreground/60"
+              />
             </div>
-            <p className="text-[15px] font-semibold">Unable to load positions</p>
-            <p className="mt-1 text-[13px] text-muted-foreground">Please try again later.</p>
+            <p className="text-[15px] font-semibold">
+              Unable to load positions
+            </p>
+            <p className="mt-1 text-[13px] text-muted-foreground">
+              Please try again later.
+            </p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-muted">
-              <HugeiconsIcon icon={Briefcase01Icon} size={24} strokeWidth={1.5} className="text-muted-foreground/60" />
+              <HugeiconsIcon
+                icon={Briefcase01Icon}
+                size={24}
+                strokeWidth={1.5}
+                className="text-muted-foreground/60"
+              />
             </div>
             <p className="text-[15px] font-semibold">
-              {hasFilters ? "No positions match your filters" : "No open positions right now"}
+              {hasFilters
+                ? "No positions match your filters"
+                : "No open positions right now"}
             </p>
             <p className="mt-1 text-[13px] text-muted-foreground">
               {hasFilters
@@ -588,7 +818,11 @@ export function CareersPage() {
             {hasFilters && (
               <button
                 type="button"
-                onClick={() => { setSearch(""); setFilterDept(""); setFilterType("") }}
+                onClick={() => {
+                  setSearch("")
+                  setFilterDept("")
+                  setFilterType("")
+                }}
                 className="mt-4 text-[13px] font-medium text-primary hover:underline"
               >
                 Clear filters
@@ -608,8 +842,21 @@ export function CareersPage() {
                 <JobCard
                   key={job.id}
                   job={job}
+                  embedded={embedded}
                   onApply={() => setApplyJob(job)}
-                  onApplyAuth={() => isApplicant ? setApplyJob(job) : setPromptJob(job)}
+                  onApplyAuth={() => {
+                    if (embedded || isApplicant) {
+                      setApplyJob(job)
+                      // If the onboarding tour is on the Apply step, advance to the
+                      // form step once the modal has mounted (the delay lets the
+                      // [data-tour="apply-submit"] anchor render first).
+                      if (isNextStepVisible) {
+                        setCurrentStep(currentStep + 1, 250)
+                      }
+                    } else {
+                      setPromptJob(job)
+                    }
+                  }}
                 />
               ))}
             </div>
@@ -618,21 +865,32 @@ export function CareersPage() {
       </main>
 
       {/* ── Footer ── */}
+      {!embedded && (
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-6 text-[12px] text-muted-foreground">
           <div className="flex items-center gap-2">
             <Logo showText={false} size="sm" />
-            <span>&copy; {new Date().getFullYear()} WorkOS. All rights reserved.</span>
+            <span>
+              &copy; {new Date().getFullYear()} WorkOS. All rights reserved.
+            </span>
           </div>
           <div className="flex items-center gap-5">
-            <Link href="/auth/login" className="transition-colors hover:text-foreground">
+            <Link
+              href="/auth/login"
+              className="transition-colors hover:text-foreground"
+            >
               Employee login
             </Link>
-            <a href="#" className="transition-colors hover:text-foreground">Privacy</a>
-            <a href="#" className="transition-colors hover:text-foreground">Terms</a>
+            <a href="#" className="transition-colors hover:text-foreground">
+              Privacy
+            </a>
+            <a href="#" className="transition-colors hover:text-foreground">
+              Terms
+            </a>
           </div>
         </div>
       </footer>
+      )}
 
       {/* ── Apply modal ── */}
       {applyJob && (
@@ -643,7 +901,10 @@ export function CareersPage() {
         <SignUpPromptModal
           job={promptJob}
           onClose={() => setPromptJob(null)}
-          onQuickApply={() => { setApplyJob(promptJob); setPromptJob(null) }}
+          onQuickApply={() => {
+            setApplyJob(promptJob)
+            setPromptJob(null)
+          }}
         />
       )}
     </div>

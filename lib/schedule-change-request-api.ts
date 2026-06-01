@@ -65,22 +65,31 @@ export const scheduleChangeRequestApi = {
     params: { status?: ChangeRequestStatus; page?: number; size?: number } = {}
   ) =>
     api
-      .get<PageResponse<ScheduleChangeRequest>>("/hr/schedule-change-requests", {
-        params: { page: 0, size: 20, ...params },
-      })
+      .get<PageResponse<ScheduleChangeRequest>>(
+        "/hr/schedule-change-requests",
+        {
+          params: { page: 0, size: 20, ...params },
+        }
+      )
       .then((r) => r.data),
 
   approve: (id: number, reviewNote?: string) =>
     api
-      .post<ScheduleChangeRequest>(`/hr/schedule-change-requests/${id}/approve`, {
-        reviewNote: reviewNote ?? null,
-      })
+      .post<ScheduleChangeRequest>(
+        `/hr/schedule-change-requests/${id}/approve`,
+        {
+          reviewNote: reviewNote ?? null,
+        }
+      )
       .then((r) => r.data),
 
   reject: (id: number, reviewNote?: string) =>
     api
-      .post<ScheduleChangeRequest>(`/hr/schedule-change-requests/${id}/reject`, {
-        reviewNote: reviewNote ?? null,
-      })
+      .post<ScheduleChangeRequest>(
+        `/hr/schedule-change-requests/${id}/reject`,
+        {
+          reviewNote: reviewNote ?? null,
+        }
+      )
       .then((r) => r.data),
 }

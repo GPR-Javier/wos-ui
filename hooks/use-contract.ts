@@ -31,7 +31,8 @@ export function useContracts(userId: number) {
 export function useCreateContract(userId: number) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (payload: CreateContractPayload) => createContract(userId, payload),
+    mutationFn: (payload: CreateContractPayload) =>
+      createContract(userId, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: key(userId) }),
   })
 }
@@ -39,8 +40,13 @@ export function useCreateContract(userId: number) {
 export function useUpdateContract(userId: number) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ contractId, payload }: { contractId: number; payload: UpdateContractPayload }) =>
-      updateContract(userId, contractId, payload),
+    mutationFn: ({
+      contractId,
+      payload,
+    }: {
+      contractId: number
+      payload: UpdateContractPayload
+    }) => updateContract(userId, contractId, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: key(userId) }),
   })
 }
@@ -48,8 +54,13 @@ export function useUpdateContract(userId: number) {
 export function useUpdateContractStatus(userId: number) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ contractId, contractStatus }: { contractId: number; contractStatus: ContractStatus }) =>
-      updateContractStatus(userId, contractId, contractStatus),
+    mutationFn: ({
+      contractId,
+      contractStatus,
+    }: {
+      contractId: number
+      contractStatus: ContractStatus
+    }) => updateContractStatus(userId, contractId, contractStatus),
     onSuccess: () => qc.invalidateQueries({ queryKey: key(userId) }),
   })
 }

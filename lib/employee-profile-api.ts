@@ -20,8 +20,8 @@ export interface EmployeeAssignment {
   type: AssignmentType
   name: string
   description?: string | null
-  startDate: string          // "YYYY-MM-DD"
-  deadline?: string | null   // "YYYY-MM-DD"
+  startDate: string // "YYYY-MM-DD"
+  deadline?: string | null // "YYYY-MM-DD"
   status: AssignmentStatus
 }
 
@@ -31,9 +31,9 @@ export interface EmployeeKpi {
   name: string
   target: number
   current: number
-  unit?: string | null       // e.g., "%", "calls", "units"
+  unit?: string | null // e.g., "%", "calls", "units"
   status: KpiStatus
-  period: string             // e.g., "Q2 2025", "May 2025"
+  period: string // e.g., "Q2 2025", "May 2025"
 }
 
 export interface CreateAssignmentPayload {
@@ -61,7 +61,7 @@ export interface SalaryGrade {
   name: string
   currency: string
   salaryAmount: number
-  effectiveDate?: string | null   // "YYYY-MM-DD"
+  effectiveDate?: string | null // "YYYY-MM-DD"
   active: boolean
   employeeCount: number
 }
@@ -75,13 +75,13 @@ export interface CreateSalaryGradePayload {
 }
 
 export const CURRENCY_OPTIONS = [
-  { code: "PHP", symbol: "₱",  label: "PHP — Philippine Peso" },
-  { code: "USD", symbol: "$",  label: "USD — US Dollar" },
-  { code: "EUR", symbol: "€",  label: "EUR — Euro" },
-  { code: "GBP", symbol: "£",  label: "GBP — British Pound" },
+  { code: "PHP", symbol: "₱", label: "PHP — Philippine Peso" },
+  { code: "USD", symbol: "$", label: "USD — US Dollar" },
+  { code: "EUR", symbol: "€", label: "EUR — Euro" },
+  { code: "GBP", symbol: "£", label: "GBP — British Pound" },
   { code: "SGD", symbol: "S$", label: "SGD — Singapore Dollar" },
   { code: "AUD", symbol: "A$", label: "AUD — Australian Dollar" },
-  { code: "JPY", symbol: "¥",  label: "JPY — Japanese Yen" },
+  { code: "JPY", symbol: "¥", label: "JPY — Japanese Yen" },
 ]
 
 export function currencySymbol(code: string | null | undefined): string {
@@ -231,8 +231,8 @@ export interface EmployeeCareerMilestone {
   id: number
   employeeId: number
   type: MilestoneType
-  title: string              // e.g. "Promoted to Senior Developer"
-  date: string               // "YYYY-MM-DD"
+  title: string // e.g. "Promoted to Senior Developer"
+  date: string // "YYYY-MM-DD"
   notes?: string | null
 }
 
@@ -254,7 +254,10 @@ export const employeeProfileApi = {
 
   createAssignment: (employeeId: number, payload: CreateAssignmentPayload) =>
     api
-      .post<EmployeeAssignment>(`/hr/employees/${employeeId}/assignments`, payload)
+      .post<EmployeeAssignment>(
+        `/hr/employees/${employeeId}/assignments`,
+        payload
+      )
       .then((r) => r.data),
 
   updateAssignment: (
@@ -303,7 +306,10 @@ export const employeeProfileApi = {
 
   createMilestone: (employeeId: number, payload: CreateMilestonePayload) =>
     api
-      .post<EmployeeCareerMilestone>(`/hr/employees/${employeeId}/milestones`, payload)
+      .post<EmployeeCareerMilestone>(
+        `/hr/employees/${employeeId}/milestones`,
+        payload
+      )
       .then((r) => r.data),
 
   updateMilestone: (
@@ -331,11 +337,19 @@ export const employeeProfileApi = {
   updatePosition: (id: number, payload: Partial<CreateJobPositionPayload>) =>
     api.put<JobPosition>(`/hr/positions/${id}`, payload).then((r) => r.data),
 
-  deletePosition: (id: number) =>
-    api.delete(`/hr/positions/${id}`),
+  deletePosition: (id: number) => api.delete(`/hr/positions/${id}`),
 
-  linkGradeToPosition: (positionId: number, salaryGradeId: number, isDefault: boolean) =>
-    api.post<JobPosition>(`/hr/positions/${positionId}/salary-grades`, { salaryGradeId, isDefault }).then((r) => r.data),
+  linkGradeToPosition: (
+    positionId: number,
+    salaryGradeId: number,
+    isDefault: boolean
+  ) =>
+    api
+      .post<JobPosition>(`/hr/positions/${positionId}/salary-grades`, {
+        salaryGradeId,
+        isDefault,
+      })
+      .then((r) => r.data),
 
   unlinkGradeFromPosition: (positionId: number, gradeId: number) =>
     api.delete(`/hr/positions/${positionId}/salary-grades/${gradeId}`),
@@ -348,10 +362,11 @@ export const employeeProfileApi = {
     api.post<SalaryGrade>("/hr/salary-grades", payload).then((r) => r.data),
 
   updateSalaryGrade: (id: number, payload: Partial<CreateSalaryGradePayload>) =>
-    api.put<SalaryGrade>(`/hr/salary-grades/${id}`, payload).then((r) => r.data),
+    api
+      .put<SalaryGrade>(`/hr/salary-grades/${id}`, payload)
+      .then((r) => r.data),
 
-  deleteSalaryGrade: (id: number) =>
-    api.delete(`/hr/salary-grades/${id}`),
+  deleteSalaryGrade: (id: number) => api.delete(`/hr/salary-grades/${id}`),
 
   // Departments — admin-managed
   listDepartments: () =>
@@ -360,11 +375,13 @@ export const employeeProfileApi = {
   createDepartment: (payload: CreateDepartmentPayload) =>
     api.post<Department>("/hr/departments", payload).then((r) => r.data),
 
-  updateDepartment: (id: number, payload: Partial<CreateDepartmentPayload> & { active?: boolean }) =>
+  updateDepartment: (
+    id: number,
+    payload: Partial<CreateDepartmentPayload> & { active?: boolean }
+  ) =>
     api.put<Department>(`/hr/departments/${id}`, payload).then((r) => r.data),
 
-  deleteDepartment: (id: number) =>
-    api.delete(`/hr/departments/${id}`),
+  deleteDepartment: (id: number) => api.delete(`/hr/departments/${id}`),
 
   // Payroll Setup — admin-managed
   listPayrollSetups: () =>
@@ -373,21 +390,33 @@ export const employeeProfileApi = {
   createPayrollSetup: (payload: CreatePayrollSetupPayload) =>
     api.post<PayrollSetup>("/hr/payroll-setup", payload).then((r) => r.data),
 
-  updatePayrollSetup: (id: number, payload: Partial<CreatePayrollSetupPayload>) =>
-    api.put<PayrollSetup>(`/hr/payroll-setup/${id}`, payload).then((r) => r.data),
+  updatePayrollSetup: (
+    id: number,
+    payload: Partial<CreatePayrollSetupPayload>
+  ) =>
+    api
+      .put<PayrollSetup>(`/hr/payroll-setup/${id}`, payload)
+      .then((r) => r.data),
 
-  deletePayrollSetup: (id: number) =>
-    api.delete(`/hr/payroll-setup/${id}`),
+  deletePayrollSetup: (id: number) => api.delete(`/hr/payroll-setup/${id}`),
 
   // User Positions — employee ↔ position junction
   listUserPositions: (userId: number) =>
-    api.get<UserPosition[]>(`/hr/employees/${userId}/positions`).then((r) => r.data),
+    api
+      .get<UserPosition[]>(`/hr/employees/${userId}/positions`)
+      .then((r) => r.data),
 
   assignPosition: (userId: number, payload: AssignPositionPayload) =>
-    api.post<UserPosition>(`/hr/employees/${userId}/positions`, payload).then((r) => r.data),
+    api
+      .post<UserPosition>(`/hr/employees/${userId}/positions`, payload)
+      .then((r) => r.data),
 
   setPrimaryPosition: (userId: number, positionId: number) =>
-    api.patch<UserPosition>(`/hr/employees/${userId}/positions/${positionId}/set-primary`).then((r) => r.data),
+    api
+      .patch<UserPosition>(
+        `/hr/employees/${userId}/positions/${positionId}/set-primary`
+      )
+      .then((r) => r.data),
 
   removePosition: (userId: number, positionId: number) =>
     api.delete(`/hr/employees/${userId}/positions/${positionId}`),
@@ -477,12 +506,44 @@ export const MILESTONE_TYPE_STYLE: Record<
   MilestoneType,
   { dot: string; ring: string; label: string }
 > = {
-  HIRED:       { dot: "bg-emerald-500", ring: "ring-emerald-200 dark:ring-emerald-800",  label: "text-emerald-700 dark:text-emerald-400" },
-  PROBATIONARY:{ dot: "bg-violet-500",  ring: "ring-violet-200 dark:ring-violet-800",    label: "text-violet-700 dark:text-violet-400" },
-  REGULAR:     { dot: "bg-blue-500",    ring: "ring-blue-200 dark:ring-blue-800",        label: "text-blue-700 dark:text-blue-400" },
-  PROMOTION:   { dot: "bg-amber-500",   ring: "ring-amber-200 dark:ring-amber-800",      label: "text-amber-700 dark:text-amber-400" },
-  TRANSFER:    { dot: "bg-cyan-500",    ring: "ring-cyan-200 dark:ring-cyan-800",        label: "text-cyan-700 dark:text-cyan-400" },
-  AWARD:       { dot: "bg-yellow-400",  ring: "ring-yellow-200 dark:ring-yellow-800",    label: "text-yellow-700 dark:text-yellow-400" },
-  TRAINING:    { dot: "bg-indigo-500",  ring: "ring-indigo-200 dark:ring-indigo-800",    label: "text-indigo-700 dark:text-indigo-400" },
-  OTHER:       { dot: "bg-gray-400",    ring: "ring-gray-200 dark:ring-gray-700",        label: "text-gray-600 dark:text-gray-400" },
+  HIRED: {
+    dot: "bg-emerald-500",
+    ring: "ring-emerald-200 dark:ring-emerald-800",
+    label: "text-emerald-700 dark:text-emerald-400",
+  },
+  PROBATIONARY: {
+    dot: "bg-violet-500",
+    ring: "ring-violet-200 dark:ring-violet-800",
+    label: "text-violet-700 dark:text-violet-400",
+  },
+  REGULAR: {
+    dot: "bg-blue-500",
+    ring: "ring-blue-200 dark:ring-blue-800",
+    label: "text-blue-700 dark:text-blue-400",
+  },
+  PROMOTION: {
+    dot: "bg-amber-500",
+    ring: "ring-amber-200 dark:ring-amber-800",
+    label: "text-amber-700 dark:text-amber-400",
+  },
+  TRANSFER: {
+    dot: "bg-cyan-500",
+    ring: "ring-cyan-200 dark:ring-cyan-800",
+    label: "text-cyan-700 dark:text-cyan-400",
+  },
+  AWARD: {
+    dot: "bg-yellow-400",
+    ring: "ring-yellow-200 dark:ring-yellow-800",
+    label: "text-yellow-700 dark:text-yellow-400",
+  },
+  TRAINING: {
+    dot: "bg-indigo-500",
+    ring: "ring-indigo-200 dark:ring-indigo-800",
+    label: "text-indigo-700 dark:text-indigo-400",
+  },
+  OTHER: {
+    dot: "bg-gray-400",
+    ring: "ring-gray-200 dark:ring-gray-700",
+    label: "text-gray-600 dark:text-gray-400",
+  },
 }

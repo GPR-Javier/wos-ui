@@ -26,12 +26,12 @@ export interface SalaryDispute {
   userId: number
   userName: string
   userEmail: string
-  payrollPeriod: string          // e.g. "May 1-15, 2025"
-  salaryReleaseDate: string      // ISO date
+  payrollPeriod: string // e.g. "May 1-15, 2025"
+  salaryReleaseDate: string // ISO date
   disputeCategory: DisputeCategory
   expectedAmount: number
   receivedAmount: number
-  discrepancyAmount: number      // computed: expectedAmount - receivedAmount
+  discrepancyAmount: number // computed: expectedAmount - receivedAmount
   reason: string
   status: DisputeStatus
   resolutionNotes: string | null
@@ -60,9 +60,7 @@ export interface ReviewDisputePayload {
 export const salaryDisputeApi = {
   // Employee
   createMine: (body: CreateDisputePayload) =>
-    api
-      .post<SalaryDispute>("/hr/salary-disputes", body)
-      .then((r) => r.data),
+    api.post<SalaryDispute>("/hr/salary-disputes", body).then((r) => r.data),
 
   listMine: (
     params: { status?: DisputeStatus; page?: number; size?: number } = {}

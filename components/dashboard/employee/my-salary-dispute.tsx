@@ -146,9 +146,7 @@ function StatusTimeline({ status }: { status: DisputeStatus }) {
                 isCurrent && "bg-primary text-primary-foreground",
                 isPast &&
                   "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400",
-                !isCurrent &&
-                  !isPast &&
-                  "bg-muted text-muted-foreground"
+                !isCurrent && !isPast && "bg-muted text-muted-foreground"
               )}
             >
               {STATUS_LABEL[s]}
@@ -180,7 +178,9 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
 
   const [payrollPeriod, setPayrollPeriod] = useState("")
   const [salaryReleaseDate, setSalaryReleaseDate] = useState("")
-  const [disputeCategory, setDisputeCategory] = useState<DisputeCategory | "">("")
+  const [disputeCategory, setDisputeCategory] = useState<DisputeCategory | "">(
+    ""
+  )
   const [expectedAmount, setExpectedAmount] = useState("")
   const [receivedAmount, setReceivedAmount] = useState("")
   const [reason, setReason] = useState("")
@@ -371,7 +371,9 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
                     discrepancy > 0 ? "text-red-600" : "text-green-600"
                   )}
                 >
-                  {discrepancy > 0 ? `−${fmtPeso(discrepancy)}` : "✓ Amounts match"}
+                  {discrepancy > 0
+                    ? `−${fmtPeso(discrepancy)}`
+                    : "✓ Amounts match"}
                 </span>
               </div>
             )}
@@ -443,9 +445,7 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
                     <button
                       type="button"
                       onClick={() =>
-                        setAttachments((prev) =>
-                          prev.filter((_, j) => j !== i)
-                        )
+                        setAttachments((prev) => prev.filter((_, j) => j !== i))
                       }
                       className="ml-2 shrink-0 text-muted-foreground hover:text-red-500"
                     >
@@ -520,8 +520,7 @@ function DetailDialog({
   onClose: () => void
 }) {
   const cancelMutation = useCancelSalaryDispute()
-  const canCancel =
-    dispute.status === "PENDING" || dispute.status === "DRAFT"
+  const canCancel = dispute.status === "PENDING" || dispute.status === "DRAFT"
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
@@ -581,19 +580,19 @@ function DetailDialog({
             <div className="space-y-1.5 text-[12px]">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Expected</span>
-                <span className="font-semibold tabular-nums text-foreground">
+                <span className="font-semibold text-foreground tabular-nums">
                   {fmtPeso(dispute.expectedAmount)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Received</span>
-                <span className="font-semibold tabular-nums text-foreground">
+                <span className="font-semibold text-foreground tabular-nums">
                   {fmtPeso(dispute.receivedAmount)}
                 </span>
               </div>
               <div className="flex items-center justify-between rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 dark:border-red-800/40 dark:bg-red-900/10">
                 <span className="font-medium text-red-600">Discrepancy</span>
-                <span className="font-bold tabular-nums text-red-600">
+                <span className="font-bold text-red-600 tabular-nums">
                   {fmtPeso(dispute.discrepancyAmount)}
                 </span>
               </div>
@@ -719,11 +718,7 @@ export function MySalaryDisputeSection() {
             File and track your payroll dispute requests
           </p>
         </div>
-        <Button
-          size="sm"
-          className="gap-1.5"
-          onClick={() => setFormOpen(true)}
-        >
+        <Button size="sm" className="gap-1.5" onClick={() => setFormOpen(true)}>
           <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} />
           File Dispute
         </Button>
@@ -766,7 +761,7 @@ export function MySalaryDisputeSection() {
           title="Open Discrepancy"
           value={
             totalDiscrepancy > 0 ? (
-              <span className="text-danger text-lg">
+              <span className="text-lg text-danger">
                 ₱{(totalDiscrepancy / 1000).toFixed(1)}K
               </span>
             ) : (
@@ -889,14 +884,14 @@ export function MySalaryDisputeSection() {
                       {DISPUTE_CATEGORY_LABEL[r.disputeCategory]}
                     </StatusBadge>
                   </TableCell>
-                  <TableCell className="text-[12px] tabular-nums text-foreground">
+                  <TableCell className="text-[12px] text-foreground tabular-nums">
                     {fmtPeso(r.expectedAmount)}
                   </TableCell>
-                  <TableCell className="text-[12px] tabular-nums text-foreground">
+                  <TableCell className="text-[12px] text-foreground tabular-nums">
                     {fmtPeso(r.receivedAmount)}
                   </TableCell>
                   <TableCell>
-                    <span className="text-[13px] font-bold tabular-nums text-danger">
+                    <span className="text-[13px] font-bold text-danger tabular-nums">
                       {fmtPeso(r.discrepancyAmount)}
                     </span>
                   </TableCell>
@@ -905,7 +900,7 @@ export function MySalaryDisputeSection() {
                       {STATUS_LABEL[r.status]}
                     </StatusBadge>
                   </TableCell>
-                  <TableCell className="text-[12px] tabular-nums text-muted-foreground">
+                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">
                     {fmtDate(r.createdAt.split("T")[0])}
                   </TableCell>
                 </TableRow>

@@ -32,7 +32,8 @@ export function useCreateAssignment(employeeId: number) {
   return useMutation({
     mutationFn: (payload: CreateAssignmentPayload) =>
       employeeProfileApi.createAssignment(employeeId, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: assignmentKey(employeeId) }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: assignmentKey(employeeId) }),
   })
 }
 
@@ -45,8 +46,10 @@ export function useUpdateAssignment(employeeId: number) {
     }: {
       assignmentId: number
       payload: Partial<CreateAssignmentPayload>
-    }) => employeeProfileApi.updateAssignment(employeeId, assignmentId, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: assignmentKey(employeeId) }),
+    }) =>
+      employeeProfileApi.updateAssignment(employeeId, assignmentId, payload),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: assignmentKey(employeeId) }),
   })
 }
 
@@ -55,7 +58,8 @@ export function useDeleteAssignment(employeeId: number) {
   return useMutation({
     mutationFn: (assignmentId: number) =>
       employeeProfileApi.deleteAssignment(employeeId, assignmentId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: assignmentKey(employeeId) }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: assignmentKey(employeeId) }),
   })
 }
 
@@ -124,7 +128,8 @@ export function useCreateMilestone(employeeId: number) {
   return useMutation({
     mutationFn: (payload: CreateMilestonePayload) =>
       employeeProfileApi.createMilestone(employeeId, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: milestoneKey(employeeId) }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: milestoneKey(employeeId) }),
   })
 }
 
@@ -138,7 +143,8 @@ export function useUpdateMilestone(employeeId: number) {
       milestoneId: number
       payload: Partial<CreateMilestonePayload>
     }) => employeeProfileApi.updateMilestone(employeeId, milestoneId, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: milestoneKey(employeeId) }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: milestoneKey(employeeId) }),
   })
 }
 
@@ -147,7 +153,8 @@ export function useDeleteMilestone(employeeId: number) {
   return useMutation({
     mutationFn: (milestoneId: number) =>
       employeeProfileApi.deleteMilestone(employeeId, milestoneId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: milestoneKey(employeeId) }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: milestoneKey(employeeId) }),
   })
 }
 
@@ -175,8 +182,13 @@ export function useCreateJobPosition() {
 export function useUpdateJobPosition() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: Partial<CreateJobPositionPayload> }) =>
-      employeeProfileApi.updatePosition(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number
+      payload: Partial<CreateJobPositionPayload>
+    }) => employeeProfileApi.updatePosition(id, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: POSITIONS_KEY }),
   })
 }
@@ -192,7 +204,13 @@ export function useDeleteJobPosition() {
 export function useLinkGradeToPosition() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ positionId, salaryGradeId }: { positionId: number; salaryGradeId: number }) =>
+    mutationFn: ({
+      positionId,
+      salaryGradeId,
+    }: {
+      positionId: number
+      salaryGradeId: number
+    }) =>
       employeeProfileApi.linkGradeToPosition(positionId, salaryGradeId, true),
     onSuccess: () => qc.invalidateQueries({ queryKey: POSITIONS_KEY }),
   })
@@ -222,8 +240,13 @@ export function useCreateSalaryGrade() {
 export function useUpdateSalaryGrade() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: Partial<CreateSalaryGradePayload> }) =>
-      employeeProfileApi.updateSalaryGrade(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number
+      payload: Partial<CreateSalaryGradePayload>
+    }) => employeeProfileApi.updateSalaryGrade(id, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: SALARY_GRADES_KEY }),
   })
 }
@@ -235,7 +258,6 @@ export function useDeleteSalaryGrade() {
     onSuccess: () => qc.invalidateQueries({ queryKey: SALARY_GRADES_KEY }),
   })
 }
-
 
 // ── Departments ───────────────────────────────────────────────────────────────
 
@@ -304,8 +326,13 @@ export function useCreatePayrollSetup() {
 export function useUpdatePayrollSetup() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: Partial<CreatePayrollSetupPayload> }) =>
-      employeeProfileApi.updatePayrollSetup(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number
+      payload: Partial<CreatePayrollSetupPayload>
+    }) => employeeProfileApi.updatePayrollSetup(id, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: PAYROLL_SETUP_KEY }),
   })
 }
@@ -321,8 +348,13 @@ export function useDeletePayrollSetup() {
 export function useUnlinkGradeFromPosition() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ positionId, gradeId }: { positionId: number; gradeId: number }) =>
-      employeeProfileApi.unlinkGradeFromPosition(positionId, gradeId),
+    mutationFn: ({
+      positionId,
+      gradeId,
+    }: {
+      positionId: number
+      gradeId: number
+    }) => employeeProfileApi.unlinkGradeFromPosition(positionId, gradeId),
     onSuccess: () => qc.invalidateQueries({ queryKey: POSITIONS_KEY }),
   })
 }
@@ -346,7 +378,8 @@ export function useAssignPosition(userId: number) {
   return useMutation({
     mutationFn: (payload: AssignPositionPayload) =>
       employeeProfileApi.assignPosition(userId, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: userPositionKey(userId) }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: userPositionKey(userId) }),
   })
 }
 
@@ -355,7 +388,8 @@ export function useSetPrimaryPosition(userId: number) {
   return useMutation({
     mutationFn: (positionId: number) =>
       employeeProfileApi.setPrimaryPosition(userId, positionId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: userPositionKey(userId) }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: userPositionKey(userId) }),
   })
 }
 
@@ -364,6 +398,7 @@ export function useRemovePosition(userId: number) {
   return useMutation({
     mutationFn: (positionId: number) =>
       employeeProfileApi.removePosition(userId, positionId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: userPositionKey(userId) }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: userPositionKey(userId) }),
   })
 }

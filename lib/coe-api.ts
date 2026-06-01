@@ -69,7 +69,9 @@ export const coeApi = {
   createMine: (body: CreateCoePayload) =>
     api.post<CoeRequest>("/hr/coe-requests", body).then((r) => r.data),
 
-  listMine: (params: { status?: CoeStatus; page?: number; size?: number } = {}) =>
+  listMine: (
+    params: { status?: CoeStatus; page?: number; size?: number } = {}
+  ) =>
     api
       .get<PageResponse<CoeRequest>>("/hr/coe-requests/me", {
         params: { page: 0, size: 20, ...params },
@@ -96,22 +98,30 @@ export const coeApi = {
 
   approve: (id: number, remarks?: string | null) =>
     api
-      .post<CoeRequest>(`/hr/coe-requests/${id}/approve`, { remarks: remarks ?? null })
+      .post<CoeRequest>(`/hr/coe-requests/${id}/approve`, {
+        remarks: remarks ?? null,
+      })
       .then((r) => r.data),
 
   reject: (id: number, remarks?: string | null) =>
     api
-      .post<CoeRequest>(`/hr/coe-requests/${id}/reject`, { remarks: remarks ?? null })
+      .post<CoeRequest>(`/hr/coe-requests/${id}/reject`, {
+        remarks: remarks ?? null,
+      })
       .then((r) => r.data),
 
   markUnderReview: (id: number, remarks?: string | null) =>
     api
-      .post<CoeRequest>(`/hr/coe-requests/${id}/review`, { remarks: remarks ?? null })
+      .post<CoeRequest>(`/hr/coe-requests/${id}/review`, {
+        remarks: remarks ?? null,
+      })
       .then((r) => r.data),
 
   release: (id: number, documentUrl?: string | null) =>
     api
-      .post<CoeRequest>(`/hr/coe-requests/${id}/release`, { documentUrl: documentUrl ?? null })
+      .post<CoeRequest>(`/hr/coe-requests/${id}/release`, {
+        documentUrl: documentUrl ?? null,
+      })
       .then((r) => r.data),
 }
 

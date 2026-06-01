@@ -31,30 +31,54 @@ export function OverviewSection() {
         <StatCard
           title="Present Today"
           value={stats ? String(stats.presentToday) : "—"}
-          meta={stats ? `${stats.attendanceRate}% attendance rate` : "Workforce currently active"}
+          meta={
+            stats
+              ? `${stats.attendanceRate}% attendance rate`
+              : "Workforce currently active"
+          }
           accent="green"
-          icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon
+              icon={CheckmarkCircle02Icon}
+              size={16}
+              strokeWidth={1.8}
+            />
+          }
         />
         <StatCard
           title="Late Employees"
           value={stats ? String(stats.lateToday) : "—"}
           meta="Attendance issues"
           accent="amber"
-          icon={<HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="On Leave"
           value={stats ? String(stats.onLeave) : "—"}
-          meta={stats ? `${stats.approvedLeave} approved · ${stats.pendingLeave} pending` : "Leave visibility"}
+          meta={
+            stats
+              ? `${stats.approvedLeave} approved · ${stats.pendingLeave} pending`
+              : "Leave visibility"
+          }
           accent="blue"
-          icon={<HugeiconsIcon icon={Calendar01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Calendar01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Pending Requests"
           value={stats ? String(stats.pendingRequests) : "—"}
-          meta={stats ? `${stats.leaveRequests} leave · ${stats.dtrRequests} DTR` : "Needs approval"}
+          meta={
+            stats
+              ? `${stats.leaveRequests} leave · ${stats.dtrRequests} DTR`
+              : "Needs approval"
+          }
           accent="red"
-          icon={<HugeiconsIcon icon={Alert01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Alert01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="OT Hours Today"
@@ -67,7 +91,9 @@ export function OverviewSection() {
           }
           meta="Overtime monitoring"
           accent={stats && stats.otHoursToday > 0 ? "amber" : "green"}
-          icon={<HugeiconsIcon icon={UserCircleIcon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={UserCircleIcon} size={16} strokeWidth={1.8} />
+          }
         />
       </div>
 

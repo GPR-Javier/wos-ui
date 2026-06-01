@@ -12,6 +12,7 @@ import {
   SwitchRolePayload,
 } from "@/lib/auth-api"
 import { useAuthStore } from "@/store/auth-store"
+import { resolveLandingPath } from "@/lib/nav-config"
 
 export const AUTH_KEYS = {
   me: ["auth", "me"] as const,
@@ -51,7 +52,7 @@ export function useLogin() {
       const res = data as AuthResponse
       setFromAuth(res) // cookies set by server automatically
       qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
-      redirectByRole(res.role, router)
+      redirectAfterAuth(res, router)
     },
   })
 }
@@ -68,7 +69,7 @@ export function useSelectRole() {
     onSuccess: (res) => {
       setFromAuth(res) // cookies set by server automatically
       qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
-      redirectByRole(res.role, router)
+      redirectAfterAuth(res, router)
     },
   })
 }
@@ -109,9 +110,15 @@ export function useLogout() {
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
-function redirectByRole(role: string, router: ReturnType<typeof useRouter>) {
-  if (role.toUpperCase() === "APPLICANT") {
-    router.replace("/careers")
+function redirectAfterAuth(
+  res: AuthResponse,
+  router: ReturnType<typeof useRouter>
+) {
+  // Applicants enter the dashboard shell and land on the first page their config
+  // (authorities) grants — same sidebar-driven layout as employees. Everyone else
+  // lands on the dashboard overview.
+  if (res.role?.toUpperCase() === "APPLICANT") {
+    router.replace(resolveLandingPath(res.authorities ?? []))
   } else {
     router.replace("/dashboard")
   }
@@ -129,7 +136,7 @@ export function useRegister() {
     onSuccess: (data) => {
       setFromAuth(data)
       qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
-      router.replace("/careers")
+      redirectAfterAuth(data, router)
     },
   })
 }

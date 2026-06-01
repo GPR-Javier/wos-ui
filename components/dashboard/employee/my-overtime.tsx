@@ -254,17 +254,13 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
 
             {timeError ? (
               <p className="flex items-center gap-1.5 text-[12px] text-red-500">
-                <HugeiconsIcon
-                  icon={Alert01Icon}
-                  size={12}
-                  strokeWidth={2}
-                />
+                <HugeiconsIcon icon={Alert01Icon} size={12} strokeWidth={2} />
                 {timeError}
               </p>
             ) : totalHours > 0 ? (
               <div className="flex items-center justify-between rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-[12px]">
                 <span className="text-primary">Total Overtime Hours</span>
-                <span className="font-bold tabular-nums text-primary">
+                <span className="font-bold text-primary tabular-nums">
                   {fmtHours(totalHours)}
                 </span>
               </div>
@@ -327,8 +323,8 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
                 className="shrink-0 text-green-600 dark:text-green-400"
               />
               <p className="text-[12px] text-green-700 dark:text-green-400">
-                <span className="font-semibold">{fmtHours(totalHours)}</span>{" "}
-                of {OT_TYPE_LABEL[overtimeType]} at{" "}
+                <span className="font-semibold">{fmtHours(totalHours)}</span> of{" "}
+                {OT_TYPE_LABEL[overtimeType]} at{" "}
                 <span className="font-semibold">×{multiplier.toFixed(2)}</span>{" "}
                 rate — eligible for payroll computation upon approval.
               </p>
@@ -338,8 +334,7 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
           {/* Reason */}
           <div className="space-y-1.5">
             <Label className="text-[12px]">
-              Reason / Task Description{" "}
-              <span className="text-red-500">*</span>
+              Reason / Task Description <span className="text-red-500">*</span>
             </Label>
             <Textarea
               placeholder="Describe the work performed or reason for overtime…"
@@ -516,13 +511,13 @@ function DetailDialog({
             </div>
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
               <p className="text-muted-foreground">Time</p>
-              <p className="mt-0.5 font-semibold tabular-nums text-foreground">
+              <p className="mt-0.5 font-semibold text-foreground tabular-nums">
                 {fmt12(request.startTime)} – {fmt12(request.endTime)}
               </p>
             </div>
             <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
               <p className="text-primary/70">Total Hours</p>
-              <p className="mt-0.5 font-bold tabular-nums text-primary">
+              <p className="mt-0.5 font-bold text-primary tabular-nums">
                 {fmtHours(request.totalHours)}
               </p>
             </div>
@@ -664,11 +659,7 @@ export function MyOvertimeSection() {
             File and track your overtime requests
           </p>
         </div>
-        <Button
-          size="sm"
-          className="gap-1.5"
-          onClick={() => setFormOpen(true)}
-        >
+        <Button size="sm" className="gap-1.5" onClick={() => setFormOpen(true)}>
           <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} />
           New Request
         </Button>
@@ -825,15 +816,18 @@ export function MyOvertimeSection() {
                     {fmtDate(r.overtimeDate)}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge variant={OT_TYPE_COLOR[r.overtimeType]} dot={false}>
+                    <StatusBadge
+                      variant={OT_TYPE_COLOR[r.overtimeType]}
+                      dot={false}
+                    >
                       {OT_TYPE_LABEL[r.overtimeType]}
                     </StatusBadge>
                   </TableCell>
-                  <TableCell className="text-[12px] tabular-nums text-muted-foreground">
+                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">
                     {fmt12(r.startTime)} – {fmt12(r.endTime)}
                   </TableCell>
                   <TableCell>
-                    <span className="text-[13px] font-semibold tabular-nums text-primary">
+                    <span className="text-[13px] font-semibold text-primary tabular-nums">
                       {fmtHours(r.totalHours)}
                     </span>
                   </TableCell>
@@ -847,7 +841,7 @@ export function MyOvertimeSection() {
                       {STATUS_LABEL[r.status]}
                     </StatusBadge>
                   </TableCell>
-                  <TableCell className="text-[12px] tabular-nums text-muted-foreground">
+                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">
                     {fmtDate(r.createdAt.split("T")[0])}
                   </TableCell>
                 </TableRow>

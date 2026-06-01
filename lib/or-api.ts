@@ -1,7 +1,11 @@
 import { api } from "./api"
 import type { PageResponse } from "./admin-api"
 
-export type OfficialReceiptStatus = "PENDING" | "APPROVED" | "REJECTED" | "REIMBURSED"
+export type OfficialReceiptStatus =
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "REIMBURSED"
 
 export type OfficialReceiptCategory =
   | "TRANSPORTATION"
@@ -23,7 +27,7 @@ export interface OfficialReceipt {
   userEmail: string
   purpose: string
   amount: number
-  receiptDate: string         // "YYYY-MM-DD"
+  receiptDate: string // "YYYY-MM-DD"
   category: OfficialReceiptCategory
   vendorName: string | null
   description: string | null
@@ -65,10 +69,18 @@ export const orApi = {
         })
         .then((r) => r.data)
     }
-    return api.post<OfficialReceipt>("/hr/official-receipts", body).then((r) => r.data)
+    return api
+      .post<OfficialReceipt>("/hr/official-receipts", body)
+      .then((r) => r.data)
   },
 
-  listMine: (params: { status?: OfficialReceiptStatus; page?: number; size?: number } = {}) =>
+  listMine: (
+    params: {
+      status?: OfficialReceiptStatus
+      page?: number
+      size?: number
+    } = {}
+  ) =>
     api
       .get<PageResponse<OfficialReceipt>>("/hr/official-receipts/me", {
         params: { page: 0, size: 20, ...params },
@@ -76,7 +88,9 @@ export const orApi = {
       .then((r) => r.data),
 
   cancelMine: (id: number) =>
-    api.post<OfficialReceipt>(`/hr/official-receipts/${id}/cancel`).then((r) => r.data),
+    api
+      .post<OfficialReceipt>(`/hr/official-receipts/${id}/cancel`)
+      .then((r) => r.data),
 
   // Admin / Finance
   listAll: (
@@ -96,17 +110,23 @@ export const orApi = {
 
   approve: (id: number, reviewNote?: string | null) =>
     api
-      .post<OfficialReceipt>(`/hr/official-receipts/${id}/approve`, { reviewNote: reviewNote ?? null })
+      .post<OfficialReceipt>(`/hr/official-receipts/${id}/approve`, {
+        reviewNote: reviewNote ?? null,
+      })
       .then((r) => r.data),
 
   reject: (id: number, reviewNote?: string | null) =>
     api
-      .post<OfficialReceipt>(`/hr/official-receipts/${id}/reject`, { reviewNote: reviewNote ?? null })
+      .post<OfficialReceipt>(`/hr/official-receipts/${id}/reject`, {
+        reviewNote: reviewNote ?? null,
+      })
       .then((r) => r.data),
 
   markReimbursed: (id: number, reviewNote?: string | null) =>
     api
-      .post<OfficialReceipt>(`/hr/official-receipts/${id}/reimburse`, { reviewNote: reviewNote ?? null })
+      .post<OfficialReceipt>(`/hr/official-receipts/${id}/reimburse`, {
+        reviewNote: reviewNote ?? null,
+      })
       .then((r) => r.data),
 }
 

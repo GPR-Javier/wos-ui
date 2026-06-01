@@ -12,12 +12,20 @@ export function PublicHeader({ right }: { right?: React.ReactNode }) {
         <Link href="/" aria-label="WorkOS home">
           <Logo />
         </Link>
-        {right !== undefined ? right : (
+        {right !== undefined ? (
+          right
+        ) : (
           <nav className="flex items-center gap-6">
-            <Link href="/careers" className="text-[13px] text-muted-foreground transition-colors hover:text-foreground">
+            <Link
+              href="/careers"
+              className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+            >
               Careers
             </Link>
-            <Link href="/auth/login" className="text-[13px] font-medium text-foreground transition-colors hover:text-primary">
+            <Link
+              href="/auth/login"
+              className="text-[13px] font-medium text-foreground transition-colors hover:text-primary"
+            >
               Sign in
             </Link>
             <Link

@@ -147,7 +147,8 @@ export interface RewardHistoryFilters {
 }
 
 export const rewardsApi = {
-  stats: () => api.get<RewardStats>("/payroll/rewards/stats").then((r) => r.data),
+  stats: () =>
+    api.get<RewardStats>("/payroll/rewards/stats").then((r) => r.data),
 
   teachers: (params: TeacherRatingFilters = {}) =>
     api
@@ -158,19 +159,26 @@ export const rewardsApi = {
 
   leaderboard: (period: LeaderboardPeriod = "monthly") =>
     api
-      .get<LeaderboardEntry[]>("/payroll/rewards/leaderboard", { params: { period } })
+      .get<
+        LeaderboardEntry[]
+      >("/payroll/rewards/leaderboard", { params: { period } })
       .then((r) => r.data),
 
-  rules: () => api.get<RewardRule[]>("/payroll/rewards/rules").then((r) => r.data),
+  rules: () =>
+    api.get<RewardRule[]>("/payroll/rewards/rules").then((r) => r.data),
 
   createRule: (payload: RewardRulePayload) =>
     api.post<RewardRule>("/payroll/rewards/rules", payload).then((r) => r.data),
 
   updateRule: (id: number, payload: RewardRulePayload) =>
-    api.put<RewardRule>(`/payroll/rewards/rules/${id}`, payload).then((r) => r.data),
+    api
+      .put<RewardRule>(`/payroll/rewards/rules/${id}`, payload)
+      .then((r) => r.data),
 
   toggleRule: (id: number) =>
-    api.patch<RewardRule>(`/payroll/rewards/rules/${id}/toggle`).then((r) => r.data),
+    api
+      .patch<RewardRule>(`/payroll/rewards/rules/${id}/toggle`)
+      .then((r) => r.data),
 
   history: (params: RewardHistoryFilters = {}) =>
     api
@@ -183,7 +191,9 @@ export const rewardsApi = {
     api.get<PublicDashboardData>("/payroll/rewards/public").then((r) => r.data),
 
   ratingVersions: () =>
-    api.get<RatingVersion[]>("/payroll/rewards/ratings/versions").then((r) => r.data),
+    api
+      .get<RatingVersion[]>("/payroll/rewards/ratings/versions")
+      .then((r) => r.data),
 
   uploadRatings: (payload: { file: File; title: string; notes?: string }) => {
     const form = new FormData()

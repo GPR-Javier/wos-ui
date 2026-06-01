@@ -90,7 +90,9 @@ function FieldWrap({
     <div className="space-y-1.5">
       <Label className="text-[12px] text-muted-foreground">{label}</Label>
       {children}
-      {error && <p className="text-[11px] font-medium text-destructive">{error}</p>}
+      {error && (
+        <p className="text-[11px] font-medium text-destructive">{error}</p>
+      )}
     </div>
   )
 }
@@ -174,7 +176,10 @@ function GradeModal({
               <FieldWrap label="Grade Name *" error={errors.name}>
                 <Input
                   autoFocus
-                  className={cn("h-9 text-[13px]", errors.name && "border-destructive")}
+                  className={cn(
+                    "h-9 text-[13px]",
+                    errors.name && "border-destructive"
+                  )}
                   placeholder="e.g. Entry Level, Junior, Senior"
                   value={form.name}
                   onChange={(e) => setField("name", e.target.value)}
@@ -187,15 +192,20 @@ function GradeModal({
               <select
                 value={form.currency}
                 onChange={(e) => setField("currency", e.target.value)}
-                className="h-9 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="h-9 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
               >
                 {CURRENCY_OPTIONS.map((c) => (
-                  <option key={c.code} value={c.code}>{c.label}</option>
+                  <option key={c.code} value={c.code}>
+                    {c.label}
+                  </option>
                 ))}
               </select>
             </FieldWrap>
 
-            <FieldWrap label={`Salary Amount (${currencySymbol(form.currency)}) *`} error={errors.salaryAmount}>
+            <FieldWrap
+              label={`Salary Amount (${currencySymbol(form.currency)}) *`}
+              error={errors.salaryAmount}
+            >
               <div className="relative">
                 <span className="absolute top-1/2 left-3 -translate-y-1/2 text-[12px] text-muted-foreground">
                   {currencySymbol(form.currency)}
@@ -203,7 +213,10 @@ function GradeModal({
                 <Input
                   type="number"
                   min={0}
-                  className={cn("h-9 pl-7 text-[13px] font-semibold", errors.salaryAmount && "border-destructive")}
+                  className={cn(
+                    "h-9 pl-7 text-[13px] font-semibold",
+                    errors.salaryAmount && "border-destructive"
+                  )}
                   placeholder="0"
                   value={form.salaryAmount}
                   onChange={(e) => setField("salaryAmount", e.target.value)}
@@ -224,8 +237,10 @@ function GradeModal({
               <FieldWrap label="Status">
                 <select
                   value={form.active ? "active" : "inactive"}
-                  onChange={(e) => setField("active", e.target.value === "active")}
-                  className="h-9 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  onChange={(e) =>
+                    setField("active", e.target.value === "active")
+                  }
+                  className="h-9 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
@@ -239,11 +254,21 @@ function GradeModal({
         <div className="mt-6 flex items-center justify-between gap-3">
           <p className="text-[11px] text-muted-foreground">* Required fields</p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={onClose} disabled={busy}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              disabled={busy}
+            >
               Cancel
             </Button>
             <Button size="sm" onClick={onSubmit} disabled={busy}>
-              <HugeiconsIcon icon={FloppyDiskIcon} size={13} strokeWidth={2} className="mr-1.5" />
+              <HugeiconsIcon
+                icon={FloppyDiskIcon}
+                size={13}
+                strokeWidth={2}
+                className="mr-1.5"
+              />
               {busy ? "Saving…" : editingId ? "Update Grade" : "Save Grade"}
             </Button>
           </div>
@@ -265,9 +290,14 @@ export function SalaryGradesSection() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState<GradeForm>(EMPTY_FORM)
   const [errors, setErrors] = useState<FormErrors>({})
-  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null)
+  const [toast, setToast] = useState<{
+    msg: string
+    type: "success" | "error"
+  } | null>(null)
   const [search, setSearch] = useState("")
-  const [filterStatus, setFilterStatus] = useState<"active" | "inactive" | "all">("active")
+  const [filterStatus, setFilterStatus] = useState<
+    "active" | "inactive" | "all"
+  >("active")
   const [viewingItem, setViewingItem] = useState<SalaryGrade | null>(null)
 
   const busy = createMut.isPending || updateMut.isPending || deleteMut.isPending
@@ -339,7 +369,9 @@ export function SalaryGradesSection() {
 
   function serverError(err: unknown, fallback: string): string {
     const axErr = err as AxiosError<{ error?: string; message?: string }>
-    return axErr?.response?.data?.error ?? axErr?.response?.data?.message ?? fallback
+    return (
+      axErr?.response?.data?.error ?? axErr?.response?.data?.message ?? fallback
+    )
   }
 
   function handleSubmit() {
@@ -353,7 +385,11 @@ export function SalaryGradesSection() {
             closeForm()
             showToast("Salary grade updated.", "success")
           },
-          onError: (err) => showToast(serverError(err, "Failed to update salary grade."), "error"),
+          onError: (err) =>
+            showToast(
+              serverError(err, "Failed to update salary grade."),
+              "error"
+            ),
         }
       )
     } else {
@@ -362,14 +398,21 @@ export function SalaryGradesSection() {
           closeForm()
           showToast("Salary grade created.", "success")
         },
-        onError: (err) => showToast(serverError(err, "Failed to create salary grade."), "error"),
+        onError: (err) =>
+          showToast(
+            serverError(err, "Failed to create salary grade."),
+            "error"
+          ),
       })
     }
   }
 
   function handleDelete(g: SalaryGrade) {
     if (g.employeeCount > 0) {
-      showToast(`Cannot delete — ${g.employeeCount} employee(s) are using this grade.`, "error")
+      showToast(
+        `Cannot delete — ${g.employeeCount} employee(s) are using this grade.`,
+        "error"
+      )
       return
     }
     if (!confirm(`Delete "${g.name}"? This cannot be undone.`)) return
@@ -386,19 +429,27 @@ export function SalaryGradesSection() {
         <div>
           <p className="text-[14px] font-semibold">Salary Grades</p>
           <p className="mt-0.5 text-[12px] text-muted-foreground">
-            Define salary levels (e.g. Entry, Junior, Senior) with a fixed amount and effective date.
+            Define salary levels (e.g. Entry, Junior, Senior) with a fixed
+            amount and effective date.
           </p>
           <div className="mt-2 flex items-center gap-3">
             <span className="text-[11px] font-medium text-green-600 dark:text-green-400">
               {activeCount} active
             </span>
             {inactiveCount > 0 && (
-              <span className="text-[11px] text-muted-foreground">{inactiveCount} archived</span>
+              <span className="text-[11px] text-muted-foreground">
+                {inactiveCount} archived
+              </span>
             )}
           </div>
         </div>
         <Button size="sm" onClick={openCreate}>
-          <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} className="mr-1.5" />
+          <HugeiconsIcon
+            icon={Add01Icon}
+            size={13}
+            strokeWidth={2}
+            className="mr-1.5"
+          />
           New Grade
         </Button>
       </div>
@@ -461,14 +512,24 @@ export function SalaryGradesSection() {
       ) : grades.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-card py-16 text-center">
           <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-muted">
-            <HugeiconsIcon icon={UserGroupIcon} size={22} strokeWidth={1.5} className="text-muted-foreground/60" />
+            <HugeiconsIcon
+              icon={UserGroupIcon}
+              size={22}
+              strokeWidth={1.5}
+              className="text-muted-foreground/60"
+            />
           </div>
           <p className="text-[14px] font-semibold">No salary grades yet</p>
           <p className="mt-1 max-w-xs text-[12px] text-muted-foreground">
             Create your first grade to link salary levels to job positions.
           </p>
           <Button size="sm" className="mt-5" onClick={openCreate}>
-            <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} className="mr-1.5" />
+            <HugeiconsIcon
+              icon={Add01Icon}
+              size={13}
+              strokeWidth={2}
+              className="mr-1.5"
+            />
             New Grade
           </Button>
         </div>
@@ -481,7 +542,7 @@ export function SalaryGradesSection() {
           <div className="overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="border-b bg-muted/40 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <tr className="border-b bg-muted/40 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                   <th className="px-4 py-3 text-left">Grade Name</th>
                   <th className="px-4 py-3 text-right">Salary Amount</th>
                   <th className="px-4 py-3 text-center">Effective Date</th>
@@ -501,31 +562,41 @@ export function SalaryGradesSection() {
                   >
                     <td className="px-4 py-3 font-medium">{g.name}</td>
                     <td className="px-4 py-3 text-right font-mono text-[13px] font-semibold">
-                      {g.salaryAmount != null
-                        ? `${currencySymbol(g.currency)}${g.salaryAmount.toLocaleString("en-PH")}`
-                        : <span className="opacity-40">—</span>}
+                      {g.salaryAmount != null ? (
+                        `${currencySymbol(g.currency)}${g.salaryAmount.toLocaleString("en-PH")}`
+                      ) : (
+                        <span className="opacity-40">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-center text-[12px] text-muted-foreground">
                       {g.effectiveDate ?? <span className="opacity-40">—</span>}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                        g.employeeCount > 0
-                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                          : "bg-muted text-muted-foreground"
-                      )}>
-                        <HugeiconsIcon icon={UserGroupIcon} size={10} strokeWidth={2} />
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                          g.employeeCount > 0
+                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                            : "bg-muted text-muted-foreground"
+                        )}
+                      >
+                        <HugeiconsIcon
+                          icon={UserGroupIcon}
+                          size={10}
+                          strokeWidth={2}
+                        />
                         {g.employeeCount}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={cn(
-                        "rounded-full px-2.5 py-0.5 text-[10px] font-semibold",
-                        g.active
-                          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                          : "bg-muted text-muted-foreground"
-                      )}>
+                      <span
+                        className={cn(
+                          "rounded-full px-2.5 py-0.5 text-[10px] font-semibold",
+                          g.active
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            : "bg-muted text-muted-foreground"
+                        )}
+                      >
                         {g.active ? "Active" : "Inactive"}
                       </span>
                     </td>
@@ -543,7 +614,11 @@ export function SalaryGradesSection() {
                           disabled={busy}
                         />
                         <ActionBtn
-                          title={g.employeeCount > 0 ? "In use — cannot delete" : "Delete"}
+                          title={
+                            g.employeeCount > 0
+                              ? "In use — cannot delete"
+                              : "Delete"
+                          }
                           icon={Delete02Icon}
                           onClick={() => handleDelete(g)}
                           disabled={busy || g.employeeCount > 0}
@@ -557,7 +632,8 @@ export function SalaryGradesSection() {
             </table>
           </div>
           <div className="border-t px-4 py-2.5 text-right text-[11px] text-muted-foreground">
-            {filtered.length} of {grades.length} grade{grades.length !== 1 ? "s" : ""}
+            {filtered.length} of {grades.length} grade
+            {grades.length !== 1 ? "s" : ""}
           </div>
         </div>
       )}
@@ -578,12 +654,20 @@ export function SalaryGradesSection() {
       {/* View Modal */}
       {viewingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setViewingItem(null)} />
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setViewingItem(null)}
+          />
           <div className="relative w-full max-w-sm animate-in rounded-2xl border border-border bg-card p-6 shadow-xl duration-200 zoom-in-95 fade-in">
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-[15px] font-semibold">Salary Grade Details</h2>
-              <button type="button" onClick={() => setViewingItem(null)}
-                className="flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground">
+              <h2 className="text-[15px] font-semibold">
+                Salary Grade Details
+              </h2>
+              <button
+                type="button"
+                onClick={() => setViewingItem(null)}
+                className="flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
                 <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
               </button>
             </div>
@@ -594,17 +678,22 @@ export function SalaryGradesSection() {
               </div>
               <div className="flex justify-between border-b pb-2">
                 <span className="text-muted-foreground">Salary Amount</span>
-                <span className="font-medium font-mono">
-                  {currencySymbol(viewingItem.currency)}{viewingItem.salaryAmount.toLocaleString("en-PH")}
+                <span className="font-mono font-medium">
+                  {currencySymbol(viewingItem.currency)}
+                  {viewingItem.salaryAmount.toLocaleString("en-PH")}
                 </span>
               </div>
               <div className="flex justify-between border-b pb-2">
                 <span className="text-muted-foreground">Currency</span>
-                <span className="font-medium">{viewingItem.currency ?? "PHP"}</span>
+                <span className="font-medium">
+                  {viewingItem.currency ?? "PHP"}
+                </span>
               </div>
               <div className="flex justify-between border-b pb-2">
                 <span className="text-muted-foreground">Effective Date</span>
-                <span className="font-medium">{viewingItem.effectiveDate ?? "—"}</span>
+                <span className="font-medium">
+                  {viewingItem.effectiveDate ?? "—"}
+                </span>
               </div>
               <div className="flex justify-between border-b pb-2">
                 <span className="text-muted-foreground">Employees</span>
@@ -612,12 +701,14 @@ export function SalaryGradesSection() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status</span>
-                <span className={cn(
-                  "rounded-full px-2.5 py-0.5 text-[10px] font-semibold",
-                  viewingItem.active
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                    : "bg-muted text-muted-foreground"
-                )}>
+                <span
+                  className={cn(
+                    "rounded-full px-2.5 py-0.5 text-[10px] font-semibold",
+                    viewingItem.active
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
                   {viewingItem.active ? "Active" : "Inactive"}
                 </span>
               </div>

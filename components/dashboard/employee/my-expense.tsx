@@ -112,7 +112,13 @@ const EMPTY_FORM = {
   files: [] as File[],
 }
 
-function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+function RequestFormDialog({
+  open,
+  onClose,
+}: {
+  open: boolean
+  onClose: () => void
+}) {
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [dragOver, setDragOver] = useState(false)
   const create = useCreateExpense()
@@ -146,7 +152,9 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
           category: form.category as ExpenseCategory,
           amount: Number(form.amount),
           description: form.description,
-          businessTripId: form.businessTripId ? Number(form.businessTripId) : undefined,
+          businessTripId: form.businessTripId
+            ? Number(form.businessTripId)
+            : undefined,
           isDraft,
         },
         files: form.files.length > 0 ? form.files : undefined,
@@ -164,16 +172,22 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="flex size-6 items-center justify-center rounded-full bg-primary/10">
-              <HugeiconsIcon icon={Invoice01Icon} size={13} strokeWidth={2} className="text-primary" />
+              <HugeiconsIcon
+                icon={Invoice01Icon}
+                size={13}
+                strokeWidth={2}
+                className="text-primary"
+              />
             </span>
             New Expense Report
           </DialogTitle>
           <DialogDescription>
-            Submit an expense reimbursement request. Required fields are marked with *.
+            Submit an expense reimbursement request. Required fields are marked
+            with *.
           </DialogDescription>
         </DialogHeader>
 
@@ -187,7 +201,9 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
               className="h-9 text-[13px]"
               placeholder="e.g. Cebu Trip Transportation, Hotel Accommodation…"
               value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, title: e.target.value }))
+              }
             />
           </div>
 
@@ -201,7 +217,9 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
                 type="date"
                 className="h-9 text-[13px]"
                 value={form.expenseDate}
-                onChange={(e) => setForm((f) => ({ ...f, expenseDate: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, expenseDate: e.target.value }))
+                }
               />
             </div>
             <div className="space-y-1.5">
@@ -215,7 +233,9 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
                 className="h-9 text-[13px]"
                 placeholder="0.00"
                 value={form.amount}
-                onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, amount: e.target.value }))
+                }
               />
             </div>
           </div>
@@ -238,7 +258,7 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
                       : "border-border bg-background hover:border-primary/40"
                   )}
                 >
-                  <p className="text-[11px] font-semibold text-foreground leading-snug">
+                  <p className="text-[11px] leading-snug font-semibold text-foreground">
                     {EXPENSE_CATEGORY_LABEL[c]}
                   </p>
                 </button>
@@ -255,21 +275,26 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
               className="min-h-18 resize-none text-[13px]"
               placeholder="Describe the expense and its business purpose…"
               value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, description: e.target.value }))
+              }
             />
           </div>
 
           {/* Linked Trip ID (optional) */}
           <div className="space-y-1.5">
             <Label className="text-[12px]">
-              Linked Business Trip ID <span className="text-muted-foreground">(optional)</span>
+              Linked Business Trip ID{" "}
+              <span className="text-muted-foreground">(optional)</span>
             </Label>
             <Input
               type="number"
               className="h-9 text-[13px]"
               placeholder="Enter trip ID if this expense is part of an approved trip…"
               value={form.businessTripId}
-              onChange={(e) => setForm((f) => ({ ...f, businessTripId: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, businessTripId: e.target.value }))
+              }
             />
           </div>
 
@@ -277,32 +302,75 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
           <div className="space-y-1.5">
             <Label className="text-[12px]">
               Receipts / Proof of Expense{" "}
-              <span className="text-muted-foreground">(recommended — attach official receipts)</span>
+              <span className="text-muted-foreground">
+                (recommended — attach official receipts)
+              </span>
             </Label>
             <div
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+              onDragOver={(e) => {
+                e.preventDefault()
+                setDragOver(true)
+              }}
               onDragLeave={() => setDragOver(false)}
-              onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files) }}
+              onDrop={(e) => {
+                e.preventDefault()
+                setDragOver(false)
+                handleFile(e.dataTransfer.files)
+              }}
               className={cn(
                 "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed p-5 transition-colors",
-                dragOver ? "border-primary bg-primary/5" : "border-border bg-muted/20 hover:border-primary/40"
+                dragOver
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-muted/20 hover:border-primary/40"
               )}
-              onClick={() => document.getElementById("expense-file-upload")?.click()}
+              onClick={() =>
+                document.getElementById("expense-file-upload")?.click()
+              }
             >
-              <HugeiconsIcon icon={DocumentAttachmentIcon} size={20} strokeWidth={1.5} className="text-muted-foreground" />
+              <HugeiconsIcon
+                icon={DocumentAttachmentIcon}
+                size={20}
+                strokeWidth={1.5}
+                className="text-muted-foreground"
+              />
               <p className="text-[12px] text-muted-foreground">
-                Drop receipts here or <span className="font-medium text-primary">browse</span>
+                Drop receipts here or{" "}
+                <span className="font-medium text-primary">browse</span>
               </p>
-              <input id="expense-file-upload" type="file" multiple className="hidden" onChange={(e) => handleFile(e.target.files)} />
+              <input
+                id="expense-file-upload"
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFile(e.target.files)}
+              />
             </div>
             {form.files.length > 0 && (
               <div className="space-y-1.5 pt-1">
                 {form.files.map((file, i) => (
-                  <div key={i} className="flex items-center gap-2 rounded-md border border-border bg-muted/20 px-3 py-2">
-                    <HugeiconsIcon icon={Invoice01Icon} size={13} strokeWidth={1.8} className="shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 flex-1 truncate text-[12px] text-foreground">{file.name}</span>
-                    <button type="button" onClick={() => removeFile(i)} className="shrink-0 text-muted-foreground hover:text-danger">
-                      <HugeiconsIcon icon={Delete01Icon} size={13} strokeWidth={2} />
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 rounded-md border border-border bg-muted/20 px-3 py-2"
+                  >
+                    <HugeiconsIcon
+                      icon={Invoice01Icon}
+                      size={13}
+                      strokeWidth={1.8}
+                      className="shrink-0 text-muted-foreground"
+                    />
+                    <span className="min-w-0 flex-1 truncate text-[12px] text-foreground">
+                      {file.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      className="shrink-0 text-muted-foreground hover:text-danger"
+                    >
+                      <HugeiconsIcon
+                        icon={Delete01Icon}
+                        size={13}
+                        strokeWidth={2}
+                      />
                     </button>
                   </div>
                 ))}
@@ -312,11 +380,22 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
         </div>
 
         <DialogFooter className="gap-2 pt-2">
-          <Button variant="outline" size="sm" onClick={onClose} disabled={busy}>Cancel</Button>
-          <Button variant="outline" size="sm" disabled={busy || !isValid()} onClick={() => submit(true)}>
+          <Button variant="outline" size="sm" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={busy || !isValid()}
+            onClick={() => submit(true)}
+          >
             Save as Draft
           </Button>
-          <Button size="sm" disabled={busy || !isValid()} onClick={() => submit(false)}>
+          <Button
+            size="sm"
+            disabled={busy || !isValid()}
+            onClick={() => submit(false)}
+          >
             {busy ? "Submitting…" : "Submit Report"}
           </Button>
         </DialogFooter>
@@ -327,17 +406,28 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
 
 // ── Detail Dialog ─────────────────────────────────────────────────────────────
 
-function DetailDialog({ expense, onClose }: { expense: ExpenseReport; onClose: () => void }) {
+function DetailDialog({
+  expense,
+  onClose,
+}: {
+  expense: ExpenseReport
+  onClose: () => void
+}) {
   const cancel = useCancelExpense()
   const canCancel = expense.status === "DRAFT" || expense.status === "SUBMITTED"
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="flex size-6 items-center justify-center rounded-full bg-primary/10">
-              <HugeiconsIcon icon={Invoice01Icon} size={13} strokeWidth={2} className="text-primary" />
+              <HugeiconsIcon
+                icon={Invoice01Icon}
+                size={13}
+                strokeWidth={2}
+                className="text-primary"
+              />
             </span>
             Expense Details
           </DialogTitle>
@@ -346,40 +436,63 @@ function DetailDialog({ expense, onClose }: { expense: ExpenseReport; onClose: (
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
             <div>
-              <p className="text-[13px] font-semibold text-foreground">{expense.title}</p>
-              <p className="text-[11px] text-muted-foreground">{fmtDate(expense.expenseDate)}</p>
+              <p className="text-[13px] font-semibold text-foreground">
+                {expense.title}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {fmtDate(expense.expenseDate)}
+              </p>
             </div>
-            <StatusBadge variant={STATUS_VARIANT[expense.status]} className="shrink-0">
+            <StatusBadge
+              variant={STATUS_VARIANT[expense.status]}
+              className="shrink-0"
+            >
               {STATUS_LABEL[expense.status]}
             </StatusBadge>
           </div>
 
           <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2.5">
             <div className="flex items-center gap-1.5">
-              <HugeiconsIcon icon={Money01Icon} size={14} strokeWidth={2} className="text-success" />
+              <HugeiconsIcon
+                icon={Money01Icon}
+                size={14}
+                strokeWidth={2}
+                className="text-success"
+              />
               <span className="text-[12px] text-muted-foreground">Amount</span>
             </div>
-            <span className="text-[18px] font-bold tabular-nums text-foreground">{fmtPeso(expense.amount)}</span>
+            <span className="text-[18px] font-bold text-foreground tabular-nums">
+              {fmtPeso(expense.amount)}
+            </span>
           </div>
 
           <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2 text-[12px]">
             <span className="text-muted-foreground">Category</span>
-            <StatusBadge variant={EXPENSE_CATEGORY_COLOR[expense.category]} dot={false}>
+            <StatusBadge
+              variant={EXPENSE_CATEGORY_COLOR[expense.category]}
+              dot={false}
+            >
               {EXPENSE_CATEGORY_LABEL[expense.category]}
             </StatusBadge>
           </div>
 
           {expense.description && (
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2.5">
-              <p className="mb-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">Description</p>
-              <p className="text-[12px] text-foreground">{expense.description}</p>
+              <p className="mb-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                Description
+              </p>
+              <p className="text-[12px] text-foreground">
+                {expense.description}
+              </p>
             </div>
           )}
 
           {expense.businessTripId && (
             <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2 text-[12px]">
               <span className="text-muted-foreground">Linked Trip</span>
-              <span className="font-mono font-semibold text-foreground">Trip #{expense.businessTripId}</span>
+              <span className="font-mono font-semibold text-foreground">
+                Trip #{expense.businessTripId}
+              </span>
             </div>
           )}
 
@@ -396,7 +509,11 @@ function DetailDialog({ expense, onClose }: { expense: ExpenseReport; onClose: (
                   rel="noreferrer"
                   className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-[12px] text-primary hover:bg-muted/40"
                 >
-                  <HugeiconsIcon icon={DocumentAttachmentIcon} size={13} strokeWidth={1.8} />
+                  <HugeiconsIcon
+                    icon={DocumentAttachmentIcon}
+                    size={13}
+                    strokeWidth={1.8}
+                  />
                   View receipt {i + 1}
                 </a>
               ))}
@@ -413,16 +530,27 @@ function DetailDialog({ expense, onClose }: { expense: ExpenseReport; onClose: (
 
           {expense.reviewNote && (
             <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-800/40 dark:bg-blue-900/10">
-              <p className="mb-1 text-[11px] font-semibold tracking-wider text-blue-600 uppercase">Finance Notes</p>
-              <p className="text-[12px] text-blue-700 dark:text-blue-300">{expense.reviewNote}</p>
+              <p className="mb-1 text-[11px] font-semibold tracking-wider text-blue-600 uppercase">
+                Finance Notes
+              </p>
+              <p className="text-[12px] text-blue-700 dark:text-blue-300">
+                {expense.reviewNote}
+              </p>
               {expense.reviewedByName && (
-                <p className="mt-1 text-[11px] text-blue-500">— {expense.reviewedByName}</p>
+                <p className="mt-1 text-[11px] text-blue-500">
+                  — {expense.reviewedByName}
+                </p>
               )}
             </div>
           )}
 
           <p className="text-[11px] text-muted-foreground">
-            Filed {new Date(expense.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            Filed{" "}
+            {new Date(expense.createdAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
           </p>
         </div>
 
@@ -437,7 +565,9 @@ function DetailDialog({ expense, onClose }: { expense: ExpenseReport; onClose: (
               {cancel.isPending ? "Cancelling…" : "Cancel Report"}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={onClose}>Close</Button>
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Close
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -447,7 +577,9 @@ function DetailDialog({ expense, onClose }: { expense: ExpenseReport; onClose: (
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function MyExpenseSection() {
-  const [statusFilter, setStatusFilter] = useState<ExpenseStatus | undefined>(undefined)
+  const [statusFilter, setStatusFilter] = useState<ExpenseStatus | undefined>(
+    undefined
+  )
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
   const [selected, setSelected] = useState<ExpenseReport | null>(null)
@@ -472,11 +604,20 @@ export function MyExpenseSection() {
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-[16px] font-bold text-foreground">Expense Reports</h1>
-          <p className="text-[12px] text-muted-foreground">Submit and track your expense reimbursements</p>
+          <h1 className="text-[16px] font-bold text-foreground">
+            Expense Reports
+          </h1>
+          <p className="text-[12px] text-muted-foreground">
+            Submit and track your expense reimbursements
+          </p>
         </div>
         <Button size="sm" onClick={() => setFormOpen(true)}>
-          <HugeiconsIcon icon={Add01Icon} size={14} strokeWidth={2} className="mr-1.5" />
+          <HugeiconsIcon
+            icon={Add01Icon}
+            size={14}
+            strokeWidth={2}
+            className="mr-1.5"
+          />
           New Report
         </Button>
       </div>
@@ -487,21 +628,31 @@ export function MyExpenseSection() {
           value={<span className="text-warning">{counts.submitted}</span>}
           meta="Awaiting review"
           accent="amber"
-          icon={<HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Approved"
           value={<span className="text-success">{counts.approved}</span>}
           meta="Pending reimbursement"
           accent="green"
-          icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon
+              icon={CheckmarkCircle02Icon}
+              size={16}
+              strokeWidth={1.8}
+            />
+          }
         />
         <StatCard
           title="Reimbursed"
           value={<span className="text-blue-500">{counts.reimbursed}</span>}
           meta="Payment received"
           accent="blue"
-          icon={<HugeiconsIcon icon={Money01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Money01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Pending Amount"
@@ -509,7 +660,9 @@ export function MyExpenseSection() {
             counts.totalPending > 0 ? (
               <>
                 ₱{(counts.totalPending / 1000).toFixed(1)}
-                <span className="text-base font-normal text-muted-foreground">K</span>
+                <span className="text-base font-normal text-muted-foreground">
+                  K
+                </span>
               </>
             ) : (
               <span className="text-success">₱0</span>
@@ -517,7 +670,9 @@ export function MyExpenseSection() {
           }
           meta="Awaiting reimbursement"
           accent={counts.totalPending > 0 ? "amber" : "green"}
-          icon={<HugeiconsIcon icon={Alert01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Alert01Icon} size={16} strokeWidth={1.8} />
+          }
         />
       </div>
 
@@ -527,7 +682,10 @@ export function MyExpenseSection() {
             {STATUS_FILTERS.map((f) => (
               <button
                 key={f.label}
-                onClick={() => { setStatusFilter(f.value); setPage(0) }}
+                onClick={() => {
+                  setStatusFilter(f.value)
+                  setPage(0)
+                }}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors",
                   statusFilter === f.value
@@ -544,9 +702,16 @@ export function MyExpenseSection() {
         <Table>
           <TableHeader>
             <TableRow>
-              {["Title", "Category", "Amount", "Date", "Status", "Actions"].map((h) => (
-                <TableHead key={h} className={h === "Actions" ? "text-right" : undefined}>{h}</TableHead>
-              ))}
+              {["Title", "Category", "Amount", "Date", "Status", "Actions"].map(
+                (h) => (
+                  <TableHead
+                    key={h}
+                    className={h === "Actions" ? "text-right" : undefined}
+                  >
+                    {h}
+                  </TableHead>
+                )
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -554,17 +719,31 @@ export function MyExpenseSection() {
               [0, 1, 2, 3].map((i) => (
                 <TableRow key={i}>
                   {[0, 1, 2, 3, 4, 5].map((j) => (
-                    <TableCell key={j}><Skeleton className="h-3 w-20" /></TableCell>
+                    <TableCell key={j}>
+                      <Skeleton className="h-3 w-20" />
+                    </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-12 text-center text-[13px] text-muted-foreground">
+                <TableCell
+                  colSpan={6}
+                  className="py-12 text-center text-[13px] text-muted-foreground"
+                >
                   <div className="flex flex-col items-center gap-2">
-                    <HugeiconsIcon icon={Invoice01Icon} size={28} strokeWidth={1.3} className="text-muted-foreground/30" />
+                    <HugeiconsIcon
+                      icon={Invoice01Icon}
+                      size={28}
+                      strokeWidth={1.3}
+                      className="text-muted-foreground/30"
+                    />
                     <p>No expense reports found.</p>
-                    <Button size="sm" variant="outline" onClick={() => setFormOpen(true)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setFormOpen(true)}
+                    >
                       File your first report
                     </Button>
                   </div>
@@ -572,29 +751,41 @@ export function MyExpenseSection() {
               </TableRow>
             ) : (
               items.map((r) => (
-                <TableRow key={r.id} className="cursor-pointer hover:bg-muted/30" onClick={() => setSelected(r)}>
+                <TableRow
+                  key={r.id}
+                  className="cursor-pointer hover:bg-muted/30"
+                  onClick={() => setSelected(r)}
+                >
                   <TableCell className="max-w-50 truncate text-[13px] font-medium text-foreground">
                     {r.title}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge variant={EXPENSE_CATEGORY_COLOR[r.category]} dot={false}>
+                    <StatusBadge
+                      variant={EXPENSE_CATEGORY_COLOR[r.category]}
+                      dot={false}
+                    >
                       {EXPENSE_CATEGORY_LABEL[r.category]}
                     </StatusBadge>
                   </TableCell>
-                  <TableCell className="text-[13px] font-semibold tabular-nums text-foreground">
+                  <TableCell className="text-[13px] font-semibold text-foreground tabular-nums">
                     {fmtPeso(r.amount)}
                   </TableCell>
-                  <TableCell className="text-[12px] tabular-nums text-muted-foreground">
+                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">
                     {fmtDate(r.expenseDate)}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status]}</StatusBadge>
+                    <StatusBadge variant={STATUS_VARIANT[r.status]}>
+                      {STATUS_LABEL[r.status]}
+                    </StatusBadge>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
                       size="icon-xs"
                       variant="outline"
-                      onClick={(e) => { e.stopPropagation(); setSelected(r) }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelected(r)
+                      }}
                       title="View details"
                     >
                       <HugeiconsIcon icon={EyeIcon} size={12} strokeWidth={2} />
@@ -620,8 +811,12 @@ export function MyExpenseSection() {
         )}
       </div>
 
-      {formOpen && <RequestFormDialog open={formOpen} onClose={() => setFormOpen(false)} />}
-      {selected && <DetailDialog expense={selected} onClose={() => setSelected(null)} />}
+      {formOpen && (
+        <RequestFormDialog open={formOpen} onClose={() => setFormOpen(false)} />
+      )}
+      {selected && (
+        <DetailDialog expense={selected} onClose={() => setSelected(null)} />
+      )}
     </div>
   )
 }

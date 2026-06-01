@@ -41,7 +41,12 @@ export interface LeaveRequest {
 }
 
 export type WorkType = "remote" | "hybrid" | "onsite"
-export type SalaryPeriod = "hourly" | "weekly" | "semi-monthly" | "monthly" | "fixed-price"
+export type SalaryPeriod =
+  | "hourly"
+  | "weekly"
+  | "semi-monthly"
+  | "monthly"
+  | "fixed-price"
 
 export interface JobPosting {
   id: number
@@ -94,7 +99,7 @@ export interface HrStats {
   pendingRequests: number
   leaveRequests: number
   dtrRequests: number
-  otHoursToday: number   // total OT hours across team today (decimal, e.g. 12.5)
+  otHoursToday: number // total OT hours across team today (decimal, e.g. 12.5)
 }
 
 export const hrApi = {
@@ -108,7 +113,15 @@ export const hrApi = {
   employee: (id: number) =>
     api.get<HrEmployee>(`/hr/employees/${id}`).then((r) => r.data),
 
-  updateEmployee: (id: number, payload: { jobPositionId?: number | null; department?: string; position?: string; team?: string | null }) =>
+  updateEmployee: (
+    id: number,
+    payload: {
+      jobPositionId?: number | null
+      department?: string
+      position?: string
+      team?: string | null
+    }
+  ) =>
     api.patch<HrEmployee>(`/hr/employees/${id}`, payload).then((r) => r.data),
 
   leaveRequests: (
@@ -128,13 +141,17 @@ export const hrApi = {
 
   jobs: (params: { page?: number; size?: number } = {}) =>
     api
-      .get<PageResponse<JobPosting>>("/hr/jobs", { params: { page: 0, size: 20, ...params } })
+      .get<
+        PageResponse<JobPosting>
+      >("/hr/jobs", { params: { page: 0, size: 20, ...params } })
       .then((r) => r.data),
 
   /** Public — no auth required, no 401 redirect. Used on the careers page. */
   publicJobs: (params: { page?: number; size?: number } = {}) =>
     publicApi
-      .get<PageResponse<JobPosting>>("/hr/jobs", { params: { page: 0, size: 50, ...params } })
+      .get<
+        PageResponse<JobPosting>
+      >("/hr/jobs", { params: { page: 0, size: 50, ...params } })
       .then((r) => r.data),
 
   createJob: (payload: CreateJobPayload) =>
@@ -143,8 +160,7 @@ export const hrApi = {
   updateJob: (id: number, payload: Partial<CreateJobPayload>) =>
     api.put<JobPosting>(`/hr/jobs/${id}`, payload).then((r) => r.data),
 
-  deleteJob: (id: number) =>
-    api.delete(`/hr/jobs/${id}`),
+  deleteJob: (id: number) => api.delete(`/hr/jobs/${id}`),
 
   stats: () => api.get<HrStats>("/hr/stats").then((r) => r.data),
 }

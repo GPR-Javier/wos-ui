@@ -122,27 +122,47 @@ function ReviewModal({
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {mode === "approve" && (
               <span className="flex size-6 items-center justify-center rounded-full bg-green-100">
-                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} strokeWidth={2} className="text-green-600" />
+                <HugeiconsIcon
+                  icon={CheckmarkCircle02Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="text-green-600"
+                />
               </span>
             )}
             {mode === "reject" && (
               <span className="flex size-6 items-center justify-center rounded-full bg-red-100">
-                <HugeiconsIcon icon={Cancel01Icon} size={13} strokeWidth={2} className="text-red-500" />
+                <HugeiconsIcon
+                  icon={Cancel01Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="text-red-500"
+                />
               </span>
             )}
             {mode === "reimburse" && (
               <span className="flex size-6 items-center justify-center rounded-full bg-blue-100">
-                <HugeiconsIcon icon={Money01Icon} size={13} strokeWidth={2} className="text-blue-600" />
+                <HugeiconsIcon
+                  icon={Money01Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="text-blue-600"
+                />
               </span>
             )}
             {mode === "view" && (
               <span className="flex size-6 items-center justify-center rounded-full bg-primary/10">
-                <HugeiconsIcon icon={Invoice01Icon} size={13} strokeWidth={2} className="text-primary" />
+                <HugeiconsIcon
+                  icon={Invoice01Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="text-primary"
+                />
               </span>
             )}
             {titleMap[mode]}
@@ -153,13 +173,25 @@ function ReviewModal({
           {/* Employee info */}
           <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-              <HugeiconsIcon icon={UserCircleIcon} size={16} strokeWidth={1.6} className="text-muted-foreground" />
+              <HugeiconsIcon
+                icon={UserCircleIcon}
+                size={16}
+                strokeWidth={1.6}
+                className="text-muted-foreground"
+              />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold text-foreground">{receipt.userName}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{receipt.userEmail}</p>
+              <p className="truncate text-[13px] font-semibold text-foreground">
+                {receipt.userName}
+              </p>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {receipt.userEmail}
+              </p>
             </div>
-            <StatusBadge variant={STATUS_VARIANT[receipt.status]} className="shrink-0">
+            <StatusBadge
+              variant={STATUS_VARIANT[receipt.status]}
+              className="shrink-0"
+            >
               {STATUS_LABEL[receipt.status]}
             </StatusBadge>
           </div>
@@ -167,12 +199,14 @@ function ReviewModal({
           {/* OR number + amount */}
           <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2.5">
             <div>
-              <p className="text-[13px] font-semibold text-foreground">{receipt.purpose}</p>
+              <p className="text-[13px] font-semibold text-foreground">
+                {receipt.purpose}
+              </p>
               <p className="text-[11px] text-muted-foreground">
                 {receipt.orNumber} · {fmtDate(receipt.receiptDate)}
               </p>
             </div>
-            <span className="text-[18px] font-bold tabular-nums text-foreground">
+            <span className="text-[18px] font-bold text-foreground tabular-nums">
               {fmtPeso(receipt.amount)}
             </span>
           </div>
@@ -180,7 +214,10 @@ function ReviewModal({
           {/* Category */}
           <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2 text-[12px]">
             <span className="text-muted-foreground">Category</span>
-            <StatusBadge variant={OR_CATEGORY_COLOR[receipt.category]} dot={false}>
+            <StatusBadge
+              variant={OR_CATEGORY_COLOR[receipt.category]}
+              dot={false}
+            >
               {OR_CATEGORY_LABEL[receipt.category]}
             </StatusBadge>
           </div>
@@ -188,7 +225,12 @@ function ReviewModal({
           {/* Vendor */}
           {receipt.vendorName && (
             <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2 text-[12px]">
-              <HugeiconsIcon icon={StoreIcon} size={13} strokeWidth={1.8} className="text-muted-foreground" />
+              <HugeiconsIcon
+                icon={StoreIcon}
+                size={13}
+                strokeWidth={1.8}
+                className="text-muted-foreground"
+              />
               <span className="text-muted-foreground">Vendor</span>
               <span className="ml-auto font-medium">{receipt.vendorName}</span>
             </div>
@@ -200,7 +242,9 @@ function ReviewModal({
               <p className="mb-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                 Description
               </p>
-              <p className="text-[12px] text-foreground">{receipt.description}</p>
+              <p className="text-[12px] text-foreground">
+                {receipt.description}
+              </p>
             </div>
           )}
 
@@ -219,7 +263,11 @@ function ReviewModal({
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-[12px] font-medium transition-colors hover:bg-muted"
                   >
-                    <HugeiconsIcon icon={DocumentAttachmentIcon} size={12} strokeWidth={1.8} />
+                    <HugeiconsIcon
+                      icon={DocumentAttachmentIcon}
+                      size={12}
+                      strokeWidth={1.8}
+                    />
                     Receipt {i + 1}
                   </a>
                 ))}
@@ -241,7 +289,9 @@ function ReviewModal({
               <p className="mb-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                 Review Note
               </p>
-              <p className="text-[12px] text-foreground">{receipt.reviewNote}</p>
+              <p className="text-[12px] text-foreground">
+                {receipt.reviewNote}
+              </p>
             </div>
           )}
 
@@ -250,10 +300,10 @@ function ReviewModal({
             <div className="space-y-1.5">
               <p className="text-[12px] font-medium text-foreground">
                 Note{" "}
-                {mode === "reject" && (
-                  <span className="text-red-500">*</span>
-                )}
-                <span className="ml-1 font-normal text-muted-foreground">(optional)</span>
+                {mode === "reject" && <span className="text-red-500">*</span>}
+                <span className="ml-1 font-normal text-muted-foreground">
+                  (optional)
+                </span>
               </p>
               <Textarea
                 rows={3}
@@ -266,7 +316,7 @@ function ReviewModal({
                       ? "Reason for rejection…"
                       : "Add a note…"
                 }
-                className="text-[13px] resize-none"
+                className="resize-none text-[13px]"
               />
             </div>
           )}
@@ -277,17 +327,32 @@ function ReviewModal({
             {mode === "view" ? "Close" : "Cancel"}
           </Button>
           {mode === "approve" && (
-            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleSubmit} disabled={busy}>
+            <Button
+              size="sm"
+              className="bg-green-600 text-white hover:bg-green-700"
+              onClick={handleSubmit}
+              disabled={busy}
+            >
               Approve
             </Button>
           )}
           {mode === "reject" && (
-            <Button size="sm" variant="destructive" onClick={handleSubmit} disabled={busy || !note.trim()}>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleSubmit}
+              disabled={busy || !note.trim()}
+            >
               Reject
             </Button>
           )}
           {mode === "reimburse" && (
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleSubmit} disabled={busy}>
+            <Button
+              size="sm"
+              className="bg-blue-600 text-white hover:bg-blue-700"
+              onClick={handleSubmit}
+              disabled={busy}
+            >
               Mark Reimbursed
             </Button>
           )}
@@ -302,8 +367,13 @@ function ReviewModal({
 export function OrManagement() {
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<OfficialReceiptStatus | undefined>()
-  const [selected, setSelected] = useState<{ or: OfficialReceipt; mode: ReviewMode } | null>(null)
+  const [statusFilter, setStatusFilter] = useState<
+    OfficialReceiptStatus | undefined
+  >()
+  const [selected, setSelected] = useState<{
+    or: OfficialReceipt
+    mode: ReviewMode
+  } | null>(null)
 
   const { data, isLoading } = useAllOfficialReceipts({
     status: statusFilter,
@@ -333,45 +403,64 @@ export function OrManagement() {
           value={String(pending)}
           meta="Awaiting approval"
           accent="amber"
-          icon={<HugeiconsIcon icon={Invoice01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Invoice01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Approved"
           value={String(approved)}
           meta="Ready for reimbursement"
           accent="green"
-          icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon
+              icon={CheckmarkCircle02Icon}
+              size={16}
+              strokeWidth={1.8}
+            />
+          }
         />
         <StatCard
           title="Reimbursed"
           value={String(reimbursed)}
           meta="Completed this period"
           accent="blue"
-          icon={<HugeiconsIcon icon={Money01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Money01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Total Amount"
           value={fmtPeso(totalAmount)}
           meta="Submitted (excl. rejected)"
           accent="purple"
-          icon={<HugeiconsIcon icon={DocumentAttachmentIcon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon
+              icon={DocumentAttachmentIcon}
+              size={16}
+              strokeWidth={1.8}
+            />
+          }
         />
       </div>
 
       {/* Toolbar */}
       <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
+        <div className="relative max-w-xs flex-1">
           <HugeiconsIcon
             icon={Search01Icon}
             size={14}
             strokeWidth={1.8}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"
           />
           <Input
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(0) }}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPage(0)
+            }}
             placeholder="Search employee or purpose…"
-            className="pl-9 h-9 text-[13px]"
+            className="h-9 pl-9 text-[13px]"
           />
         </div>
       </div>
@@ -381,9 +470,12 @@ export function OrManagement() {
         {STATUS_FILTERS.map((f) => (
           <button
             key={f.label}
-            onClick={() => { setStatusFilter(f.value); setPage(0) }}
+            onClick={() => {
+              setStatusFilter(f.value)
+              setPage(0)
+            }}
             className={cn(
-              "relative pb-2 px-3 text-[13px] font-medium transition-colors",
+              "relative px-3 pb-2 text-[13px] font-medium transition-colors",
               statusFilter === f.value
                 ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -405,9 +497,18 @@ export function OrManagement() {
         <Table>
           <TableHeader>
             <TableRow>
-              {["Employee", "OR Number", "Purpose", "Category", "Amount", "Receipt Date", "Status", "Actions"].map(
-                (h) => <TableHead key={h}>{h}</TableHead>
-              )}
+              {[
+                "Employee",
+                "OR Number",
+                "Purpose",
+                "Category",
+                "Amount",
+                "Receipt Date",
+                "Status",
+                "Actions",
+              ].map((h) => (
+                <TableHead key={h}>{h}</TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -423,7 +524,10 @@ export function OrManagement() {
               ))
             ) : receipts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="py-12 text-center text-[13px] text-muted-foreground">
+                <TableCell
+                  colSpan={8}
+                  className="py-12 text-center text-[13px] text-muted-foreground"
+                >
                   No official receipts found.
                 </TableCell>
               </TableRow>
@@ -443,8 +547,12 @@ export function OrManagement() {
                           {initials}
                         </div>
                         <div>
-                          <p className="text-[13px] font-medium">{r.userName}</p>
-                          <p className="text-[11px] text-muted-foreground">{r.userEmail}</p>
+                          <p className="text-[13px] font-medium">
+                            {r.userName}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {r.userEmail}
+                          </p>
                         </div>
                       </div>
                     </TableCell>
@@ -454,18 +562,23 @@ export function OrManagement() {
                     <TableCell className="max-w-48">
                       <p className="truncate text-[13px]">{r.purpose}</p>
                       {r.vendorName && (
-                        <p className="truncate text-[11px] text-muted-foreground">{r.vendorName}</p>
+                        <p className="truncate text-[11px] text-muted-foreground">
+                          {r.vendorName}
+                        </p>
                       )}
                     </TableCell>
                     <TableCell>
-                      <StatusBadge variant={OR_CATEGORY_COLOR[r.category]} dot={false}>
+                      <StatusBadge
+                        variant={OR_CATEGORY_COLOR[r.category]}
+                        dot={false}
+                      >
                         {OR_CATEGORY_LABEL[r.category]}
                       </StatusBadge>
                     </TableCell>
-                    <TableCell className="font-semibold tabular-nums text-[13px]">
+                    <TableCell className="text-[13px] font-semibold tabular-nums">
                       {fmtPeso(r.amount)}
                     </TableCell>
-                    <TableCell className="tabular-nums text-[12px] text-muted-foreground">
+                    <TableCell className="text-[12px] text-muted-foreground tabular-nums">
                       {fmtDate(r.receiptDate)}
                     </TableCell>
                     <TableCell>
@@ -481,7 +594,11 @@ export function OrManagement() {
                           className="h-7 px-2"
                           onClick={() => setSelected({ or: r, mode: "view" })}
                         >
-                          <HugeiconsIcon icon={EyeIcon} size={13} strokeWidth={1.8} />
+                          <HugeiconsIcon
+                            icon={EyeIcon}
+                            size={13}
+                            strokeWidth={1.8}
+                          />
                         </Button>
                         {r.status === "PENDING" && (
                           <>
@@ -489,7 +606,9 @@ export function OrManagement() {
                               size="xs"
                               variant="outline"
                               className="h-7 border-success-border text-success hover:bg-gbg"
-                              onClick={() => setSelected({ or: r, mode: "approve" })}
+                              onClick={() =>
+                                setSelected({ or: r, mode: "approve" })
+                              }
                             >
                               Approve
                             </Button>
@@ -497,7 +616,9 @@ export function OrManagement() {
                               size="xs"
                               variant="outline"
                               className="h-7 border-danger-border text-danger hover:bg-rbg"
-                              onClick={() => setSelected({ or: r, mode: "reject" })}
+                              onClick={() =>
+                                setSelected({ or: r, mode: "reject" })
+                              }
                             >
                               Reject
                             </Button>
@@ -508,7 +629,9 @@ export function OrManagement() {
                             size="xs"
                             variant="outline"
                             className="h-7 border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20"
-                            onClick={() => setSelected({ or: r, mode: "reimburse" })}
+                            onClick={() =>
+                              setSelected({ or: r, mode: "reimburse" })
+                            }
                           >
                             Reimburse
                           </Button>
@@ -524,7 +647,11 @@ export function OrManagement() {
       </div>
 
       {totalPages > 1 && (
-        <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        <TablePagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
       )}
 
       {selected && (

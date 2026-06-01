@@ -131,7 +131,13 @@ const EMPTY_FORM = {
   files: [] as File[],
 }
 
-function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+function RequestFormDialog({
+  open,
+  onClose,
+}: {
+  open: boolean
+  onClose: () => void
+}) {
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [dragOver, setDragOver] = useState(false)
   const create = useCreateBusinessTrip()
@@ -205,16 +211,22 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="flex size-6 items-center justify-center rounded-full bg-primary/10">
-              <HugeiconsIcon icon={Airplane01Icon} size={13} strokeWidth={2} className="text-primary" />
+              <HugeiconsIcon
+                icon={Airplane01Icon}
+                size={13}
+                strokeWidth={2}
+                className="text-primary"
+              />
             </span>
             New Business Trip Request
           </DialogTitle>
           <DialogDescription>
-            Submit a business travel request for approval. Required fields are marked with *.
+            Submit a business travel request for approval. Required fields are
+            marked with *.
           </DialogDescription>
         </DialogHeader>
 
@@ -228,7 +240,9 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
               className="h-9 text-[13px]"
               placeholder="e.g. Cebu City, Manila, Tokyo…"
               value={form.destination}
-              onChange={(e) => setForm((f) => ({ ...f, destination: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, destination: e.target.value }))
+              }
             />
           </div>
 
@@ -242,7 +256,9 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
                 type="date"
                 className="h-9 text-[13px]"
                 value={form.departureDate}
-                onChange={(e) => setForm((f) => ({ ...f, departureDate: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, departureDate: e.target.value }))
+                }
               />
             </div>
             <div className="space-y-1.5">
@@ -254,13 +270,18 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
                 className="h-9 text-[13px]"
                 min={form.departureDate}
                 value={form.returnDate}
-                onChange={(e) => setForm((f) => ({ ...f, returnDate: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, returnDate: e.target.value }))
+                }
               />
             </div>
           </div>
           {days > 0 && (
             <p className="text-[11px] text-muted-foreground">
-              Duration: <span className="font-semibold text-foreground">{days} day{days !== 1 ? "s" : ""}</span>
+              Duration:{" "}
+              <span className="font-semibold text-foreground">
+                {days} day{days !== 1 ? "s" : ""}
+              </span>
             </p>
           )}
 
@@ -271,7 +292,9 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
             </Label>
             <Select
               value={form.purpose}
-              onValueChange={(v) => setForm((f) => ({ ...f, purpose: v as TripPurpose }))}
+              onValueChange={(v) =>
+                setForm((f) => ({ ...f, purpose: v as TripPurpose }))
+              }
             >
               <SelectTrigger className="h-9 text-[13px]">
                 <SelectValue placeholder="Select purpose…" />
@@ -302,9 +325,13 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
                       : "border-border bg-background hover:border-primary/40"
                   )}
                 >
-                  <p className="text-[12px] font-semibold text-foreground">{TRAVEL_MODE_LABEL[m]}</p>
+                  <p className="text-[12px] font-semibold text-foreground">
+                    {TRAVEL_MODE_LABEL[m]}
+                  </p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    {m === "DOMESTIC" ? "Within the Philippines" : "Outside the Philippines"}
+                    {m === "DOMESTIC"
+                      ? "Within the Philippines"
+                      : "Outside the Philippines"}
                   </p>
                 </button>
               ))}
@@ -329,7 +356,9 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
                       : "border-border bg-background hover:border-primary/40"
                   )}
                 >
-                  <p className="text-[12px] font-semibold text-foreground">{TRANSPORT_TYPE_LABEL[t]}</p>
+                  <p className="text-[12px] font-semibold text-foreground">
+                    {TRANSPORT_TYPE_LABEL[t]}
+                  </p>
                 </button>
               ))}
             </div>
@@ -358,7 +387,9 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
                     className="h-9 text-[13px]"
                     placeholder="0.00"
                     value={form[key]}
-                    onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, [key]: e.target.value }))
+                    }
                   />
                 </div>
               ))}
@@ -366,7 +397,9 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
             {totalBudget() > 0 && (
               <p className="text-[11px] text-muted-foreground">
                 Total:{" "}
-                <span className="font-semibold text-foreground">{fmtPeso(totalBudget())}</span>
+                <span className="font-semibold text-foreground">
+                  {fmtPeso(totalBudget())}
+                </span>
               </p>
             )}
           </div>
@@ -374,58 +407,106 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
           {/* Accommodation */}
           <div className="space-y-1.5">
             <Label className="text-[12px]">
-              Accommodation <span className="text-muted-foreground">(optional)</span>
+              Accommodation{" "}
+              <span className="text-muted-foreground">(optional)</span>
             </Label>
             <Input
               className="h-9 text-[13px]"
               placeholder="Hotel name or address…"
               value={form.accommodation}
-              onChange={(e) => setForm((f) => ({ ...f, accommodation: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, accommodation: e.target.value }))
+              }
             />
           </div>
 
           {/* Remarks */}
           <div className="space-y-1.5">
             <Label className="text-[12px]">
-              Remarks / Purpose Details <span className="text-muted-foreground">(optional)</span>
+              Remarks / Purpose Details{" "}
+              <span className="text-muted-foreground">(optional)</span>
             </Label>
             <Textarea
               className="min-h-18 resize-none text-[13px]"
               placeholder="Provide additional details about this trip…"
               value={form.remarks}
-              onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, remarks: e.target.value }))
+              }
             />
           </div>
 
           {/* Attachments */}
           <div className="space-y-1.5">
             <Label className="text-[12px]">
-              Supporting Documents <span className="text-muted-foreground">(optional)</span>
+              Supporting Documents{" "}
+              <span className="text-muted-foreground">(optional)</span>
             </Label>
             <div
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+              onDragOver={(e) => {
+                e.preventDefault()
+                setDragOver(true)
+              }}
               onDragLeave={() => setDragOver(false)}
-              onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files) }}
+              onDrop={(e) => {
+                e.preventDefault()
+                setDragOver(false)
+                handleFile(e.dataTransfer.files)
+              }}
               className={cn(
                 "flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed p-5 transition-colors",
-                dragOver ? "border-primary bg-primary/5" : "border-border bg-muted/20 hover:border-primary/40"
+                dragOver
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-muted/20 hover:border-primary/40"
               )}
-              onClick={() => document.getElementById("trip-file-upload")?.click()}
+              onClick={() =>
+                document.getElementById("trip-file-upload")?.click()
+              }
             >
-              <HugeiconsIcon icon={DocumentAttachmentIcon} size={20} strokeWidth={1.5} className="text-muted-foreground" />
+              <HugeiconsIcon
+                icon={DocumentAttachmentIcon}
+                size={20}
+                strokeWidth={1.5}
+                className="text-muted-foreground"
+              />
               <p className="text-[12px] text-muted-foreground">
-                Drop files here or <span className="font-medium text-primary">browse</span>
+                Drop files here or{" "}
+                <span className="font-medium text-primary">browse</span>
               </p>
-              <input id="trip-file-upload" type="file" multiple className="hidden" onChange={(e) => handleFile(e.target.files)} />
+              <input
+                id="trip-file-upload"
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFile(e.target.files)}
+              />
             </div>
             {form.files.length > 0 && (
               <div className="space-y-1.5 pt-1">
                 {form.files.map((file, i) => (
-                  <div key={i} className="flex items-center gap-2 rounded-md border border-border bg-muted/20 px-3 py-2">
-                    <HugeiconsIcon icon={Airplane01Icon} size={13} strokeWidth={1.8} className="shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 flex-1 truncate text-[12px] text-foreground">{file.name}</span>
-                    <button type="button" onClick={() => removeFile(i)} className="shrink-0 text-muted-foreground hover:text-danger">
-                      <HugeiconsIcon icon={Delete01Icon} size={13} strokeWidth={2} />
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 rounded-md border border-border bg-muted/20 px-3 py-2"
+                  >
+                    <HugeiconsIcon
+                      icon={Airplane01Icon}
+                      size={13}
+                      strokeWidth={1.8}
+                      className="shrink-0 text-muted-foreground"
+                    />
+                    <span className="min-w-0 flex-1 truncate text-[12px] text-foreground">
+                      {file.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      className="shrink-0 text-muted-foreground hover:text-danger"
+                    >
+                      <HugeiconsIcon
+                        icon={Delete01Icon}
+                        size={13}
+                        strokeWidth={2}
+                      />
                     </button>
                   </div>
                 ))}
@@ -435,11 +516,22 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
         </div>
 
         <DialogFooter className="gap-2 pt-2">
-          <Button variant="outline" size="sm" onClick={onClose} disabled={busy}>Cancel</Button>
-          <Button variant="outline" size="sm" disabled={busy || !isValid()} onClick={() => submit(true)}>
+          <Button variant="outline" size="sm" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={busy || !isValid()}
+            onClick={() => submit(true)}
+          >
             Save as Draft
           </Button>
-          <Button size="sm" disabled={busy || !isValid()} onClick={() => submit(false)}>
+          <Button
+            size="sm"
+            disabled={busy || !isValid()}
+            onClick={() => submit(false)}
+          >
             {busy ? "Submitting…" : "Submit Request"}
           </Button>
         </DialogFooter>
@@ -450,18 +542,29 @@ function RequestFormDialog({ open, onClose }: { open: boolean; onClose: () => vo
 
 // ── Detail Dialog ─────────────────────────────────────────────────────────────
 
-function DetailDialog({ trip, onClose }: { trip: BusinessTrip; onClose: () => void }) {
+function DetailDialog({
+  trip,
+  onClose,
+}: {
+  trip: BusinessTrip
+  onClose: () => void
+}) {
   const cancel = useCancelBusinessTrip()
   const canCancel = trip.status === "DRAFT" || trip.status === "SUBMITTED"
   const days = tripDays(trip.departureDate, trip.returnDate)
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="flex size-6 items-center justify-center rounded-full bg-primary/10">
-              <HugeiconsIcon icon={Airplane01Icon} size={13} strokeWidth={2} className="text-primary" />
+              <HugeiconsIcon
+                icon={Airplane01Icon}
+                size={13}
+                strokeWidth={2}
+                className="text-primary"
+              />
             </span>
             Trip Details
           </DialogTitle>
@@ -470,10 +573,20 @@ function DetailDialog({ trip, onClose }: { trip: BusinessTrip; onClose: () => vo
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
             <div className="flex items-center gap-1.5">
-              <HugeiconsIcon icon={Location01Icon} size={14} strokeWidth={2} className="text-primary" />
-              <span className="text-[13px] font-semibold text-foreground">{trip.destination}</span>
+              <HugeiconsIcon
+                icon={Location01Icon}
+                size={14}
+                strokeWidth={2}
+                className="text-primary"
+              />
+              <span className="text-[13px] font-semibold text-foreground">
+                {trip.destination}
+              </span>
             </div>
-            <StatusBadge variant={STATUS_VARIANT[trip.status]} className="shrink-0">
+            <StatusBadge
+              variant={STATUS_VARIANT[trip.status]}
+              className="shrink-0"
+            >
               {STATUS_LABEL[trip.status]}
             </StatusBadge>
           </div>
@@ -491,22 +604,30 @@ function DetailDialog({ trip, onClose }: { trip: BusinessTrip; onClose: () => vo
           <div className="grid grid-cols-2 gap-2 text-[12px]">
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
               <p className="text-muted-foreground">Purpose</p>
-              <p className="mt-0.5 font-semibold text-foreground">{TRIP_PURPOSE_LABEL[trip.purpose]}</p>
+              <p className="mt-0.5 font-semibold text-foreground">
+                {TRIP_PURPOSE_LABEL[trip.purpose]}
+              </p>
             </div>
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
               <p className="text-muted-foreground">Travel Mode</p>
-              <p className="mt-0.5 font-semibold text-foreground">{TRAVEL_MODE_LABEL[trip.travelMode]}</p>
+              <p className="mt-0.5 font-semibold text-foreground">
+                {TRAVEL_MODE_LABEL[trip.travelMode]}
+              </p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-[12px]">
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
               <p className="text-muted-foreground">Transport</p>
-              <p className="mt-0.5 font-semibold text-foreground">{TRANSPORT_TYPE_LABEL[trip.transportType]}</p>
+              <p className="mt-0.5 font-semibold text-foreground">
+                {TRANSPORT_TYPE_LABEL[trip.transportType]}
+              </p>
             </div>
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
               <p className="text-muted-foreground">Total Budget</p>
-              <p className="mt-0.5 font-semibold text-foreground">{fmtPeso(trip.estimatedBudget)}</p>
+              <p className="mt-0.5 font-semibold text-foreground">
+                {fmtPeso(trip.estimatedBudget)}
+              </p>
             </div>
           </div>
 
@@ -518,17 +639,32 @@ function DetailDialog({ trip, onClose }: { trip: BusinessTrip; onClose: () => vo
               <div className="space-y-1.5">
                 {(
                   [
-                    { label: "Transportation", value: trip.budgetAllocation.transportation },
-                    { label: "Accommodation", value: trip.budgetAllocation.accommodation },
-                    { label: "Meals & Per Diem", value: trip.budgetAllocation.meals },
-                    { label: "Miscellaneous", value: trip.budgetAllocation.miscellaneous },
+                    {
+                      label: "Transportation",
+                      value: trip.budgetAllocation.transportation,
+                    },
+                    {
+                      label: "Accommodation",
+                      value: trip.budgetAllocation.accommodation,
+                    },
+                    {
+                      label: "Meals & Per Diem",
+                      value: trip.budgetAllocation.meals,
+                    },
+                    {
+                      label: "Miscellaneous",
+                      value: trip.budgetAllocation.miscellaneous,
+                    },
                   ] as const
                 ).map(
                   ({ label, value }) =>
                     value > 0 && (
-                      <div key={label} className="flex items-center justify-between text-[12px]">
+                      <div
+                        key={label}
+                        className="flex items-center justify-between text-[12px]"
+                      >
                         <span className="text-muted-foreground">{label}</span>
-                        <span className="tabular-nums font-medium text-foreground">
+                        <span className="font-medium text-foreground tabular-nums">
                           {fmtPeso(value)}
                         </span>
                       </div>
@@ -541,30 +677,45 @@ function DetailDialog({ trip, onClose }: { trip: BusinessTrip; onClose: () => vo
           {trip.accommodation && (
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2 text-[12px]">
               <p className="text-muted-foreground">Accommodation</p>
-              <p className="mt-0.5 font-semibold text-foreground">{trip.accommodation}</p>
+              <p className="mt-0.5 font-semibold text-foreground">
+                {trip.accommodation}
+              </p>
             </div>
           )}
 
           {trip.remarks && (
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2.5">
-              <p className="mb-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">Your Remarks</p>
-              <p className="text-[12px] italic text-foreground">&ldquo;{trip.remarks}&rdquo;</p>
+              <p className="mb-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                Your Remarks
+              </p>
+              <p className="text-[12px] text-foreground italic">
+                &ldquo;{trip.remarks}&rdquo;
+              </p>
             </div>
           )}
 
           {trip.reviewNote && (
             <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-800/40 dark:bg-blue-900/10">
-              <p className="mb-1 text-[11px] font-semibold tracking-wider text-blue-600 uppercase">Admin Notes</p>
-              <p className="text-[12px] text-blue-700 dark:text-blue-300">{trip.reviewNote}</p>
+              <p className="mb-1 text-[11px] font-semibold tracking-wider text-blue-600 uppercase">
+                Admin Notes
+              </p>
+              <p className="text-[12px] text-blue-700 dark:text-blue-300">
+                {trip.reviewNote}
+              </p>
               {trip.reviewedByName && (
                 <p className="mt-1 text-[11px] text-blue-500">
-                  — {trip.reviewedByName}{trip.reviewedAt ? `, ${fmtDate(trip.reviewedAt.split("T")[0])}` : ""}
+                  — {trip.reviewedByName}
+                  {trip.reviewedAt
+                    ? `, ${fmtDate(trip.reviewedAt.split("T")[0])}`
+                    : ""}
                 </p>
               )}
             </div>
           )}
 
-          <p className="text-[11px] text-muted-foreground">Filed {fmtDate(trip.createdAt.split("T")[0])}</p>
+          <p className="text-[11px] text-muted-foreground">
+            Filed {fmtDate(trip.createdAt.split("T")[0])}
+          </p>
         </div>
 
         <DialogFooter className="gap-2">
@@ -578,7 +729,9 @@ function DetailDialog({ trip, onClose }: { trip: BusinessTrip; onClose: () => vo
               {cancel.isPending ? "Cancelling…" : "Cancel Request"}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={onClose}>Close</Button>
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Close
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -588,7 +741,9 @@ function DetailDialog({ trip, onClose }: { trip: BusinessTrip; onClose: () => vo
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function MyBusinessTripSection() {
-  const [statusFilter, setStatusFilter] = useState<TripStatus | undefined>(undefined)
+  const [statusFilter, setStatusFilter] = useState<TripStatus | undefined>(
+    undefined
+  )
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
   const [selected, setSelected] = useState<BusinessTrip | null>(null)
@@ -611,11 +766,20 @@ export function MyBusinessTripSection() {
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-[16px] font-bold text-foreground">Business Trip</h1>
-          <p className="text-[12px] text-muted-foreground">Request and track your business travel</p>
+          <h1 className="text-[16px] font-bold text-foreground">
+            Business Trip
+          </h1>
+          <p className="text-[12px] text-muted-foreground">
+            Request and track your business travel
+          </p>
         </div>
         <Button size="sm" onClick={() => setFormOpen(true)}>
-          <HugeiconsIcon icon={Add01Icon} size={14} strokeWidth={2} className="mr-1.5" />
+          <HugeiconsIcon
+            icon={Add01Icon}
+            size={14}
+            strokeWidth={2}
+            className="mr-1.5"
+          />
           New Request
         </Button>
       </div>
@@ -626,28 +790,40 @@ export function MyBusinessTripSection() {
           value={counts.total}
           meta="All time"
           accent="blue"
-          icon={<HugeiconsIcon icon={Airplane01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Airplane01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Submitted"
           value={<span className="text-warning">{counts.submitted}</span>}
           meta="Awaiting approval"
           accent="amber"
-          icon={<HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Approved"
           value={<span className="text-success">{counts.approved}</span>}
           meta="Ready to travel"
           accent="green"
-          icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon
+              icon={CheckmarkCircle02Icon}
+              size={16}
+              strokeWidth={1.8}
+            />
+          }
         />
         <StatCard
           title="Completed"
           value={<span className="text-blue-500">{counts.completed}</span>}
           meta="Past trips"
           accent="blue"
-          icon={<HugeiconsIcon icon={Airplane01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Airplane01Icon} size={16} strokeWidth={1.8} />
+          }
         />
       </div>
 
@@ -657,7 +833,10 @@ export function MyBusinessTripSection() {
             {STATUS_FILTERS.map((f) => (
               <button
                 key={f.label}
-                onClick={() => { setStatusFilter(f.value); setPage(0) }}
+                onClick={() => {
+                  setStatusFilter(f.value)
+                  setPage(0)
+                }}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors",
                   statusFilter === f.value
@@ -674,8 +853,20 @@ export function MyBusinessTripSection() {
         <Table>
           <TableHeader>
             <TableRow>
-              {["Destination", "Purpose", "Dates", "Budget", "Status", "Actions"].map((h) => (
-                <TableHead key={h} className={h === "Actions" ? "text-right" : undefined}>{h}</TableHead>
+              {[
+                "Destination",
+                "Purpose",
+                "Dates",
+                "Budget",
+                "Status",
+                "Actions",
+              ].map((h) => (
+                <TableHead
+                  key={h}
+                  className={h === "Actions" ? "text-right" : undefined}
+                >
+                  {h}
+                </TableHead>
               ))}
             </TableRow>
           </TableHeader>
@@ -684,17 +875,31 @@ export function MyBusinessTripSection() {
               [0, 1, 2, 3].map((i) => (
                 <TableRow key={i}>
                   {[0, 1, 2, 3, 4, 5].map((j) => (
-                    <TableCell key={j}><Skeleton className="h-3 w-20" /></TableCell>
+                    <TableCell key={j}>
+                      <Skeleton className="h-3 w-20" />
+                    </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-12 text-center text-[13px] text-muted-foreground">
+                <TableCell
+                  colSpan={6}
+                  className="py-12 text-center text-[13px] text-muted-foreground"
+                >
                   <div className="flex flex-col items-center gap-2">
-                    <HugeiconsIcon icon={Airplane01Icon} size={28} strokeWidth={1.3} className="text-muted-foreground/30" />
+                    <HugeiconsIcon
+                      icon={Airplane01Icon}
+                      size={28}
+                      strokeWidth={1.3}
+                      className="text-muted-foreground/30"
+                    />
                     <p>No business trip requests found.</p>
-                    <Button size="sm" variant="outline" onClick={() => setFormOpen(true)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setFormOpen(true)}
+                    >
                       File your first request
                     </Button>
                   </div>
@@ -702,34 +907,53 @@ export function MyBusinessTripSection() {
               </TableRow>
             ) : (
               items.map((r) => (
-                <TableRow key={r.id} className="cursor-pointer hover:bg-muted/30" onClick={() => setSelected(r)}>
+                <TableRow
+                  key={r.id}
+                  className="cursor-pointer hover:bg-muted/30"
+                  onClick={() => setSelected(r)}
+                >
                   <TableCell>
                     <div className="flex items-center gap-1.5 text-[13px] font-medium text-foreground">
-                      <HugeiconsIcon icon={Location01Icon} size={12} strokeWidth={2} className="shrink-0 text-muted-foreground" />
+                      <HugeiconsIcon
+                        icon={Location01Icon}
+                        size={12}
+                        strokeWidth={2}
+                        className="shrink-0 text-muted-foreground"
+                      />
                       {r.destination}
                     </div>
-                    <p className="text-[11px] text-muted-foreground">{TRAVEL_MODE_LABEL[r.travelMode]}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {TRAVEL_MODE_LABEL[r.travelMode]}
+                    </p>
                   </TableCell>
                   <TableCell>
-                    <StatusBadge variant={TRIP_PURPOSE_COLOR[r.purpose]} dot={false}>
+                    <StatusBadge
+                      variant={TRIP_PURPOSE_COLOR[r.purpose]}
+                      dot={false}
+                    >
                       {TRIP_PURPOSE_LABEL[r.purpose]}
                     </StatusBadge>
                   </TableCell>
-                  <TableCell className="text-[12px] tabular-nums text-muted-foreground">
+                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">
                     <p>{fmtDate(r.departureDate)}</p>
                     <p>→ {fmtDate(r.returnDate)}</p>
                   </TableCell>
-                  <TableCell className="text-[13px] font-semibold tabular-nums text-foreground">
+                  <TableCell className="text-[13px] font-semibold text-foreground tabular-nums">
                     {fmtPeso(r.estimatedBudget)}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status]}</StatusBadge>
+                    <StatusBadge variant={STATUS_VARIANT[r.status]}>
+                      {STATUS_LABEL[r.status]}
+                    </StatusBadge>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
                       size="icon-xs"
                       variant="outline"
-                      onClick={(e) => { e.stopPropagation(); setSelected(r) }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelected(r)
+                      }}
                       title="View details"
                     >
                       <HugeiconsIcon icon={EyeIcon} size={12} strokeWidth={2} />
@@ -755,8 +979,12 @@ export function MyBusinessTripSection() {
         )}
       </div>
 
-      {formOpen && <RequestFormDialog open={formOpen} onClose={() => setFormOpen(false)} />}
-      {selected && <DetailDialog trip={selected} onClose={() => setSelected(null)} />}
+      {formOpen && (
+        <RequestFormDialog open={formOpen} onClose={() => setFormOpen(false)} />
+      )}
+      {selected && (
+        <DetailDialog trip={selected} onClose={() => setSelected(null)} />
+      )}
     </div>
   )
 }

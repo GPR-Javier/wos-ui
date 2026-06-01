@@ -86,8 +86,18 @@ function RoleFormInline({
   onCancel,
   isPending,
 }: {
-  initial?: { name: string; description: string; color?: string; roleType?: "ADMIN" | "EMPLOYEE" }
-  onSave: (name: string, description: string, color: string, roleType: "ADMIN" | "EMPLOYEE") => void
+  initial?: {
+    name: string
+    description: string
+    color?: string
+    roleType?: "ADMIN" | "EMPLOYEE" | "APPLICANT"
+  }
+  onSave: (
+    name: string,
+    description: string,
+    color: string,
+    roleType: "ADMIN" | "EMPLOYEE"
+  ) => void
   onCancel: () => void
   isPending: boolean
 }) {
@@ -107,7 +117,12 @@ function RoleFormInline({
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && name.trim())
-              onSave(name.trim(), desc.trim(), color, isAdmin ? "ADMIN" : "EMPLOYEE")
+              onSave(
+                name.trim(),
+                desc.trim(),
+                color,
+                isAdmin ? "ADMIN" : "EMPLOYEE"
+              )
             if (e.key === "Escape") onCancel()
           }}
           className="h-8 text-[12px]"
@@ -151,10 +166,7 @@ function RoleFormInline({
       </div>
       <div>
         <label className="flex cursor-pointer items-center gap-2">
-          <Checkbox
-            checked={isAdmin}
-            onChange={() => setIsAdmin((v) => !v)}
-          />
+          <Checkbox checked={isAdmin} onChange={() => setIsAdmin((v) => !v)} />
           <span className="text-[11px] font-medium text-foreground">
             Admin role
           </span>
@@ -168,7 +180,14 @@ function RoleFormInline({
           size="sm"
           className="h-7 flex-1 text-[11px]"
           disabled={!name.trim() || isPending}
-          onClick={() => onSave(name.trim(), desc.trim(), color, isAdmin ? "ADMIN" : "EMPLOYEE")}
+          onClick={() =>
+            onSave(
+              name.trim(),
+              desc.trim(),
+              color,
+              isAdmin ? "ADMIN" : "EMPLOYEE"
+            )
+          }
         >
           {isPending ? "Saving…" : initial ? "Update" : "Create"}
         </Button>
@@ -355,7 +374,17 @@ function fmtDateBadge(startDate?: string | null, endDate?: string | null) {
 // ── Main Component ─────────────────────────────────────────────────────────
 
 // Stable order for nav groups so the accordion sections are always predictable
-const GROUP_ORDER = ["Team", "Requests", "Finance", "Business", "System", "Recruitment", "Self Service", "Request"]
+const GROUP_ORDER = [
+  "Team",
+  "Requests",
+  "Finance",
+  "Business",
+  "System",
+  "Recruitment",
+  "Self Service",
+  "Request",
+  "Careers",
+]
 
 // Desired item order within specific groups (matched against pageName or name, case-insensitive substring)
 const GROUP_ITEM_ORDER: Record<string, string[]> = {
@@ -388,9 +417,7 @@ const GROUP_ITEM_ORDER: Record<string, string[]> = {
     "business trip",
     "expense",
   ],
-  Business: [
-    "contracts",
-  ],
+  Business: ["contracts"],
   System: [
     "configuration",
     "schedule policy",
@@ -403,7 +430,10 @@ const GROUP_ITEM_ORDER: Record<string, string[]> = {
   ],
 }
 
-function sortGroupItems<T extends { pageName?: string; name?: string }>(group: string, items: T[]): T[] {
+function sortGroupItems<T extends { pageName?: string; name?: string }>(
+  group: string,
+  items: T[]
+): T[] {
   const order = GROUP_ITEM_ORDER[group]
   if (!order) return items
   return [...items].sort((a, b) => {
@@ -429,8 +459,15 @@ export function RolesSection() {
   const [tempAccessTarget, setTempAccessTarget] = useState<TempTarget | null>(
     null
   )
+  // Applicant-control functionalities are locked by default — admins must explicitly
+  // unlock editing (with a warning) since the applicant portal isn't part of the
+  // employee permission set yet.
+  const [applicantEditUnlocked, setApplicantEditUnlocked] = useState(false)
+  const [confirmApplicantEdit, setConfirmApplicantEdit] = useState(false)
   // All groups open by default; click the header to toggle
-  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(GROUP_ORDER))
+  const [openGroups, setOpenGroups] = useState<Set<string>>(
+    () => new Set(GROUP_ORDER)
+  )
 
   function toggleGroup(group: string) {
     setOpenGroups((prev) => {
@@ -706,10 +743,16 @@ export function RolesSection() {
                           ? "bg-white/20 text-white"
                           : r.roleType === "ADMIN"
                             ? "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
-                            : "bg-sky-100 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400"
+                            : r.roleType === "APPLICANT"
+                              ? "bg-violet-100 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400"
+                              : "bg-sky-100 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400"
                       )}
                     >
-                      {r.roleType === "ADMIN" ? "Admin" : "Employee"}
+                      {r.roleType === "ADMIN"
+                        ? "Admin"
+                        : r.roleType === "APPLICANT"
+                          ? "Applicant"
+                          : "Employee"}
                     </span>
                   </div>
                   {r.description && (
@@ -871,6 +914,13 @@ export function RolesSection() {
                       Employee control
                     </span>
                   </div>
+                  <div className="h-3 w-px bg-border" />
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-violet-400" />
+                    <span className="text-[11px] text-muted-foreground">
+                      Applicant control
+                    </span>
+                  </div>
                 </div>
                 {isMutating && (
                   <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
@@ -916,7 +966,15 @@ export function RolesSection() {
                     {(() => {
                       // Group access roles by navGroup from the backend
                       const byGroup = new Map<string, typeof accessRoles>()
-                      const HIDDEN_PAGE_CODES = new Set(["TEACHER_MANAGEMENT", "OR_MANAGEMENT", "SCHEDULE_POLICY", "ATTENDANCE_CONFIG", "PAYROLL_CONFIG", "LEAVE_CONFIG", "PERMITS"])
+                      const HIDDEN_PAGE_CODES = new Set([
+                        "TEACHER_MANAGEMENT",
+                        "OR_MANAGEMENT",
+                        "SCHEDULE_POLICY",
+                        "ATTENDANCE_CONFIG",
+                        "PAYROLL_CONFIG",
+                        "LEAVE_CONFIG",
+                        "PERMITS",
+                      ])
                       for (const ar of accessRoles) {
                         const g = ar.navGroup ?? "Other"
                         if (g === "Deprecated") continue
@@ -946,8 +1004,25 @@ export function RolesSection() {
                         const employeeFuncs = ar.functionalities.filter(
                           (f) => f.controlType === "employee"
                         )
+                        const applicantFuncs = ar.functionalities.filter(
+                          (f) => f.controlType === "applicant"
+                        )
+                        // Divider shown whenever the admin group is followed by another group
                         const hasBoth =
-                          adminFuncs.length > 0 && employeeFuncs.length > 0
+                          adminFuncs.length > 0 &&
+                          (employeeFuncs.length > 0 ||
+                            applicantFuncs.length > 0)
+                        const hasEmpApplicantDivider =
+                          employeeFuncs.length > 0 && applicantFuncs.length > 0
+                        // An access role is applicant-controlled when all its functionalities
+                        // are applicant control (e.g. the Careers portal pages). Its grant-access
+                        // and temporary toggles stay locked until editing is unlocked.
+                        const isApplicantRow =
+                          applicantFuncs.length > 0 &&
+                          adminFuncs.length === 0 &&
+                          employeeFuncs.length === 0
+                        const lockedApplicant =
+                          isApplicantRow && !applicantEditUnlocked
 
                         return (
                           <tr
@@ -964,7 +1039,7 @@ export function RolesSection() {
                               <div className="flex justify-center">
                                 <Checkbox
                                   checked={isAssigned}
-                                  disabled={isMutating}
+                                  disabled={isMutating || lockedApplicant}
                                   onChange={() => {
                                     if (isAssigned) {
                                       setConfirmDisable({
@@ -976,7 +1051,11 @@ export function RolesSection() {
                                     handleToggleAccessRole(resolvedAccessRoleId)
                                   }}
                                   title={
-                                    isAssigned ? "Remove access" : "Grant access"
+                                    lockedApplicant
+                                      ? "Applicant control — locked. Use Edit to enable changes."
+                                      : isAssigned
+                                        ? "Remove access"
+                                        : "Grant access"
                                   }
                                 />
                               </div>
@@ -990,7 +1069,7 @@ export function RolesSection() {
                                 )
                                 return (
                                   <div className="flex justify-center">
-                                    {!isAssigned ? (
+                                    {!isAssigned || lockedApplicant ? (
                                       <HugeiconsIcon
                                         icon={Calendar01Icon}
                                         size={14}
@@ -1003,9 +1082,11 @@ export function RolesSection() {
                                           setTempAccessTarget({
                                             accessRoleId: resolvedAccessRoleId,
                                             label: catalogAccessRoleLabel(ar),
-                                            startDate: assigned?.startDate ?? "",
+                                            startDate:
+                                              assigned?.startDate ?? "",
                                             endDate: assigned?.endDate ?? "",
-                                            startTime: assigned?.startTime ?? "",
+                                            startTime:
+                                              assigned?.startTime ?? "",
                                             endTime: assigned?.endTime ?? "",
                                           })
                                         }
@@ -1111,6 +1192,49 @@ export function RolesSection() {
                                       </span>
                                     </label>
                                   ))}
+                                  {hasEmpApplicantDivider && (
+                                    <div className="mx-1 self-stretch">
+                                      <div className="h-full min-h-6 w-px bg-border" />
+                                    </div>
+                                  )}
+                                  {applicantFuncs.map((f) => (
+                                    <label
+                                      key={f.id}
+                                      title={
+                                        applicantEditUnlocked
+                                          ? "Applicant control"
+                                          : "Applicant control — locked. Use Edit to enable changes."
+                                      }
+                                      className={cn(
+                                        "inline-flex items-center gap-1.5 rounded-md border border-violet-200/60 bg-violet-50/50 px-2.5 py-1 dark:border-violet-700/30 dark:bg-violet-900/10",
+                                        applicantEditUnlocked
+                                          ? "cursor-pointer"
+                                          : "cursor-not-allowed opacity-60"
+                                      )}
+                                    >
+                                      <span className="size-1.5 shrink-0 rounded-full bg-violet-400" />
+                                      <Checkbox
+                                        checked={isFuncEnabled(
+                                          resolvedAccessRoleId,
+                                          f.id
+                                        )}
+                                        disabled={
+                                          isMutating || !applicantEditUnlocked
+                                        }
+                                        onChange={() => {
+                                          const fid = resolveFunctionalityId(f)
+                                          if (fid === null) return
+                                          handleToggleFunctionality(
+                                            resolvedAccessRoleId,
+                                            fid
+                                          )
+                                        }}
+                                      />
+                                      <span className="text-[12px]">
+                                        {functionalityLabel(f)}
+                                      </span>
+                                    </label>
+                                  ))}
                                 </div>
                               )}
                             </td>
@@ -1127,40 +1251,74 @@ export function RolesSection() {
                               group === "Self Service" ||
                               group === "Request" ||
                               group === "My Requests"
+                            const isApplicant = group === "Careers"
                             return (
                               <Fragment key={group}>
                                 {/* Accordion group header */}
                                 <tr>
                                   <td colSpan={4} className="p-0">
-                                    <button
-                                      onClick={() => toggleGroup(group)}
-                                      className="flex w-full items-center gap-2.5 border-b border-border bg-muted/30 px-5 py-2 text-left transition-colors hover:bg-muted/50"
-                                    >
-                                      <HugeiconsIcon
-                                        icon={ArrowDown01Icon}
-                                        size={11}
-                                        strokeWidth={2.5}
-                                        className={cn(
-                                          "shrink-0 text-muted-foreground transition-transform duration-200",
-                                          !isOpen && "-rotate-90"
-                                        )}
-                                      />
-                                      <span
-                                        className={cn(
-                                          "size-1.5 shrink-0 rounded-full",
-                                          isEmployee
-                                            ? "bg-sky-400"
-                                            : "bg-amber-400"
-                                        )}
-                                      />
-                                      <span className="text-[11px] font-semibold tracking-wider text-foreground/70 uppercase">
-                                        {group}
-                                      </span>
-                                      <span className="ml-auto text-[10px] text-muted-foreground">
-                                        {rows.length}{" "}
-                                        {rows.length === 1 ? "role" : "roles"}
-                                      </span>
-                                    </button>
+                                    <div className="flex w-full items-center border-b border-border bg-muted/30">
+                                      <button
+                                        onClick={() => toggleGroup(group)}
+                                        className="flex flex-1 items-center gap-2.5 px-5 py-2 text-left transition-colors hover:bg-muted/50"
+                                      >
+                                        <HugeiconsIcon
+                                          icon={ArrowDown01Icon}
+                                          size={11}
+                                          strokeWidth={2.5}
+                                          className={cn(
+                                            "shrink-0 text-muted-foreground transition-transform duration-200",
+                                            !isOpen && "-rotate-90"
+                                          )}
+                                        />
+                                        <span
+                                          className={cn(
+                                            "size-1.5 shrink-0 rounded-full",
+                                            isApplicant
+                                              ? "bg-violet-400"
+                                              : isEmployee
+                                                ? "bg-sky-400"
+                                                : "bg-amber-400"
+                                          )}
+                                        />
+                                        <span className="text-[11px] font-semibold tracking-wider text-foreground/70 uppercase">
+                                          {group}
+                                        </span>
+                                        <span className="ml-auto text-[10px] text-muted-foreground">
+                                          {rows.length}{" "}
+                                          {rows.length === 1 ? "role" : "roles"}
+                                        </span>
+                                      </button>
+                                      {isApplicant && (
+                                        <button
+                                          onClick={() =>
+                                            applicantEditUnlocked
+                                              ? setApplicantEditUnlocked(false)
+                                              : setConfirmApplicantEdit(true)
+                                          }
+                                          className={cn(
+                                            "mr-4 inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                                            applicantEditUnlocked
+                                              ? "border-violet-300 bg-violet-100 text-violet-700 hover:bg-violet-200 dark:border-violet-700/50 dark:bg-violet-900/30 dark:text-violet-300"
+                                              : "border-border text-muted-foreground hover:bg-muted"
+                                          )}
+                                          title={
+                                            applicantEditUnlocked
+                                              ? "Lock applicant permissions"
+                                              : "Edit applicant permissions"
+                                          }
+                                        >
+                                          <HugeiconsIcon
+                                            icon={Edit01Icon}
+                                            size={12}
+                                            strokeWidth={2}
+                                          />
+                                          {applicantEditUnlocked
+                                            ? "Editing — click to lock"
+                                            : "Edit"}
+                                        </button>
+                                      )}
+                                    </div>
                                   </td>
                                 </tr>
                                 {/* Accordion rows */}
@@ -1255,6 +1413,60 @@ export function RolesSection() {
                       }}
                     >
                       {removeAccessRole.isPending ? "Disabling…" : "Disable"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Applicant edit warning */}
+            {confirmApplicantEdit && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div
+                  className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                  onClick={() => setConfirmApplicantEdit(false)}
+                />
+                <div className="relative w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-900/20">
+                      <HugeiconsIcon
+                        icon={Alert01Icon}
+                        size={18}
+                        strokeWidth={1.8}
+                        className="text-violet-500"
+                      />
+                    </div>
+                    <div>
+                      <h2 className="text-[14px] font-semibold">
+                        Edit applicant permissions?
+                      </h2>
+                      <p className="text-[12px] text-muted-foreground">
+                        Careers / applicant portal
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
+                    Applicant access is managed separately and isn&apos;t part
+                    of the employee permission set yet. Changing these toggles
+                    affects what job applicants can see and do in the careers
+                    portal, and the underlying pages are still being built. Only
+                    proceed if you intend to change applicant access.
+                  </p>
+                  <div className="mt-5 flex gap-2">
+                    <button
+                      onClick={() => setConfirmApplicantEdit(false)}
+                      className="flex h-9 flex-1 items-center justify-center rounded-lg border border-border text-[13px] font-medium transition-colors hover:bg-muted"
+                    >
+                      Cancel
+                    </button>
+                    <Button
+                      className="h-9 flex-1 bg-violet-600 text-[13px] text-white hover:bg-violet-700"
+                      onClick={() => {
+                        setApplicantEditUnlocked(true)
+                        setConfirmApplicantEdit(false)
+                      }}
+                    >
+                      Enable editing
                     </Button>
                   </div>
                 </div>

@@ -24,12 +24,19 @@ let refreshing: Promise<void> | null = null
 
 // Endpoints whose own 401 means "bad credentials / not logged in", NOT "session expired".
 // These must never trigger the refresh-and-redirect flow (which hard-reloads the page).
-const AUTH_ENDPOINTS = ["/auth/login", "/auth/login/select-role", "/auth/register", "/auth/refresh"]
+const AUTH_ENDPOINTS = [
+  "/auth/login",
+  "/auth/login/select-role",
+  "/auth/register",
+  "/auth/refresh",
+]
 
 api.interceptors.response.use(
   (res) => res,
   async (err: AxiosError) => {
-    const original = err.config as InternalAxiosRequestConfig & { _retry?: boolean }
+    const original = err.config as InternalAxiosRequestConfig & {
+      _retry?: boolean
+    }
 
     if (err.response?.status !== 401 || original._retry) {
       return Promise.reject(err)
@@ -37,7 +44,10 @@ api.interceptors.response.use(
 
     // Let the caller handle 401s from auth endpoints (e.g. show "invalid credentials").
     // Never refresh or hard-redirect — that would wipe the login form.
-    if (original.url && AUTH_ENDPOINTS.some((path) => original.url!.includes(path))) {
+    if (
+      original.url &&
+      AUTH_ENDPOINTS.some((path) => original.url!.includes(path))
+    ) {
       return Promise.reject(err)
     }
 
@@ -48,7 +58,9 @@ api.interceptors.response.use(
         refreshing = api
           .post("/auth/refresh")
           .then(() => {})
-          .finally(() => { refreshing = null })
+          .finally(() => {
+            refreshing = null
+          })
       }
       await refreshing
       return api(original)

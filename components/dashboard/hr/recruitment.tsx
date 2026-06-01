@@ -20,23 +20,39 @@ import {
   CheckmarkCircle01Icon,
   Location01Icon,
 } from "@hugeicons/core-free-icons"
-import { useJobs, useCreateJob, useUpdateJob, useDeleteJob } from "@/hooks/use-hr"
+import {
+  useJobs,
+  useCreateJob,
+  useUpdateJob,
+  useDeleteJob,
+} from "@/hooks/use-hr"
 import { RichTextEditor } from "@/components/custom/rich-text-editor"
 import { useSalaryGrades, useDepartments } from "@/hooks/use-employee-profile"
-import type { JobPosting, CreateJobPayload, WorkType, SalaryPeriod } from "@/lib/hr-api"
+import type {
+  JobPosting,
+  CreateJobPayload,
+  WorkType,
+  SalaryPeriod,
+} from "@/lib/hr-api"
 import { currencySymbol, CURRENCY_OPTIONS } from "@/lib/employee-profile-api"
 import { cn } from "@/lib/utils"
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS: { value: JobPosting["status"]; label: string }[] = [
-  { value: "new",    label: "New" },
+  { value: "new", label: "New" },
   { value: "urgent", label: "Urgent" },
-  { value: "open",   label: "Open" },
+  { value: "open", label: "Open" },
   { value: "closed", label: "Closed" },
 ]
 
-const TYPE_OPTIONS = ["Full-time", "Part-time", "Contract", "Internship", "Freelance"]
+const TYPE_OPTIONS = [
+  "Full-time",
+  "Part-time",
+  "Contract",
+  "Internship",
+  "Freelance",
+]
 
 const WORK_TYPE_OPTIONS: { value: WorkType; label: string }[] = [
   { value: "remote", label: "Remote" },
@@ -45,10 +61,10 @@ const WORK_TYPE_OPTIONS: { value: WorkType; label: string }[] = [
 ]
 
 const SALARY_PERIOD_OPTIONS: { value: SalaryPeriod; label: string }[] = [
-  { value: "hourly",    label: "Hourly" },
-  { value: "weekly",    label: "Weekly" },
+  { value: "hourly", label: "Hourly" },
+  { value: "weekly", label: "Weekly" },
   { value: "semi-monthly", label: "Semi-monthly" },
-  { value: "monthly",   label: "Monthly" },
+  { value: "monthly", label: "Monthly" },
   { value: "fixed-price", label: "Fixed price" },
 ]
 
@@ -113,7 +129,9 @@ function postingToForm(j: JobPosting): JobForm {
     workType: j.workType ?? "onsite",
     description: j.description ?? "",
     salaryMode: j.salaryGradeFromId ? "grade" : "custom",
-    salaryInputType: (j.salaryTo != null ? "range" : "fixed") as SalaryInputType,
+    salaryInputType: (j.salaryTo != null
+      ? "range"
+      : "fixed") as SalaryInputType,
     salaryPeriod: (j.salaryPeriod as SalaryPeriod) ?? "monthly",
     salaryCurrency: j.salaryCurrency ?? "PHP",
     salaryFrom: j.salaryFrom != null ? String(j.salaryFrom) : "",
@@ -134,11 +152,23 @@ function formToPayload(f: JobForm): CreateJobPayload {
     workType: f.workType,
     description: f.description || null,
     salaryCurrency: f.salaryMode === "custom" ? f.salaryCurrency || null : null,
-    salaryFrom: f.salaryMode === "custom" && f.salaryFrom ? parseFloat(f.salaryFrom) : null,
-    salaryTo: f.salaryMode === "custom" && f.salaryInputType === "range" && f.salaryTo ? parseFloat(f.salaryTo) : null,
+    salaryFrom:
+      f.salaryMode === "custom" && f.salaryFrom
+        ? parseFloat(f.salaryFrom)
+        : null,
+    salaryTo:
+      f.salaryMode === "custom" && f.salaryInputType === "range" && f.salaryTo
+        ? parseFloat(f.salaryTo)
+        : null,
     salaryPeriod: f.salaryPeriod || null,
-    salaryGradeFromId: f.salaryMode === "grade" && f.salaryGradeFromId ? Number(f.salaryGradeFromId) : null,
-    salaryGradeToId: f.salaryMode === "grade" && f.salaryGradeToId ? Number(f.salaryGradeToId) : null,
+    salaryGradeFromId:
+      f.salaryMode === "grade" && f.salaryGradeFromId
+        ? Number(f.salaryGradeFromId)
+        : null,
+    salaryGradeToId:
+      f.salaryMode === "grade" && f.salaryGradeToId
+        ? Number(f.salaryGradeToId)
+        : null,
     status: f.status,
     tags: f.tags,
   }
@@ -146,7 +176,11 @@ function formToPayload(f: JobForm): CreateJobPayload {
 
 // ── Tag Input ─────────────────────────────────────────────────────────────────
 
-function TagInput({ tags, onChange, suggestions }: {
+function TagInput({
+  tags,
+  onChange,
+  suggestions,
+}: {
   tags: string[]
   onChange: (tags: string[]) => void
   suggestions: string[]
@@ -175,14 +209,21 @@ function TagInput({ tags, onChange, suggestions }: {
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" && input.trim()) { e.preventDefault(); add(input) }
-    if (e.key === "Backspace" && !input && tags.length > 0) onChange(tags.slice(0, -1))
+    if (e.key === "Enter" && input.trim()) {
+      e.preventDefault()
+      add(input)
+    }
+    if (e.key === "Backspace" && !input && tags.length > 0)
+      onChange(tags.slice(0, -1))
     if (e.key === "Escape") setOpen(false)
   }
 
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setOpen(false)
       }
     }
@@ -204,7 +245,10 @@ function TagInput({ tags, onChange, suggestions }: {
             {tag}
             <button
               type="button"
-              onMouseDown={(e) => { e.preventDefault(); remove(tag) }}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                remove(tag)
+              }}
               className="text-primary/50 transition-colors hover:text-primary"
             >
               <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2.5} />
@@ -214,11 +258,14 @@ function TagInput({ tags, onChange, suggestions }: {
         <input
           ref={inputRef}
           value={input}
-          onChange={(e) => { setInput(e.target.value); setOpen(true) }}
+          onChange={(e) => {
+            setInput(e.target.value)
+            setOpen(true)
+          }}
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={tags.length === 0 ? "Type to add tags…" : ""}
-          className="min-w-20 flex-1 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground outline-none"
+          className="min-w-20 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
         />
       </div>
 
@@ -228,7 +275,10 @@ function TagInput({ tags, onChange, suggestions }: {
             <button
               key={s}
               type="button"
-              onMouseDown={(e) => { e.preventDefault(); add(s) }}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                add(s)
+              }}
               className="flex w-full items-center px-3 py-2 text-left text-[13px] transition-colors hover:bg-muted"
             >
               {s}
@@ -237,7 +287,10 @@ function TagInput({ tags, onChange, suggestions }: {
           {canAddNew && !filtered.includes(input.trim()) && (
             <button
               type="button"
-              onMouseDown={(e) => { e.preventDefault(); add(input) }}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                add(input)
+              }}
               className={cn(
                 "flex w-full items-center gap-2 px-3 py-2 text-[13px] text-primary transition-colors hover:bg-muted",
                 filtered.length > 0 && "border-t border-border/60"
@@ -281,7 +334,7 @@ function JobModal({
   const activeDepts = departments.filter((d) => d.active)
   const activeGrades = grades.filter((g) => g.active)
   const gradeFrom = grades.find((g) => String(g.id) === form.salaryGradeFromId)
-  const gradeTo   = grades.find((g) => String(g.id) === form.salaryGradeToId)
+  const gradeTo = grades.find((g) => String(g.id) === form.salaryGradeToId)
 
   const showLocation = form.workType === "onsite" || form.workType === "hybrid"
   const hasErrors = Object.keys(errors).length > 0
@@ -293,9 +346,11 @@ function JobModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div className="relative w-full max-w-lg animate-in rounded-2xl border border-border bg-card shadow-xl duration-200 zoom-in-95 fade-in">
-
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <h2 className="text-[15px] font-semibold">
@@ -311,50 +366,75 @@ function JobModal({
         </div>
 
         {/* Scrollable body */}
-        <div ref={bodyRef} className="max-h-[75vh] overflow-y-auto px-6 py-5 space-y-4">
-
+        <div
+          ref={bodyRef}
+          className="max-h-[75vh] space-y-4 overflow-y-auto px-6 py-5"
+        >
           {/* Title */}
           <div className="space-y-1.5">
-            <Label className="text-[12px] text-muted-foreground">Job Title *</Label>
+            <Label className="text-[12px] text-muted-foreground">
+              Job Title *
+            </Label>
             <Input
               autoFocus
-              className={cn("h-9 text-[13px]", errors.title && "border-destructive")}
+              className={cn(
+                "h-9 text-[13px]",
+                errors.title && "border-destructive"
+              )}
               placeholder="e.g. Senior Software Engineer"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
-            {errors.title && <p className="text-[11px] font-medium text-destructive">{errors.title}</p>}
+            {errors.title && (
+              <p className="text-[11px] font-medium text-destructive">
+                {errors.title}
+              </p>
+            )}
           </div>
 
           {/* Department + Employment type */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-[12px] text-muted-foreground">Department *</Label>
+              <Label className="text-[12px] text-muted-foreground">
+                Department *
+              </Label>
               <select
                 value={form.department}
-                onChange={(e) => setForm({ ...form, department: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, department: e.target.value })
+                }
                 className={cn(
-                  "h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring",
+                  "h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none",
                   errors.department && "border-destructive"
                 )}
               >
                 <option value="">Select department…</option>
                 {activeDepts.map((d) => (
-                  <option key={d.id} value={d.name}>{d.name}</option>
+                  <option key={d.id} value={d.name}>
+                    {d.name}
+                  </option>
                 ))}
               </select>
-              {errors.department && <p className="text-[11px] font-medium text-destructive">{errors.department}</p>}
+              {errors.department && (
+                <p className="text-[11px] font-medium text-destructive">
+                  {errors.department}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[12px] text-muted-foreground">Employment Type</Label>
+              <Label className="text-[12px] text-muted-foreground">
+                Employment Type
+              </Label>
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
-                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
               >
                 {TYPE_OPTIONS.map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
                 ))}
               </select>
             </div>
@@ -362,13 +442,21 @@ function JobModal({
 
           {/* Work type toggle */}
           <div className="space-y-1.5">
-            <Label className="text-[12px] text-muted-foreground">Work Type</Label>
+            <Label className="text-[12px] text-muted-foreground">
+              Work Type
+            </Label>
             <div className="flex gap-2">
               {WORK_TYPE_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setForm({ ...form, workType: opt.value, location: opt.value === "remote" ? "" : form.location })}
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      workType: opt.value,
+                      location: opt.value === "remote" ? "" : form.location,
+                    })
+                  }
                   className={cn(
                     "flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-2 text-[13px] font-medium transition-all",
                     form.workType === opt.value
@@ -376,10 +464,14 @@ function JobModal({
                       : "border-border bg-background text-muted-foreground hover:bg-muted"
                   )}
                 >
-                  <span className={cn(
-                    "size-1.5 rounded-full",
-                    form.workType === opt.value ? "bg-primary" : "bg-muted-foreground/40"
-                  )} />
+                  <span
+                    className={cn(
+                      "size-1.5 rounded-full",
+                      form.workType === opt.value
+                        ? "bg-primary"
+                        : "bg-muted-foreground/40"
+                    )}
+                  />
                   {opt.label}
                 </button>
               ))}
@@ -390,22 +482,36 @@ function JobModal({
           {showLocation && (
             <div className="space-y-1.5">
               <Label className="text-[12px] text-muted-foreground">
-                <HugeiconsIcon icon={Location01Icon} size={11} strokeWidth={1.8} className="mr-1 inline" />
+                <HugeiconsIcon
+                  icon={Location01Icon}
+                  size={11}
+                  strokeWidth={1.8}
+                  className="mr-1 inline"
+                />
                 Location {form.workType === "onsite" ? "*" : ""}
               </Label>
               <Input
-                className={cn("h-9 text-[13px]", errors.location && "border-destructive")}
+                className={cn(
+                  "h-9 text-[13px]",
+                  errors.location && "border-destructive"
+                )}
                 placeholder="e.g. Manila, PH · BGC · Makati"
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
               />
-              {errors.location && <p className="text-[11px] font-medium text-destructive">{errors.location}</p>}
+              {errors.location && (
+                <p className="text-[11px] font-medium text-destructive">
+                  {errors.location}
+                </p>
+              )}
             </div>
           )}
 
           {/* Description */}
           <div className="space-y-1.5">
-            <Label className="text-[12px] text-muted-foreground">Job Description</Label>
+            <Label className="text-[12px] text-muted-foreground">
+              Job Description
+            </Label>
             <RichTextEditor
               value={form.description}
               onChange={(html) => setForm({ ...form, description: html })}
@@ -416,13 +522,26 @@ function JobModal({
           {/* Salary — mode toggle */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-[12px] text-muted-foreground">Salary</Label>
+              <Label className="text-[12px] text-muted-foreground">
+                Salary
+              </Label>
               <div className="flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-0.5">
                 {(["custom", "grade"] as SalaryMode[]).map((mode) => (
                   <button
                     key={mode}
                     type="button"
-                    onClick={() => setForm({ ...form, salaryMode: mode, salaryInputType: "range", salaryCurrency: "PHP", salaryFrom: "", salaryTo: "", salaryGradeFromId: "", salaryGradeToId: "" })}
+                    onClick={() =>
+                      setForm({
+                        ...form,
+                        salaryMode: mode,
+                        salaryInputType: "range",
+                        salaryCurrency: "PHP",
+                        salaryFrom: "",
+                        salaryTo: "",
+                        salaryGradeFromId: "",
+                        salaryGradeToId: "",
+                      })
+                    }
                     className={cn(
                       "rounded-md px-2.5 py-1 text-[11px] font-medium transition-all",
                       form.salaryMode === mode
@@ -463,7 +582,9 @@ function JobModal({
                     <button
                       key={t}
                       type="button"
-                      onClick={() => setForm({ ...form, salaryInputType: t, salaryTo: "" })}
+                      onClick={() =>
+                        setForm({ ...form, salaryInputType: t, salaryTo: "" })
+                      }
                       className={cn(
                         "rounded-full border px-2.5 py-0.5 text-[11px] font-medium capitalize transition-all",
                         form.salaryInputType === t
@@ -477,20 +598,30 @@ function JobModal({
                 </div>
 
                 {/* Inputs */}
-                <div className={cn(
-                  "grid items-end gap-2",
-                  form.salaryInputType === "range" ? "grid-cols-[110px_1fr_1fr]" : "grid-cols-[110px_1fr]"
-                )}>
+                <div
+                  className={cn(
+                    "grid items-end gap-2",
+                    form.salaryInputType === "range"
+                      ? "grid-cols-[110px_1fr_1fr]"
+                      : "grid-cols-[110px_1fr]"
+                  )}
+                >
                   {/* Currency */}
                   <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">Currency</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Currency
+                    </p>
                     <select
                       value={form.salaryCurrency}
-                      onChange={(e) => setForm({ ...form, salaryCurrency: e.target.value })}
-                      className="h-9 w-full rounded-lg border border-input bg-background px-2 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      onChange={(e) =>
+                        setForm({ ...form, salaryCurrency: e.target.value })
+                      }
+                      className="h-9 w-full rounded-lg border border-input bg-background px-2 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
                     >
                       {CURRENCY_OPTIONS.map((c) => (
-                        <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>
+                        <option key={c.code} value={c.code}>
+                          {c.symbol} {c.code}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -510,7 +641,9 @@ function JobModal({
                         className="h-9 pl-6 text-[13px]"
                         placeholder="0"
                         value={form.salaryFrom}
-                        onChange={(e) => setForm({ ...form, salaryFrom: e.target.value })}
+                        onChange={(e) =>
+                          setForm({ ...form, salaryFrom: e.target.value })
+                        }
                       />
                     </div>
                   </div>
@@ -529,7 +662,9 @@ function JobModal({
                           className="h-9 pl-6 text-[13px]"
                           placeholder="0"
                           value={form.salaryTo}
-                          onChange={(e) => setForm({ ...form, salaryTo: e.target.value })}
+                          onChange={(e) =>
+                            setForm({ ...form, salaryTo: e.target.value })
+                          }
                         />
                       </div>
                     </div>
@@ -544,13 +679,18 @@ function JobModal({
                     <p className="text-[11px] text-muted-foreground">From</p>
                     <select
                       value={form.salaryGradeFromId}
-                      onChange={(e) => setForm({ ...form, salaryGradeFromId: e.target.value })}
-                      className="h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      onChange={(e) =>
+                        setForm({ ...form, salaryGradeFromId: e.target.value })
+                      }
+                      className="h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
                     >
                       <option value="">Select grade…</option>
                       {activeGrades.map((g) => (
                         <option key={g.id} value={String(g.id)}>
-                          {g.name}{g.salaryAmount != null ? ` (${currencySymbol(g.currency)}${g.salaryAmount.toLocaleString("en-PH")})` : ""}
+                          {g.name}
+                          {g.salaryAmount != null
+                            ? ` (${currencySymbol(g.currency)}${g.salaryAmount.toLocaleString("en-PH")})`
+                            : ""}
                         </option>
                       ))}
                     </select>
@@ -561,13 +701,18 @@ function JobModal({
                     <p className="text-[11px] text-muted-foreground">To</p>
                     <select
                       value={form.salaryGradeToId}
-                      onChange={(e) => setForm({ ...form, salaryGradeToId: e.target.value })}
-                      className="h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      onChange={(e) =>
+                        setForm({ ...form, salaryGradeToId: e.target.value })
+                      }
+                      className="h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
                     >
                       <option value="">Select grade…</option>
                       {activeGrades.map((g) => (
                         <option key={g.id} value={String(g.id)}>
-                          {g.name}{g.salaryAmount != null ? ` (${currencySymbol(g.currency)}${g.salaryAmount.toLocaleString("en-PH")})` : ""}
+                          {g.name}
+                          {g.salaryAmount != null
+                            ? ` (${currencySymbol(g.currency)}${g.salaryAmount.toLocaleString("en-PH")})`
+                            : ""}
                         </option>
                       ))}
                     </select>
@@ -599,11 +744,18 @@ function JobModal({
             <Label className="text-[12px] text-muted-foreground">Status</Label>
             <select
               value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value as JobPosting["status"] })}
-              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  status: e.target.value as JobPosting["status"],
+                })
+              }
+              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
             >
               {STATUS_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
             </select>
           </div>
@@ -627,16 +779,35 @@ function JobModal({
           {/* Inline error feedback */}
           {(hasErrors || submitError) && (
             <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-[12px] font-medium text-destructive">
-              <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={2.5} className="shrink-0" />
+              <HugeiconsIcon
+                icon={Cancel01Icon}
+                size={12}
+                strokeWidth={2.5}
+                className="shrink-0"
+              />
               {submitError ?? "Please fill in all required fields."}
             </div>
           )}
           <div className="flex items-center justify-between">
-            <p className="text-[11px] text-muted-foreground">* Required fields</p>
+            <p className="text-[11px] text-muted-foreground">
+              * Required fields
+            </p>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={onClose} disabled={busy}>Cancel</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onClose}
+                disabled={busy}
+              >
+                Cancel
+              </Button>
               <Button size="sm" onClick={onSubmit} disabled={busy}>
-                <HugeiconsIcon icon={FloppyDiskIcon} size={13} strokeWidth={2} className="mr-1.5" />
+                <HugeiconsIcon
+                  icon={FloppyDiskIcon}
+                  size={13}
+                  strokeWidth={2}
+                  className="mr-1.5"
+                />
                 {busy ? "Saving…" : editingId ? "Update" : "Post Job"}
               </Button>
             </div>
@@ -663,8 +834,13 @@ export function RecruitmentSection() {
   const [errors, setErrors] = useState<JobErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
-  const [filterStatus, setFilterStatus] = useState<JobPosting["status"] | "all">("all")
-  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null)
+  const [filterStatus, setFilterStatus] = useState<
+    JobPosting["status"] | "all"
+  >("all")
+  const [toast, setToast] = useState<{
+    msg: string
+    type: "success" | "error"
+  } | null>(null)
 
   const busy = createMut.isPending || updateMut.isPending || deleteMut.isPending
 
@@ -690,21 +866,34 @@ export function RecruitmentSection() {
     const errs: JobErrors = {}
     if (!form.title.trim()) errs.title = "Job title is required"
     if (!form.department.trim()) errs.department = "Department is required"
-    if (form.workType === "onsite" && !form.location.trim()) errs.location = "Location is required for on-site roles"
+    if (form.workType === "onsite" && !form.location.trim())
+      errs.location = "Location is required for on-site roles"
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
 
   function openCreate() {
-    setEditingId(null); setForm(EMPTY_FORM); setErrors({}); setSubmitError(null); setShowForm(true)
+    setEditingId(null)
+    setForm(EMPTY_FORM)
+    setErrors({})
+    setSubmitError(null)
+    setShowForm(true)
   }
 
   function openEdit(job: JobPosting) {
-    setEditingId(job.id); setForm(postingToForm(job)); setErrors({}); setSubmitError(null); setShowForm(true)
+    setEditingId(job.id)
+    setForm(postingToForm(job))
+    setErrors({})
+    setSubmitError(null)
+    setShowForm(true)
   }
 
   function closeForm() {
-    setShowForm(false); setEditingId(null); setForm(EMPTY_FORM); setErrors({}); setSubmitError(null)
+    setShowForm(false)
+    setEditingId(null)
+    setForm(EMPTY_FORM)
+    setErrors({})
+    setSubmitError(null)
   }
 
   function handleSubmit() {
@@ -712,14 +901,24 @@ export function RecruitmentSection() {
     setSubmitError(null)
     const payload = formToPayload(form)
     if (editingId) {
-      updateMut.mutate({ id: editingId, payload }, {
-        onSuccess: () => { closeForm(); showToast("Job posting updated.", "success") },
-        onError: () => setSubmitError("Failed to save. Please try again."),
-      })
+      updateMut.mutate(
+        { id: editingId, payload },
+        {
+          onSuccess: () => {
+            closeForm()
+            showToast("Job posting updated.", "success")
+          },
+          onError: () => setSubmitError("Failed to save. Please try again."),
+        }
+      )
     } else {
       createMut.mutate(payload, {
-        onSuccess: () => { closeForm(); showToast("Job posting created.", "success") },
-        onError: () => setSubmitError("Failed to create posting. Please try again."),
+        onSuccess: () => {
+          closeForm()
+          showToast("Job posting created.", "success")
+        },
+        onError: () =>
+          setSubmitError("Failed to create posting. Please try again."),
       })
     }
   }
@@ -734,9 +933,16 @@ export function RecruitmentSection() {
 
   const openCount = jobs.filter((j) => j.status !== "closed").length
   const totalApplicants = jobs.reduce((s, j) => s + j.applicantsCount, 0)
-  const allTags = useMemo(() => [...new Set(jobs.flatMap((j) => j.tags))].sort(), [jobs])
+  const allTags = useMemo(
+    () => [...new Set(jobs.flatMap((j) => j.tags))].sort(),
+    [jobs]
+  )
 
-  const workTypeLabel: Record<WorkType, string> = { remote: "Remote", hybrid: "Hybrid", onsite: "On-site" }
+  const workTypeLabel: Record<WorkType, string> = {
+    remote: "Remote",
+    hybrid: "Hybrid",
+    onsite: "On-site",
+  }
 
   return (
     <div className="space-y-4">
@@ -754,7 +960,8 @@ export function RecruitmentSection() {
           <div>
             <p className="text-[13px] font-semibold">Career Page</p>
             <p className="text-[11px] text-muted-foreground">
-              Public listing where candidates can view and apply to open positions
+              Public listing where candidates can view and apply to open
+              positions
             </p>
           </div>
         </div>
@@ -766,10 +973,30 @@ export function RecruitmentSection() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3">
-        <StatCard title="Open positions"   value={String(openCount)}       accent="blue" />
-        <StatCard title="Total applicants" value={String(totalApplicants)} delta="12 this week" deltaUp={true} accent="green" />
-        <StatCard title="Interviews"       value="8"  meta="Scheduled this week" accent="amber" />
-        <StatCard title="Offers sent"      value="2"  meta="1 accepted"          accent="purple" />
+        <StatCard
+          title="Open positions"
+          value={String(openCount)}
+          accent="blue"
+        />
+        <StatCard
+          title="Total applicants"
+          value={String(totalApplicants)}
+          delta="12 this week"
+          deltaUp={true}
+          accent="green"
+        />
+        <StatCard
+          title="Interviews"
+          value="8"
+          meta="Scheduled this week"
+          accent="amber"
+        />
+        <StatCard
+          title="Offers sent"
+          value="2"
+          meta="1 accepted"
+          accent="purple"
+        />
       </div>
 
       {/* Header row */}
@@ -777,11 +1004,17 @@ export function RecruitmentSection() {
         <div>
           <h3 className="text-[14px] font-semibold">Job Postings</h3>
           <p className="mt-0.5 text-[12px] text-muted-foreground">
-            Manage open roles — posted listings appear on the public career page.
+            Manage open roles — posted listings appear on the public career
+            page.
           </p>
         </div>
         <Button size="sm" onClick={openCreate}>
-          <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} className="mr-1.5" />
+          <HugeiconsIcon
+            icon={Add01Icon}
+            size={13}
+            strokeWidth={2}
+            className="mr-1.5"
+          />
           New Job Posting
         </Button>
       </div>
@@ -789,13 +1022,20 @@ export function RecruitmentSection() {
       {/* Toast */}
       {toast && (
         <div className="flex justify-end">
-          <div className={cn(
-            "flex items-center gap-2 rounded-lg px-4 py-2.5 text-[13px] font-medium shadow-md",
-            toast.type === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white"
-          )}>
+          <div
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-4 py-2.5 text-[13px] font-medium shadow-md",
+              toast.type === "success"
+                ? "bg-green-600 text-white"
+                : "bg-red-600 text-white"
+            )}
+          >
             <HugeiconsIcon
-              icon={toast.type === "success" ? CheckmarkCircle01Icon : Cancel01Icon}
-              size={14} strokeWidth={2}
+              icon={
+                toast.type === "success" ? CheckmarkCircle01Icon : Cancel01Icon
+              }
+              size={14}
+              strokeWidth={2}
             />
             {toast.msg}
           </div>
@@ -806,7 +1046,12 @@ export function RecruitmentSection() {
       {jobs.length > 0 && (
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1" style={{ minWidth: 200 }}>
-            <HugeiconsIcon icon={Search01Icon} size={13} strokeWidth={2} className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground" />
+            <HugeiconsIcon
+              icon={Search01Icon}
+              size={13}
+              strokeWidth={2}
+              className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"
+            />
             <Input
               className="h-8 pl-8 text-[13px]"
               placeholder="Search title, department, location…"
@@ -827,7 +1072,9 @@ export function RecruitmentSection() {
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
                 )}
               >
-                {s === "all" ? `All (${jobs.length})` : s.charAt(0).toUpperCase() + s.slice(1)}
+                {s === "all"
+                  ? `All (${jobs.length})`
+                  : s.charAt(0).toUpperCase() + s.slice(1)}
               </button>
             ))}
           </div>
@@ -837,16 +1084,24 @@ export function RecruitmentSection() {
       {/* List */}
       {jobsQ.isLoading ? (
         <div className="space-y-2">
-          {[1, 2, 3].map((i) => <div key={i} className="h-20 animate-pulse rounded-xl bg-muted" />)}
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-20 animate-pulse rounded-xl bg-muted" />
+          ))}
         </div>
       ) : jobs.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-14 text-center">
           <p className="text-[14px] font-semibold">No job postings yet</p>
           <p className="mt-1 text-[12px] text-muted-foreground">
-            Create your first posting — it will appear on the public career page.
+            Create your first posting — it will appear on the public career
+            page.
           </p>
           <Button size="sm" className="mt-5" onClick={openCreate}>
-            <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} className="mr-1.5" />
+            <HugeiconsIcon
+              icon={Add01Icon}
+              size={13}
+              strokeWidth={2}
+              className="mr-1.5"
+            />
             New Job Posting
           </Button>
         </div>
@@ -875,36 +1130,45 @@ export function RecruitmentSection() {
                       {workTypeLabel[job.workType ?? "onsite"]}
                     </span>
                     {job.tags.map((t) => (
-                      <StatusBadge key={t} variant="blue" dot={false}>{t}</StatusBadge>
+                      <StatusBadge key={t} variant="blue" dot={false}>
+                        {t}
+                      </StatusBadge>
                     ))}
                   </div>
                   <p className="mt-0.5 text-[12px] text-muted-foreground">
                     {job.department}
                     {job.location ? ` · ${job.location}` : ""}
                     {` · ${job.type}`}
-                    {(job.salaryFrom != null || job.salaryGradeFromName) && (() => {
-                      const sym = currencySymbol(job.salaryCurrency)
-                      const amount = job.salaryGradeFromName
-                        ? `${job.salaryGradeFromName}${job.salaryGradeToName ? ` – ${job.salaryGradeToName}` : ""}`
-                        : job.salaryFrom != null
-                          ? `${sym}${job.salaryFrom.toLocaleString("en-PH")}${job.salaryTo != null ? ` – ${sym}${job.salaryTo.toLocaleString("en-PH")}` : ""}`
+                    {(job.salaryFrom != null || job.salaryGradeFromName) &&
+                      (() => {
+                        const sym = currencySymbol(job.salaryCurrency)
+                        const amount = job.salaryGradeFromName
+                          ? `${job.salaryGradeFromName}${job.salaryGradeToName ? ` – ${job.salaryGradeToName}` : ""}`
+                          : job.salaryFrom != null
+                            ? `${sym}${job.salaryFrom.toLocaleString("en-PH")}${job.salaryTo != null ? ` – ${sym}${job.salaryTo.toLocaleString("en-PH")}` : ""}`
+                            : null
+                        const period = job.salaryPeriod
+                          ? SALARY_PERIOD_OPTIONS.find(
+                              (o) => o.value === job.salaryPeriod
+                            )?.label
                           : null
-                      const period = job.salaryPeriod
-                        ? SALARY_PERIOD_OPTIONS.find(o => o.value === job.salaryPeriod)?.label
-                        : null
-                      return amount ? (
-                        <span className="font-medium text-foreground">
-                          {` · ${amount}${period ? ` / ${period}` : ""}`}
-                        </span>
-                      ) : null
-                    })()}
+                        return amount ? (
+                          <span className="font-medium text-foreground">
+                            {` · ${amount}${period ? ` / ${period}` : ""}`}
+                          </span>
+                        ) : null
+                      })()}
                   </p>
                 </div>
 
                 <div className="ml-4 flex shrink-0 items-center gap-4">
                   <div className="hidden text-right sm:block">
-                    <p className="text-[13px] font-semibold">{job.applicantsCount}</p>
-                    <p className="text-[11px] text-muted-foreground">applicants</p>
+                    <p className="text-[13px] font-semibold">
+                      {job.applicantsCount}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      applicants
+                    </p>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
@@ -914,16 +1178,24 @@ export function RecruitmentSection() {
                       disabled={busy}
                       className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
                     >
-                      <HugeiconsIcon icon={PencilEdit01Icon} size={12} strokeWidth={2} />
+                      <HugeiconsIcon
+                        icon={PencilEdit01Icon}
+                        size={12}
+                        strokeWidth={2}
+                      />
                     </button>
                     <button
                       type="button"
                       title="Delete"
                       onClick={() => handleDelete(job)}
                       disabled={busy}
-                      className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 disabled:opacity-30"
+                      className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-30 dark:hover:bg-red-900/20"
                     >
-                      <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={2} />
+                      <HugeiconsIcon
+                        icon={Delete02Icon}
+                        size={12}
+                        strokeWidth={2}
+                      />
                     </button>
                   </div>
                 </div>
@@ -931,7 +1203,8 @@ export function RecruitmentSection() {
             ))}
           </div>
           <div className="border-t px-4 py-2.5 text-right text-[11px] text-muted-foreground">
-            {filtered.length} of {jobs.length} posting{jobs.length !== 1 ? "s" : ""}
+            {filtered.length} of {jobs.length} posting
+            {jobs.length !== 1 ? "s" : ""}
           </div>
         </div>
       )}

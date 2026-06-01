@@ -59,8 +59,13 @@ export function useCancelOfficialReceipt() {
 export function useApproveOfficialReceipt() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, reviewNote }: { id: number; reviewNote?: string | null }) =>
-      orApi.approve(id, reviewNote),
+    mutationFn: ({
+      id,
+      reviewNote,
+    }: {
+      id: number
+      reviewNote?: string | null
+    }) => orApi.approve(id, reviewNote),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }
@@ -68,8 +73,13 @@ export function useApproveOfficialReceipt() {
 export function useRejectOfficialReceipt() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, reviewNote }: { id: number; reviewNote?: string | null }) =>
-      orApi.reject(id, reviewNote),
+    mutationFn: ({
+      id,
+      reviewNote,
+    }: {
+      id: number
+      reviewNote?: string | null
+    }) => orApi.reject(id, reviewNote),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }
@@ -77,8 +87,13 @@ export function useRejectOfficialReceipt() {
 export function useReimburseOfficialReceipt() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, reviewNote }: { id: number; reviewNote?: string | null }) =>
-      orApi.markReimbursed(id, reviewNote),
+    mutationFn: ({
+      id,
+      reviewNote,
+    }: {
+      id: number
+      reviewNote?: string | null
+    }) => orApi.markReimbursed(id, reviewNote),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }

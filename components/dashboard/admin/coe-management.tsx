@@ -127,11 +127,20 @@ function ReviewModal({
 
   function handleSubmit() {
     if (mode === "review")
-      underReview.mutate({ id: coe.id, remarks: remarks || null }, { onSuccess: onClose })
+      underReview.mutate(
+        { id: coe.id, remarks: remarks || null },
+        { onSuccess: onClose }
+      )
     else if (mode === "approve")
-      approve.mutate({ id: coe.id, remarks: remarks || null }, { onSuccess: onClose })
+      approve.mutate(
+        { id: coe.id, remarks: remarks || null },
+        { onSuccess: onClose }
+      )
     else if (mode === "reject")
-      reject.mutate({ id: coe.id, remarks: remarks || null }, { onSuccess: onClose })
+      reject.mutate(
+        { id: coe.id, remarks: remarks || null },
+        { onSuccess: onClose }
+      )
     else if (mode === "release")
       release.mutate(
         { id: coe.id, documentUrl: documentUrl || null },
@@ -149,27 +158,47 @@ function ReviewModal({
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {mode === "approve" && (
               <span className="flex size-6 items-center justify-center rounded-full bg-green-100">
-                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} strokeWidth={2} className="text-green-600" />
+                <HugeiconsIcon
+                  icon={CheckmarkCircle02Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="text-green-600"
+                />
               </span>
             )}
             {mode === "reject" && (
               <span className="flex size-6 items-center justify-center rounded-full bg-red-100">
-                <HugeiconsIcon icon={Cancel01Icon} size={13} strokeWidth={2} className="text-red-500" />
+                <HugeiconsIcon
+                  icon={Cancel01Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="text-red-500"
+                />
               </span>
             )}
             {mode === "release" && (
               <span className="flex size-6 items-center justify-center rounded-full bg-purple-100">
-                <HugeiconsIcon icon={Download04Icon} size={13} strokeWidth={2} className="text-purple-600" />
+                <HugeiconsIcon
+                  icon={Download04Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="text-purple-600"
+                />
               </span>
             )}
             {(mode === "view" || mode === "review") && (
               <span className="flex size-6 items-center justify-center rounded-full bg-primary/10">
-                <HugeiconsIcon icon={File01Icon} size={13} strokeWidth={2} className="text-primary" />
+                <HugeiconsIcon
+                  icon={File01Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="text-primary"
+                />
               </span>
             )}
             {titleMap[mode]}
@@ -180,13 +209,25 @@ function ReviewModal({
           {/* Employee info + status */}
           <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-              <HugeiconsIcon icon={UserCircleIcon} size={16} strokeWidth={1.6} className="text-muted-foreground" />
+              <HugeiconsIcon
+                icon={UserCircleIcon}
+                size={16}
+                strokeWidth={1.6}
+                className="text-muted-foreground"
+              />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold text-foreground">{coe.userName}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{coe.userEmail}</p>
+              <p className="truncate text-[13px] font-semibold text-foreground">
+                {coe.userName}
+              </p>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {coe.userEmail}
+              </p>
             </div>
-            <StatusBadge variant={STATUS_VARIANT[coe.status]} className="shrink-0">
+            <StatusBadge
+              variant={STATUS_VARIANT[coe.status]}
+              className="shrink-0"
+            >
               {STATUS_LABEL[coe.status]}
             </StatusBadge>
           </div>
@@ -195,7 +236,9 @@ function ReviewModal({
           {coe.referenceNumber && (
             <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2 text-[12px]">
               <span className="text-muted-foreground">Reference No.</span>
-              <span className="font-mono font-semibold text-foreground">{coe.referenceNumber}</span>
+              <span className="font-mono font-semibold text-foreground">
+                {coe.referenceNumber}
+              </span>
             </div>
           )}
 
@@ -210,7 +253,9 @@ function ReviewModal({
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
               <p className="text-muted-foreground">Employment Status</p>
               <p className="mt-0.5 font-semibold text-foreground">
-                {coe.employmentStatus === "CURRENT_EMPLOYEE" ? "Current Employee" : "Former Employee"}
+                {coe.employmentStatus === "CURRENT_EMPLOYEE"
+                  ? "Current Employee"
+                  : "Former Employee"}
               </p>
             </div>
           </div>
@@ -218,7 +263,10 @@ function ReviewModal({
           {/* Certificate type */}
           <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2 text-[12px]">
             <span className="text-muted-foreground">Certificate Type</span>
-            <StatusBadge variant={COE_CERT_TYPE_COLOR[coe.certificateType]} dot={false}>
+            <StatusBadge
+              variant={COE_CERT_TYPE_COLOR[coe.certificateType]}
+              dot={false}
+            >
               {COE_CERT_TYPE_LABEL[coe.certificateType]}
             </StatusBadge>
           </div>
@@ -235,7 +283,9 @@ function ReviewModal({
           {coe.recipientName && (
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2 text-[12px]">
               <p className="text-muted-foreground">Recipient / Company</p>
-              <p className="mt-0.5 font-semibold text-foreground">{coe.recipientName}</p>
+              <p className="mt-0.5 font-semibold text-foreground">
+                {coe.recipientName}
+              </p>
             </div>
           )}
 
@@ -245,7 +295,9 @@ function ReviewModal({
               <p className="mb-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                 Employee Notes
               </p>
-              <p className="text-[12px] italic text-foreground">&ldquo;{coe.additionalNotes}&rdquo;</p>
+              <p className="text-[12px] text-foreground italic">
+                &ldquo;{coe.additionalNotes}&rdquo;
+              </p>
             </div>
           )}
 
@@ -263,14 +315,20 @@ function ReviewModal({
                   rel="noreferrer"
                   className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-[12px] text-primary hover:bg-muted/40"
                 >
-                  <HugeiconsIcon icon={DocumentAttachmentIcon} size={13} strokeWidth={1.8} />
+                  <HugeiconsIcon
+                    icon={DocumentAttachmentIcon}
+                    size={13}
+                    strokeWidth={1.8}
+                  />
                   View attachment {i + 1}
                 </a>
               ))}
             </div>
           )}
 
-          <p className="text-[11px] text-muted-foreground">Filed {fmtDate(coe.createdAt)}</p>
+          <p className="text-[11px] text-muted-foreground">
+            Filed {fmtDate(coe.createdAt)}
+          </p>
 
           {/* Salary warning for view/approve */}
           {(mode === "view" || mode === "approve" || mode === "review") &&
@@ -284,7 +342,8 @@ function ReviewModal({
                   className="mt-0.5 shrink-0 text-amber-600"
                 />
                 <p className="text-[11px] text-amber-700 dark:text-amber-400">
-                  This request includes salary information — ensure proper authorization before approving.
+                  This request includes salary information — ensure proper
+                  authorization before approving.
                 </p>
               </div>
             )}
@@ -295,7 +354,9 @@ function ReviewModal({
               <p className="mb-1 text-[11px] font-semibold tracking-wider text-blue-600 uppercase">
                 HR / Admin Remarks
               </p>
-              <p className="text-[12px] text-blue-700 dark:text-blue-300">{coe.remarks}</p>
+              <p className="text-[12px] text-blue-700 dark:text-blue-300">
+                {coe.remarks}
+              </p>
               {coe.approvedByName && (
                 <p className="mt-1 text-[11px] text-blue-500">
                   — {coe.approvedByName}
@@ -310,7 +371,9 @@ function ReviewModal({
             <div className="space-y-1.5 border-t border-border pt-3">
               <Label className="text-[12px]">
                 Document URL{" "}
-                <span className="text-muted-foreground">(optional — leave blank if using printed copy)</span>
+                <span className="text-muted-foreground">
+                  (optional — leave blank if using printed copy)
+                </span>
               </Label>
               <Input
                 className="h-9 font-mono text-[12px]"
@@ -405,7 +468,9 @@ function ReviewModal({
 // ── Main Component ──────────────────────────────────────────────────────────
 
 export function CoeManagementSection() {
-  const [statusFilter, setStatusFilter] = useState<CoeStatus | undefined>("SUBMITTED")
+  const [statusFilter, setStatusFilter] = useState<CoeStatus | undefined>(
+    "SUBMITTED"
+  )
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
   const [reviewTarget, setReviewTarget] = useState<{
@@ -457,21 +522,31 @@ export function CoeManagementSection() {
           value={<span className="text-warning">{counts.submitted}</span>}
           meta="Awaiting review"
           accent="amber"
-          icon={<HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Under Review"
           value={<span className="text-blue-500">{counts.underReview}</span>}
           meta="Being processed"
           accent="blue"
-          icon={<HugeiconsIcon icon={Alert01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Alert01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Pending Release"
           value={<span className="text-success">{counts.approved}</span>}
           meta="Approved, awaiting release"
           accent="green"
-          icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon
+              icon={CheckmarkCircle02Icon}
+              size={16}
+              strokeWidth={1.8}
+            />
+          }
         />
       </div>
 
@@ -531,13 +606,22 @@ export function CoeManagementSection() {
         <Table>
           <TableHeader>
             <TableRow>
-              {["Employee", "Purpose", "Certificate Type", "Release Method", "Filed", "Status", "Actions"].map(
-                (h) => (
-                  <TableHead key={h} className={h === "Actions" ? "text-right" : undefined}>
-                    {h}
-                  </TableHead>
-                )
-              )}
+              {[
+                "Employee",
+                "Purpose",
+                "Certificate Type",
+                "Release Method",
+                "Filed",
+                "Status",
+                "Actions",
+              ].map((h) => (
+                <TableHead
+                  key={h}
+                  className={h === "Actions" ? "text-right" : undefined}
+                >
+                  {h}
+                </TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -555,9 +639,17 @@ export function CoeManagementSection() {
               </>
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-12 text-center text-[13px] text-muted-foreground">
+                <TableCell
+                  colSpan={7}
+                  className="py-12 text-center text-[13px] text-muted-foreground"
+                >
                   <div className="flex flex-col items-center gap-2">
-                    <HugeiconsIcon icon={File01Icon} size={28} strokeWidth={1.3} className="text-muted-foreground/30" />
+                    <HugeiconsIcon
+                      icon={File01Icon}
+                      size={28}
+                      strokeWidth={1.3}
+                      className="text-muted-foreground/30"
+                    />
                     <p>No COE requests found.</p>
                   </div>
                 </TableCell>
@@ -568,21 +660,31 @@ export function CoeManagementSection() {
                   {/* Employee */}
                   <TableCell>
                     <div>
-                      <p className="text-[13px] font-medium text-foreground">{r.userName}</p>
-                      <p className="text-[11px] text-muted-foreground">{r.userEmail}</p>
+                      <p className="text-[13px] font-medium text-foreground">
+                        {r.userName}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {r.userEmail}
+                      </p>
                     </div>
                   </TableCell>
 
                   {/* Purpose */}
                   <TableCell>
-                    <StatusBadge variant={COE_PURPOSE_COLOR[r.purpose]} dot={false}>
+                    <StatusBadge
+                      variant={COE_PURPOSE_COLOR[r.purpose]}
+                      dot={false}
+                    >
                       {COE_PURPOSE_LABEL[r.purpose]}
                     </StatusBadge>
                   </TableCell>
 
                   {/* Certificate Type */}
                   <TableCell>
-                    <StatusBadge variant={COE_CERT_TYPE_COLOR[r.certificateType]} dot={false}>
+                    <StatusBadge
+                      variant={COE_CERT_TYPE_COLOR[r.certificateType]}
+                      dot={false}
+                    >
                       {COE_CERT_TYPE_LABEL[r.certificateType]}
                     </StatusBadge>
                   </TableCell>
@@ -593,7 +695,7 @@ export function CoeManagementSection() {
                   </TableCell>
 
                   {/* Filed */}
-                  <TableCell className="text-[12px] tabular-nums text-muted-foreground">
+                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">
                     {fmtDate(r.createdAt)}
                   </TableCell>
 
@@ -610,10 +712,16 @@ export function CoeManagementSection() {
                       <Button
                         size="icon-xs"
                         variant="outline"
-                        onClick={() => setReviewTarget({ coe: r, mode: "view" })}
+                        onClick={() =>
+                          setReviewTarget({ coe: r, mode: "view" })
+                        }
                         title="View details"
                       >
-                        <HugeiconsIcon icon={EyeIcon} size={12} strokeWidth={2} />
+                        <HugeiconsIcon
+                          icon={EyeIcon}
+                          size={12}
+                          strokeWidth={2}
+                        />
                         <span className="sr-only">View</span>
                       </Button>
 
@@ -623,38 +731,58 @@ export function CoeManagementSection() {
                           size="icon-xs"
                           variant="outline"
                           className="border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-900/40 dark:hover:bg-blue-900/20"
-                          onClick={() => setReviewTarget({ coe: r, mode: "review" })}
+                          onClick={() =>
+                            setReviewTarget({ coe: r, mode: "review" })
+                          }
                           title="Mark under review"
                         >
-                          <HugeiconsIcon icon={File01Icon} size={12} strokeWidth={2} />
+                          <HugeiconsIcon
+                            icon={File01Icon}
+                            size={12}
+                            strokeWidth={2}
+                          />
                           <span className="sr-only">Review</span>
                         </Button>
                       )}
 
                       {/* Approve (from SUBMITTED or PENDING_REVIEW) */}
-                      {(r.status === "SUBMITTED" || r.status === "PENDING_REVIEW") && (
+                      {(r.status === "SUBMITTED" ||
+                        r.status === "PENDING_REVIEW") && (
                         <Button
                           size="icon-xs"
                           variant="outline"
                           className="border-green-300 text-green-600 hover:bg-green-50 dark:border-green-900/40 dark:hover:bg-green-900/20"
-                          onClick={() => setReviewTarget({ coe: r, mode: "approve" })}
+                          onClick={() =>
+                            setReviewTarget({ coe: r, mode: "approve" })
+                          }
                           title="Approve"
                         >
-                          <HugeiconsIcon icon={CheckmarkCircle02Icon} size={12} strokeWidth={2} />
+                          <HugeiconsIcon
+                            icon={CheckmarkCircle02Icon}
+                            size={12}
+                            strokeWidth={2}
+                          />
                           <span className="sr-only">Approve</span>
                         </Button>
                       )}
 
                       {/* Reject (from SUBMITTED or PENDING_REVIEW) */}
-                      {(r.status === "SUBMITTED" || r.status === "PENDING_REVIEW") && (
+                      {(r.status === "SUBMITTED" ||
+                        r.status === "PENDING_REVIEW") && (
                         <Button
                           size="icon-xs"
                           variant="outline"
                           className="border-red-200 text-red-500 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/20"
-                          onClick={() => setReviewTarget({ coe: r, mode: "reject" })}
+                          onClick={() =>
+                            setReviewTarget({ coe: r, mode: "reject" })
+                          }
                           title="Reject"
                         >
-                          <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={2} />
+                          <HugeiconsIcon
+                            icon={Cancel01Icon}
+                            size={12}
+                            strokeWidth={2}
+                          />
                           <span className="sr-only">Reject</span>
                         </Button>
                       )}
@@ -665,10 +793,16 @@ export function CoeManagementSection() {
                           size="icon-xs"
                           variant="outline"
                           className="border-purple-200 text-purple-600 hover:bg-purple-50 dark:border-purple-900/40 dark:hover:bg-purple-900/20"
-                          onClick={() => setReviewTarget({ coe: r, mode: "release" })}
+                          onClick={() =>
+                            setReviewTarget({ coe: r, mode: "release" })
+                          }
                           title="Release COE"
                         >
-                          <HugeiconsIcon icon={Download04Icon} size={12} strokeWidth={2} />
+                          <HugeiconsIcon
+                            icon={Download04Icon}
+                            size={12}
+                            strokeWidth={2}
+                          />
                           <span className="sr-only">Release</span>
                         </Button>
                       )}

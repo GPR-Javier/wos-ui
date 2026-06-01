@@ -68,7 +68,9 @@ function FieldWrap({
     <div className="space-y-1.5">
       <Label className="text-[12px] text-muted-foreground">{label}</Label>
       {children}
-      {error && <p className="text-[11px] font-medium text-destructive">{error}</p>}
+      {error && (
+        <p className="text-[11px] font-medium text-destructive">{error}</p>
+      )}
     </div>
   )
 }
@@ -121,7 +123,10 @@ function DeptModal({
           <FieldWrap label="Department Name *" error={errors.name}>
             <Input
               autoFocus
-              className={cn("h-9 text-[13px]", errors.name && "border-destructive")}
+              className={cn(
+                "h-9 text-[13px]",
+                errors.name && "border-destructive"
+              )}
               placeholder="e.g. Engineering, Marketing, HR"
               value={form.name}
               onChange={(e) => setField("name", e.target.value)}
@@ -142,8 +147,10 @@ function DeptModal({
             <FieldWrap label="Status">
               <select
                 value={form.active ? "active" : "inactive"}
-                onChange={(e) => setField("active", e.target.value === "active")}
-                className="h-9 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                onChange={(e) =>
+                  setField("active", e.target.value === "active")
+                }
+                className="h-9 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -156,11 +163,21 @@ function DeptModal({
         <div className="mt-6 flex items-center justify-between gap-3">
           <p className="text-[11px] text-muted-foreground">* Required fields</p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={onClose} disabled={busy}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              disabled={busy}
+            >
               Cancel
             </Button>
             <Button size="sm" onClick={onSubmit} disabled={busy}>
-              <HugeiconsIcon icon={FloppyDiskIcon} size={13} strokeWidth={2} className="mr-1.5" />
+              <HugeiconsIcon
+                icon={FloppyDiskIcon}
+                size={13}
+                strokeWidth={2}
+                className="mr-1.5"
+              />
               {busy ? "Saving…" : editingId ? "Update" : "Save"}
             </Button>
           </div>
@@ -182,9 +199,14 @@ export function DepartmentsSection() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState<DeptForm>(EMPTY_FORM)
   const [errors, setErrors] = useState<FormErrors>({})
-  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null)
+  const [toast, setToast] = useState<{
+    msg: string
+    type: "success" | "error"
+  } | null>(null)
   const [search, setSearch] = useState("")
-  const [filterStatus, setFilterStatus] = useState<"active" | "inactive" | "all">("active")
+  const [filterStatus, setFilterStatus] = useState<
+    "active" | "inactive" | "all"
+  >("active")
   const [viewingItem, setViewingItem] = useState<Department | null>(null)
 
   const busy = createMut.isPending || updateMut.isPending || deleteMut.isPending
@@ -263,7 +285,8 @@ export function DepartmentsSection() {
             closeForm()
             showToast("Department updated.", "success")
           },
-          onError: () => showToast("Failed to update — name may already exist.", "error"),
+          onError: () =>
+            showToast("Failed to update — name may already exist.", "error"),
         }
       )
     } else {
@@ -272,7 +295,8 @@ export function DepartmentsSection() {
           closeForm()
           showToast("Department created.", "success")
         },
-        onError: () => showToast("Failed to create — name may already exist.", "error"),
+        onError: () =>
+          showToast("Failed to create — name may already exist.", "error"),
       })
     }
   }
@@ -292,19 +316,27 @@ export function DepartmentsSection() {
         <div>
           <p className="text-[14px] font-semibold">Departments</p>
           <p className="mt-0.5 text-[12px] text-muted-foreground">
-            Manage the departments in your organization. These populate the Department dropdown when creating job positions.
+            Manage the departments in your organization. These populate the
+            Department dropdown when creating job positions.
           </p>
           <div className="mt-2 flex items-center gap-3">
             <span className="text-[11px] font-medium text-green-600 dark:text-green-400">
               {activeCount} active
             </span>
             {inactiveCount > 0 && (
-              <span className="text-[11px] text-muted-foreground">{inactiveCount} archived</span>
+              <span className="text-[11px] text-muted-foreground">
+                {inactiveCount} archived
+              </span>
             )}
           </div>
         </div>
         <Button size="sm" onClick={openCreate}>
-          <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} className="mr-1.5" />
+          <HugeiconsIcon
+            icon={Add01Icon}
+            size={13}
+            strokeWidth={2}
+            className="mr-1.5"
+          />
           New Department
         </Button>
       </div>
@@ -376,10 +408,16 @@ export function DepartmentsSection() {
           </div>
           <p className="text-[14px] font-semibold">No departments yet</p>
           <p className="mt-1 max-w-xs text-[12px] text-muted-foreground">
-            Add your first department to organize job positions across the company.
+            Add your first department to organize job positions across the
+            company.
           </p>
           <Button size="sm" className="mt-5" onClick={openCreate}>
-            <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} className="mr-1.5" />
+            <HugeiconsIcon
+              icon={Add01Icon}
+              size={13}
+              strokeWidth={2}
+              className="mr-1.5"
+            />
             New Department
           </Button>
         </div>
@@ -412,7 +450,9 @@ export function DepartmentsSection() {
                 <div className="min-w-0 flex-1">
                   <p className="text-[13px] font-medium">{d.name}</p>
                   {d.description && (
-                    <p className="text-[11px] text-muted-foreground">{d.description}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {d.description}
+                    </p>
                   )}
                 </div>
 
@@ -445,23 +485,32 @@ export function DepartmentsSection() {
                     disabled={busy}
                     className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
                   >
-                    <HugeiconsIcon icon={PencilEdit01Icon} size={12} strokeWidth={2} />
+                    <HugeiconsIcon
+                      icon={PencilEdit01Icon}
+                      size={12}
+                      strokeWidth={2}
+                    />
                   </button>
                   <button
                     type="button"
                     title="Delete"
                     onClick={() => handleDelete(d)}
                     disabled={busy}
-                    className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 disabled:opacity-30"
+                    className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-30 dark:hover:bg-red-900/20"
                   >
-                    <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={2} />
+                    <HugeiconsIcon
+                      icon={Delete02Icon}
+                      size={12}
+                      strokeWidth={2}
+                    />
                   </button>
                 </div>
               </div>
             ))}
           </div>
           <div className="border-t px-4 py-2.5 text-right text-[11px] text-muted-foreground">
-            {filtered.length} of {departments.length} department{departments.length !== 1 ? "s" : ""}
+            {filtered.length} of {departments.length} department
+            {departments.length !== 1 ? "s" : ""}
           </div>
         </div>
       )}
@@ -482,12 +531,18 @@ export function DepartmentsSection() {
       {/* View Modal */}
       {viewingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setViewingItem(null)} />
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setViewingItem(null)}
+          />
           <div className="relative w-full max-w-sm animate-in rounded-2xl border border-border bg-card p-6 shadow-xl duration-200 zoom-in-95 fade-in">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-[15px] font-semibold">Department Details</h2>
-              <button type="button" onClick={() => setViewingItem(null)}
-                className="flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground">
+              <button
+                type="button"
+                onClick={() => setViewingItem(null)}
+                className="flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
                 <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
               </button>
             </div>
@@ -504,12 +559,14 @@ export function DepartmentsSection() {
               )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status</span>
-                <span className={cn(
-                  "rounded-full px-2.5 py-0.5 text-[10px] font-semibold",
-                  viewingItem.active
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                    : "bg-muted text-muted-foreground"
-                )}>
+                <span
+                  className={cn(
+                    "rounded-full px-2.5 py-0.5 text-[10px] font-semibold",
+                    viewingItem.active
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
                   {viewingItem.active ? "Active" : "Inactive"}
                 </span>
               </div>

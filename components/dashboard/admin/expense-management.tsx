@@ -126,27 +126,47 @@ function ReviewModal({
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {mode === "approve" && (
               <span className="flex size-6 items-center justify-center rounded-full bg-green-100">
-                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} strokeWidth={2} className="text-green-600" />
+                <HugeiconsIcon
+                  icon={CheckmarkCircle02Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="text-green-600"
+                />
               </span>
             )}
             {mode === "reject" && (
               <span className="flex size-6 items-center justify-center rounded-full bg-red-100">
-                <HugeiconsIcon icon={Cancel01Icon} size={13} strokeWidth={2} className="text-red-500" />
+                <HugeiconsIcon
+                  icon={Cancel01Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="text-red-500"
+                />
               </span>
             )}
             {mode === "reimburse" && (
               <span className="flex size-6 items-center justify-center rounded-full bg-blue-100">
-                <HugeiconsIcon icon={Money01Icon} size={13} strokeWidth={2} className="text-blue-600" />
+                <HugeiconsIcon
+                  icon={Money01Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="text-blue-600"
+                />
               </span>
             )}
             {mode === "view" && (
               <span className="flex size-6 items-center justify-center rounded-full bg-primary/10">
-                <HugeiconsIcon icon={Invoice01Icon} size={13} strokeWidth={2} className="text-primary" />
+                <HugeiconsIcon
+                  icon={Invoice01Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="text-primary"
+                />
               </span>
             )}
             {titleMap[mode]}
@@ -157,13 +177,25 @@ function ReviewModal({
           {/* Employee info */}
           <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-              <HugeiconsIcon icon={UserCircleIcon} size={16} strokeWidth={1.6} className="text-muted-foreground" />
+              <HugeiconsIcon
+                icon={UserCircleIcon}
+                size={16}
+                strokeWidth={1.6}
+                className="text-muted-foreground"
+              />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold text-foreground">{expense.userName}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{expense.userEmail}</p>
+              <p className="truncate text-[13px] font-semibold text-foreground">
+                {expense.userName}
+              </p>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {expense.userEmail}
+              </p>
             </div>
-            <StatusBadge variant={STATUS_VARIANT[expense.status]} className="shrink-0">
+            <StatusBadge
+              variant={STATUS_VARIANT[expense.status]}
+              className="shrink-0"
+            >
               {STATUS_LABEL[expense.status]}
             </StatusBadge>
           </div>
@@ -171,10 +203,14 @@ function ReviewModal({
           {/* Title + amount */}
           <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2.5">
             <div>
-              <p className="text-[13px] font-semibold text-foreground">{expense.title}</p>
-              <p className="text-[11px] text-muted-foreground">{fmtDate(expense.expenseDate)}</p>
+              <p className="text-[13px] font-semibold text-foreground">
+                {expense.title}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {fmtDate(expense.expenseDate)}
+              </p>
             </div>
-            <span className="text-[18px] font-bold tabular-nums text-foreground">
+            <span className="text-[18px] font-bold text-foreground tabular-nums">
               {fmtPeso(expense.amount)}
             </span>
           </div>
@@ -182,7 +218,10 @@ function ReviewModal({
           {/* Category */}
           <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2 text-[12px]">
             <span className="text-muted-foreground">Category</span>
-            <StatusBadge variant={EXPENSE_CATEGORY_COLOR[expense.category]} dot={false}>
+            <StatusBadge
+              variant={EXPENSE_CATEGORY_COLOR[expense.category]}
+              dot={false}
+            >
               {EXPENSE_CATEGORY_LABEL[expense.category]}
             </StatusBadge>
           </div>
@@ -193,7 +232,9 @@ function ReviewModal({
               <p className="mb-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                 Description
               </p>
-              <p className="text-[12px] text-foreground">{expense.description}</p>
+              <p className="text-[12px] text-foreground">
+                {expense.description}
+              </p>
             </div>
           )}
 
@@ -221,7 +262,11 @@ function ReviewModal({
                   rel="noreferrer"
                   className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-[12px] text-primary hover:bg-muted/40"
                 >
-                  <HugeiconsIcon icon={DocumentAttachmentIcon} size={13} strokeWidth={1.8} />
+                  <HugeiconsIcon
+                    icon={DocumentAttachmentIcon}
+                    size={13}
+                    strokeWidth={1.8}
+                  />
                   View attachment {i + 1}
                 </a>
               ))}
@@ -229,7 +274,12 @@ function ReviewModal({
           )}
 
           <p className="text-[11px] text-muted-foreground">
-            Filed {new Date(expense.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            Filed{" "}
+            {new Date(expense.createdAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
           </p>
 
           {/* Existing review note (view) */}
@@ -238,9 +288,13 @@ function ReviewModal({
               <p className="mb-1 text-[11px] font-semibold tracking-wider text-blue-600 uppercase">
                 Finance Notes
               </p>
-              <p className="text-[12px] text-blue-700 dark:text-blue-300">{expense.reviewNote}</p>
+              <p className="text-[12px] text-blue-700 dark:text-blue-300">
+                {expense.reviewNote}
+              </p>
               {expense.reviewedByName && (
-                <p className="mt-1 text-[11px] text-blue-500">— {expense.reviewedByName}</p>
+                <p className="mt-1 text-[11px] text-blue-500">
+                  — {expense.reviewedByName}
+                </p>
               )}
             </div>
           )}
@@ -277,17 +331,32 @@ function ReviewModal({
             {mode === "view" ? "Close" : "Cancel"}
           </Button>
           {mode === "approve" && (
-            <Button size="sm" className="bg-green-600 hover:bg-green-700" disabled={busy} onClick={handleSubmit}>
+            <Button
+              size="sm"
+              className="bg-green-600 hover:bg-green-700"
+              disabled={busy}
+              onClick={handleSubmit}
+            >
               {busy ? "Approving…" : "Approve Report"}
             </Button>
           )}
           {mode === "reject" && (
-            <Button size="sm" variant="destructive" disabled={busy || !note.trim()} onClick={handleSubmit}>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={busy || !note.trim()}
+              onClick={handleSubmit}
+            >
               {busy ? "Rejecting…" : "Reject Report"}
             </Button>
           )}
           {mode === "reimburse" && (
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700" disabled={busy} onClick={handleSubmit}>
+            <Button
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={busy}
+              onClick={handleSubmit}
+            >
               {busy ? "Updating…" : "Mark Reimbursed"}
             </Button>
           )}
@@ -300,7 +369,9 @@ function ReviewModal({
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function ExpenseManagementSection() {
-  const [statusFilter, setStatusFilter] = useState<ExpenseStatus | undefined>("SUBMITTED")
+  const [statusFilter, setStatusFilter] = useState<ExpenseStatus | undefined>(
+    "SUBMITTED"
+  )
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
   const [reviewTarget, setReviewTarget] = useState<{
@@ -308,7 +379,12 @@ export function ExpenseManagementSection() {
     mode: ReviewMode
   } | null>(null)
 
-  const q = useAllExpenses({ status: statusFilter, search: search || undefined, page, size: 20 })
+  const q = useAllExpenses({
+    status: statusFilter,
+    search: search || undefined,
+    page,
+    size: 20,
+  })
   const items = q.data?.content ?? []
   const total = q.data?.totalElements ?? 0
   const totalPages = q.data?.totalPages ?? 0
@@ -328,7 +404,9 @@ export function ExpenseManagementSection() {
     <div className="space-y-5">
       {/* ── Header ── */}
       <div>
-        <h1 className="text-[16px] font-bold text-foreground">Expense Reports</h1>
+        <h1 className="text-[16px] font-bold text-foreground">
+          Expense Reports
+        </h1>
         <p className="text-[12px] text-muted-foreground">
           Review and process employee expense reimbursement requests
         </p>
@@ -341,21 +419,31 @@ export function ExpenseManagementSection() {
           value={counts.total}
           meta="All time"
           accent="blue"
-          icon={<HugeiconsIcon icon={Invoice01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Invoice01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Submitted"
           value={<span className="text-warning">{counts.submitted}</span>}
           meta="Awaiting review"
           accent="amber"
-          icon={<HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Approved"
           value={<span className="text-success">{counts.approved}</span>}
           meta="Pending reimbursement"
           accent="green"
-          icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon
+              icon={CheckmarkCircle02Icon}
+              size={16}
+              strokeWidth={1.8}
+            />
+          }
         />
         <StatCard
           title="Pending Amount"
@@ -363,7 +451,9 @@ export function ExpenseManagementSection() {
             counts.totalPending > 0 ? (
               <>
                 ₱{(counts.totalPending / 1000).toFixed(1)}
-                <span className="text-base font-normal text-muted-foreground">K</span>
+                <span className="text-base font-normal text-muted-foreground">
+                  K
+                </span>
               </>
             ) : (
               <span className="text-success">₱0</span>
@@ -371,7 +461,9 @@ export function ExpenseManagementSection() {
           }
           meta="Submitted + approved"
           accent={counts.totalPending > 0 ? "amber" : "green"}
-          icon={<HugeiconsIcon icon={Alert01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Alert01Icon} size={16} strokeWidth={1.8} />
+          }
         />
       </div>
 
@@ -389,14 +481,20 @@ export function ExpenseManagementSection() {
               className="h-9 pl-9 text-[13px]"
               placeholder="Search by employee name or email…"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(0) }}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(0)
+              }}
             />
           </div>
           <div className="flex flex-wrap rounded-lg border border-border bg-muted/40 p-0.5">
             {STATUS_FILTERS.map((f) => (
               <button
                 key={f.label}
-                onClick={() => { setStatusFilter(f.value); setPage(0) }}
+                onClick={() => {
+                  setStatusFilter(f.value)
+                  setPage(0)
+                }}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors",
                   statusFilter === f.value
@@ -423,8 +521,21 @@ export function ExpenseManagementSection() {
         <Table>
           <TableHeader>
             <TableRow>
-              {["Employee", "Title", "Category", "Amount", "Date", "Status", "Actions"].map((h) => (
-                <TableHead key={h} className={h === "Actions" ? "text-right" : undefined}>{h}</TableHead>
+              {[
+                "Employee",
+                "Title",
+                "Category",
+                "Amount",
+                "Date",
+                "Status",
+                "Actions",
+              ].map((h) => (
+                <TableHead
+                  key={h}
+                  className={h === "Actions" ? "text-right" : undefined}
+                >
+                  {h}
+                </TableHead>
               ))}
             </TableRow>
           </TableHeader>
@@ -433,15 +544,25 @@ export function ExpenseManagementSection() {
               [0, 1, 2, 3].map((i) => (
                 <TableRow key={i}>
                   {[0, 1, 2, 3, 4, 5, 6].map((j) => (
-                    <TableCell key={j}><Skeleton className="h-3 w-16" /></TableCell>
+                    <TableCell key={j}>
+                      <Skeleton className="h-3 w-16" />
+                    </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-12 text-center text-[13px] text-muted-foreground">
+                <TableCell
+                  colSpan={7}
+                  className="py-12 text-center text-[13px] text-muted-foreground"
+                >
                   <div className="flex flex-col items-center gap-2">
-                    <HugeiconsIcon icon={Invoice01Icon} size={28} strokeWidth={1.3} className="text-muted-foreground/30" />
+                    <HugeiconsIcon
+                      icon={Invoice01Icon}
+                      size={28}
+                      strokeWidth={1.3}
+                      className="text-muted-foreground/30"
+                    />
                     <p>No expense reports found.</p>
                   </div>
                 </TableCell>
@@ -451,22 +572,29 @@ export function ExpenseManagementSection() {
                 <TableRow key={r.id} className="hover:bg-muted/30">
                   <TableCell>
                     <div>
-                      <p className="text-[13px] font-medium text-foreground">{r.userName}</p>
-                      <p className="text-[11px] text-muted-foreground">{r.userEmail}</p>
+                      <p className="text-[13px] font-medium text-foreground">
+                        {r.userName}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {r.userEmail}
+                      </p>
                     </div>
                   </TableCell>
-                  <TableCell className="text-[13px] font-medium text-foreground max-w-[180px] truncate">
+                  <TableCell className="max-w-[180px] truncate text-[13px] font-medium text-foreground">
                     {r.title}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge variant={EXPENSE_CATEGORY_COLOR[r.category]} dot={false}>
+                    <StatusBadge
+                      variant={EXPENSE_CATEGORY_COLOR[r.category]}
+                      dot={false}
+                    >
                       {EXPENSE_CATEGORY_LABEL[r.category]}
                     </StatusBadge>
                   </TableCell>
-                  <TableCell className="text-[13px] font-semibold tabular-nums text-foreground">
+                  <TableCell className="text-[13px] font-semibold text-foreground tabular-nums">
                     {fmtPeso(r.amount)}
                   </TableCell>
-                  <TableCell className="text-[12px] tabular-nums text-muted-foreground">
+                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">
                     {fmtDate(r.expenseDate)}
                   </TableCell>
                   <TableCell>
@@ -479,10 +607,16 @@ export function ExpenseManagementSection() {
                       <Button
                         size="icon-xs"
                         variant="outline"
-                        onClick={() => setReviewTarget({ expense: r, mode: "view" })}
+                        onClick={() =>
+                          setReviewTarget({ expense: r, mode: "view" })
+                        }
                         title="View details"
                       >
-                        <HugeiconsIcon icon={EyeIcon} size={12} strokeWidth={2} />
+                        <HugeiconsIcon
+                          icon={EyeIcon}
+                          size={12}
+                          strokeWidth={2}
+                        />
                       </Button>
                       {r.status === "SUBMITTED" && (
                         <>
@@ -490,19 +624,31 @@ export function ExpenseManagementSection() {
                             size="icon-xs"
                             variant="outline"
                             className="border-green-300 text-green-600 hover:bg-green-50 dark:border-green-900/40 dark:hover:bg-green-900/20"
-                            onClick={() => setReviewTarget({ expense: r, mode: "approve" })}
+                            onClick={() =>
+                              setReviewTarget({ expense: r, mode: "approve" })
+                            }
                             title="Approve"
                           >
-                            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={12} strokeWidth={2} />
+                            <HugeiconsIcon
+                              icon={CheckmarkCircle02Icon}
+                              size={12}
+                              strokeWidth={2}
+                            />
                           </Button>
                           <Button
                             size="icon-xs"
                             variant="outline"
                             className="border-red-200 text-red-500 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/20"
-                            onClick={() => setReviewTarget({ expense: r, mode: "reject" })}
+                            onClick={() =>
+                              setReviewTarget({ expense: r, mode: "reject" })
+                            }
                             title="Reject"
                           >
-                            <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={2} />
+                            <HugeiconsIcon
+                              icon={Cancel01Icon}
+                              size={12}
+                              strokeWidth={2}
+                            />
                           </Button>
                         </>
                       )}
@@ -511,10 +657,16 @@ export function ExpenseManagementSection() {
                           size="icon-xs"
                           variant="outline"
                           className="border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-900/40 dark:hover:bg-blue-900/20"
-                          onClick={() => setReviewTarget({ expense: r, mode: "reimburse" })}
+                          onClick={() =>
+                            setReviewTarget({ expense: r, mode: "reimburse" })
+                          }
                           title="Mark reimbursed"
                         >
-                          <HugeiconsIcon icon={Money01Icon} size={12} strokeWidth={2} />
+                          <HugeiconsIcon
+                            icon={Money01Icon}
+                            size={12}
+                            strokeWidth={2}
+                          />
                         </Button>
                       )}
                     </div>

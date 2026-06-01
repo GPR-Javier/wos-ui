@@ -59,8 +59,13 @@ export function useCancelExpense() {
 export function useApproveExpense() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, reviewNote }: { id: number; reviewNote?: string | null }) =>
-      expenseApi.approve(id, reviewNote),
+    mutationFn: ({
+      id,
+      reviewNote,
+    }: {
+      id: number
+      reviewNote?: string | null
+    }) => expenseApi.approve(id, reviewNote),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }
@@ -68,8 +73,13 @@ export function useApproveExpense() {
 export function useRejectExpense() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, reviewNote }: { id: number; reviewNote?: string | null }) =>
-      expenseApi.reject(id, reviewNote),
+    mutationFn: ({
+      id,
+      reviewNote,
+    }: {
+      id: number
+      reviewNote?: string | null
+    }) => expenseApi.reject(id, reviewNote),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }
@@ -77,8 +87,13 @@ export function useRejectExpense() {
 export function useReimburseExpense() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, reviewNote }: { id: number; reviewNote?: string | null }) =>
-      expenseApi.markReimbursed(id, reviewNote),
+    mutationFn: ({
+      id,
+      reviewNote,
+    }: {
+      id: number
+      reviewNote?: string | null
+    }) => expenseApi.markReimbursed(id, reviewNote),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }

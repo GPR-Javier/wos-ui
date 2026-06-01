@@ -66,6 +66,10 @@ const NAV_ICONS: Record<string, IconSvgElement> = {
   requests: CheckListIcon,
   attendance: CheckListIcon,
   recruitment: Briefcase01Icon,
+  careers: Briefcase01Icon,
+  "my-applications": CheckListIcon,
+  interviews: Calendar01Icon,
+  offers: Award01Icon,
   users: UserMultiple02Icon,
   roles: UserShield01Icon,
   employees: UserMultiple02Icon,
@@ -237,7 +241,7 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto p-3">
+      <nav data-tour="sidebar-nav" className="flex-1 overflow-y-auto p-3">
         <div className="mb-1 px-2 pt-2 pb-1">
           <p className="text-[10px] font-semibold tracking-widest text-muted-foreground/60 uppercase">
             Navigation

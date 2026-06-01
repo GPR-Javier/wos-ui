@@ -69,9 +69,12 @@ export const schedulePolicyApi = {
     params: { scopeRef?: number | null; page?: number; size?: number } = {}
   ) =>
     api
-      .get<PageResponse<PolicyVersion>>(`/hr/schedule-policies/${scope}/history`, {
-        params: { page: 0, size: 20, ...params },
-      })
+      .get<PageResponse<PolicyVersion>>(
+        `/hr/schedule-policies/${scope}/history`,
+        {
+          params: { page: 0, size: 20, ...params },
+        }
+      )
       .then((r) => r.data),
 
   resolveForUser: (userId: number) =>
@@ -81,7 +84,9 @@ export const schedulePolicyApi = {
 
   /** Current user's effective policy — drives the clock UI. */
   myPolicy: () =>
-    api.get<SchedulePolicyPayload>("/hr/attendance/me/policy").then((r) => r.data),
+    api
+      .get<SchedulePolicyPayload>("/hr/attendance/me/policy")
+      .then((r) => r.data),
 
   /** All users/roles with a saved override at this scope — latest version per scopeRef. */
   listOverrides: (scope: PolicyScope) =>

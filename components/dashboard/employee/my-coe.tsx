@@ -128,8 +128,15 @@ function StatusTimeline({ status }: { status: CoeStatus }) {
   if (status === "REJECTED") {
     return (
       <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 dark:border-red-800/30 dark:bg-red-900/10">
-        <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} className="text-red-500" />
-        <p className="text-[12px] font-medium text-red-600">This request has been rejected.</p>
+        <HugeiconsIcon
+          icon={Cancel01Icon}
+          size={14}
+          strokeWidth={2}
+          className="text-red-500"
+        />
+        <p className="text-[12px] font-medium text-red-600">
+          This request has been rejected.
+        </p>
       </div>
     )
   }
@@ -157,7 +164,11 @@ function StatusTimeline({ status }: { status: CoeStatus }) {
               )}
             >
               {isDone && (
-                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={10} strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={CheckmarkCircle02Icon}
+                  size={10}
+                  strokeWidth={2}
+                />
               )}
               {step.label}
             </div>
@@ -248,16 +259,22 @@ function RequestFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="flex size-6 items-center justify-center rounded-full bg-primary/10">
-              <HugeiconsIcon icon={File01Icon} size={13} strokeWidth={2} className="text-primary" />
+              <HugeiconsIcon
+                icon={File01Icon}
+                size={13}
+                strokeWidth={2}
+                className="text-primary"
+              />
             </span>
             New COE Request
           </DialogTitle>
           <DialogDescription>
-            Submit a Certificate of Employment request. Required fields are marked with *.
+            Submit a Certificate of Employment request. Required fields are
+            marked with *.
           </DialogDescription>
         </DialogHeader>
 
@@ -269,7 +286,9 @@ function RequestFormDialog({
             </Label>
             <Select
               value={form.purpose}
-              onValueChange={(v) => setForm((f) => ({ ...f, purpose: v as CoePurpose }))}
+              onValueChange={(v) =>
+                setForm((f) => ({ ...f, purpose: v as CoePurpose }))
+              }
             >
               <SelectTrigger className="h-9 text-[13px]">
                 <SelectValue placeholder="Select purpose…" />
@@ -288,11 +307,15 @@ function RequestFormDialog({
           <div className="space-y-1.5">
             <Label className="text-[12px]">Employment Status</Label>
             <div className="grid grid-cols-2 gap-2">
-              {(["CURRENT_EMPLOYEE", "FORMER_EMPLOYEE"] as CoeEmploymentStatus[]).map((s) => (
+              {(
+                ["CURRENT_EMPLOYEE", "FORMER_EMPLOYEE"] as CoeEmploymentStatus[]
+              ).map((s) => (
                 <button
                   key={s}
                   type="button"
-                  onClick={() => setForm((f) => ({ ...f, employmentStatus: s }))}
+                  onClick={() =>
+                    setForm((f) => ({ ...f, employmentStatus: s }))
+                  }
                   className={cn(
                     "rounded-lg border-2 p-3 text-left transition-all",
                     form.employmentStatus === s
@@ -301,7 +324,9 @@ function RequestFormDialog({
                   )}
                 >
                   <p className="text-[12px] font-semibold text-foreground">
-                    {s === "CURRENT_EMPLOYEE" ? "Current Employee" : "Former Employee"}
+                    {s === "CURRENT_EMPLOYEE"
+                      ? "Current Employee"
+                      : "Former Employee"}
                   </p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">
                     {s === "CURRENT_EMPLOYEE"
@@ -323,7 +348,9 @@ function RequestFormDialog({
                 <button
                   key={ct}
                   type="button"
-                  onClick={() => setForm((f) => ({ ...f, certificateType: ct }))}
+                  onClick={() =>
+                    setForm((f) => ({ ...f, certificateType: ct }))
+                  }
                   className={cn(
                     "rounded-lg border-2 p-3 text-left transition-all",
                     form.certificateType === ct
@@ -360,7 +387,8 @@ function RequestFormDialog({
                   className="mt-0.5 shrink-0 text-amber-600"
                 />
                 <p className="text-[11px] text-amber-700 dark:text-amber-400">
-                  Salary information requires HR approval before it can be included in your COE.
+                  Salary information requires HR approval before it can be
+                  included in your COE.
                 </p>
               </div>
             ) : null}
@@ -405,7 +433,9 @@ function RequestFormDialog({
               className="h-9 text-[13px]"
               placeholder="e.g. ABC Bank, Embassy of Japan…"
               value={form.recipientName}
-              onChange={(e) => setForm((f) => ({ ...f, recipientName: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, recipientName: e.target.value }))
+              }
             />
           </div>
 
@@ -419,14 +449,17 @@ function RequestFormDialog({
               className="min-h-[72px] resize-none text-[13px]"
               placeholder="Any special instructions for HR, specific wording required, etc."
               value={form.additionalNotes}
-              onChange={(e) => setForm((f) => ({ ...f, additionalNotes: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, additionalNotes: e.target.value }))
+              }
             />
           </div>
 
           {/* Attachments */}
           <div className="space-y-1.5">
             <Label className="text-[12px]">
-              Attachments <span className="text-muted-foreground">(optional)</span>
+              Attachments{" "}
+              <span className="text-muted-foreground">(optional)</span>
             </Label>
             <p className="text-[11px] text-muted-foreground">
               Authorization letter, valid ID, or supporting documents
@@ -448,7 +481,9 @@ function RequestFormDialog({
                   ? "border-primary bg-primary/5"
                   : "border-border bg-muted/20 hover:border-primary/40"
               )}
-              onClick={() => document.getElementById("coe-file-upload")?.click()}
+              onClick={() =>
+                document.getElementById("coe-file-upload")?.click()
+              }
             >
               <HugeiconsIcon
                 icon={DocumentAttachmentIcon}
@@ -490,7 +525,11 @@ function RequestFormDialog({
                       onClick={() => removeFile(i)}
                       className="shrink-0 text-muted-foreground transition-colors hover:text-danger"
                     >
-                      <HugeiconsIcon icon={Delete01Icon} size={13} strokeWidth={2} />
+                      <HugeiconsIcon
+                        icon={Delete01Icon}
+                        size={13}
+                        strokeWidth={2}
+                      />
                     </button>
                   </div>
                 ))}
@@ -511,7 +550,11 @@ function RequestFormDialog({
           >
             Save as Draft
           </Button>
-          <Button size="sm" disabled={busy || !isValid()} onClick={() => submit(false)}>
+          <Button
+            size="sm"
+            disabled={busy || !isValid()}
+            onClick={() => submit(false)}
+          >
             {busy ? "Submitting…" : "Submit Request"}
           </Button>
         </DialogFooter>
@@ -534,11 +577,16 @@ function DetailDialog({
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="flex size-6 items-center justify-center rounded-full bg-primary/10">
-              <HugeiconsIcon icon={File01Icon} size={13} strokeWidth={2} className="text-primary" />
+              <HugeiconsIcon
+                icon={File01Icon}
+                size={13}
+                strokeWidth={2}
+                className="text-primary"
+              />
             </span>
             COE Request Details
           </DialogTitle>
@@ -553,15 +601,16 @@ function DetailDialog({
                 {coe.referenceNumber ?? "—"}
               </p>
             </div>
-            <StatusBadge variant={STATUS_VARIANT[coe.status]} className="shrink-0">
+            <StatusBadge
+              variant={STATUS_VARIANT[coe.status]}
+              className="shrink-0"
+            >
               {STATUS_LABEL[coe.status]}
             </StatusBadge>
           </div>
 
           {/* Status timeline */}
-          {coe.status !== "DRAFT" && (
-            <StatusTimeline status={coe.status} />
-          )}
+          {coe.status !== "DRAFT" && <StatusTimeline status={coe.status} />}
 
           {/* Fields */}
           <div className="grid grid-cols-2 gap-2 text-[12px]">
@@ -574,14 +623,19 @@ function DetailDialog({
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
               <p className="text-muted-foreground">Employment Status</p>
               <p className="mt-0.5 font-semibold text-foreground">
-                {coe.employmentStatus === "CURRENT_EMPLOYEE" ? "Current Employee" : "Former Employee"}
+                {coe.employmentStatus === "CURRENT_EMPLOYEE"
+                  ? "Current Employee"
+                  : "Former Employee"}
               </p>
             </div>
           </div>
 
           <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2 text-[12px]">
             <span className="text-muted-foreground">Certificate Type</span>
-            <StatusBadge variant={COE_CERT_TYPE_COLOR[coe.certificateType]} dot={false}>
+            <StatusBadge
+              variant={COE_CERT_TYPE_COLOR[coe.certificateType]}
+              dot={false}
+            >
               {COE_CERT_TYPE_LABEL[coe.certificateType]}
             </StatusBadge>
           </div>
@@ -596,7 +650,9 @@ function DetailDialog({
           {coe.recipientName && (
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2 text-[12px]">
               <p className="text-muted-foreground">Recipient / Company</p>
-              <p className="mt-0.5 font-semibold text-foreground">{coe.recipientName}</p>
+              <p className="mt-0.5 font-semibold text-foreground">
+                {coe.recipientName}
+              </p>
             </div>
           )}
 
@@ -605,7 +661,9 @@ function DetailDialog({
               <p className="mb-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                 Your Notes
               </p>
-              <p className="text-[12px] italic text-foreground">&ldquo;{coe.additionalNotes}&rdquo;</p>
+              <p className="text-[12px] text-foreground italic">
+                &ldquo;{coe.additionalNotes}&rdquo;
+              </p>
             </div>
           )}
 
@@ -623,7 +681,11 @@ function DetailDialog({
                   rel="noreferrer"
                   className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-[12px] text-primary hover:bg-muted/40"
                 >
-                  <HugeiconsIcon icon={File01Icon} size={13} strokeWidth={1.8} />
+                  <HugeiconsIcon
+                    icon={File01Icon}
+                    size={13}
+                    strokeWidth={1.8}
+                  />
                   View attachment {i + 1}
                 </a>
               ))}
@@ -653,13 +715,13 @@ function DetailDialog({
               <p className="mb-1 text-[11px] font-semibold tracking-wider text-blue-600 uppercase">
                 HR / Admin Remarks
               </p>
-              <p className="text-[12px] text-blue-700 dark:text-blue-300">{coe.remarks}</p>
+              <p className="text-[12px] text-blue-700 dark:text-blue-300">
+                {coe.remarks}
+              </p>
               {coe.approvedByName && (
                 <p className="mt-1 text-[11px] text-blue-500">
                   — {coe.approvedByName}
-                  {coe.approvedAt
-                    ? `, ${fmtDate(coe.approvedAt)}`
-                    : ""}
+                  {coe.approvedAt ? `, ${fmtDate(coe.approvedAt)}` : ""}
                 </p>
               )}
             </div>
@@ -676,9 +738,7 @@ function DetailDialog({
               variant="destructive"
               size="sm"
               disabled={cancel.isPending}
-              onClick={() =>
-                cancel.mutate(coe.id, { onSuccess: onClose })
-              }
+              onClick={() => cancel.mutate(coe.id, { onSuccess: onClose })}
             >
               {cancel.isPending ? "Cancelling…" : "Cancel Request"}
             </Button>
@@ -695,7 +755,9 @@ function DetailDialog({
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function MyCOESection() {
-  const [statusFilter, setStatusFilter] = useState<CoeStatus | undefined>(undefined)
+  const [statusFilter, setStatusFilter] = useState<CoeStatus | undefined>(
+    undefined
+  )
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
   const [selected, setSelected] = useState<CoeRequest | null>(null)
@@ -710,7 +772,9 @@ export function MyCOESection() {
   const counts = {
     submitted: all.filter((r) => r.status === "SUBMITTED").length,
     underReview: all.filter((r) => r.status === "PENDING_REVIEW").length,
-    released: all.filter((r) => r.status === "RELEASED" || r.status === "COMPLETED").length,
+    released: all.filter(
+      (r) => r.status === "RELEASED" || r.status === "COMPLETED"
+    ).length,
     total: all.length,
   }
 
@@ -727,7 +791,12 @@ export function MyCOESection() {
           </p>
         </div>
         <Button size="sm" onClick={() => setFormOpen(true)}>
-          <HugeiconsIcon icon={Add01Icon} size={14} strokeWidth={2} className="mr-1.5" />
+          <HugeiconsIcon
+            icon={Add01Icon}
+            size={14}
+            strokeWidth={2}
+            className="mr-1.5"
+          />
           New Request
         </Button>
       </div>
@@ -746,21 +815,31 @@ export function MyCOESection() {
           value={<span className="text-warning">{counts.submitted}</span>}
           meta="Awaiting review"
           accent="amber"
-          icon={<HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Under Review"
           value={<span className="text-blue-500">{counts.underReview}</span>}
           meta="Being processed"
           accent="blue"
-          icon={<HugeiconsIcon icon={Alert01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Alert01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Released"
           value={<span className="text-success">{counts.released}</span>}
           meta="Ready to download"
           accent="green"
-          icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon
+              icon={CheckmarkCircle02Icon}
+              size={16}
+              strokeWidth={1.8}
+            />
+          }
         />
       </div>
 
@@ -793,13 +872,21 @@ export function MyCOESection() {
         <Table>
           <TableHeader>
             <TableRow>
-              {["Purpose", "Certificate Type", "Release Method", "Date Filed", "Status", "Actions"].map(
-                (h) => (
-                  <TableHead key={h} className={h === "Actions" ? "text-right" : undefined}>
-                    {h}
-                  </TableHead>
-                )
-              )}
+              {[
+                "Purpose",
+                "Certificate Type",
+                "Release Method",
+                "Date Filed",
+                "Status",
+                "Actions",
+              ].map((h) => (
+                <TableHead
+                  key={h}
+                  className={h === "Actions" ? "text-right" : undefined}
+                >
+                  {h}
+                </TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -848,14 +935,20 @@ export function MyCOESection() {
                 >
                   {/* Purpose */}
                   <TableCell>
-                    <StatusBadge variant={COE_PURPOSE_COLOR[r.purpose]} dot={false}>
+                    <StatusBadge
+                      variant={COE_PURPOSE_COLOR[r.purpose]}
+                      dot={false}
+                    >
                       {COE_PURPOSE_LABEL[r.purpose]}
                     </StatusBadge>
                   </TableCell>
 
                   {/* Certificate Type */}
                   <TableCell>
-                    <StatusBadge variant={COE_CERT_TYPE_COLOR[r.certificateType]} dot={false}>
+                    <StatusBadge
+                      variant={COE_CERT_TYPE_COLOR[r.certificateType]}
+                      dot={false}
+                    >
                       {COE_CERT_TYPE_LABEL[r.certificateType]}
                     </StatusBadge>
                   </TableCell>
@@ -866,7 +959,7 @@ export function MyCOESection() {
                   </TableCell>
 
                   {/* Date */}
-                  <TableCell className="text-[12px] tabular-nums text-muted-foreground">
+                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">
                     {fmtDate(r.createdAt)}
                   </TableCell>
 

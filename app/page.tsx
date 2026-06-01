@@ -7,8 +7,20 @@ import { PublicHeader } from "@/components/custom/public-header"
 const FEATURES = [
   {
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="3" y="4" width="18" height="18" rx="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
       </svg>
     ),
     title: "Attendance & DTR",
@@ -16,8 +28,18 @@ const FEATURES = [
   },
   {
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <line x1="12" y1="1" x2="12" y2="23" />
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
       </svg>
     ),
     title: "Payroll & Payslips",
@@ -25,8 +47,20 @@ const FEATURES = [
   },
   {
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
       </svg>
     ),
     title: "HR Management",
@@ -34,8 +68,21 @@ const FEATURES = [
   },
   {
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14,2 14,8 20,8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" />
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14,2 14,8 20,8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+        <line x1="10" y1="9" x2="8" y2="9" />
       </svg>
     ),
     title: "Leave & Requests",
@@ -43,7 +90,16 @@ const FEATURES = [
   },
   {
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
       </svg>
     ),
@@ -52,8 +108,18 @@ const FEATURES = [
   },
   {
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
       </svg>
     ),
     title: "Recruitment",
@@ -63,9 +129,9 @@ const FEATURES = [
 
 const STATS = [
   { value: "99.9%", label: "Uptime SLA" },
-  { value: "10k+",  label: "Employees managed" },
-  { value: "4.9★",  label: "User rating" },
-  { value: "6",     label: "Core modules" },
+  { value: "10k+", label: "Employees managed" },
+  { value: "4.9★", label: "User rating" },
+  { value: "6", label: "Core modules" },
 ]
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -73,7 +139,6 @@ const STATS = [
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-
       <PublicHeader />
 
       {/* ── Hero ── */}
@@ -82,7 +147,8 @@ export default function LandingPage() {
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.035]"
           style={{
-            backgroundImage: "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
+            backgroundImage:
+              "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
             backgroundSize: "40px 40px",
           }}
         />
@@ -96,14 +162,14 @@ export default function LandingPage() {
             Modern HR & Workforce Management
           </div>
 
-          <h1 className="text-[52px] font-bold leading-tight tracking-tight sm:text-[64px]">
+          <h1 className="text-[52px] leading-tight font-bold tracking-tight sm:text-[64px]">
             One platform for your{" "}
             <span className="text-primary">entire workforce</span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-muted-foreground">
-            Attendance tracking, payroll, leave management, HR tools, and recruitment —
-            all in a single platform built for modern teams.
+            Attendance tracking, payroll, leave management, HR tools, and
+            recruitment — all in a single platform built for modern teams.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
@@ -112,7 +178,16 @@ export default function LandingPage() {
               className="flex h-11 items-center gap-2 rounded-xl bg-primary px-6 text-[14px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
             >
               Get started free
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </Link>
@@ -127,9 +202,16 @@ export default function LandingPage() {
           {/* Stats row */}
           <div className="mt-16 grid grid-cols-2 gap-4 sm:grid-cols-4">
             {STATS.map((s) => (
-              <div key={s.label} className="rounded-xl border border-border bg-card px-4 py-4">
-                <p className="text-[24px] font-bold text-foreground">{s.value}</p>
-                <p className="mt-0.5 text-[12px] text-muted-foreground">{s.label}</p>
+              <div
+                key={s.label}
+                className="rounded-xl border border-border bg-card px-4 py-4"
+              >
+                <p className="text-[24px] font-bold text-foreground">
+                  {s.value}
+                </p>
+                <p className="mt-0.5 text-[12px] text-muted-foreground">
+                  {s.label}
+                </p>
               </div>
             ))}
           </div>
@@ -139,7 +221,9 @@ export default function LandingPage() {
       {/* ── Features ── */}
       <section className="mx-auto w-full max-w-6xl px-6 py-24">
         <div className="mb-12 text-center">
-          <h2 className="text-[32px] font-bold tracking-tight">Everything your team needs</h2>
+          <h2 className="text-[32px] font-bold tracking-tight">
+            Everything your team needs
+          </h2>
           <p className="mt-3 text-[15px] text-muted-foreground">
             Six integrated modules that cover your entire workforce lifecycle.
           </p>
@@ -155,7 +239,9 @@ export default function LandingPage() {
                 {f.icon}
               </div>
               <h3 className="text-[15px] font-semibold">{f.title}</h3>
-              <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{f.desc}</p>
+              <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                {f.desc}
+              </p>
             </div>
           ))}
         </div>
@@ -168,7 +254,8 @@ export default function LandingPage() {
             Ready to streamline your operations?
           </h2>
           <p className="mx-auto mt-4 max-w-md text-[15px] text-muted-foreground">
-            Join teams already using WorkOS to save time, reduce errors, and focus on what matters.
+            Join teams already using WorkOS to save time, reduce errors, and
+            focus on what matters.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
@@ -197,18 +284,36 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-6 text-[13px] text-muted-foreground">
-            <Link href="/careers" className="transition-colors hover:text-foreground">Careers</Link>
-            <Link href="/auth/login" className="transition-colors hover:text-foreground">Sign in</Link>
-            <Link href="/auth/register" className="transition-colors hover:text-foreground">Register</Link>
-            <a href="#" className="transition-colors hover:text-foreground">Privacy</a>
-            <a href="#" className="transition-colors hover:text-foreground">Terms</a>
+            <Link
+              href="/careers"
+              className="transition-colors hover:text-foreground"
+            >
+              Careers
+            </Link>
+            <Link
+              href="/auth/login"
+              className="transition-colors hover:text-foreground"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/auth/register"
+              className="transition-colors hover:text-foreground"
+            >
+              Register
+            </Link>
+            <a href="#" className="transition-colors hover:text-foreground">
+              Privacy
+            </a>
+            <a href="#" className="transition-colors hover:text-foreground">
+              Terms
+            </a>
           </div>
           <p className="w-full text-center text-[11px] text-muted-foreground sm:w-auto sm:text-left">
             &copy; {new Date().getFullYear()} WorkOS. All rights reserved.
           </p>
         </div>
       </footer>
-
     </div>
   )
 }

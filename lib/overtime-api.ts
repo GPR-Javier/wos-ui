@@ -1,11 +1,7 @@
 import { api } from "./api"
 import type { PageResponse } from "./admin-api"
 
-export type OvertimeType =
-  | "REGULAR"
-  | "REST_DAY"
-  | "HOLIDAY"
-  | "EMERGENCY"
+export type OvertimeType = "REGULAR" | "REST_DAY" | "HOLIDAY" | "EMERGENCY"
 
 export type OvertimeStatus =
   | "DRAFT"
@@ -19,10 +15,10 @@ export interface OvertimeRequest {
   userId: number
   userName: string
   userEmail: string
-  overtimeDate: string       // ISO date "YYYY-MM-DD"
-  startTime: string          // "HH:mm"
-  endTime: string            // "HH:mm"
-  totalHours: number         // computed decimal hours
+  overtimeDate: string // ISO date "YYYY-MM-DD"
+  startTime: string // "HH:mm"
+  endTime: string // "HH:mm"
+  totalHours: number // computed decimal hours
   overtimeType: OvertimeType
   reason: string
   status: OvertimeStatus
@@ -48,7 +44,9 @@ export interface CreateOvertimePayload {
 export const overtimeApi = {
   // Employee
   createMine: (body: CreateOvertimePayload) =>
-    api.post<OvertimeRequest>("/hr/overtime-requests", body).then((r) => r.data),
+    api
+      .post<OvertimeRequest>("/hr/overtime-requests", body)
+      .then((r) => r.data),
 
   listMine: (
     params: { status?: OvertimeStatus; page?: number; size?: number } = {}
@@ -111,8 +109,8 @@ export const OT_TYPE_LABEL: Record<OvertimeType, string> = {
 /** Philippine labor code multipliers */
 export const OT_RATE_MULTIPLIER: Record<OvertimeType, number> = {
   REGULAR: 1.25,
-  REST_DAY: 1.30,
-  HOLIDAY: 1.50,
+  REST_DAY: 1.3,
+  HOLIDAY: 1.5,
   EMERGENCY: 1.25,
 }
 

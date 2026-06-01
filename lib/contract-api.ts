@@ -36,10 +36,13 @@ export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
 
 export const CONTRACT_STATUS_COLORS: Record<ContractStatus, string> = {
   DRAFT: "bg-muted text-muted-foreground",
-  ACTIVE: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  EXPIRED: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  ACTIVE:
+    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  EXPIRED:
+    "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
   TERMINATED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  SUPERSEDED: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+  SUPERSEDED:
+    "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
 }
 
 export interface ContractPositionSummary {
@@ -67,7 +70,7 @@ export interface EmploymentContract {
   contractNumber?: string | null
   employmentType: EmploymentType
   contractStatus: ContractStatus
-  startDate: string         // "YYYY-MM-DD"
+  startDate: string // "YYYY-MM-DD"
   endDate?: string | null
   probationEndDate?: string | null
   signingDate?: string | null
@@ -119,17 +122,23 @@ export const listContracts = (userId: number) =>
   api.get<EmploymentContract[]>(base(userId)).then((r) => r.data)
 
 export const getContract = (userId: number, contractId: number) =>
-  api.get<EmploymentContract>(`${base(userId)}/${contractId}`).then((r) => r.data)
+  api
+    .get<EmploymentContract>(`${base(userId)}/${contractId}`)
+    .then((r) => r.data)
 
-export const createContract = (userId: number, payload: CreateContractPayload) =>
-  api.post<EmploymentContract>(base(userId), payload).then((r) => r.data)
+export const createContract = (
+  userId: number,
+  payload: CreateContractPayload
+) => api.post<EmploymentContract>(base(userId), payload).then((r) => r.data)
 
 export const updateContract = (
   userId: number,
   contractId: number,
   payload: UpdateContractPayload
 ) =>
-  api.put<EmploymentContract>(`${base(userId)}/${contractId}`, payload).then((r) => r.data)
+  api
+    .put<EmploymentContract>(`${base(userId)}/${contractId}`, payload)
+    .then((r) => r.data)
 
 export const updateContractStatus = (
   userId: number,
@@ -137,7 +146,9 @@ export const updateContractStatus = (
   contractStatus: ContractStatus
 ) =>
   api
-    .patch<EmploymentContract>(`${base(userId)}/${contractId}/status`, { contractStatus })
+    .patch<EmploymentContract>(`${base(userId)}/${contractId}/status`, {
+      contractStatus,
+    })
     .then((r) => r.data)
 
 export const deleteContract = (userId: number, contractId: number) =>

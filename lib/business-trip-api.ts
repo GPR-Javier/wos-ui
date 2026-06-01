@@ -12,13 +12,7 @@ export type TripPurpose =
 
 export type TravelMode = "DOMESTIC" | "INTERNATIONAL"
 
-export type TransportType =
-  | "PLANE"
-  | "BUS"
-  | "CAR"
-  | "TRAIN"
-  | "SHIP"
-  | "OTHER"
+export type TransportType = "PLANE" | "BUS" | "CAR" | "TRAIN" | "SHIP" | "OTHER"
 
 export type TripStatus =
   | "DRAFT"
@@ -41,8 +35,8 @@ export interface BusinessTrip {
   userName: string
   userEmail: string
   destination: string
-  departureDate: string   // "YYYY-MM-DD"
-  returnDate: string      // "YYYY-MM-DD"
+  departureDate: string // "YYYY-MM-DD"
+  returnDate: string // "YYYY-MM-DD"
   purpose: TripPurpose
   travelMode: TravelMode
   transportType: TransportType
@@ -79,7 +73,9 @@ export const businessTripApi = {
   createMine: (body: CreateTripPayload) =>
     api.post<BusinessTrip>("/hr/business-trips", body).then((r) => r.data),
 
-  listMine: (params: { status?: TripStatus; page?: number; size?: number } = {}) =>
+  listMine: (
+    params: { status?: TripStatus; page?: number; size?: number } = {}
+  ) =>
     api
       .get<PageResponse<BusinessTrip>>("/hr/business-trips/me", {
         params: { page: 0, size: 20, ...params },
@@ -87,11 +83,18 @@ export const businessTripApi = {
       .then((r) => r.data),
 
   cancelMine: (id: number) =>
-    api.post<BusinessTrip>(`/hr/business-trips/${id}/cancel`).then((r) => r.data),
+    api
+      .post<BusinessTrip>(`/hr/business-trips/${id}/cancel`)
+      .then((r) => r.data),
 
   // Admin / HR
   listAll: (
-    params: { status?: TripStatus; search?: string; page?: number; size?: number } = {}
+    params: {
+      status?: TripStatus
+      search?: string
+      page?: number
+      size?: number
+    } = {}
   ) =>
     api
       .get<PageResponse<BusinessTrip>>("/hr/business-trips", {
@@ -101,17 +104,23 @@ export const businessTripApi = {
 
   approve: (id: number, reviewNote?: string | null) =>
     api
-      .post<BusinessTrip>(`/hr/business-trips/${id}/approve`, { reviewNote: reviewNote ?? null })
+      .post<BusinessTrip>(`/hr/business-trips/${id}/approve`, {
+        reviewNote: reviewNote ?? null,
+      })
       .then((r) => r.data),
 
   reject: (id: number, reviewNote?: string | null) =>
     api
-      .post<BusinessTrip>(`/hr/business-trips/${id}/reject`, { reviewNote: reviewNote ?? null })
+      .post<BusinessTrip>(`/hr/business-trips/${id}/reject`, {
+        reviewNote: reviewNote ?? null,
+      })
       .then((r) => r.data),
 
   markCompleted: (id: number, reviewNote?: string | null) =>
     api
-      .post<BusinessTrip>(`/hr/business-trips/${id}/complete`, { reviewNote: reviewNote ?? null })
+      .post<BusinessTrip>(`/hr/business-trips/${id}/complete`, {
+        reviewNote: reviewNote ?? null,
+      })
       .then((r) => r.data),
 }
 

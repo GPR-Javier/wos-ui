@@ -25,7 +25,7 @@ export interface ExpenseReport {
   userName: string
   userEmail: string
   title: string
-  expenseDate: string       // "YYYY-MM-DD"
+  expenseDate: string // "YYYY-MM-DD"
   category: ExpenseCategory
   amount: number
   description: string
@@ -61,7 +61,8 @@ export const expenseApi = {
       fd.append("category", body.category)
       fd.append("amount", String(body.amount))
       fd.append("description", body.description)
-      if (body.businessTripId != null) fd.append("businessTripId", String(body.businessTripId))
+      if (body.businessTripId != null)
+        fd.append("businessTripId", String(body.businessTripId))
       if (body.isDraft != null) fd.append("isDraft", String(body.isDraft))
       files.forEach((f) => fd.append("attachments", f))
       return api
@@ -70,10 +71,14 @@ export const expenseApi = {
         })
         .then((r) => r.data)
     }
-    return api.post<ExpenseReport>("/hr/expense-reports", body).then((r) => r.data)
+    return api
+      .post<ExpenseReport>("/hr/expense-reports", body)
+      .then((r) => r.data)
   },
 
-  listMine: (params: { status?: ExpenseStatus; page?: number; size?: number } = {}) =>
+  listMine: (
+    params: { status?: ExpenseStatus; page?: number; size?: number } = {}
+  ) =>
     api
       .get<PageResponse<ExpenseReport>>("/hr/expense-reports/me", {
         params: { page: 0, size: 20, ...params },
@@ -81,7 +86,9 @@ export const expenseApi = {
       .then((r) => r.data),
 
   cancelMine: (id: number) =>
-    api.post<ExpenseReport>(`/hr/expense-reports/${id}/cancel`).then((r) => r.data),
+    api
+      .post<ExpenseReport>(`/hr/expense-reports/${id}/cancel`)
+      .then((r) => r.data),
 
   // Admin / Finance
   listAll: (
@@ -101,17 +108,23 @@ export const expenseApi = {
 
   approve: (id: number, reviewNote?: string | null) =>
     api
-      .post<ExpenseReport>(`/hr/expense-reports/${id}/approve`, { reviewNote: reviewNote ?? null })
+      .post<ExpenseReport>(`/hr/expense-reports/${id}/approve`, {
+        reviewNote: reviewNote ?? null,
+      })
       .then((r) => r.data),
 
   reject: (id: number, reviewNote?: string | null) =>
     api
-      .post<ExpenseReport>(`/hr/expense-reports/${id}/reject`, { reviewNote: reviewNote ?? null })
+      .post<ExpenseReport>(`/hr/expense-reports/${id}/reject`, {
+        reviewNote: reviewNote ?? null,
+      })
       .then((r) => r.data),
 
   markReimbursed: (id: number, reviewNote?: string | null) =>
     api
-      .post<ExpenseReport>(`/hr/expense-reports/${id}/reimburse`, { reviewNote: reviewNote ?? null })
+      .post<ExpenseReport>(`/hr/expense-reports/${id}/reimburse`, {
+        reviewNote: reviewNote ?? null,
+      })
       .then((r) => r.data),
 }
 

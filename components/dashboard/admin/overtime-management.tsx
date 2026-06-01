@@ -201,7 +201,10 @@ function ReviewModal({
                 {request.userEmail}
               </p>
             </div>
-            <StatusBadge variant={STATUS_VARIANT[request.status]} className="shrink-0">
+            <StatusBadge
+              variant={STATUS_VARIANT[request.status]}
+              className="shrink-0"
+            >
               {STATUS_LABEL[request.status]}
             </StatusBadge>
           </div>
@@ -210,7 +213,7 @@ function ReviewModal({
           <div className="grid grid-cols-2 gap-2 text-[12px]">
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
               <p className="text-muted-foreground">Overtime Date</p>
-              <p className="mt-0.5 font-semibold tabular-nums text-foreground">
+              <p className="mt-0.5 font-semibold text-foreground tabular-nums">
                 {fmtDate(request.overtimeDate)}
               </p>
             </div>
@@ -230,13 +233,13 @@ function ReviewModal({
           <div className="grid grid-cols-2 gap-2 text-[12px]">
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
               <p className="text-muted-foreground">Time Range</p>
-              <p className="mt-0.5 font-semibold tabular-nums text-foreground">
+              <p className="mt-0.5 font-semibold text-foreground tabular-nums">
                 {fmt12(request.startTime)} – {fmt12(request.endTime)}
               </p>
             </div>
             <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
               <p className="text-primary/70">Total Hours</p>
-              <p className="mt-0.5 font-bold tabular-nums text-primary">
+              <p className="mt-0.5 font-bold text-primary tabular-nums">
                 {fmtHours(request.totalHours)}
               </p>
             </div>
@@ -264,7 +267,7 @@ function ReviewModal({
             <p className="mb-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
               Employee Reason
             </p>
-            <p className="text-[12px] italic text-foreground">
+            <p className="text-[12px] text-foreground italic">
               &ldquo;{request.reason}&rdquo;
             </p>
           </div>
@@ -430,9 +433,7 @@ export function OvertimeManagementSection() {
         />
         <StatCard
           title="Pending"
-          value={
-            <span className="text-warning">{summaryCounts.pending}</span>
-          }
+          value={<span className="text-warning">{summaryCounts.pending}</span>}
           meta="Awaiting review"
           accent="amber"
           icon={
@@ -441,9 +442,7 @@ export function OvertimeManagementSection() {
         />
         <StatCard
           title="Approved"
-          value={
-            <span className="text-success">{summaryCounts.approved}</span>
-          }
+          value={<span className="text-success">{summaryCounts.approved}</span>}
           meta="Synced to payroll"
           accent="green"
           icon={
@@ -594,32 +593,35 @@ export function OvertimeManagementSection() {
                   </TableCell>
 
                   {/* Date */}
-                  <TableCell className="text-[12px] tabular-nums text-foreground">
+                  <TableCell className="text-[12px] text-foreground tabular-nums">
                     {fmtDate(r.overtimeDate)}
                   </TableCell>
 
                   {/* Type */}
                   <TableCell>
-                    <StatusBadge variant={OT_TYPE_COLOR[r.overtimeType]} dot={false}>
+                    <StatusBadge
+                      variant={OT_TYPE_COLOR[r.overtimeType]}
+                      dot={false}
+                    >
                       {OT_TYPE_LABEL[r.overtimeType]}
                     </StatusBadge>
                   </TableCell>
 
                   {/* Time */}
-                  <TableCell className="text-[12px] tabular-nums text-muted-foreground">
+                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">
                     {fmt12(r.startTime)} – {fmt12(r.endTime)}
                   </TableCell>
 
                   {/* Hours */}
                   <TableCell>
-                    <span className="text-[13px] font-semibold tabular-nums text-primary">
+                    <span className="text-[13px] font-semibold text-primary tabular-nums">
                       {fmtHours(r.totalHours)}
                     </span>
                   </TableCell>
 
                   {/* Rate multiplier */}
                   <TableCell>
-                    <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-foreground">
+                    <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-bold text-foreground tabular-nums">
                       ×{OT_RATE_MULTIPLIER[r.overtimeType].toFixed(2)}
                     </span>
                   </TableCell>
@@ -639,7 +641,7 @@ export function OvertimeManagementSection() {
                   </TableCell>
 
                   {/* Filed */}
-                  <TableCell className="text-[12px] tabular-nums text-muted-foreground">
+                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">
                     {fmtDate(r.createdAt.split("T")[0])}
                   </TableCell>
 

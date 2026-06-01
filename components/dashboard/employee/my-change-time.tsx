@@ -131,7 +131,8 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
   const today = new Date().toISOString().split("T")[0]
 
   const [attendanceDate, setAttendanceDate] = useState("")
-  const [requestType, setRequestType] = useState<ChangeTimeRequestType>("TIME_IN")
+  const [requestType, setRequestType] =
+    useState<ChangeTimeRequestType>("TIME_IN")
   const [currentTimeIn, setCurrentTimeIn] = useState("")
   const [currentTimeOut, setCurrentTimeOut] = useState("")
   const [requestedTimeIn, setRequestedTimeIn] = useState("")
@@ -225,7 +226,11 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
               {(
                 [
                   { value: "TIME_IN", label: "Time-In", sub: "Clock-in only" },
-                  { value: "TIME_OUT", label: "Time-Out", sub: "Clock-out only" },
+                  {
+                    value: "TIME_OUT",
+                    label: "Time-Out",
+                    sub: "Clock-out only",
+                  },
                   { value: "BOTH", label: "Both", sub: "In & out" },
                 ] as const
               ).map((opt) => (
@@ -370,7 +375,7 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
                     key={i}
                     className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-1.5 text-[12px]"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex min-w-0 items-center gap-2">
                       <HugeiconsIcon
                         icon={File01Icon}
                         size={13}
@@ -425,7 +430,9 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
           <Button
             variant="outline"
             size="sm"
-            disabled={!attendanceDate || !reason.trim() || createMutation.isPending}
+            disabled={
+              !attendanceDate || !reason.trim() || createMutation.isPending
+            }
             onClick={() => handleSubmit(true)}
           >
             Save as Draft
@@ -475,7 +482,7 @@ function DetailDialog({
           </div>
 
           {/* Time comparison */}
-          <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+          <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
             <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
               Time Comparison
             </p>
@@ -484,7 +491,7 @@ function DetailDialog({
               <div className="flex items-center justify-between text-[12px]">
                 <span className="text-muted-foreground">Time-In</span>
                 <div className="flex items-center gap-2">
-                  <span className="tabular-nums text-foreground">
+                  <span className="text-foreground tabular-nums">
                     {fmt12(request.currentTimeIn)}
                   </span>
                   <HugeiconsIcon
@@ -493,7 +500,7 @@ function DetailDialog({
                     strokeWidth={2}
                     className="text-muted-foreground"
                   />
-                  <span className="font-semibold tabular-nums text-primary">
+                  <span className="font-semibold text-primary tabular-nums">
                     {fmt12(request.requestedTimeIn)}
                   </span>
                 </div>
@@ -504,7 +511,7 @@ function DetailDialog({
               <div className="flex items-center justify-between text-[12px]">
                 <span className="text-muted-foreground">Time-Out</span>
                 <div className="flex items-center gap-2">
-                  <span className="tabular-nums text-foreground">
+                  <span className="text-foreground tabular-nums">
                     {fmt12(request.currentTimeOut)}
                   </span>
                   <HugeiconsIcon
@@ -513,7 +520,7 @@ function DetailDialog({
                     strokeWidth={2}
                     className="text-muted-foreground"
                   />
-                  <span className="font-semibold tabular-nums text-primary">
+                  <span className="font-semibold text-primary tabular-nums">
                     {fmt12(request.requestedTimeOut)}
                   </span>
                 </div>
@@ -532,7 +539,7 @@ function DetailDialog({
           {/* Review note */}
           {request.reviewNote && (
             <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-800/40 dark:bg-blue-900/10">
-              <p className="mb-1 text-[11px] font-semibold tracking-wider text-blue-600 dark:text-blue-400 uppercase">
+              <p className="mb-1 text-[11px] font-semibold tracking-wider text-blue-600 uppercase dark:text-blue-400">
                 Admin Remarks
               </p>
               <p className="text-[12px] text-blue-700 dark:text-blue-300">
@@ -541,7 +548,9 @@ function DetailDialog({
               {request.reviewedByName && (
                 <p className="mt-1 text-[11px] text-blue-500 dark:text-blue-400">
                   — {request.reviewedByName}
-                  {request.reviewedAt ? `, ${fmtDateTime(request.reviewedAt)}` : ""}
+                  {request.reviewedAt
+                    ? `, ${fmtDateTime(request.reviewedAt)}`
+                    : ""}
                 </p>
               )}
             </div>
@@ -604,9 +613,9 @@ function DetailDialog({
 // ── Main Component ──────────────────────────────────────────────────────────
 
 export function MyChangeTimeSection() {
-  const [statusFilter, setStatusFilter] = useState<ChangeTimeStatus | undefined>(
-    undefined
-  )
+  const [statusFilter, setStatusFilter] = useState<
+    ChangeTimeStatus | undefined
+  >(undefined)
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
   const [detail, setDetail] = useState<ChangeTimeRequest | null>(null)
@@ -635,11 +644,7 @@ export function MyChangeTimeSection() {
             File and track your time correction requests
           </p>
         </div>
-        <Button
-          size="sm"
-          className="gap-1.5"
-          onClick={() => setFormOpen(true)}
-        >
+        <Button size="sm" className="gap-1.5" onClick={() => setFormOpen(true)}>
           <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} />
           New Request
         </Button>
@@ -683,9 +688,7 @@ export function MyChangeTimeSection() {
           value={counts.draft}
           meta="Saved, not yet submitted"
           accent="gray"
-          icon={
-            <HugeiconsIcon icon={File01Icon} size={16} strokeWidth={1.8} />
-          }
+          icon={<HugeiconsIcon icon={File01Icon} size={16} strokeWidth={1.8} />}
         />
       </div>
 

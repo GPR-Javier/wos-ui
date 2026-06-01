@@ -236,7 +236,7 @@ function ReviewModal({
           <div className="grid grid-cols-2 gap-2 text-[12px]">
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
               <p className="text-muted-foreground">Attendance Date</p>
-              <p className="mt-0.5 font-semibold tabular-nums text-foreground">
+              <p className="mt-0.5 font-semibold text-foreground tabular-nums">
                 {fmtDate(request.attendanceDate)}
               </p>
             </div>
@@ -257,7 +257,7 @@ function ReviewModal({
               request.requestType === "BOTH") && (
               <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-[12px]">
                 <span className="w-14 text-muted-foreground">Time-In</span>
-                <span className="tabular-nums text-foreground">
+                <span className="text-foreground tabular-nums">
                   {fmt12(request.currentTimeIn)}
                 </span>
                 <HugeiconsIcon
@@ -266,7 +266,7 @@ function ReviewModal({
                   strokeWidth={2}
                   className="text-muted-foreground"
                 />
-                <span className="font-bold tabular-nums text-primary">
+                <span className="font-bold text-primary tabular-nums">
                   {fmt12(request.requestedTimeIn)}
                 </span>
               </div>
@@ -275,7 +275,7 @@ function ReviewModal({
               request.requestType === "BOTH") && (
               <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-[12px]">
                 <span className="w-14 text-muted-foreground">Time-Out</span>
-                <span className="tabular-nums text-foreground">
+                <span className="text-foreground tabular-nums">
                   {fmt12(request.currentTimeOut)}
                 </span>
                 <HugeiconsIcon
@@ -284,7 +284,7 @@ function ReviewModal({
                   strokeWidth={2}
                   className="text-muted-foreground"
                 />
-                <span className="font-bold tabular-nums text-primary">
+                <span className="font-bold text-primary tabular-nums">
                   {fmt12(request.requestedTimeOut)}
                 </span>
               </div>
@@ -296,7 +296,7 @@ function ReviewModal({
             <p className="mb-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
               Employee Reason
             </p>
-            <p className="text-[12px] italic text-foreground">
+            <p className="text-[12px] text-foreground italic">
               &ldquo;{request.reason}&rdquo;
             </p>
           </div>
@@ -421,9 +421,9 @@ function ReviewModal({
 // ── Main Component ──────────────────────────────────────────────────────────
 
 export function ChangeTimeManagementSection() {
-  const [statusFilter, setStatusFilter] = useState<ChangeTimeStatus | undefined>(
-    "PENDING"
-  )
+  const [statusFilter, setStatusFilter] = useState<
+    ChangeTimeStatus | undefined
+  >("PENDING")
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
   const [reviewTarget, setReviewTarget] = useState<{
@@ -485,9 +485,7 @@ export function ChangeTimeManagementSection() {
         />
         <StatCard
           title="Approved"
-          value={
-            <span className="text-success">{summaryCounts.approved}</span>
-          }
+          value={<span className="text-success">{summaryCounts.approved}</span>}
           meta="Attendance updated"
           accent="green"
           icon={
@@ -500,9 +498,7 @@ export function ChangeTimeManagementSection() {
         />
         <StatCard
           title="Rejected"
-          value={
-            <span className="text-danger">{summaryCounts.rejected}</span>
-          }
+          value={<span className="text-danger">{summaryCounts.rejected}</span>}
           meta="Closed without update"
           accent="red"
           icon={
@@ -514,7 +510,7 @@ export function ChangeTimeManagementSection() {
       {/* ── Filter bar ── */}
       <div className="rounded-xl border border-border bg-card shadow-sm">
         <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3">
-          <div className="relative flex-1 min-w-48">
+          <div className="relative min-w-48 flex-1">
             <HugeiconsIcon
               icon={Search01Icon}
               size={14}
@@ -627,7 +623,7 @@ export function ChangeTimeManagementSection() {
                   </TableCell>
 
                   {/* Date */}
-                  <TableCell className="text-[12px] tabular-nums text-foreground">
+                  <TableCell className="text-[12px] text-foreground tabular-nums">
                     {fmtDate(r.attendanceDate)}
                   </TableCell>
 

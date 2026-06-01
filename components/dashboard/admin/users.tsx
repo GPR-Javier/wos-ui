@@ -142,14 +142,18 @@ function CreateUserModal({ onClose }: CreateModalProps) {
     jobPositionIds: [],
   })
 
-  const positionsByDept = jobPositions.reduce<Record<string, typeof jobPositions>>((acc, p) => {
+  const positionsByDept = jobPositions.reduce<
+    Record<string, typeof jobPositions>
+  >((acc, p) => {
     const dept = p.department ?? "General"
     if (!acc[dept]) acc[dept] = []
     acc[dept]!.push(p)
     return acc
   }, {})
 
-  const selectedPositions = jobPositions.filter((p) => selectedPositionIds.includes(p.id))
+  const selectedPositions = jobPositions.filter((p) =>
+    selectedPositionIds.includes(p.id)
+  )
 
   function togglePosition(id: number) {
     setSelectedPositionIds((prev) =>
@@ -230,44 +234,71 @@ function CreateUserModal({ onClose }: CreateModalProps) {
           />
         </div>
         <div className="col-span-2 space-y-1.5">
-          <Label className="text-[12px]">Job Position <span className="text-muted-foreground">(optional)</span></Label>
+          <Label className="text-[12px]">
+            Job Position{" "}
+            <span className="text-muted-foreground">(optional)</span>
+          </Label>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 text-left text-[13px] transition-colors hover:bg-muted/40"
               >
-                <span className={cn("truncate", selectedPositionIds.length === 0 && "text-muted-foreground")}>
-                  {selectedPositionIds.length === 0 ? "Select positions…" : `${selectedPositionIds.length} position(s) selected`}
+                <span
+                  className={cn(
+                    "truncate",
+                    selectedPositionIds.length === 0 && "text-muted-foreground"
+                  )}
+                >
+                  {selectedPositionIds.length === 0
+                    ? "Select positions…"
+                    : `${selectedPositionIds.length} position(s) selected`}
                 </span>
                 <span className="text-muted-foreground">v</span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[--radix-dropdown-menu-trigger-width] p-2">
-              <DropdownMenuLabel className="px-1.5 py-1 text-[11px]">First selected = primary position</DropdownMenuLabel>
+            <DropdownMenuContent
+              align="start"
+              className="w-[--radix-dropdown-menu-trigger-width] p-2"
+            >
+              <DropdownMenuLabel className="px-1.5 py-1 text-[11px]">
+                First selected = primary position
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <div className="max-h-48 overflow-auto">
                 {jobPositions.length === 0 ? (
-                  <p className="px-2 py-2 text-[12px] text-muted-foreground">No positions configured.</p>
+                  <p className="px-2 py-2 text-[12px] text-muted-foreground">
+                    No positions configured.
+                  </p>
                 ) : (
-                  Object.keys(positionsByDept).sort().map((dept) => (
-                    <div key={dept}>
-                      <p className="px-2 py-1 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">{dept}</p>
-                      {positionsByDept[dept]!.map((p) => (
-                        <DropdownMenuCheckboxItem
-                          key={p.id}
-                          checked={selectedPositionIds.includes(p.id)}
-                          onCheckedChange={() => togglePosition(p.id)}
-                          onSelect={(e) => e.preventDefault()}
-                        >
-                          <span className="min-w-0">
-                            <span className="block truncate text-[12px] font-medium">{p.title}</span>
-                            {p.level && <span className="block text-[11px] text-muted-foreground">{p.level}</span>}
-                          </span>
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                    </div>
-                  ))
+                  Object.keys(positionsByDept)
+                    .sort()
+                    .map((dept) => (
+                      <div key={dept}>
+                        <p className="px-2 py-1 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+                          {dept}
+                        </p>
+                        {positionsByDept[dept]!.map((p) => (
+                          <DropdownMenuCheckboxItem
+                            key={p.id}
+                            checked={selectedPositionIds.includes(p.id)}
+                            onCheckedChange={() => togglePosition(p.id)}
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            <span className="min-w-0">
+                              <span className="block truncate text-[12px] font-medium">
+                                {p.title}
+                              </span>
+                              {p.level && (
+                                <span className="block text-[11px] text-muted-foreground">
+                                  {p.level}
+                                </span>
+                              )}
+                            </span>
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </div>
+                    ))
                 )}
               </div>
             </DropdownMenuContent>
@@ -276,21 +307,41 @@ function CreateUserModal({ onClose }: CreateModalProps) {
           {selectedPositions.length > 0 && (
             <div className="space-y-1">
               {selectedPositions.map((p, i) => {
-                const defaultGrade = p.salaryGrades.find((g) => g.isDefault) ?? p.salaryGrades[0]
+                const defaultGrade =
+                  p.salaryGrades.find((g) => g.isDefault) ?? p.salaryGrades[0]
                 return (
-                  <div key={p.id} className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-2.5 py-1.5">
-                    {i === 0 && <span className="rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">PRIMARY</span>}
+                  <div
+                    key={p.id}
+                    className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-2.5 py-1.5"
+                  >
+                    {i === 0 && (
+                      <span className="rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
+                        PRIMARY
+                      </span>
+                    )}
                     <span className="text-[12px] font-medium">{p.title}</span>
                     {defaultGrade && (
                       <>
                         <span className="text-muted-foreground">·</span>
-                        <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">{defaultGrade.name}</span>
+                        <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                          {defaultGrade.name}
+                        </span>
                         <span className="ml-auto text-[11px] text-muted-foreground">
-                          {new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(defaultGrade.salaryAmount)}
+                          {new Intl.NumberFormat("en-PH", {
+                            style: "currency",
+                            currency: "PHP",
+                            maximumFractionDigits: 0,
+                          }).format(defaultGrade.salaryAmount)}
                         </span>
                       </>
                     )}
-                    <button type="button" onClick={() => togglePosition(p.id)} className="ml-1 text-[11px] text-muted-foreground hover:text-foreground">×</button>
+                    <button
+                      type="button"
+                      onClick={() => togglePosition(p.id)}
+                      className="ml-1 text-[11px] text-muted-foreground hover:text-foreground"
+                    >
+                      ×
+                    </button>
                   </div>
                 )
               })}

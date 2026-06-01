@@ -42,8 +42,14 @@ interface Props {
   employeeId: number
 }
 
-const EMPLOYMENT_TYPES = Object.entries(EMPLOYMENT_TYPE_LABELS) as [EmploymentType, string][]
-const CONTRACT_STATUSES = Object.entries(CONTRACT_STATUS_LABELS) as [ContractStatus, string][]
+const EMPLOYMENT_TYPES = Object.entries(EMPLOYMENT_TYPE_LABELS) as [
+  EmploymentType,
+  string,
+][]
+const CONTRACT_STATUSES = Object.entries(CONTRACT_STATUS_LABELS) as [
+  ContractStatus,
+  string,
+][]
 
 function fmt(date?: string | null) {
   if (!date) return "—"
@@ -89,7 +95,10 @@ export function ContractTab({ employeeId }: Props) {
     setShowForm(false)
   }
 
-  const handleStatusChange = (contractId: number, contractStatus: ContractStatus) => {
+  const handleStatusChange = (
+    contractId: number,
+    contractStatus: ContractStatus
+  ) => {
     updateStatus.mutate({ contractId, contractStatus })
   }
 
@@ -116,12 +125,18 @@ export function ContractTab({ employeeId }: Props) {
         <div>
           <h3 className="text-[15px] font-semibold">Employment Contracts</h3>
           <p className="text-[12px] text-muted-foreground">
-            {contracts.length} contract{contracts.length !== 1 ? "s" : ""} on file
+            {contracts.length} contract{contracts.length !== 1 ? "s" : ""} on
+            file
           </p>
         </div>
         {!showForm && (
           <Button size="sm" onClick={() => setShowForm(true)}>
-            <HugeiconsIcon icon={PlusSignIcon} size={13} strokeWidth={2} className="mr-1.5" />
+            <HugeiconsIcon
+              icon={PlusSignIcon}
+              size={13}
+              strokeWidth={2}
+              className="mr-1.5"
+            />
             New Contract
           </Button>
         )}
@@ -150,7 +165,9 @@ export function ContractTab({ employeeId }: Props) {
               <Label className="text-[12px]">Employment Type *</Label>
               <Select
                 value={form.employmentType}
-                onValueChange={(v) => set("employmentType", v as EmploymentType)}
+                onValueChange={(v) =>
+                  set("employmentType", v as EmploymentType)
+                }
               >
                 <SelectTrigger className="h-8 text-[13px]">
                   <SelectValue />
@@ -196,7 +213,9 @@ export function ContractTab({ employeeId }: Props) {
                 value={form.endDate ?? ""}
                 onChange={(e) => set("endDate", e.target.value || null)}
               />
-              <p className="text-[10px] text-muted-foreground">Leave blank for open-ended</p>
+              <p className="text-[10px] text-muted-foreground">
+                Leave blank for open-ended
+              </p>
             </div>
 
             {/* Probation End Date */}
@@ -206,7 +225,9 @@ export function ContractTab({ employeeId }: Props) {
                 type="date"
                 className="h-8 text-[13px]"
                 value={form.probationEndDate ?? ""}
-                onChange={(e) => set("probationEndDate", e.target.value || null)}
+                onChange={(e) =>
+                  set("probationEndDate", e.target.value || null)
+                }
               />
             </div>
 
@@ -226,7 +247,9 @@ export function ContractTab({ employeeId }: Props) {
               <Label className="text-[12px]">Job Position</Label>
               <Select
                 value={form.jobPositionId?.toString() ?? "none"}
-                onValueChange={(v) => set("jobPositionId", v === "none" ? null : Number(v))}
+                onValueChange={(v) =>
+                  set("jobPositionId", v === "none" ? null : Number(v))
+                }
               >
                 <SelectTrigger className="h-8 text-[13px]">
                   <SelectValue placeholder="Select position" />
@@ -238,7 +261,11 @@ export function ContractTab({ employeeId }: Props) {
                   {positions
                     .filter((p) => p.active)
                     .map((p) => (
-                      <SelectItem key={p.id} value={p.id.toString()} className="text-[13px]">
+                      <SelectItem
+                        key={p.id}
+                        value={p.id.toString()}
+                        className="text-[13px]"
+                      >
                         {p.title}
                         {p.department ? ` · ${p.department}` : ""}
                       </SelectItem>
@@ -252,7 +279,9 @@ export function ContractTab({ employeeId }: Props) {
               <Label className="text-[12px]">Salary Grade</Label>
               <Select
                 value={form.salaryGradeId?.toString() ?? "none"}
-                onValueChange={(v) => set("salaryGradeId", v === "none" ? null : Number(v))}
+                onValueChange={(v) =>
+                  set("salaryGradeId", v === "none" ? null : Number(v))
+                }
               >
                 <SelectTrigger className="h-8 text-[13px]">
                   <SelectValue placeholder="Select grade" />
@@ -264,7 +293,11 @@ export function ContractTab({ employeeId }: Props) {
                   {grades
                     .filter((g) => g.active)
                     .map((g) => (
-                      <SelectItem key={g.id} value={g.id.toString()} className="text-[13px]">
+                      <SelectItem
+                        key={g.id}
+                        value={g.id.toString()}
+                        className="text-[13px]"
+                      >
                         {g.name}
                         {` (₱${g.salaryAmount.toLocaleString("en-PH")})`}
                       </SelectItem>
@@ -301,7 +334,12 @@ export function ContractTab({ employeeId }: Props) {
               disabled={!form.startDate || createContract.isPending}
               onClick={handleCreate}
             >
-              <HugeiconsIcon icon={FloppyDiskIcon} size={13} strokeWidth={2} className="mr-1.5" />
+              <HugeiconsIcon
+                icon={FloppyDiskIcon}
+                size={13}
+                strokeWidth={2}
+                className="mr-1.5"
+              />
               {createContract.isPending ? "Saving…" : "Save Contract"}
             </Button>
           </div>
@@ -317,12 +355,19 @@ export function ContractTab({ employeeId }: Props) {
             strokeWidth={1.5}
             className="mx-auto mb-3 text-muted-foreground/50"
           />
-          <p className="text-[13px] font-medium text-muted-foreground">No contracts on file</p>
+          <p className="text-[13px] font-medium text-muted-foreground">
+            No contracts on file
+          </p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             Create the first employment contract for this employee.
           </p>
           <Button size="sm" className="mt-4" onClick={() => setShowForm(true)}>
-            <HugeiconsIcon icon={PlusSignIcon} size={13} strokeWidth={2} className="mr-1.5" />
+            <HugeiconsIcon
+              icon={PlusSignIcon}
+              size={13}
+              strokeWidth={2}
+              className="mr-1.5"
+            />
             New Contract
           </Button>
         </div>
@@ -331,7 +376,7 @@ export function ContractTab({ employeeId }: Props) {
       {/* Active Contracts */}
       {active.length > 0 && (
         <div className="space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
             Active
           </p>
           {active.map((c) => (
@@ -350,7 +395,7 @@ export function ContractTab({ employeeId }: Props) {
       {/* Past Contracts */}
       {others.length > 0 && (
         <div className="space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
             Past / Draft
           </p>
           {others.map((c) => (
@@ -400,7 +445,7 @@ function ContractCard({
         onClick={onToggle}
         className="flex w-full items-center gap-3 p-4 text-left"
       >
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[14px] font-semibold">
               {EMPLOYMENT_TYPE_LABELS[c.employmentType]}
@@ -414,12 +459,18 @@ function ContractCard({
               {CONTRACT_STATUS_LABELS[c.contractStatus]}
             </span>
             {c.contractNumber && (
-              <span className="text-[11px] text-muted-foreground">#{c.contractNumber}</span>
+              <span className="text-[11px] text-muted-foreground">
+                #{c.contractNumber}
+              </span>
             )}
           </div>
           <p className="mt-0.5 text-[12px] text-muted-foreground">
             {fmt(c.startDate)} →{" "}
-            {c.endDate ? fmt(c.endDate) : <span className="italic">Open-ended</span>}
+            {c.endDate ? (
+              fmt(c.endDate)
+            ) : (
+              <span className="italic">Open-ended</span>
+            )}
             {c.jobPosition && ` · ${c.jobPosition.title}`}
             {c.salaryGrade && ` · ${c.salaryGrade.name}`}
           </p>
@@ -437,17 +488,27 @@ function ContractCard({
 
       {/* Expanded detail */}
       {expanded && (
-        <div className="border-t px-4 pb-4 pt-3">
+        <div className="border-t px-4 pt-3 pb-4">
           <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-[12px] sm:grid-cols-3">
-            <Field label="Employment Type" value={EMPLOYMENT_TYPE_LABELS[c.employmentType]} />
-            <Field label="Status" value={CONTRACT_STATUS_LABELS[c.contractStatus]} />
-            {c.contractNumber && <Field label="Contract #" value={c.contractNumber} />}
+            <Field
+              label="Employment Type"
+              value={EMPLOYMENT_TYPE_LABELS[c.employmentType]}
+            />
+            <Field
+              label="Status"
+              value={CONTRACT_STATUS_LABELS[c.contractStatus]}
+            />
+            {c.contractNumber && (
+              <Field label="Contract #" value={c.contractNumber} />
+            )}
             <Field label="Start Date" value={fmt(c.startDate)} />
             <Field label="End Date" value={fmt(c.endDate)} />
             {c.probationEndDate && (
               <Field label="Probation Ends" value={fmt(c.probationEndDate)} />
             )}
-            {c.signingDate && <Field label="Signed On" value={fmt(c.signingDate)} />}
+            {c.signingDate && (
+              <Field label="Signed On" value={fmt(c.signingDate)} />
+            )}
             {c.jobPosition && (
               <Field
                 label="Position"
@@ -464,7 +525,7 @@ function ContractCard({
 
           {c.notes && (
             <div className="mt-3">
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+              <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
                 Notes
               </p>
               <p className="mt-1 text-[12px]">{c.notes}</p>
@@ -473,7 +534,10 @@ function ContractCard({
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {/* Quick status change */}
-            <Select value={c.contractStatus} onValueChange={(v) => onStatusChange(v as ContractStatus)}>
+            <Select
+              value={c.contractStatus}
+              onValueChange={(v) => onStatusChange(v as ContractStatus)}
+            >
               <SelectTrigger className="h-7 w-auto gap-1.5 text-[11px]">
                 <SelectValue />
               </SelectTrigger>
@@ -492,7 +556,12 @@ function ContractCard({
               className="h-7 text-[11px] text-destructive hover:text-destructive"
               onClick={onDelete}
             >
-              <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={2} className="mr-1" />
+              <HugeiconsIcon
+                icon={Delete02Icon}
+                size={12}
+                strokeWidth={2}
+                className="mr-1"
+              />
               Delete
             </Button>
 
@@ -509,7 +578,7 @@ function ContractCard({
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+      <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
         {label}
       </p>
       <p className="mt-0.5 text-[12px] font-medium">{value}</p>

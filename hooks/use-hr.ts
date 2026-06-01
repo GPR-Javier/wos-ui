@@ -67,8 +67,13 @@ export function useCreateJob() {
 export function useUpdateJob() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: Partial<CreateJobPayload> }) =>
-      hrApi.updateJob(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number
+      payload: Partial<CreateJobPayload>
+    }) => hrApi.updateJob(id, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["hr", "jobs"] }),
   })
 }

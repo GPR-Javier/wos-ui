@@ -60,8 +60,13 @@ export function useCancelChangeTimeRequest() {
 export function useApproveChangeTimeRequest() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, reviewNote }: { id: number; reviewNote?: string | null }) =>
-      changeTimeApi.approve(id, reviewNote),
+    mutationFn: ({
+      id,
+      reviewNote,
+    }: {
+      id: number
+      reviewNote?: string | null
+    }) => changeTimeApi.approve(id, reviewNote),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }
@@ -69,8 +74,13 @@ export function useApproveChangeTimeRequest() {
 export function useRejectChangeTimeRequest() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, reviewNote }: { id: number; reviewNote?: string | null }) =>
-      changeTimeApi.reject(id, reviewNote),
+    mutationFn: ({
+      id,
+      reviewNote,
+    }: {
+      id: number
+      reviewNote?: string | null
+    }) => changeTimeApi.reject(id, reviewNote),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }

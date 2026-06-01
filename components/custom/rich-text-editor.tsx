@@ -24,7 +24,10 @@ function ToolBtn({
     <button
       type="button"
       title={title}
-      onMouseDown={(e) => { e.preventDefault(); onClick() }}
+      onMouseDown={(e) => {
+        e.preventDefault()
+        onClick()
+      }}
       className={cn(
         "flex h-6 min-w-6 items-center justify-center rounded px-1.5 text-[11px] font-semibold transition-colors select-none",
         active
@@ -55,11 +58,7 @@ export function RichTextEditor({
   className?: string
 }) {
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      Placeholder.configure({ placeholder }),
-    ],
+    extensions: [StarterKit, Underline, Placeholder.configure({ placeholder })],
     content: value,
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
     editorProps: {
@@ -81,34 +80,63 @@ export function RichTextEditor({
   const e = editor // alias for brevity
 
   return (
-    <div className={cn("overflow-hidden rounded-lg border border-input focus-within:ring-2 focus-within:ring-ring", className)}>
+    <div
+      className={cn(
+        "overflow-hidden rounded-lg border border-input focus-within:ring-2 focus-within:ring-ring",
+        className
+      )}
+    >
       {/* ── Toolbar ── */}
       <div className="flex flex-wrap items-center gap-0.5 border-b border-border/60 bg-muted/30 px-2 py-1.5">
         {/* Text style */}
-        <ToolBtn active={e.isActive("bold")}      onClick={() => e.chain().focus().toggleBold().run()}      title="Bold (Ctrl+B)">
+        <ToolBtn
+          active={e.isActive("bold")}
+          onClick={() => e.chain().focus().toggleBold().run()}
+          title="Bold (Ctrl+B)"
+        >
           <strong>B</strong>
         </ToolBtn>
-        <ToolBtn active={e.isActive("italic")}    onClick={() => e.chain().focus().toggleItalic().run()}    title="Italic (Ctrl+I)">
+        <ToolBtn
+          active={e.isActive("italic")}
+          onClick={() => e.chain().focus().toggleItalic().run()}
+          title="Italic (Ctrl+I)"
+        >
           <em>I</em>
         </ToolBtn>
-        <ToolBtn active={e.isActive("underline")} onClick={() => e.chain().focus().toggleUnderline().run()} title="Underline (Ctrl+U)">
+        <ToolBtn
+          active={e.isActive("underline")}
+          onClick={() => e.chain().focus().toggleUnderline().run()}
+          title="Underline (Ctrl+U)"
+        >
           <span className="underline">U</span>
         </ToolBtn>
 
         <Divider />
 
         {/* Headings */}
-        <ToolBtn active={e.isActive("heading", { level: 2 })} onClick={() => e.chain().focus().toggleHeading({ level: 2 }).run()} title="Heading 2">
+        <ToolBtn
+          active={e.isActive("heading", { level: 2 })}
+          onClick={() => e.chain().focus().toggleHeading({ level: 2 }).run()}
+          title="Heading 2"
+        >
           H2
         </ToolBtn>
-        <ToolBtn active={e.isActive("heading", { level: 3 })} onClick={() => e.chain().focus().toggleHeading({ level: 3 }).run()} title="Heading 3">
+        <ToolBtn
+          active={e.isActive("heading", { level: 3 })}
+          onClick={() => e.chain().focus().toggleHeading({ level: 3 }).run()}
+          title="Heading 3"
+        >
           H3
         </ToolBtn>
 
         <Divider />
 
         {/* Lists */}
-        <ToolBtn active={e.isActive("bulletList")}  onClick={() => e.chain().focus().toggleBulletList().run()}  title="Bullet list">
+        <ToolBtn
+          active={e.isActive("bulletList")}
+          onClick={() => e.chain().focus().toggleBulletList().run()}
+          title="Bullet list"
+        >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
             <circle cx="1.5" cy="3" r="1.5" />
             <rect x="4" y="2.25" width="8" height="1.5" rx="0.75" />
@@ -118,13 +146,23 @@ export function RichTextEditor({
             <rect x="4" y="8.25" width="8" height="1.5" rx="0.75" />
           </svg>
         </ToolBtn>
-        <ToolBtn active={e.isActive("orderedList")} onClick={() => e.chain().focus().toggleOrderedList().run()} title="Numbered list">
+        <ToolBtn
+          active={e.isActive("orderedList")}
+          onClick={() => e.chain().focus().toggleOrderedList().run()}
+          title="Numbered list"
+        >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-            <text x="0" y="4"  fontSize="4" fontFamily="monospace">1.</text>
+            <text x="0" y="4" fontSize="4" fontFamily="monospace">
+              1.
+            </text>
             <rect x="4" y="2.25" width="8" height="1.5" rx="0.75" />
-            <text x="0" y="7.5" fontSize="4" fontFamily="monospace">2.</text>
+            <text x="0" y="7.5" fontSize="4" fontFamily="monospace">
+              2.
+            </text>
             <rect x="4" y="5.75" width="8" height="1.5" rx="0.75" />
-            <text x="0" y="11" fontSize="4" fontFamily="monospace">3.</text>
+            <text x="0" y="11" fontSize="4" fontFamily="monospace">
+              3.
+            </text>
             <rect x="4" y="9.25" width="8" height="1.5" rx="0.75" />
           </svg>
         </ToolBtn>
@@ -132,8 +170,20 @@ export function RichTextEditor({
         <Divider />
 
         {/* Clear formatting */}
-        <ToolBtn active={false} onClick={() => e.chain().focus().clearNodes().unsetAllMarks().run()} title="Clear formatting">
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+        <ToolBtn
+          active={false}
+          onClick={() => e.chain().focus().clearNodes().unsetAllMarks().run()}
+          title="Clear formatting"
+        >
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 11 11"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          >
             <path d="M2 9l7-7M4 2l5 5M1.5 9.5h5" />
           </svg>
         </ToolBtn>

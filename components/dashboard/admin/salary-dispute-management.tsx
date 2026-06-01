@@ -88,7 +88,13 @@ const STATUS_FILTERS: { label: string; value?: DisputeStatus }[] = [
   { label: "Rejected", value: "REJECTED" },
 ]
 
-type ReviewMode = "view" | "review" | "request-docs" | "approve" | "reject" | "close"
+type ReviewMode =
+  | "view"
+  | "review"
+  | "request-docs"
+  | "approve"
+  | "reject"
+  | "close"
 
 function fmtPeso(n: number) {
   return `₱${n.toLocaleString("en-PH", {
@@ -149,7 +155,8 @@ function ReviewModal({
         { id: dispute.id, resolutionNotes: notes },
         { onSuccess: onClose }
       )
-    else if (mode === "approve") approveMutation.mutate(p, { onSuccess: onClose })
+    else if (mode === "approve")
+      approveMutation.mutate(p, { onSuccess: onClose })
     else if (mode === "reject") rejectMutation.mutate(p, { onSuccess: onClose })
     else if (mode === "close") closeMutation.mutate(p, { onSuccess: onClose })
   }
@@ -180,17 +187,32 @@ function ReviewModal({
           <DialogTitle className="flex items-center gap-2">
             {mode === "approve" && (
               <span className="flex size-6 items-center justify-center rounded-full bg-green-100">
-                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} strokeWidth={2} className="text-green-600" />
+                <HugeiconsIcon
+                  icon={CheckmarkCircle02Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="text-green-600"
+                />
               </span>
             )}
             {mode === "reject" && (
               <span className="flex size-6 items-center justify-center rounded-full bg-red-100">
-                <HugeiconsIcon icon={Cancel01Icon} size={13} strokeWidth={2} className="text-red-500" />
+                <HugeiconsIcon
+                  icon={Cancel01Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="text-red-500"
+                />
               </span>
             )}
             {mode === "request-docs" && (
               <span className="flex size-6 items-center justify-center rounded-full bg-purple-100">
-                <HugeiconsIcon icon={MessageQuestionIcon} size={13} strokeWidth={2} className="text-purple-500" />
+                <HugeiconsIcon
+                  icon={MessageQuestionIcon}
+                  size={13}
+                  strokeWidth={2}
+                  className="text-purple-500"
+                />
               </span>
             )}
             {titleMap[mode]}
@@ -201,13 +223,25 @@ function ReviewModal({
           {/* Employee + status */}
           <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
-              <HugeiconsIcon icon={UserCircleIcon} size={16} strokeWidth={1.6} className="text-muted-foreground" />
+              <HugeiconsIcon
+                icon={UserCircleIcon}
+                size={16}
+                strokeWidth={1.6}
+                className="text-muted-foreground"
+              />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold text-foreground">{dispute.userName}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{dispute.userEmail}</p>
+              <p className="truncate text-[13px] font-semibold text-foreground">
+                {dispute.userName}
+              </p>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {dispute.userEmail}
+              </p>
             </div>
-            <StatusBadge variant={STATUS_VARIANT[dispute.status]} className="shrink-0">
+            <StatusBadge
+              variant={STATUS_VARIANT[dispute.status]}
+              className="shrink-0"
+            >
               {STATUS_LABEL[dispute.status]}
             </StatusBadge>
           </div>
@@ -216,18 +250,25 @@ function ReviewModal({
           <div className="grid grid-cols-2 gap-2 text-[12px]">
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
               <p className="text-muted-foreground">Payroll Period</p>
-              <p className="mt-0.5 font-semibold text-foreground">{dispute.payrollPeriod}</p>
+              <p className="mt-0.5 font-semibold text-foreground">
+                {dispute.payrollPeriod}
+              </p>
             </div>
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
               <p className="text-muted-foreground">Release Date</p>
-              <p className="mt-0.5 font-semibold text-foreground">{fmtDate(dispute.salaryReleaseDate)}</p>
+              <p className="mt-0.5 font-semibold text-foreground">
+                {fmtDate(dispute.salaryReleaseDate)}
+              </p>
             </div>
           </div>
 
           {/* Category */}
           <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2 text-[12px]">
             <span className="text-muted-foreground">Category</span>
-            <StatusBadge variant={DISPUTE_CATEGORY_COLOR[dispute.disputeCategory]} dot={false}>
+            <StatusBadge
+              variant={DISPUTE_CATEGORY_COLOR[dispute.disputeCategory]}
+              dot={false}
+            >
               {DISPUTE_CATEGORY_LABEL[dispute.disputeCategory]}
             </StatusBadge>
           </div>
@@ -239,15 +280,21 @@ function ReviewModal({
             </p>
             <div className="flex items-center justify-between text-[12px]">
               <span className="text-muted-foreground">Expected</span>
-              <span className="font-semibold tabular-nums text-foreground">{fmtPeso(dispute.expectedAmount)}</span>
+              <span className="font-semibold text-foreground tabular-nums">
+                {fmtPeso(dispute.expectedAmount)}
+              </span>
             </div>
             <div className="flex items-center justify-between text-[12px]">
               <span className="text-muted-foreground">Received</span>
-              <span className="font-semibold tabular-nums text-foreground">{fmtPeso(dispute.receivedAmount)}</span>
+              <span className="font-semibold text-foreground tabular-nums">
+                {fmtPeso(dispute.receivedAmount)}
+              </span>
             </div>
             <div className="flex items-center justify-between rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-[12px] dark:border-red-800/40 dark:bg-red-900/10">
               <span className="font-medium text-red-600">Discrepancy</span>
-              <span className="font-bold tabular-nums text-red-600">{fmtPeso(dispute.discrepancyAmount)}</span>
+              <span className="font-bold text-red-600 tabular-nums">
+                {fmtPeso(dispute.discrepancyAmount)}
+              </span>
             </div>
           </div>
 
@@ -256,7 +303,9 @@ function ReviewModal({
             <p className="mb-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
               Employee Explanation
             </p>
-            <p className="text-[12px] italic text-foreground">&ldquo;{dispute.reason}&rdquo;</p>
+            <p className="text-[12px] text-foreground italic">
+              &ldquo;{dispute.reason}&rdquo;
+            </p>
           </div>
 
           {/* Attachments */}
@@ -273,7 +322,11 @@ function ReviewModal({
                   rel="noreferrer"
                   className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-[12px] text-primary hover:bg-muted/40"
                 >
-                  <HugeiconsIcon icon={File01Icon} size={13} strokeWidth={1.8} />
+                  <HugeiconsIcon
+                    icon={File01Icon}
+                    size={13}
+                    strokeWidth={1.8}
+                  />
                   View attachment {i + 1}
                 </a>
               ))}
@@ -316,7 +369,9 @@ function ReviewModal({
               {dispute.reviewedByName && (
                 <p className="mt-1 text-[11px] text-blue-500">
                   — {dispute.reviewedByName}
-                  {dispute.reviewedAt ? `, ${fmtDateTime(dispute.reviewedAt)}` : ""}
+                  {dispute.reviewedAt
+                    ? `, ${fmtDateTime(dispute.reviewedAt)}`
+                    : ""}
                 </p>
               )}
             </div>
@@ -328,27 +383,52 @@ function ReviewModal({
             {mode === "view" ? "Close" : "Cancel"}
           </Button>
           {mode === "review" && (
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700" disabled={busy} onClick={handleSubmit}>
+            <Button
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={busy}
+              onClick={handleSubmit}
+            >
               {busy ? "Updating…" : "Mark Under Review"}
             </Button>
           )}
           {mode === "request-docs" && (
-            <Button size="sm" className="bg-purple-600 hover:bg-purple-700" disabled={busy || !notes.trim()} onClick={handleSubmit}>
+            <Button
+              size="sm"
+              className="bg-purple-600 hover:bg-purple-700"
+              disabled={busy || !notes.trim()}
+              onClick={handleSubmit}
+            >
               {busy ? "Sending…" : "Request Documents"}
             </Button>
           )}
           {mode === "approve" && (
-            <Button size="sm" className="bg-green-600 hover:bg-green-700" disabled={busy} onClick={handleSubmit}>
+            <Button
+              size="sm"
+              className="bg-green-600 hover:bg-green-700"
+              disabled={busy}
+              onClick={handleSubmit}
+            >
               {busy ? "Approving…" : "Approve & Create Adjustment"}
             </Button>
           )}
           {mode === "reject" && (
-            <Button size="sm" variant="destructive" disabled={busy} onClick={handleSubmit}>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={busy}
+              onClick={handleSubmit}
+            >
               {busy ? "Rejecting…" : "Reject Dispute"}
             </Button>
           )}
           {mode === "close" && (
-            <Button size="sm" variant="outline" disabled={busy} onClick={handleSubmit}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={handleSubmit}
+            >
               {busy ? "Closing…" : "Close Dispute"}
             </Button>
           )}
@@ -361,7 +441,9 @@ function ReviewModal({
 // ── Main Component ──────────────────────────────────────────────────────────
 
 export function SalaryDisputeManagementSection() {
-  const [statusFilter, setStatusFilter] = useState<DisputeStatus | undefined>("PENDING")
+  const [statusFilter, setStatusFilter] = useState<DisputeStatus | undefined>(
+    "PENDING"
+  )
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
   const [reviewTarget, setReviewTarget] = useState<{
@@ -385,11 +467,16 @@ export function SalaryDisputeManagementSection() {
   const summaryCounts = {
     total: allItems.length,
     pending: allItems.filter((r) => r.status === "PENDING").length,
-    underReview: allItems.filter((r) =>
-      r.status === "UNDER_REVIEW" || r.status === "PENDING_DOCUMENTS"
+    underReview: allItems.filter(
+      (r) => r.status === "UNDER_REVIEW" || r.status === "PENDING_DOCUMENTS"
     ).length,
     totalOpenDiscrepancy: allItems
-      .filter((r) => r.status !== "REJECTED" && r.status !== "CLOSED" && r.status !== "APPROVED")
+      .filter(
+        (r) =>
+          r.status !== "REJECTED" &&
+          r.status !== "CLOSED" &&
+          r.status !== "APPROVED"
+      )
       .reduce((s, r) => s + r.discrepancyAmount, 0),
   }
 
@@ -397,7 +484,9 @@ export function SalaryDisputeManagementSection() {
     <div className="space-y-5">
       {/* ── Header ── */}
       <div>
-        <h1 className="text-[16px] font-bold text-foreground">Salary Disputes</h1>
+        <h1 className="text-[16px] font-bold text-foreground">
+          Salary Disputes
+        </h1>
         <p className="text-[12px] text-muted-foreground">
           Review and resolve employee payroll dispute requests
         </p>
@@ -410,21 +499,29 @@ export function SalaryDisputeManagementSection() {
           value={summaryCounts.total}
           meta="All time"
           accent="blue"
-          icon={<HugeiconsIcon icon={Coins01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Coins01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Pending"
           value={<span className="text-warning">{summaryCounts.pending}</span>}
           meta="Awaiting initial review"
           accent="amber"
-          icon={<HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Clock01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Under Review"
-          value={<span className="text-blue-500">{summaryCounts.underReview}</span>}
+          value={
+            <span className="text-blue-500">{summaryCounts.underReview}</span>
+          }
           meta="Being processed"
           accent="blue"
-          icon={<HugeiconsIcon icon={Coins01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Coins01Icon} size={16} strokeWidth={1.8} />
+          }
         />
         <StatCard
           title="Open Discrepancy"
@@ -432,7 +529,9 @@ export function SalaryDisputeManagementSection() {
             summaryCounts.totalOpenDiscrepancy > 0 ? (
               <>
                 ₱{(summaryCounts.totalOpenDiscrepancy / 1000).toFixed(1)}
-                <span className="text-base font-normal text-muted-foreground">K</span>
+                <span className="text-base font-normal text-muted-foreground">
+                  K
+                </span>
               </>
             ) : (
               <span className="text-success">₱0</span>
@@ -440,7 +539,9 @@ export function SalaryDisputeManagementSection() {
           }
           meta="Total unresolved amount"
           accent={summaryCounts.totalOpenDiscrepancy > 0 ? "red" : "green"}
-          icon={<HugeiconsIcon icon={Alert01Icon} size={16} strokeWidth={1.8} />}
+          icon={
+            <HugeiconsIcon icon={Alert01Icon} size={16} strokeWidth={1.8} />
+          }
         />
       </div>
 
@@ -495,13 +596,24 @@ export function SalaryDisputeManagementSection() {
         <Table>
           <TableHeader>
             <TableRow>
-              {["Employee", "Period", "Category", "Expected", "Received", "Discrepancy", "Status", "Filed", "Actions"].map(
-                (h) => (
-                  <TableHead key={h} className={h === "Actions" ? "text-right" : undefined}>
-                    {h}
-                  </TableHead>
-                )
-              )}
+              {[
+                "Employee",
+                "Period",
+                "Category",
+                "Expected",
+                "Received",
+                "Discrepancy",
+                "Status",
+                "Filed",
+                "Actions",
+              ].map((h) => (
+                <TableHead
+                  key={h}
+                  className={h === "Actions" ? "text-right" : undefined}
+                >
+                  {h}
+                </TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -519,9 +631,17 @@ export function SalaryDisputeManagementSection() {
               </>
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="py-12 text-center text-[13px] text-muted-foreground">
+                <TableCell
+                  colSpan={9}
+                  className="py-12 text-center text-[13px] text-muted-foreground"
+                >
                   <div className="flex flex-col items-center gap-2">
-                    <HugeiconsIcon icon={Coins01Icon} size={28} strokeWidth={1.3} className="text-muted-foreground/30" />
+                    <HugeiconsIcon
+                      icon={Coins01Icon}
+                      size={28}
+                      strokeWidth={1.3}
+                      className="text-muted-foreground/30"
+                    />
                     <p>No salary disputes found.</p>
                   </div>
                 </TableCell>
@@ -532,37 +652,48 @@ export function SalaryDisputeManagementSection() {
                   {/* Employee */}
                   <TableCell>
                     <div>
-                      <p className="text-[13px] font-medium text-foreground">{r.userName}</p>
-                      <p className="text-[11px] text-muted-foreground">{r.userEmail}</p>
+                      <p className="text-[13px] font-medium text-foreground">
+                        {r.userName}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {r.userEmail}
+                      </p>
                     </div>
                   </TableCell>
 
                   {/* Period */}
                   <TableCell>
-                    <p className="text-[12px] font-medium text-foreground">{r.payrollPeriod}</p>
-                    <p className="text-[11px] text-muted-foreground">Released {fmtDate(r.salaryReleaseDate)}</p>
+                    <p className="text-[12px] font-medium text-foreground">
+                      {r.payrollPeriod}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Released {fmtDate(r.salaryReleaseDate)}
+                    </p>
                   </TableCell>
 
                   {/* Category */}
                   <TableCell>
-                    <StatusBadge variant={DISPUTE_CATEGORY_COLOR[r.disputeCategory]} dot={false}>
+                    <StatusBadge
+                      variant={DISPUTE_CATEGORY_COLOR[r.disputeCategory]}
+                      dot={false}
+                    >
                       {DISPUTE_CATEGORY_LABEL[r.disputeCategory]}
                     </StatusBadge>
                   </TableCell>
 
                   {/* Expected */}
-                  <TableCell className="text-[12px] tabular-nums text-foreground">
+                  <TableCell className="text-[12px] text-foreground tabular-nums">
                     {fmtPeso(r.expectedAmount)}
                   </TableCell>
 
                   {/* Received */}
-                  <TableCell className="text-[12px] tabular-nums text-foreground">
+                  <TableCell className="text-[12px] text-foreground tabular-nums">
                     {fmtPeso(r.receivedAmount)}
                   </TableCell>
 
                   {/* Discrepancy */}
                   <TableCell>
-                    <span className="text-[13px] font-bold tabular-nums text-danger">
+                    <span className="text-[13px] font-bold text-danger tabular-nums">
                       {fmtPeso(r.discrepancyAmount)}
                     </span>
                   </TableCell>
@@ -575,7 +706,7 @@ export function SalaryDisputeManagementSection() {
                   </TableCell>
 
                   {/* Filed */}
-                  <TableCell className="text-[12px] tabular-nums text-muted-foreground">
+                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">
                     {fmtDate(r.createdAt.split("T")[0])}
                   </TableCell>
 
@@ -586,10 +717,16 @@ export function SalaryDisputeManagementSection() {
                       <Button
                         size="icon-xs"
                         variant="outline"
-                        onClick={() => setReviewTarget({ dispute: r, mode: "view" })}
+                        onClick={() =>
+                          setReviewTarget({ dispute: r, mode: "view" })
+                        }
                         title="View details"
                       >
-                        <HugeiconsIcon icon={EyeIcon} size={12} strokeWidth={2} />
+                        <HugeiconsIcon
+                          icon={EyeIcon}
+                          size={12}
+                          strokeWidth={2}
+                        />
                         <span className="sr-only">View</span>
                       </Button>
 
@@ -599,52 +736,84 @@ export function SalaryDisputeManagementSection() {
                           size="icon-xs"
                           variant="outline"
                           className="border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-900/40 dark:hover:bg-blue-900/20"
-                          onClick={() => setReviewTarget({ dispute: r, mode: "review" })}
+                          onClick={() =>
+                            setReviewTarget({ dispute: r, mode: "review" })
+                          }
                           title="Mark under review"
                         >
-                          <HugeiconsIcon icon={Coins01Icon} size={12} strokeWidth={2} />
+                          <HugeiconsIcon
+                            icon={Coins01Icon}
+                            size={12}
+                            strokeWidth={2}
+                          />
                           <span className="sr-only">Review</span>
                         </Button>
                       )}
 
                       {/* Request documents */}
-                      {(r.status === "PENDING" || r.status === "UNDER_REVIEW") && (
+                      {(r.status === "PENDING" ||
+                        r.status === "UNDER_REVIEW") && (
                         <Button
                           size="icon-xs"
                           variant="outline"
                           className="border-purple-200 text-purple-500 hover:bg-purple-50 dark:border-purple-900/40 dark:hover:bg-purple-900/20"
-                          onClick={() => setReviewTarget({ dispute: r, mode: "request-docs" })}
+                          onClick={() =>
+                            setReviewTarget({
+                              dispute: r,
+                              mode: "request-docs",
+                            })
+                          }
                           title="Request documents"
                         >
-                          <HugeiconsIcon icon={MessageQuestionIcon} size={12} strokeWidth={2} />
+                          <HugeiconsIcon
+                            icon={MessageQuestionIcon}
+                            size={12}
+                            strokeWidth={2}
+                          />
                           <span className="sr-only">Request docs</span>
                         </Button>
                       )}
 
                       {/* Approve */}
-                      {(r.status === "PENDING" || r.status === "UNDER_REVIEW" || r.status === "PENDING_DOCUMENTS") && (
+                      {(r.status === "PENDING" ||
+                        r.status === "UNDER_REVIEW" ||
+                        r.status === "PENDING_DOCUMENTS") && (
                         <Button
                           size="icon-xs"
                           variant="outline"
                           className="border-green-300 text-green-600 hover:bg-green-50 dark:border-green-900/40 dark:hover:bg-green-900/20"
-                          onClick={() => setReviewTarget({ dispute: r, mode: "approve" })}
+                          onClick={() =>
+                            setReviewTarget({ dispute: r, mode: "approve" })
+                          }
                           title="Approve"
                         >
-                          <HugeiconsIcon icon={CheckmarkCircle02Icon} size={12} strokeWidth={2} />
+                          <HugeiconsIcon
+                            icon={CheckmarkCircle02Icon}
+                            size={12}
+                            strokeWidth={2}
+                          />
                           <span className="sr-only">Approve</span>
                         </Button>
                       )}
 
                       {/* Reject */}
-                      {(r.status === "PENDING" || r.status === "UNDER_REVIEW" || r.status === "PENDING_DOCUMENTS") && (
+                      {(r.status === "PENDING" ||
+                        r.status === "UNDER_REVIEW" ||
+                        r.status === "PENDING_DOCUMENTS") && (
                         <Button
                           size="icon-xs"
                           variant="outline"
                           className="border-red-200 text-red-500 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/20"
-                          onClick={() => setReviewTarget({ dispute: r, mode: "reject" })}
+                          onClick={() =>
+                            setReviewTarget({ dispute: r, mode: "reject" })
+                          }
                           title="Reject"
                         >
-                          <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={2} />
+                          <HugeiconsIcon
+                            icon={Cancel01Icon}
+                            size={12}
+                            strokeWidth={2}
+                          />
                           <span className="sr-only">Reject</span>
                         </Button>
                       )}

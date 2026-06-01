@@ -73,9 +73,11 @@ export function EmployeeDetailView({ employeeId }: Props) {
   const numericId = Number(employeeId)
   const isNumeric = Number.isFinite(numericId) && numericId > 0
 
-  const { data: apiEmployee, isLoading, isError } = useHrEmployee(
-    isNumeric ? numericId : 0
-  )
+  const {
+    data: apiEmployee,
+    isLoading,
+    isError,
+  } = useHrEmployee(isNumeric ? numericId : 0)
 
   // Resolve the employee record: API data takes priority for numeric IDs,
   // fall back to mock list for employee-code style IDs (e.g. "EMP-2847").
