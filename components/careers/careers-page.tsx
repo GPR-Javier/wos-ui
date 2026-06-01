@@ -703,9 +703,12 @@ export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
     enabled: embedded && isApplicant,
   })
   const applicationByJob = useMemo(() => {
+    // Withdrawn or rejected applications are "closed" — the candidate may apply again,
+    // so don't treat those jobs as already-applied.
     const map = new Map<number, JobApplication>()
     for (const a of myApplications) {
-      if (a.status !== "WITHDRAWN") map.set(a.jobPostingId, a)
+      if (a.status !== "WITHDRAWN" && a.status !== "REJECTED")
+        map.set(a.jobPostingId, a)
     }
     return map
   }, [myApplications])

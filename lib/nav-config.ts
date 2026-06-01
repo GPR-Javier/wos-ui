@@ -179,6 +179,11 @@ export const navConfig: NavItem[] = [
     section: "recruitment",
     authority: "RECRUITMENT:VIEW_JOB_POSTINGS",
   },
+  {
+    label: "Applicants",
+    section: "applicants",
+    authority: "RECRUITMENT:VIEW_APPLICANTS",
+  },
   // Applicant portal — visibility driven by authorities (APPLICANT control)
   {
     label: "Careers",
@@ -359,6 +364,7 @@ export const sectionTitles: Record<string, string> = {
   upload: "Upload Center",
   announcements: "Announcements",
   recruitment: "Recruitment",
+  applicants: "Applicants",
   careers: "Careers",
   "my-applications": "My Applications",
   interviews: "Interviews",

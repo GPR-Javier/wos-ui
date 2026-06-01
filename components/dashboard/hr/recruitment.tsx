@@ -35,6 +35,8 @@ import type {
   SalaryPeriod,
 } from "@/lib/hr-api"
 import { currencySymbol, CURRENCY_OPTIONS } from "@/lib/employee-profile-api"
+import { useQuestions, useCreateQuestion } from "@/hooks/use-assessment"
+import { assessmentApi } from "@/lib/assessment-api"
 import { cn } from "@/lib/utils"
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -97,6 +99,8 @@ type JobForm = {
   salaryGradeToId: string
   status: JobPosting["status"]
   tags: string[]
+  interviewUseCustom: boolean
+  interviewQuestionIds: number[]
 }
 
 type JobErrors = Partial<Record<"title" | "department" | "location", string>>
@@ -118,6 +122,8 @@ const EMPTY_FORM: JobForm = {
   salaryGradeToId: "",
   status: "open",
   tags: [],
+  interviewUseCustom: false,
+  interviewQuestionIds: [],
 }
 
 function postingToForm(j: JobPosting): JobForm {
@@ -140,6 +146,8 @@ function postingToForm(j: JobPosting): JobForm {
     salaryGradeToId: j.salaryGradeToId ? String(j.salaryGradeToId) : "",
     status: j.status,
     tags: j.tags,
+    interviewUseCustom: false,
+    interviewQuestionIds: [],
   }
 }
 
@@ -331,7 +339,50 @@ function JobModal({
 }) {
   const { data: grades = [] } = useSalaryGrades()
   const { data: departments = [] } = useDepartments()
+  const { data: interviewQuestions = [] } = useQuestions({ partType: "AI_INTERVIEW" })
+  const createQuestionMut = useCreateQuestion()
+  const [newQ, setNewQ] = useState("")
+  const [newRubric, setNewRubric] = useState("")
+  const [suggesting, setSuggesting] = useState(false)
   const activeDepts = departments.filter((d) => d.active)
+
+  function suggestRubric() {
+    const q = newQ.trim()
+    if (!q) return
+    setSuggesting(true)
+    assessmentApi
+      .suggestRubric(q, editingId ?? undefined)
+      .then((rubric) => setNewRubric(rubric))
+      .catch(() => {})
+      .finally(() => setSuggesting(false))
+  }
+
+  function addInterviewQuestion() {
+    const text = newQ.trim()
+    if (!text) return
+    createQuestionMut.mutate(
+      {
+        partType: "AI_INTERVIEW",
+        kind: "OPEN_SPOKEN",
+        category: "NONE",
+        text,
+        rubric: newRubric.trim() || null,
+        points: 1,
+        active: true,
+      },
+      {
+        onSuccess: (created) => {
+          setForm({
+            ...form,
+            interviewUseCustom: true,
+            interviewQuestionIds: [...form.interviewQuestionIds, created.id],
+          })
+          setNewQ("")
+          setNewRubric("")
+        },
+      }
+    )
+  }
   const activeGrades = grades.filter((g) => g.active)
   const gradeFrom = grades.find((g) => String(g.id) === form.salaryGradeFromId)
   const gradeTo = grades.find((g) => String(g.id) === form.salaryGradeToId)
@@ -772,6 +823,107 @@ function JobModal({
               Type and press Enter, or pick from existing tags
             </p>
           </div>
+
+          {/* AI Interview Questions */}
+          <div className="space-y-2 border-t border-border pt-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-[12px] text-muted-foreground">
+                AI Interview Questions
+              </Label>
+              <label className="flex cursor-pointer items-center gap-2 text-[12px]">
+                <input
+                  type="checkbox"
+                  checked={form.interviewUseCustom}
+                  onChange={(e) =>
+                    setForm({ ...form, interviewUseCustom: e.target.checked })
+                  }
+                  className="size-4 accent-primary"
+                />
+                Use custom questions
+              </label>
+            </div>
+
+            {!form.interviewUseCustom ? (
+              <p className="text-[11px] text-muted-foreground">
+                Using the global default interview questions. Toggle on to choose a
+                custom set for this posting.
+              </p>
+            ) : (
+              <>
+                {interviewQuestions.length > 0 && (
+                <div className="max-h-44 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
+                  {interviewQuestions.map((q) => {
+                    const checked = form.interviewQuestionIds.includes(q.id)
+                    return (
+                      <label
+                        key={q.id}
+                        className="flex cursor-pointer items-start gap-2 rounded px-1.5 py-1 text-[12px] hover:bg-muted/40"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              interviewQuestionIds: e.target.checked
+                                ? [...form.interviewQuestionIds, q.id]
+                                : form.interviewQuestionIds.filter(
+                                    (x) => x !== q.id
+                                  ),
+                            })
+                          }
+                          className="mt-0.5 size-4 shrink-0 accent-primary"
+                        />
+                        <span>{q.text}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+                )}
+
+                {/* Add a custom question (created in the AI interview bank, then selected) */}
+                <div className="space-y-1.5 rounded-lg border border-dashed border-border p-2">
+                  <Input
+                    className="h-8 text-[13px]"
+                    placeholder="Add a custom question…"
+                    value={newQ}
+                    onChange={(e) => setNewQ(e.target.value)}
+                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      className="h-8 flex-1 text-[13px]"
+                      placeholder="Optional rubric — or click Suggest"
+                      value={newRubric}
+                      onChange={(e) => setNewRubric(e.target.value)}
+                    />
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      onClick={suggestRubric}
+                      disabled={!newQ.trim() || suggesting}
+                      title="Ask AI to draft a rubric for this question"
+                    >
+                      {suggesting ? "Suggesting…" : "Suggest"}
+                    </Button>
+                  </div>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onClick={addInterviewQuestion}
+                    disabled={!newQ.trim() || createQuestionMut.isPending}
+                  >
+                    <HugeiconsIcon icon={Add01Icon} size={12} strokeWidth={2} className="mr-1" />
+                    {createQuestionMut.isPending ? "Adding…" : "Add question"}
+                  </Button>
+                </div>
+
+                <p className="text-[11px] text-muted-foreground">
+                  {form.interviewQuestionIds.length} selected — these replace the
+                  global questions for this posting.
+                </p>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Footer */}
@@ -886,6 +1038,17 @@ export function RecruitmentSection() {
     setErrors({})
     setSubmitError(null)
     setShowForm(true)
+    // Load any per-job custom interview questions and merge into the form.
+    assessmentApi
+      .getJobInterview(job.id)
+      .then((cfg) =>
+        setForm((f) => ({
+          ...f,
+          interviewUseCustom: cfg.useCustom,
+          interviewQuestionIds: cfg.questionIds ?? [],
+        }))
+      )
+      .catch(() => {})
   }
 
   function closeForm() {
@@ -900,11 +1063,16 @@ export function RecruitmentSection() {
     if (!validate()) return
     setSubmitError(null)
     const payload = formToPayload(form)
+    const interview = {
+      useCustom: form.interviewUseCustom,
+      questionIds: form.interviewQuestionIds,
+    }
     if (editingId) {
       updateMut.mutate(
         { id: editingId, payload },
         {
           onSuccess: () => {
+            assessmentApi.saveJobInterview(editingId, interview).catch(() => {})
             closeForm()
             showToast("Job posting updated.", "success")
           },
@@ -913,7 +1081,8 @@ export function RecruitmentSection() {
       )
     } else {
       createMut.mutate(payload, {
-        onSuccess: () => {
+        onSuccess: (created) => {
+          assessmentApi.saveJobInterview(created.id, interview).catch(() => {})
           closeForm()
           showToast("Job posting created.", "success")
         },

@@ -28,6 +28,8 @@ import {
 const TERMINAL: ApplicationStatus[] = ["WITHDRAWN", "HIRED", "REJECTED"]
 // Show the assessment CTA only before/while taking it — not once it's submitted for review.
 const CAN_ASSESS: ApplicationStatus[] = ["SUBMITTED", "ASSESSMENT"]
+// Closed applications the candidate can submit again.
+const CAN_REAPPLY: ApplicationStatus[] = ["WITHDRAWN", "REJECTED"]
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -130,6 +132,7 @@ export function MyApplicationsScreen() {
         <div className="space-y-3">
           {applications.map((app) => {
             const canWithdraw = !TERMINAL.includes(app.status)
+            const canReapply = CAN_REAPPLY.includes(app.status)
             return (
               <div
                 key={app.id}
@@ -188,6 +191,19 @@ export function MyApplicationsScreen() {
                         {app.status === "ASSESSMENT"
                           ? "Continue assessment"
                           : "Take assessment"}
+                        <HugeiconsIcon
+                          icon={ArrowRight01Icon}
+                          size={13}
+                          strokeWidth={2}
+                          className="ml-1.5"
+                        />
+                      </Button>
+                    </Link>
+                  )}
+                  {canReapply && (
+                    <Link href={`/dashboard/careers/${app.jobPostingId}`}>
+                      <Button size="sm">
+                        Reapply
                         <HugeiconsIcon
                           icon={ArrowRight01Icon}
                           size={13}

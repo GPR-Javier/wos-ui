@@ -242,4 +242,25 @@ export const assessmentApi = {
       .then((r) => r.data),
   detachTemplate: (jobId: number) =>
     api.delete(`/hr/assessments/jobs/${jobId}`),
+
+  // Per-job AI interview question override
+  getJobInterview: (jobId: number) =>
+    api
+      .get<JobInterviewConfig>(`/hr/assessments/jobs/${jobId}/interview`)
+      .then((r) => r.data),
+  saveJobInterview: (jobId: number, payload: JobInterviewConfig) =>
+    api
+      .put<JobInterviewConfig>(`/hr/assessments/jobs/${jobId}/interview`, payload)
+      .then((r) => r.data),
+
+  /** AI-suggest a rubric for an interview question (optionally tailored to a posting). */
+  suggestRubric: (question: string, jobId?: number) =>
+    api
+      .post<{ rubric: string }>("/hr/assessments/suggest-rubric", { question, jobId })
+      .then((r) => r.data.rubric),
+}
+
+export interface JobInterviewConfig {
+  useCustom: boolean
+  questionIds: number[]
 }

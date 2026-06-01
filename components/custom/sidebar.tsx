@@ -66,6 +66,7 @@ const NAV_ICONS: Record<string, IconSvgElement> = {
   requests: CheckListIcon,
   attendance: CheckListIcon,
   recruitment: Briefcase01Icon,
+  applicants: UserMultiple02Icon,
   careers: Briefcase01Icon,
   "my-applications": CheckListIcon,
   interviews: Calendar01Icon,
