@@ -634,7 +634,12 @@ export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
   const hasFilters = !!search || !!filterDept || !!filterType
 
   return (
-    <div className={cn("flex flex-col", embedded ? "" : "min-h-screen bg-background")}>
+    <div
+      className={cn(
+        "flex flex-col",
+        embedded ? "" : "min-h-screen bg-background"
+      )}
+    >
       {!embedded && (
         <PublicHeader
           right={
@@ -661,37 +666,38 @@ export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
 
       {/* ── Hero ── */}
       {!embedded && (
-      <div className="relative overflow-hidden border-b border-border bg-primary/5">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
-        <div className="pointer-events-none absolute -top-20 right-0 size-72 rounded-full bg-primary opacity-10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 size-64 rounded-full bg-cyan-400 opacity-10 blur-3xl" />
+        <div className="relative overflow-hidden border-b border-border bg-primary/5">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage:
+                "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
+              backgroundSize: "32px 32px",
+            }}
+          />
+          <div className="pointer-events-none absolute -top-20 right-0 size-72 rounded-full bg-primary opacity-10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-16 -left-16 size-64 rounded-full bg-cyan-400 opacity-10 blur-3xl" />
 
-        <div className="relative mx-auto max-w-6xl px-6 py-16 text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1 text-[12px] font-semibold text-primary">
-            <span className="size-1.5 animate-pulse rounded-full bg-primary" />
-            We&apos;re hiring
-          </div>
-          <h1 className="mt-2 text-[38px] font-bold tracking-tight">
-            Build your career with us
-          </h1>
-          <p className="mx-auto mt-3 max-w-md text-[15px] leading-relaxed text-muted-foreground">
-            Explore open opportunities and find a role where you can grow,
-            collaborate, and make an impact.
-          </p>
-          {!isLoading && (
-            <p className="mt-3 text-[13px] font-semibold text-primary">
-              {openJobs.length} open position{openJobs.length !== 1 ? "s" : ""}
+          <div className="relative mx-auto max-w-6xl px-6 py-16 text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1 text-[12px] font-semibold text-primary">
+              <span className="size-1.5 animate-pulse rounded-full bg-primary" />
+              We&apos;re hiring
+            </div>
+            <h1 className="mt-2 text-[38px] font-bold tracking-tight">
+              Build your career with us
+            </h1>
+            <p className="mx-auto mt-3 max-w-md text-[15px] leading-relaxed text-muted-foreground">
+              Explore open opportunities and find a role where you can grow,
+              collaborate, and make an impact.
             </p>
-          )}
+            {!isLoading && (
+              <p className="mt-3 text-[13px] font-semibold text-primary">
+                {openJobs.length} open position
+                {openJobs.length !== 1 ? "s" : ""}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
       )}
 
       {/* ── Filter bar ── */}
@@ -703,7 +709,9 @@ export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
             : "sticky top-16.25 bg-background/80 backdrop-blur-md"
         )}
       >
-        <div className={cn("py-3", embedded ? "px-6" : "mx-auto max-w-6xl px-6")}>
+        <div
+          className={cn("py-3", embedded ? "px-6" : "mx-auto max-w-6xl px-6")}
+        >
           <div className="flex flex-wrap items-center gap-3">
             <div
               data-tour="careers-search"
@@ -866,30 +874,30 @@ export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
 
       {/* ── Footer ── */}
       {!embedded && (
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-6 text-[12px] text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Logo showText={false} size="sm" />
-            <span>
-              &copy; {new Date().getFullYear()} WorkOS. All rights reserved.
-            </span>
+        <footer className="border-t border-border">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-6 text-[12px] text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Logo showText={false} size="sm" />
+              <span>
+                &copy; {new Date().getFullYear()} WorkOS. All rights reserved.
+              </span>
+            </div>
+            <div className="flex items-center gap-5">
+              <Link
+                href="/auth/login"
+                className="transition-colors hover:text-foreground"
+              >
+                Employee login
+              </Link>
+              <a href="#" className="transition-colors hover:text-foreground">
+                Privacy
+              </a>
+              <a href="#" className="transition-colors hover:text-foreground">
+                Terms
+              </a>
+            </div>
           </div>
-          <div className="flex items-center gap-5">
-            <Link
-              href="/auth/login"
-              className="transition-colors hover:text-foreground"
-            >
-              Employee login
-            </Link>
-            <a href="#" className="transition-colors hover:text-foreground">
-              Privacy
-            </a>
-            <a href="#" className="transition-colors hover:text-foreground">
-              Terms
-            </a>
-          </div>
-        </div>
-      </footer>
+        </footer>
       )}
 
       {/* ── Apply modal ── */}
