@@ -154,7 +154,11 @@ export function JobDetails({
           </span>
           {job.location && (
             <span className="flex items-center gap-1.5">
-              <HugeiconsIcon icon={Location01Icon} size={13} strokeWidth={1.8} />
+              <HugeiconsIcon
+                icon={Location01Icon}
+                size={13}
+                strokeWidth={1.8}
+              />
               {job.location}
             </span>
           )}
@@ -164,7 +168,8 @@ export function JobDetails({
           </span>
           <span className="flex items-center gap-1.5">
             <HugeiconsIcon icon={UserGroupIcon} size={13} strokeWidth={1.8} />
-            {job.applicantsCount} applicant{job.applicantsCount !== 1 ? "s" : ""}
+            {job.applicantsCount} applicant
+            {job.applicantsCount !== 1 ? "s" : ""}
           </span>
         </div>
 

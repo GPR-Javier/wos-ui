@@ -1,17 +1,14 @@
 import type { Metadata } from "next"
-import { ComingSoon } from "@/components/custom/coming-soon"
+import { MyApplicationsScreen } from "@/components/dashboard/applicant/my-applications"
 import { ScreenOnboarding } from "@/components/onboarding/screen-onboarding"
 
 export const metadata: Metadata = { title: "My Applications" }
 
 export default function MyApplicationsPage() {
   return (
-    <>
+    <div className="animate-in p-6 duration-300 fade-in">
       <ScreenOnboarding screenKey="my-applications" />
-      <ComingSoon
-        title="My Applications"
-        description="Track your submitted applications and their status."
-      />
-    </>
+      <MyApplicationsScreen />
+    </div>
   )
 }

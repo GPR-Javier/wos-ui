@@ -52,6 +52,10 @@ export function Topbar() {
 
   const isSettings = section === "settings"
 
+  // Show a Back button on settings pages and on any detail route (one with a sub-segment,
+  // e.g. /dashboard/assessment/123, /dashboard/careers/12).
+  const showBack = isSettings || Boolean(subSection)
+
   // For settings pages, title comes from the sub-section; otherwise from the top-level section
   const titleKey = isSettings
     ? (subSection ?? "general")
@@ -68,7 +72,7 @@ export function Topbar() {
 
   return (
     <div className="flex h-15 shrink-0 items-center gap-3 rounded-2xl border border-border bg-card px-5 shadow-sm">
-      {isSettings && (
+      {showBack && (
         <button
           onClick={() => router.back()}
           className="flex items-center gap-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground"

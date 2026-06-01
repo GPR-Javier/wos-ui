@@ -22,9 +22,12 @@ import {
   UserGroupIcon,
 } from "@hugeicons/core-free-icons"
 import { useNextStep } from "nextstepjs"
+import { useQueryClient } from "@tanstack/react-query"
 import { usePublicJobs } from "@/hooks/use-hr"
+import { useMyApplications, APPLICATION_KEYS } from "@/hooks/use-applications"
 import { useAuthStore } from "@/store/auth-store"
 import type { JobPosting } from "@/lib/hr-api"
+import type { JobApplication } from "@/lib/application-api"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -67,12 +70,15 @@ export function ApplyModal({
   onClose: () => void
 }) {
   const user = useAuthStore((s) => s.user)
+  const apiRole = useAuthStore((s) => s.apiRole)
+  const isApplicant = apiRole?.toUpperCase() === "APPLICANT"
   const [form, setForm] = useState<ApplyForm>(() => ({
     ...EMPTY_FORM,
     name: user ? `${user.firstName} ${user.lastName}`.trim() : "",
     email: user?.email ?? "",
   }))
   const [step, setStep] = useState<ApplyStep>("form")
+  const [applicationId, setApplicationId] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
@@ -100,7 +106,18 @@ export function ApplyModal({
       if (form.message.trim()) body.append("message", form.message.trim())
       if (form.resume) body.append("resume", form.resume)
 
-      await fetch(`/api/hr/jobs/${job.id}/apply`, { method: "POST", body })
+      const res = await fetch(`/api/hr/jobs/${job.id}/apply`, {
+        method: "POST",
+        body,
+      })
+      if (res.ok) {
+        try {
+          const data = await res.json()
+          if (data?.id) setApplicationId(data.id)
+        } catch {
+          /* no body — fine */
+        }
+      }
       setStep("success")
     } catch {
       setStep("success") // optimistic — backend may not be live yet
@@ -132,11 +149,36 @@ export function ApplyModal({
             <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
               Thanks for applying to{" "}
               <span className="font-semibold text-foreground">{job.title}</span>
-              . We&apos;ll review your application and reach out soon.
+              .{" "}
+              {applicationId && isApplicant
+                ? "The next step is your assessment."
+                : "We'll review your application and reach out soon."}
             </p>
-            <Button className="mt-7 w-full" onClick={onClose}>
-              Done
-            </Button>
+            {applicationId && isApplicant ? (
+              <div className="mt-7 flex w-full flex-col gap-2">
+                <Link
+                  href={`/dashboard/assessment/${applicationId}`}
+                  className="w-full"
+                >
+                  <Button className="w-full">
+                    Proceed to Assessment
+                    <HugeiconsIcon
+                      icon={ArrowRight01Icon}
+                      size={13}
+                      strokeWidth={2}
+                      className="ml-1.5"
+                    />
+                  </Button>
+                </Link>
+                <Button variant="outline" className="w-full" onClick={onClose}>
+                  Later
+                </Button>
+              </div>
+            ) : (
+              <Button className="mt-7 w-full" onClick={onClose}>
+                Done
+              </Button>
+            )}
           </div>
         ) : (
           <div className="p-6">
@@ -383,19 +425,26 @@ export function ApplyModal({
 
 // ── Job Card ──────────────────────────────────────────────────────────────────
 
+const ASSESSABLE_STATUSES = ["SUBMITTED", "UNDER_REVIEW", "ASSESSMENT"]
+
 function JobCard({
   job,
   onApply,
   onApplyAuth,
   onDetails,
+  application = null,
   embedded = false,
 }: {
   job: JobPosting
   onApply: () => void
   onApplyAuth: () => void
   onDetails: () => void
+  application?: JobApplication | null
   embedded?: boolean
 }) {
+  const alreadyApplied = !!application
+  const canAssess =
+    !!application && ASSESSABLE_STATUSES.includes(application.status)
   return (
     <div className="group flex flex-col gap-4 rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/30 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1">
@@ -405,6 +454,7 @@ function JobCard({
           <StatusBadge variant={STATUS_VARIANT[job.status] ?? "gray"}>
             {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
           </StatusBadge>
+          {alreadyApplied && <StatusBadge variant="green">Applied</StatusBadge>}
           {job.workType && (
             <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               {
@@ -508,20 +558,49 @@ function JobCard({
         >
           Details
         </Button>
-        {!embedded && (
-          <Button size="sm" variant="outline" onClick={onApply}>
-            Quick apply
-          </Button>
+        {alreadyApplied ? (
+          canAssess && application ? (
+            <Link href={`/dashboard/assessment/${application.id}`}>
+              <Button size="sm">
+                {application.status === "ASSESSMENT"
+                  ? "Continue assessment"
+                  : "Take assessment"}
+                <HugeiconsIcon
+                  icon={ArrowRight01Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="ml-1.5"
+                />
+              </Button>
+            </Link>
+          ) : (
+            <span className="flex items-center gap-1 text-[12px] font-medium text-green-600 dark:text-green-400">
+              <HugeiconsIcon
+                icon={CheckmarkCircle01Icon}
+                size={14}
+                strokeWidth={2}
+              />
+              Applied
+            </span>
+          )
+        ) : (
+          <>
+            {!embedded && (
+              <Button size="sm" variant="outline" onClick={onApply}>
+                Quick apply
+              </Button>
+            )}
+            <Button data-tour="careers-apply" size="sm" onClick={onApplyAuth}>
+              Apply
+              <HugeiconsIcon
+                icon={ArrowRight01Icon}
+                size={13}
+                strokeWidth={2}
+                className="ml-1.5"
+              />
+            </Button>
+          </>
         )}
-        <Button data-tour="careers-apply" size="sm" onClick={onApplyAuth}>
-          Apply
-          <HugeiconsIcon
-            icon={ArrowRight01Icon}
-            size={13}
-            strokeWidth={2}
-            className="ml-1.5"
-          />
-        </Button>
       </div>
     </div>
   )
@@ -614,8 +693,22 @@ export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
   const isApplicant = apiRole?.toUpperCase() === "APPLICANT"
   const { currentStep, setCurrentStep, isNextStepVisible } = useNextStep()
   const router = useRouter()
+  const queryClient = useQueryClient()
   const detailsHref = (job: JobPosting) =>
     embedded ? `/dashboard/careers/${job.id}` : `/careers/${job.id}`
+
+  // Logged-in applicants: cross-reference their applications so already-applied jobs
+  // show their status instead of an Apply button. Never runs for guests (would 401).
+  const { data: myApplications = [] } = useMyApplications({
+    enabled: embedded && isApplicant,
+  })
+  const applicationByJob = useMemo(() => {
+    const map = new Map<number, JobApplication>()
+    for (const a of myApplications) {
+      if (a.status !== "WITHDRAWN") map.set(a.jobPostingId, a)
+    }
+    return map
+  }, [myApplications])
 
   const [search, setSearch] = useState("")
   const [filterDept, setFilterDept] = useState("")
@@ -867,6 +960,7 @@ export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
                   key={job.id}
                   job={job}
                   embedded={embedded}
+                  application={applicationByJob.get(job.id) ?? null}
                   onDetails={() => router.push(detailsHref(job))}
                   onApply={() => setApplyJob(job)}
                   onApplyAuth={() => {
@@ -919,7 +1013,14 @@ export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
 
       {/* ── Apply modal ── */}
       {applyJob && (
-        <ApplyModal job={applyJob} onClose={() => setApplyJob(null)} />
+        <ApplyModal
+          job={applyJob}
+          onClose={() => {
+            setApplyJob(null)
+            // Refresh the applied-jobs map so the card flips to "Applied".
+            queryClient.invalidateQueries({ queryKey: APPLICATION_KEYS.mine })
+          }}
+        />
       )}
 
       {promptJob && (

@@ -24,6 +24,7 @@ import { AttendanceConfigSection } from "@/components/dashboard/admin/attendance
 import { SalaryGradesSection } from "@/components/dashboard/admin/salary-grades"
 import { PayrollSetupSection } from "@/components/dashboard/admin/payroll-setup"
 import { DepartmentsSection } from "@/components/dashboard/admin/departments"
+import { QuestionBankSection } from "@/components/dashboard/admin/question-bank"
 import { useAuthStore } from "@/store/auth-store"
 import { currencySymbol } from "@/lib/employee-profile-api"
 import {
@@ -103,6 +104,9 @@ export function ConfigSection() {
   const canEditLeave = useAuthStore((s) =>
     s.authorities.includes("CONFIGURATION:EDIT_LEAVE_SETTINGS")
   )
+  const canManageQuestions = useAuthStore((s) =>
+    s.authorities.includes("INTERVIEW_MANAGEMENT:MANAGE_QUESTIONS")
+  )
 
   const defaultTab = useMemo(() => {
     if (canViewSchedulePolicy) return "schedule"
@@ -131,6 +135,9 @@ export function ConfigSection() {
         <TabsTrigger value="departments">Departments</TabsTrigger>
         <TabsTrigger value="positions">Job Positions</TabsTrigger>
         <TabsTrigger value="payroll-setup">Payroll Setup</TabsTrigger>
+        {canManageQuestions && (
+          <TabsTrigger value="question-bank">Question Bank</TabsTrigger>
+        )}
       </TabsList>
 
       {canViewSchedulePolicy && (
@@ -182,6 +189,12 @@ export function ConfigSection() {
       <TabsContent value="payroll-setup">
         <PayrollSetupSection />
       </TabsContent>
+
+      {canManageQuestions && (
+        <TabsContent value="question-bank">
+          <QuestionBankSection />
+        </TabsContent>
+      )}
     </Tabs>
   )
 }
