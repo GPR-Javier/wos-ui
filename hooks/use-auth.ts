@@ -114,6 +114,17 @@ function redirectAfterAuth(
   res: AuthResponse,
   router: ReturnType<typeof useRouter>
 ) {
+  // Honour an explicit post-login destination (e.g. a job a guest tried to open
+  // before signing in): /auth/login?redirect=/dashboard/careers/12. Only same-origin
+  // absolute paths are allowed — never protocol-relative ("//host") or external URLs.
+  if (typeof window !== "undefined") {
+    const redirect = new URLSearchParams(window.location.search).get("redirect")
+    if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
+      router.replace(redirect)
+      return
+    }
+  }
+
   // Applicants enter the dashboard shell and land on the first page their config
   // (authorities) grants — same sidebar-driven layout as employees. Everyone else
   // lands on the dashboard overview.

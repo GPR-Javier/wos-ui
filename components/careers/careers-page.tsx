@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/custom/logo"
 import { PublicHeader } from "@/components/custom/public-header"
@@ -58,7 +59,7 @@ const MAX_RESUME_BYTES = 5 * 1024 * 1024 // 5 MB
 
 // ── Apply Modal ───────────────────────────────────────────────────────────────
 
-function ApplyModal({
+export function ApplyModal({
   job,
   onClose,
 }: {
@@ -386,11 +387,13 @@ function JobCard({
   job,
   onApply,
   onApplyAuth,
+  onDetails,
   embedded = false,
 }: {
   job: JobPosting
   onApply: () => void
   onApplyAuth: () => void
+  onDetails: () => void
   embedded?: boolean
 }) {
   return (
@@ -497,6 +500,14 @@ function JobCard({
           />
           {job.applicantsCount} applicant{job.applicantsCount !== 1 ? "s" : ""}
         </span>
+        <Button
+          data-tour="careers-details"
+          size="sm"
+          variant="ghost"
+          onClick={onDetails}
+        >
+          Details
+        </Button>
         {!embedded && (
           <Button size="sm" variant="outline" onClick={onApply}>
             Quick apply
@@ -527,6 +538,8 @@ function SignUpPromptModal({
   onClose: () => void
   onQuickApply: () => void
 }) {
+  // After signing in, drop the applicant straight onto this job's details page.
+  const redirect = encodeURIComponent(`/dashboard/careers/${job.id}`)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
@@ -558,7 +571,7 @@ function SignUpPromptModal({
         </p>
 
         <div className="mt-5 space-y-2">
-          <Link href="/auth/register" className="block">
+          <Link href={`/auth/register?redirect=${redirect}`} className="block">
             <Button className="w-full" size="sm">
               Create an account
               <HugeiconsIcon
@@ -569,7 +582,7 @@ function SignUpPromptModal({
               />
             </Button>
           </Link>
-          <Link href="/auth/login" className="block">
+          <Link href={`/auth/login?redirect=${redirect}`} className="block">
             <Button variant="outline" className="w-full" size="sm">
               Sign in to existing account
             </Button>
@@ -600,6 +613,9 @@ export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { apiRole } = useAuthStore()
   const isApplicant = apiRole?.toUpperCase() === "APPLICANT"
   const { currentStep, setCurrentStep, isNextStepVisible } = useNextStep()
+  const router = useRouter()
+  const detailsHref = (job: JobPosting) =>
+    embedded ? `/dashboard/careers/${job.id}` : `/careers/${job.id}`
 
   const [search, setSearch] = useState("")
   const [filterDept, setFilterDept] = useState("")
@@ -851,6 +867,7 @@ export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
                   key={job.id}
                   job={job}
                   embedded={embedded}
+                  onDetails={() => router.push(detailsHref(job))}
                   onApply={() => setApplyJob(job)}
                   onApplyAuth={() => {
                     if (embedded || isApplicant) {
