@@ -22,10 +22,13 @@ import type {
   PartOverview,
   StartResponse,
   SubmitResponse,
+  AnswerInput,
 } from "@/lib/assessment-runtime-api"
 import { PART_TYPE_LABEL, type AssessmentPartType } from "@/lib/assessment-api"
+import { AIInterviewRunner } from "./ai-interview-runner"
+import { InterviewPreflight } from "./interview-preflight"
 
-type Phase = "landing" | "running" | "result"
+type Phase = "landing" | "preflight" | "running" | "result"
 
 export function AssessmentShell({ applicationId }: { applicationId: number }) {
   const {
@@ -41,6 +44,18 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [result, setResult] = useState<SubmitResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [pendingPart, setPendingPart] = useState<AssessmentPartType | null>(null)
+
+  // AI Interview goes through a readiness gate first; other parts start immediately.
+  function beginPart(partType: AssessmentPartType) {
+    setError(null)
+    if (partType === "AI_INTERVIEW") {
+      setPendingPart(partType)
+      setPhase("preflight")
+    } else {
+      startPart(partType)
+    }
+  }
 
   function startPart(partType: AssessmentPartType) {
     setError(null)
@@ -60,12 +75,8 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
     })
   }
 
-  function submitRun() {
+  function doSubmit(payload: AnswerInput[]) {
     if (!run) return
-    const payload = run.questions.map((q) => ({
-      questionId: q.id,
-      responseIndex: answers[q.id] ?? -1,
-    }))
     submitMut.mutate(
       { partType: run.partType, answers: payload },
       {
@@ -76,6 +87,16 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
         onError: () =>
           setError("Couldn't submit your answers. Please try again."),
       }
+    )
+  }
+
+  function submitRun() {
+    if (!run) return
+    doSubmit(
+      run.questions.map((q) => ({
+        questionId: q.id,
+        responseIndex: answers[q.id] ?? -1,
+      }))
     )
   }
 
@@ -107,20 +128,45 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
     overview.parts.find((p) => p.available && p.runnable && p.passed !== true)
       ?.type ?? null
 
+  // ── Interview readiness gate ────────────────────────────────────────────────
+  if (phase === "preflight" && pendingPart) {
+    return (
+      <div>
+        <div className="mx-auto max-w-2xl px-6 pt-6">
+          <StepBar parts={overview.parts} activeType={pendingPart} />
+        </div>
+        <InterviewPreflight
+          busy={startMut.isPending}
+          onCancel={() => {
+            setPendingPart(null)
+            setPhase("landing")
+          }}
+          onStart={() => startPart(pendingPart)}
+        />
+      </div>
+    )
+  }
+
   // ── Running a part ────────────────────────────────────────────────────────
   if (phase === "running" && run) {
     const answeredCount = run.questions.filter(
       (q) => answers[q.id] != null
     ).length
     const isLikert = run.partType === "PERSONALITY"
-    return (
+    const isAiInterview = run.partType === "AI_INTERVIEW"
+    const inner = (
       <div className="mx-auto max-w-2xl px-6 py-8">
         <StepBar parts={overview.parts} activeType={run.partType} />
-        <div className="mt-4 mb-5">
+        <div className={cn("mt-4 mb-5", isAiInterview && "text-center")}>
           <h1 className="text-lg font-semibold">
             {PART_TYPE_LABEL[run.partType]}
           </h1>
-          <div className="mt-1 flex flex-wrap items-center gap-3 text-[12px] text-muted-foreground">
+          <div
+            className={cn(
+              "mt-1 flex flex-wrap items-center gap-3 text-[12px] text-muted-foreground",
+              isAiInterview && "justify-center"
+            )}
+          >
             <span>Attempt #{run.attemptNo}</span>
             {run.minPassingScore != null && (
               <span>Pass mark: {run.minPassingScore}%</span>
@@ -131,12 +177,23 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
                 {Math.round(run.timeLimitSeconds / 60)} min
               </span>
             )}
-            <span>
-              {answeredCount}/{run.questions.length} answered
-            </span>
+            {!isAiInterview && (
+              <span>
+                {answeredCount}/{run.questions.length} answered
+              </span>
+            )}
           </div>
         </div>
 
+        {isAiInterview ? (
+          <AIInterviewRunner
+            run={run}
+            busy={submitMut.isPending}
+            onSubmit={doSubmit}
+            onCancel={() => setPhase("landing")}
+          />
+        ) : (
+          <>
         <div className="space-y-4">
           {run.questions.map((q, idx) => (
             <div
@@ -223,13 +280,26 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
             {submitMut.isPending ? "Submitting…" : "Submit answers"}
           </Button>
         </div>
+          </>
+        )}
       </div>
+    )
+
+    // The AI Interview runs as a focused full-viewport overlay (no dashboard chrome),
+    // vertically centered so it isn't top-heavy with empty space below.
+    return isAiInterview ? (
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-background">
+        <div className="flex min-h-full items-center justify-center">{inner}</div>
+      </div>
+    ) : (
+      inner
     )
   }
 
   // ── Result ────────────────────────────────────────────────────────────────
   if (phase === "result" && result && run) {
     const isPersonality = !!result.traitScores
+    const isPendingReview = result.pendingReview
     return (
       <div className="mx-auto max-w-md px-6 py-10 text-center">
         <StepBar parts={overview.parts} activeType={run.partType} />
@@ -247,14 +317,20 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
           />
         </div>
         <h1 className="text-xl font-bold">
-          {isPersonality
-            ? "Section complete"
-            : result.passed
-              ? "Passed!"
-              : "Not passed"}
+          {isPendingReview
+            ? "Interview submitted"
+            : isPersonality
+              ? "Section complete"
+              : result.passed
+                ? "Passed!"
+                : "Not passed"}
         </h1>
 
-        {isPersonality && result.traitScores ? (
+        {isPendingReview ? (
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            Your responses have been recorded — our team will review them and follow up.
+          </p>
+        ) : isPersonality && result.traitScores ? (
           <>
             <p className="mt-1 text-[13px] text-muted-foreground">
               Thanks — here&apos;s your personality profile.
@@ -385,7 +461,7 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
             key={part.type}
             part={part}
             busy={startMut.isPending}
-            onStart={() => startPart(part.type)}
+            onStart={() => beginPart(part.type)}
           />
         ))}
       </div>

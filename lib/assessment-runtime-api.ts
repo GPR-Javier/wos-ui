@@ -53,11 +53,14 @@ export interface SubmitResponse {
   assessmentCompleted: boolean
   /** Big Five trait → 0–100 (Personality parts only). */
   traitScores: Record<string, number> | null
+  /** True when answers were captured for later AI grading (AI Interview). */
+  pendingReview: boolean
 }
 
 export interface AnswerInput {
   questionId: number
-  responseIndex: number
+  responseIndex?: number
+  transcript?: string
 }
 
 export const assessmentRuntimeApi = {

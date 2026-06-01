@@ -425,7 +425,7 @@ export function ApplyModal({
 
 // ── Job Card ──────────────────────────────────────────────────────────────────
 
-const ASSESSABLE_STATUSES = ["SUBMITTED", "UNDER_REVIEW", "ASSESSMENT"]
+const ASSESSABLE_STATUSES = ["SUBMITTED", "ASSESSMENT"]
 
 function JobCard({
   job,

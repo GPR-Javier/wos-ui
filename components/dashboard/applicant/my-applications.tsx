@@ -26,11 +26,8 @@ import {
 } from "@/lib/application-api"
 
 const TERMINAL: ApplicationStatus[] = ["WITHDRAWN", "HIRED", "REJECTED"]
-const CAN_ASSESS: ApplicationStatus[] = [
-  "SUBMITTED",
-  "UNDER_REVIEW",
-  "ASSESSMENT",
-]
+// Show the assessment CTA only before/while taking it — not once it's submitted for review.
+const CAN_ASSESS: ApplicationStatus[] = ["SUBMITTED", "ASSESSMENT"]
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
