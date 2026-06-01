@@ -44,7 +44,9 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [result, setResult] = useState<SubmitResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [pendingPart, setPendingPart] = useState<AssessmentPartType | null>(null)
+  const [pendingPart, setPendingPart] = useState<AssessmentPartType | null>(
+    null
+  )
 
   // AI Interview goes through a readiness gate first; other parts start immediately.
   function beginPart(partType: AssessmentPartType) {
@@ -194,92 +196,94 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
           />
         ) : (
           <>
-        <div className="space-y-4">
-          {run.questions.map((q, idx) => (
-            <div
-              key={q.id}
-              className="rounded-xl border border-border bg-card p-4"
-            >
-              <p className="text-[13px] font-medium">
-                <span className="text-muted-foreground">{idx + 1}.</span>{" "}
-                {q.text}
-              </p>
-              {isLikert ? (
-                <div className="mt-3 flex items-stretch justify-between gap-1.5">
-                  {q.options.map((opt, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setAnswers((a) => ({ ...a, [q.id]: i }))}
-                      className={cn(
-                        "flex flex-1 flex-col items-center gap-2 rounded-lg border px-1.5 py-3 text-center transition-colors",
-                        answers[q.id] === i
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:bg-muted/40"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "size-4 rounded-full border-2 transition-colors",
-                          answers[q.id] === i
-                            ? "border-primary bg-primary"
-                            : "border-muted-foreground/40"
-                        )}
-                      />
-                      <span className="text-[10px] leading-tight text-muted-foreground">
-                        {opt}
-                      </span>
-                    </button>
-                  ))}
+            <div className="space-y-4">
+              {run.questions.map((q, idx) => (
+                <div
+                  key={q.id}
+                  className="rounded-xl border border-border bg-card p-4"
+                >
+                  <p className="text-[13px] font-medium">
+                    <span className="text-muted-foreground">{idx + 1}.</span>{" "}
+                    {q.text}
+                  </p>
+                  {isLikert ? (
+                    <div className="mt-3 flex items-stretch justify-between gap-1.5">
+                      {q.options.map((opt, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() =>
+                            setAnswers((a) => ({ ...a, [q.id]: i }))
+                          }
+                          className={cn(
+                            "flex flex-1 flex-col items-center gap-2 rounded-lg border px-1.5 py-3 text-center transition-colors",
+                            answers[q.id] === i
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:bg-muted/40"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "size-4 rounded-full border-2 transition-colors",
+                              answers[q.id] === i
+                                ? "border-primary bg-primary"
+                                : "border-muted-foreground/40"
+                            )}
+                          />
+                          <span className="text-[10px] leading-tight text-muted-foreground">
+                            {opt}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      {q.options.map((opt, i) => (
+                        <label
+                          key={i}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2 text-[13px] transition-colors",
+                            answers[q.id] === i
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:bg-muted/40"
+                          )}
+                        >
+                          <input
+                            type="radio"
+                            name={`q-${q.id}`}
+                            checked={answers[q.id] === i}
+                            onChange={() =>
+                              setAnswers((a) => ({ ...a, [q.id]: i }))
+                            }
+                            className="size-4 accent-primary"
+                          />
+                          {opt}
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="mt-3 space-y-2">
-                  {q.options.map((opt, i) => (
-                    <label
-                      key={i}
-                      className={cn(
-                        "flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2 text-[13px] transition-colors",
-                        answers[q.id] === i
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:bg-muted/40"
-                      )}
-                    >
-                      <input
-                        type="radio"
-                        name={`q-${q.id}`}
-                        checked={answers[q.id] === i}
-                        onChange={() =>
-                          setAnswers((a) => ({ ...a, [q.id]: i }))
-                        }
-                        className="size-4 accent-primary"
-                      />
-                      {opt}
-                    </label>
-                  ))}
-                </div>
-              )}
+              ))}
             </div>
-          ))}
-        </div>
 
-        {error && (
-          <p className="mt-4 text-[12px] font-medium text-destructive">
-            {error}
-          </p>
-        )}
+            {error && (
+              <p className="mt-4 text-[12px] font-medium text-destructive">
+                {error}
+              </p>
+            )}
 
-        <div className="mt-6 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setPhase("landing")}
-            className="text-[13px] text-muted-foreground hover:text-foreground"
-          >
-            Cancel
-          </button>
-          <Button onClick={submitRun} disabled={submitMut.isPending}>
-            {submitMut.isPending ? "Submitting…" : "Submit answers"}
-          </Button>
-        </div>
+            <div className="mt-6 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setPhase("landing")}
+                className="text-[13px] text-muted-foreground hover:text-foreground"
+              >
+                Cancel
+              </button>
+              <Button onClick={submitRun} disabled={submitMut.isPending}>
+                {submitMut.isPending ? "Submitting…" : "Submit answers"}
+              </Button>
+            </div>
           </>
         )}
       </div>
@@ -289,7 +293,9 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
     // vertically centered so it isn't top-heavy with empty space below.
     return isAiInterview ? (
       <div className="fixed inset-0 z-50 overflow-y-auto bg-background">
-        <div className="flex min-h-full items-center justify-center">{inner}</div>
+        <div className="flex min-h-full items-center justify-center">
+          {inner}
+        </div>
       </div>
     ) : (
       inner
@@ -328,7 +334,8 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
 
         {isPendingReview ? (
           <p className="mt-1 text-[13px] text-muted-foreground">
-            Your responses have been recorded — our team will review them and follow up.
+            Your responses have been recorded — our team will review them and
+            follow up.
           </p>
         ) : isPersonality && result.traitScores ? (
           <>

@@ -339,7 +339,9 @@ function JobModal({
 }) {
   const { data: grades = [] } = useSalaryGrades()
   const { data: departments = [] } = useDepartments()
-  const { data: interviewQuestions = [] } = useQuestions({ partType: "AI_INTERVIEW" })
+  const { data: interviewQuestions = [] } = useQuestions({
+    partType: "AI_INTERVIEW",
+  })
   const createQuestionMut = useCreateQuestion()
   const [newQ, setNewQ] = useState("")
   const [newRubric, setNewRubric] = useState("")
@@ -845,40 +847,40 @@ function JobModal({
 
             {!form.interviewUseCustom ? (
               <p className="text-[11px] text-muted-foreground">
-                Using the global default interview questions. Toggle on to choose a
-                custom set for this posting.
+                Using the global default interview questions. Toggle on to
+                choose a custom set for this posting.
               </p>
             ) : (
               <>
                 {interviewQuestions.length > 0 && (
-                <div className="max-h-44 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
-                  {interviewQuestions.map((q) => {
-                    const checked = form.interviewQuestionIds.includes(q.id)
-                    return (
-                      <label
-                        key={q.id}
-                        className="flex cursor-pointer items-start gap-2 rounded px-1.5 py-1 text-[12px] hover:bg-muted/40"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              interviewQuestionIds: e.target.checked
-                                ? [...form.interviewQuestionIds, q.id]
-                                : form.interviewQuestionIds.filter(
-                                    (x) => x !== q.id
-                                  ),
-                            })
-                          }
-                          className="mt-0.5 size-4 shrink-0 accent-primary"
-                        />
-                        <span>{q.text}</span>
-                      </label>
-                    )
-                  })}
-                </div>
+                  <div className="max-h-44 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
+                    {interviewQuestions.map((q) => {
+                      const checked = form.interviewQuestionIds.includes(q.id)
+                      return (
+                        <label
+                          key={q.id}
+                          className="flex cursor-pointer items-start gap-2 rounded px-1.5 py-1 text-[12px] hover:bg-muted/40"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                interviewQuestionIds: e.target.checked
+                                  ? [...form.interviewQuestionIds, q.id]
+                                  : form.interviewQuestionIds.filter(
+                                      (x) => x !== q.id
+                                    ),
+                              })
+                            }
+                            className="mt-0.5 size-4 shrink-0 accent-primary"
+                          />
+                          <span>{q.text}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
                 )}
 
                 {/* Add a custom question (created in the AI interview bank, then selected) */}
@@ -912,14 +914,19 @@ function JobModal({
                     onClick={addInterviewQuestion}
                     disabled={!newQ.trim() || createQuestionMut.isPending}
                   >
-                    <HugeiconsIcon icon={Add01Icon} size={12} strokeWidth={2} className="mr-1" />
+                    <HugeiconsIcon
+                      icon={Add01Icon}
+                      size={12}
+                      strokeWidth={2}
+                      className="mr-1"
+                    />
                     {createQuestionMut.isPending ? "Adding…" : "Add question"}
                   </Button>
                 </div>
 
                 <p className="text-[11px] text-muted-foreground">
-                  {form.interviewQuestionIds.length} selected — these replace the
-                  global questions for this posting.
+                  {form.interviewQuestionIds.length} selected — these replace
+                  the global questions for this posting.
                 </p>
               </>
             )}

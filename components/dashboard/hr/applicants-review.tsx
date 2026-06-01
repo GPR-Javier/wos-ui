@@ -35,7 +35,11 @@ const FILTERS: { label: string; value: ApplicationStatus | "" }[] = [
   { label: "Not selected", value: "REJECTED" },
 ]
 
-const ACTIONS: { label: string; status: ApplicationStatus; variant: "default" | "outline" | "destructive" }[] = [
+const ACTIONS: {
+  label: string
+  status: ApplicationStatus
+  variant: "default" | "outline" | "destructive"
+}[] = [
   { label: "Shortlist", status: "SHORTLISTED", variant: "default" },
   { label: "Make offer", status: "OFFER", variant: "default" },
   { label: "Mark hired", status: "HIRED", variant: "outline" },
@@ -54,7 +58,9 @@ export function ApplicantsReviewSection() {
   const [minResume, setMinResume] = useState(0)
   const [minOverall, setMinOverall] = useState(0)
   const [selectedId, setSelectedId] = useState<number | null>(null)
-  const { data: applications = [], isLoading } = useReviewList(filter || undefined)
+  const { data: applications = [], isLoading } = useReviewList(
+    filter || undefined
+  )
 
   // Threshold filters: a metric passes if its slider is 0, or the score exists and meets it.
   const meets = (score: number | null, min: number) =>
@@ -73,7 +79,8 @@ export function ApplicantsReviewSection() {
       <div>
         <h1 className="text-lg font-semibold">Applicants</h1>
         <p className="mt-0.5 text-[13px] text-muted-foreground">
-          Review candidates&apos; assessment results and move them through the pipeline.
+          Review candidates&apos; assessment results and move them through the
+          pipeline.
         </p>
       </div>
 
@@ -101,7 +108,8 @@ export function ApplicantsReviewSection() {
             <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
               Min score filters
             </p>
-            {(minBasic || minInterview || minCover || minResume || minOverall) > 0 && (
+            {(minBasic || minInterview || minCover || minResume || minOverall) >
+              0 && (
               <button
                 type="button"
                 onClick={() => {
@@ -118,11 +126,31 @@ export function ApplicantsReviewSection() {
             )}
           </div>
           <div className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
-            <ThresholdSlider label="Q&A" value={minBasic} onChange={setMinBasic} />
-            <ThresholdSlider label="Interview" value={minInterview} onChange={setMinInterview} />
-            <ThresholdSlider label="Cover letter" value={minCover} onChange={setMinCover} />
-            <ThresholdSlider label="Résumé" value={minResume} onChange={setMinResume} />
-            <ThresholdSlider label="Overall" value={minOverall} onChange={setMinOverall} />
+            <ThresholdSlider
+              label="Q&A"
+              value={minBasic}
+              onChange={setMinBasic}
+            />
+            <ThresholdSlider
+              label="Interview"
+              value={minInterview}
+              onChange={setMinInterview}
+            />
+            <ThresholdSlider
+              label="Cover letter"
+              value={minCover}
+              onChange={setMinCover}
+            />
+            <ThresholdSlider
+              label="Résumé"
+              value={minResume}
+              onChange={setMinResume}
+            />
+            <ThresholdSlider
+              label="Overall"
+              value={minOverall}
+              onChange={setMinOverall}
+            />
           </div>
         </div>
       </div>
@@ -165,7 +193,9 @@ export function ApplicantsReviewSection() {
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2.5">
                       <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-[11px] font-bold text-primary">
-                        {(a.applicantName ?? a.applicantEmail).slice(0, 2).toUpperCase()}
+                        {(a.applicantName ?? a.applicantEmail)
+                          .slice(0, 2)
+                          .toUpperCase()}
                       </div>
                       <div className="min-w-0">
                         <p className="truncate font-semibold">
@@ -185,10 +215,21 @@ export function ApplicantsReviewSection() {
                       {APPLICATION_STATUS_LABEL[a.status]}
                     </StatusBadge>
                   </td>
-                  <td className="px-3 py-2.5 text-center"><ScoreCell value={a.basicScore} /></td>
-                  <td className="px-3 py-2.5 text-center"><ScoreCell value={a.interviewScore} pending={a.interviewSubmitted} /></td>
-                  <td className="px-3 py-2.5 text-center"><ScoreCell value={a.coverLetterScore} /></td>
-                  <td className="px-3 py-2.5 text-center"><ScoreCell value={a.resumeScore} /></td>
+                  <td className="px-3 py-2.5 text-center">
+                    <ScoreCell value={a.basicScore} />
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    <ScoreCell
+                      value={a.interviewScore}
+                      pending={a.interviewSubmitted}
+                    />
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    <ScoreCell value={a.coverLetterScore} />
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    <ScoreCell value={a.resumeScore} />
+                  </td>
                   <td className="px-3 py-2.5 text-center">
                     <ScoreCell value={a.overall} strong />
                   </td>
@@ -200,13 +241,22 @@ export function ApplicantsReviewSection() {
       )}
 
       {selectedId != null && (
-        <ReviewDetailModal id={selectedId} onClose={() => setSelectedId(null)} />
+        <ReviewDetailModal
+          id={selectedId}
+          onClose={() => setSelectedId(null)}
+        />
       )}
     </div>
   )
 }
 
-function ReviewDetailModal({ id, onClose }: { id: number; onClose: () => void }) {
+function ReviewDetailModal({
+  id,
+  onClose,
+}: {
+  id: number
+  onClose: () => void
+}) {
   const { data: detail, isLoading } = useReviewDetail(id)
   const statusMut = useSetApplicationStatus()
   const gradeMut = useGradeApplication()
@@ -235,8 +285,8 @@ function ReviewDetailModal({ id, onClose }: { id: number; onClose: () => void })
     gradeMut.mutate(id, {
       onError: (e: unknown) => {
         const msg =
-          (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "AI grading failed — is Ollama running?"
+          (e as { response?: { data?: { message?: string } } })?.response?.data
+            ?.message ?? "AI grading failed — is Ollama running?"
         setGradeError(msg)
       },
     })
@@ -247,8 +297,8 @@ function ReviewDetailModal({ id, onClose }: { id: number; onClose: () => void })
     coverMut.mutate(id, {
       onError: (e: unknown) => {
         const msg =
-          (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "AI review failed — is Ollama running?"
+          (e as { response?: { data?: { message?: string } } })?.response?.data
+            ?.message ?? "AI review failed — is Ollama running?"
         setCoverError(msg)
       },
     })
@@ -259,8 +309,8 @@ function ReviewDetailModal({ id, onClose }: { id: number; onClose: () => void })
     resumeMut.mutate(id, {
       onError: (e: unknown) => {
         const msg =
-          (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "AI review failed — is Ollama running?"
+          (e as { response?: { data?: { message?: string } } })?.response?.data
+            ?.message ?? "AI review failed — is Ollama running?"
         setResumeError(msg)
       },
     })
@@ -268,7 +318,10 @@ function ReviewDetailModal({ id, onClose }: { id: number; onClose: () => void })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div className="relative max-h-[90vh] w-full max-w-2xl animate-in overflow-y-auto rounded-2xl border border-border bg-card p-6 shadow-xl duration-200 zoom-in-95 fade-in">
         <button
           type="button"
@@ -285,32 +338,46 @@ function ReviewDetailModal({ id, onClose }: { id: number; onClose: () => void })
             {/* Header */}
             <div className="flex items-center gap-3">
               <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-[14px] font-bold text-primary">
-                {(detail.applicantName ?? detail.applicantEmail).slice(0, 2).toUpperCase()}
+                {(detail.applicantName ?? detail.applicantEmail)
+                  .slice(0, 2)
+                  .toUpperCase()}
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-[16px] font-semibold">
                     {detail.applicantName ?? detail.applicantEmail}
                   </h2>
-                  <StatusBadge variant={APPLICATION_STATUS_VARIANT[detail.status]}>
+                  <StatusBadge
+                    variant={APPLICATION_STATUS_VARIANT[detail.status]}
+                  >
                     {APPLICATION_STATUS_LABEL[detail.status]}
                   </StatusBadge>
                 </div>
-                <p className="text-[12px] text-muted-foreground">{detail.applicantEmail}</p>
+                <p className="text-[12px] text-muted-foreground">
+                  {detail.applicantEmail}
+                </p>
               </div>
             </div>
 
             {/* Meta */}
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12px] text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <HugeiconsIcon icon={Briefcase01Icon} size={13} strokeWidth={1.8} />
+                <HugeiconsIcon
+                  icon={Briefcase01Icon}
+                  size={13}
+                  strokeWidth={1.8}
+                />
                 {detail.jobTitle ?? "—"}
                 {detail.department ? ` · ${detail.department}` : ""}
               </span>
               {detail.applicantPhone && <span>{detail.applicantPhone}</span>}
               {detail.resumeFileName && (
                 <span className="flex items-center gap-1.5">
-                  <HugeiconsIcon icon={File01Icon} size={13} strokeWidth={1.8} />
+                  <HugeiconsIcon
+                    icon={File01Icon}
+                    size={13}
+                    strokeWidth={1.8}
+                  />
                   {detail.resumeFileName}
                 </span>
               )}
@@ -343,18 +410,29 @@ function ReviewDetailModal({ id, onClose }: { id: number; onClose: () => void })
                   </div>
                 </div>
                 {coverError && (
-                  <p className="mb-2 text-[11px] font-medium text-destructive">{coverError}</p>
+                  <p className="mb-2 text-[11px] font-medium text-destructive">
+                    {coverError}
+                  </p>
                 )}
                 <p className="max-h-40 overflow-y-auto text-[12px] whitespace-pre-line text-muted-foreground">
                   {detail.message}
                 </p>
-                {(detail.coverLetterFeedback || detail.coverLetterImprovements) && (
+                {(detail.coverLetterFeedback ||
+                  detail.coverLetterImprovements) && (
                   <div className="mt-2 space-y-1.5">
                     {detail.coverLetterFeedback && (
-                      <FeedbackNote tone="pos" label="Strengths" text={detail.coverLetterFeedback} />
+                      <FeedbackNote
+                        tone="pos"
+                        label="Strengths"
+                        text={detail.coverLetterFeedback}
+                      />
                     )}
                     {detail.coverLetterImprovements && (
-                      <FeedbackNote tone="neg" label="To improve" text={detail.coverLetterImprovements} />
+                      <FeedbackNote
+                        tone="neg"
+                        label="To improve"
+                        text={detail.coverLetterImprovements}
+                      />
                     )}
                   </div>
                 )}
@@ -379,7 +457,11 @@ function ReviewDetailModal({ id, onClose }: { id: number; onClose: () => void })
                       variant="outline"
                       onClick={handleReviewResume}
                       disabled={resumeMut.isPending || !detail.hasResumeText}
-                      title={detail.hasResumeText ? undefined : "No readable resume text — applicant must re-apply"}
+                      title={
+                        detail.hasResumeText
+                          ? undefined
+                          : "No readable resume text — applicant must re-apply"
+                      }
                     >
                       {resumeMut.isPending
                         ? "Reviewing…"
@@ -390,13 +472,17 @@ function ReviewDetailModal({ id, onClose }: { id: number; onClose: () => void })
                   </div>
                 </div>
                 <p className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
-                  <HugeiconsIcon icon={File01Icon} size={13} strokeWidth={1.8} />
+                  <HugeiconsIcon
+                    icon={File01Icon}
+                    size={13}
+                    strokeWidth={1.8}
+                  />
                   {detail.resumeFileName}
                 </p>
                 {!detail.hasResumeText && !showResumeEditor && (
                   <p className="mt-1 text-[11px] text-muted-foreground">
-                    No readable text in this PDF (image/design export) — paste the résumé text to
-                    enable AI review.
+                    No readable text in this PDF (image/design export) — paste
+                    the résumé text to enable AI review.
                   </p>
                 )}
                 <button
@@ -431,15 +517,25 @@ function ReviewDetailModal({ id, onClose }: { id: number; onClose: () => void })
                   </div>
                 )}
                 {resumeError && (
-                  <p className="mt-2 text-[11px] font-medium text-destructive">{resumeError}</p>
+                  <p className="mt-2 text-[11px] font-medium text-destructive">
+                    {resumeError}
+                  </p>
                 )}
                 {(detail.resumeFeedback || detail.resumeImprovements) && (
                   <div className="mt-2 space-y-1.5">
                     {detail.resumeFeedback && (
-                      <FeedbackNote tone="pos" label="Strengths" text={detail.resumeFeedback} />
+                      <FeedbackNote
+                        tone="pos"
+                        label="Strengths"
+                        text={detail.resumeFeedback}
+                      />
                     )}
                     {detail.resumeImprovements && (
-                      <FeedbackNote tone="neg" label="To improve" text={detail.resumeImprovements} />
+                      <FeedbackNote
+                        tone="neg"
+                        label="To improve"
+                        text={detail.resumeImprovements}
+                      />
                     )}
                   </div>
                 )}
@@ -452,9 +548,19 @@ function ReviewDetailModal({ id, onClose }: { id: number; onClose: () => void })
                 {detail.basicScore != null && (
                   <ResultCard title="Basic Q&A">
                     <span className="text-[13px]">
-                      Score <span className="font-semibold">{detail.basicScore}%</span>
+                      Score{" "}
+                      <span className="font-semibold">
+                        {detail.basicScore}%
+                      </span>
                       {detail.basicPassed != null && (
-                        <span className={cn("ml-2 font-medium", detail.basicPassed ? "text-green-600 dark:text-green-400" : "text-destructive")}>
+                        <span
+                          className={cn(
+                            "ml-2 font-medium",
+                            detail.basicPassed
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-destructive"
+                          )}
+                        >
                           {detail.basicPassed ? "Passed" : "Failed"}
                         </span>
                       )}
@@ -462,82 +568,103 @@ function ReviewDetailModal({ id, onClose }: { id: number; onClose: () => void })
                   </ResultCard>
                 )}
 
-                {detail.traitScores && Object.keys(detail.traitScores).length > 0 && (
-                  <ResultCard title="Personality (Big Five)">
-                    <div className="space-y-2">
-                      {Object.entries(detail.traitScores).map(([trait, value]) => (
-                        <div key={trait}>
-                          <div className="mb-1 flex items-center justify-between text-[12px]">
-                            <span>{traitLabel(trait)}</span>
-                            <span className="text-muted-foreground">{value}%</span>
-                          </div>
-                          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                            <div className="h-full rounded-full bg-primary" style={{ width: `${value}%` }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ResultCard>
-                )}
-
-                {detail.interviewAnswers && detail.interviewAnswers.length > 0 && (
-                  <div className="rounded-xl border border-border p-4">
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                        AI Interview
-                      </p>
-                      <div className="flex items-center gap-2">
-                        {detail.aiGraded && detail.aiScore != null && (
-                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                            AI score {detail.aiScore}%
-                          </span>
+                {detail.traitScores &&
+                  Object.keys(detail.traitScores).length > 0 && (
+                    <ResultCard title="Personality (Big Five)">
+                      <div className="space-y-2">
+                        {Object.entries(detail.traitScores).map(
+                          ([trait, value]) => (
+                            <div key={trait}>
+                              <div className="mb-1 flex items-center justify-between text-[12px]">
+                                <span>{traitLabel(trait)}</span>
+                                <span className="text-muted-foreground">
+                                  {value}%
+                                </span>
+                              </div>
+                              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                                <div
+                                  className="h-full rounded-full bg-primary"
+                                  style={{ width: `${value}%` }}
+                                />
+                              </div>
+                            </div>
+                          )
                         )}
-                        <Button
-                          size="xs"
-                          variant="outline"
-                          onClick={handleGrade}
-                          disabled={gradeMut.isPending}
-                        >
-                          {gradeMut.isPending
-                            ? "Grading…"
-                            : detail.aiGraded
-                              ? "Re-grade"
-                              : "Grade with AI"}
-                        </Button>
                       </div>
-                    </div>
-                    {gradeError && (
-                      <p className="mb-2 text-[11px] font-medium text-destructive">{gradeError}</p>
-                    )}
-                    <div className="space-y-3">
-                      {detail.interviewAnswers.map((qa, i) => (
-                        <div key={i}>
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-[12px] font-medium">{qa.question}</p>
-                            {qa.aiScore != null && (
-                              <span className="shrink-0 text-[11px] font-semibold text-primary">
-                                {qa.aiScore}%
-                              </span>
-                            )}
-                          </div>
-                          <p className="mt-0.5 text-[12px] text-muted-foreground italic">
-                            &ldquo;{qa.answer}&rdquo;
-                          </p>
-                          {(qa.aiFeedback || qa.aiImprovements) && (
-                            <div className="mt-2 space-y-1.5">
-                              {qa.aiFeedback && (
-                                <FeedbackNote tone="pos" label="Strengths" text={qa.aiFeedback} />
-                              )}
-                              {qa.aiImprovements && (
-                                <FeedbackNote tone="neg" label="To improve" text={qa.aiImprovements} />
+                    </ResultCard>
+                  )}
+
+                {detail.interviewAnswers &&
+                  detail.interviewAnswers.length > 0 && (
+                    <div className="rounded-xl border border-border p-4">
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                          AI Interview
+                        </p>
+                        <div className="flex items-center gap-2">
+                          {detail.aiGraded && detail.aiScore != null && (
+                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                              AI score {detail.aiScore}%
+                            </span>
+                          )}
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            onClick={handleGrade}
+                            disabled={gradeMut.isPending}
+                          >
+                            {gradeMut.isPending
+                              ? "Grading…"
+                              : detail.aiGraded
+                                ? "Re-grade"
+                                : "Grade with AI"}
+                          </Button>
+                        </div>
+                      </div>
+                      {gradeError && (
+                        <p className="mb-2 text-[11px] font-medium text-destructive">
+                          {gradeError}
+                        </p>
+                      )}
+                      <div className="space-y-3">
+                        {detail.interviewAnswers.map((qa, i) => (
+                          <div key={i}>
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-[12px] font-medium">
+                                {qa.question}
+                              </p>
+                              {qa.aiScore != null && (
+                                <span className="shrink-0 text-[11px] font-semibold text-primary">
+                                  {qa.aiScore}%
+                                </span>
                               )}
                             </div>
-                          )}
-                        </div>
-                      ))}
+                            <p className="mt-0.5 text-[12px] text-muted-foreground italic">
+                              &ldquo;{qa.answer}&rdquo;
+                            </p>
+                            {(qa.aiFeedback || qa.aiImprovements) && (
+                              <div className="mt-2 space-y-1.5">
+                                {qa.aiFeedback && (
+                                  <FeedbackNote
+                                    tone="pos"
+                                    label="Strengths"
+                                    text={qa.aiFeedback}
+                                  />
+                                )}
+                                {qa.aiImprovements && (
+                                  <FeedbackNote
+                                    tone="neg"
+                                    label="To improve"
+                                    text={qa.aiImprovements}
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             ) : (
               <div className="mt-5 rounded-xl border border-dashed py-8 text-center text-[13px] text-muted-foreground">
@@ -550,10 +677,18 @@ function ReviewDetailModal({ id, onClose }: { id: number; onClose: () => void })
               {ACTIONS.map((act) => (
                 <Button
                   key={act.status}
-                  variant={act.variant === "default" ? "default" : act.variant === "destructive" ? "destructive" : "outline"}
+                  variant={
+                    act.variant === "default"
+                      ? "default"
+                      : act.variant === "destructive"
+                        ? "destructive"
+                        : "outline"
+                  }
                   size="sm"
                   disabled={detail.status === act.status || statusMut.isPending}
-                  onClick={() => statusMut.mutate({ id: detail.id, status: act.status })}
+                  onClick={() =>
+                    statusMut.mutate({ id: detail.id, status: act.status })
+                  }
                 >
                   {act.label}
                 </Button>
@@ -577,7 +712,9 @@ function ThresholdSlider({
 }) {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="w-20 shrink-0 text-[11px] text-muted-foreground">{label}</span>
+      <span className="w-20 shrink-0 text-[11px] text-muted-foreground">
+        {label}
+      </span>
       <input
         type="range"
         min={0}
@@ -617,7 +754,13 @@ function ScoreCell({
         ? "text-amber-600 dark:text-amber-400"
         : "text-red-600 dark:text-red-400"
   return (
-    <span className={cn("tabular-nums", color, strong ? "text-[13px] font-bold" : "font-semibold")}>
+    <span
+      className={cn(
+        "tabular-nums",
+        color,
+        strong ? "text-[13px] font-bold" : "font-semibold"
+      )}
+    >
       {value}%
     </span>
   )
@@ -659,7 +802,13 @@ function FeedbackNote({
   )
 }
 
-function ResultCard({ title, children }: { title: string; children: React.ReactNode }) {
+function ResultCard({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
   return (
     <div className="rounded-xl border border-border p-4">
       <p className="mb-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">

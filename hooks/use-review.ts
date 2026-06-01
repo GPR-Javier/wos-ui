@@ -64,8 +64,15 @@ export function useSaveResumeText() {
 export function useSetApplicationStatus() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status, note }: { id: number; status: ApplicationStatus; note?: string }) =>
-      reviewApi.setStatus(id, status, note),
+    mutationFn: ({
+      id,
+      status,
+      note,
+    }: {
+      id: number
+      status: ApplicationStatus
+      note?: string
+    }) => reviewApi.setStatus(id, status, note),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["review", "applications"] })
       qc.invalidateQueries({ queryKey: ["review", "application", vars.id] })

@@ -14,9 +14,18 @@ import {
 import type { StartResponse, AnswerInput } from "@/lib/assessment-runtime-api"
 
 // ── Minimal Web Speech typings (avoids `any`) ─────────────────────────────────
-interface SRAlt { transcript: string }
-interface SRResult { readonly length: number; isFinal: boolean; readonly [i: number]: SRAlt }
-interface SREvent { resultIndex: number; results: { readonly length: number; readonly [i: number]: SRResult } }
+interface SRAlt {
+  transcript: string
+}
+interface SRResult {
+  readonly length: number
+  isFinal: boolean
+  readonly [i: number]: SRAlt
+}
+interface SREvent {
+  resultIndex: number
+  results: { readonly length: number; readonly [i: number]: SRResult }
+}
 interface SpeechRec {
   lang: string
   continuous: boolean
@@ -50,7 +59,8 @@ function createAudioCtx(): AudioContext | null {
   if (typeof window === "undefined") return null
   const AC =
     window.AudioContext ??
-    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    (window as unknown as { webkitAudioContext?: typeof AudioContext })
+      .webkitAudioContext
   return AC ? new AC() : null
 }
 
@@ -187,7 +197,9 @@ export function AIInterviewRunner({
 
   const question = run.questions[index]
   const isLast = index === run.questions.length - 1
-  const answeredCount = run.questions.filter((q) => (transcripts[q.id] ?? "").trim()).length
+  const answeredCount = run.questions.filter((q) =>
+    (transcripts[q.id] ?? "").trim()
+  ).length
   const answer = (transcripts[question.id] ?? "").trim()
   const answered = answer.length > 0
   const wordCount = answered ? answer.split(/\s+/).length : 0
@@ -264,7 +276,13 @@ export function AIInterviewRunner({
       {/* Camera */}
       <div className="mb-4 flex justify-center">
         <div className="relative w-64 overflow-hidden rounded-xl border border-border bg-black">
-          <video ref={videoRef} autoPlay muted playsInline className="aspect-video w-full object-cover" />
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className="aspect-video w-full object-cover"
+          />
           <span className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
             <span className="size-1.5 animate-pulse rounded-full bg-red-500" />
             REC
@@ -282,7 +300,9 @@ export function AIInterviewRunner({
       {/* Question */}
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex items-start justify-between gap-3">
-          <p className="text-[16px] leading-relaxed font-medium">{question.text}</p>
+          <p className="text-[16px] leading-relaxed font-medium">
+            {question.text}
+          </p>
           <button
             type="button"
             onClick={() => speak(question.text)}
@@ -339,7 +359,11 @@ export function AIInterviewRunner({
           {srSupported && !recording && answered && (
             <div className="flex items-center gap-3 text-[12px]">
               <span className="flex items-center gap-1 font-medium text-green-600 dark:text-green-400">
-                <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={CheckmarkCircle01Icon}
+                  size={14}
+                  strokeWidth={2}
+                />
                 Answer recorded · {wordCount} word{wordCount !== 1 ? "s" : ""}
               </span>
               <button
@@ -358,7 +382,9 @@ export function AIInterviewRunner({
         {/* Typed answer ONLY when speech recognition is unavailable (fallback). */}
         {!srSupported && (
           <div className="mt-4">
-            <label className="text-[12px] text-muted-foreground">Your answer</label>
+            <label className="text-[12px] text-muted-foreground">
+              Your answer
+            </label>
             <textarea
               rows={4}
               className="mt-1.5 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-[13px] focus:ring-2 focus:ring-ring focus:outline-none"
@@ -384,7 +410,12 @@ export function AIInterviewRunner({
         <div className="flex items-center gap-2">
           {index > 0 && (
             <Button variant="ghost" size="sm" onClick={() => go(index - 1)}>
-              <HugeiconsIcon icon={ArrowLeft01Icon} size={13} strokeWidth={2} className="mr-1.5" />
+              <HugeiconsIcon
+                icon={ArrowLeft01Icon}
+                size={13}
+                strokeWidth={2}
+                className="mr-1.5"
+              />
               Previous
             </Button>
           )}
@@ -395,7 +426,12 @@ export function AIInterviewRunner({
           ) : (
             <Button size="sm" onClick={() => go(index + 1)}>
               Next
-              <HugeiconsIcon icon={ArrowRight01Icon} size={13} strokeWidth={2} className="ml-1.5" />
+              <HugeiconsIcon
+                icon={ArrowRight01Icon}
+                size={13}
+                strokeWidth={2}
+                className="ml-1.5"
+              />
             </Button>
           )}
         </div>
@@ -406,12 +442,17 @@ export function AIInterviewRunner({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
           <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 text-center shadow-xl">
             <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-red-500/10">
-              <HugeiconsIcon icon={Alert01Icon} size={24} strokeWidth={1.8} className="text-red-500" />
+              <HugeiconsIcon
+                icon={Alert01Icon}
+                size={24}
+                strokeWidth={1.8}
+                className="text-red-500"
+              />
             </div>
             <h2 className="text-[16px] font-semibold">Interview ended</h2>
             <p className="mt-1 text-[13px] text-muted-foreground">
-              {endedReason} Leaving the interview screen ends the session. The answers you
-              recorded have been saved.
+              {endedReason} Leaving the interview screen ends the session. The
+              answers you recorded have been saved.
             </p>
             <Button className="mt-5 w-full" onClick={finish} disabled={busy}>
               {busy ? "Submitting…" : "Finish & exit"}
@@ -425,9 +466,26 @@ export function AIInterviewRunner({
 
 function MicIcon({ recording }: { recording: boolean }) {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       {recording ? (
-        <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none" />
+        <rect
+          x="6"
+          y="6"
+          width="12"
+          height="12"
+          rx="2"
+          fill="currentColor"
+          stroke="none"
+        />
       ) : (
         <>
           <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />

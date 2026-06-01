@@ -69,10 +69,15 @@ export const reviewApi = {
     api.get<ReviewDetail>(`/hr/review/applications/${id}`).then((r) => r.data),
   setStatus: (id: number, status: ApplicationStatus, note?: string) =>
     api
-      .post<ReviewDetail>(`/hr/review/applications/${id}/status`, { status, note })
+      .post<ReviewDetail>(`/hr/review/applications/${id}/status`, {
+        status,
+        note,
+      })
       .then((r) => r.data),
   grade: (id: number) =>
-    api.post<ReviewDetail>(`/hr/review/applications/${id}/grade`).then((r) => r.data),
+    api
+      .post<ReviewDetail>(`/hr/review/applications/${id}/grade`)
+      .then((r) => r.data),
   reviewCoverLetter: (id: number) =>
     api
       .post<ReviewDetail>(`/hr/review/applications/${id}/cover-letter-review`)

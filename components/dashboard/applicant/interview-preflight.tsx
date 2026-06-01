@@ -61,7 +61,8 @@ function createAudioCtx(): AudioContext | null {
   if (typeof window === "undefined") return null
   const AC =
     window.AudioContext ??
-    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    (window as unknown as { webkitAudioContext?: typeof AudioContext })
+      .webkitAudioContext
   return AC ? new AC() : null
 }
 
@@ -93,12 +94,18 @@ export function InterviewPreflight({
   const audioCtxRef = useRef<AudioContext | null>(null)
   const rafRef = useRef<number | null>(null)
   const [netTesting, setNetTesting] = useState(false)
-  const [net, setNet] = useState<{ rating: NetRating; ms: number | null; mbps: number | null } | null>(null)
+  const [net, setNet] = useState<{
+    rating: NetRating
+    ms: number | null
+    mbps: number | null
+  } | null>(null)
 
   async function testInternet() {
     setNetTesting(true)
     setNet(null)
-    const conn = (navigator as unknown as { connection?: { downlink?: number } }).connection
+    const conn = (
+      navigator as unknown as { connection?: { downlink?: number } }
+    ).connection
     const mbps = typeof conn?.downlink === "number" ? conn.downlink : null
     let ms: number | null = null
     try {
@@ -114,7 +121,8 @@ export function InterviewPreflight({
     }
     let rating: NetRating
     if (ms === null) rating = "slow"
-    else if (mbps != null) rating = mbps >= 5 ? "fast" : mbps >= 1.5 ? "moderate" : "slow"
+    else if (mbps != null)
+      rating = mbps >= 5 ? "fast" : mbps >= 1.5 ? "moderate" : "slow"
     else rating = ms < 120 ? "fast" : ms < 350 ? "moderate" : "slow"
     setNet({ rating, ms, mbps })
     setNetTesting(false)
@@ -154,7 +162,9 @@ export function InterviewPreflight({
             // Perceptual scaling: sqrt curve boosts quiet/normal speech so you don't
             // have to shout; smoothed with an attack/decay envelope for a natural meter.
             const target = Math.min(1, Math.sqrt(rms) * 2.4)
-            setMicLevel((prev) => prev + (target - prev) * (target > prev ? 0.5 : 0.15))
+            setMicLevel(
+              (prev) => prev + (target - prev) * (target > prev ? 0.5 : 0.15)
+            )
             rafRef.current = requestAnimationFrame(loop)
           }
           loop()
@@ -176,17 +186,25 @@ export function InterviewPreflight({
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-8">
-      <h1 className="text-xl font-bold tracking-tight">Before you start the interview</h1>
+      <h1 className="text-xl font-bold tracking-tight">
+        Before you start the interview
+      </h1>
       <p className="mt-1 text-[13px] text-muted-foreground">
-        This is a recorded, AI-led interview. Please get set up and read the rules — once you
-        start, the attempt can&apos;t be undone.
+        This is a recorded, AI-led interview. Please get set up and read the
+        rules — once you start, the attempt can&apos;t be undone.
       </p>
 
       <div className="mt-6 grid gap-5 md:grid-cols-2">
         {/* Camera preview */}
         <div>
           <div className="relative aspect-video overflow-hidden rounded-xl border border-border bg-black">
-            <video ref={videoRef} autoPlay muted playsInline className="h-full w-full object-cover" />
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              className="h-full w-full object-cover"
+            />
             {camera !== "ok" && (
               <div className="absolute inset-0 flex items-center justify-center px-4 text-center text-[12px] text-white/70">
                 {camera === "checking"
@@ -195,7 +213,9 @@ export function InterviewPreflight({
               </div>
             )}
           </div>
-          <p className="mt-2 text-center text-[11px] text-muted-foreground">Camera preview</p>
+          <p className="mt-2 text-center text-[11px] text-muted-foreground">
+            Camera preview
+          </p>
         </div>
 
         {/* Checks */}
@@ -228,7 +248,9 @@ export function InterviewPreflight({
             <span className="text-[13px]">Internet connection</span>
             <div className="flex items-center gap-2">
               {netTesting ? (
-                <span className="text-[11px] text-muted-foreground">Testing…</span>
+                <span className="text-[11px] text-muted-foreground">
+                  Testing…
+                </span>
               ) : net ? (
                 <span
                   className={cn(
@@ -240,14 +262,23 @@ export function InterviewPreflight({
                         : "text-destructive"
                   )}
                 >
-                  {net.rating === "fast" ? "Fast" : net.rating === "moderate" ? "Moderate" : "Slow"}
+                  {net.rating === "fast"
+                    ? "Fast"
+                    : net.rating === "moderate"
+                      ? "Moderate"
+                      : "Slow"}
                   {net.ms != null ? ` · ${net.ms} ms` : ""}
                   {net.mbps != null ? ` · ~${net.mbps} Mbps` : ""}
                 </span>
               ) : (
                 <StatusPill state={online ? "ok" : "fail"} />
               )}
-              <Button variant="outline" size="xs" onClick={testInternet} disabled={netTesting}>
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={testInternet}
+                disabled={netTesting}
+              >
                 {netTesting ? "…" : "Test"}
               </Button>
             </div>
@@ -287,8 +318,8 @@ export function InterviewPreflight({
             <li key={r}>{r}</li>
           ))}
           <li className="font-medium">
-            Violating these (multiple faces, visible phone, looking away, tab-switching) may
-            disqualify your session.
+            Violating these (multiple faces, visible phone, looking away,
+            tab-switching) may disqualify your session.
           </li>
         </ul>
       </div>
@@ -303,7 +334,8 @@ export function InterviewPreflight({
         />
         <span className="text-[13px] text-muted-foreground">
           I&apos;ve read the rules and understand the interview is recorded and{" "}
-          <span className="font-medium text-foreground">cannot be undone</span> once started.
+          <span className="font-medium text-foreground">cannot be undone</span>{" "}
+          once started.
         </span>
       </label>
 
