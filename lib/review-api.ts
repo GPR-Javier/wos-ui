@@ -40,6 +40,8 @@ export interface ReviewDetail {
   resumeFileName: string | null
   status: ApplicationStatus
   appliedAt: string
+  rejectionReason: string | null
+  rejectedAt: string | null
   coverLetterScore: number | null
   coverLetterFeedback: string | null
   coverLetterImprovements: string | null
@@ -90,4 +92,11 @@ export const reviewApi = {
     api
       .post<ReviewDetail>(`/hr/review/applications/${id}/resume-text`, { text })
       .then((r) => r.data),
+  /** AI draft ("suggest", when text is empty) or polish ("enhance") of a rejection note. */
+  suggestRejection: (id: number, text?: string) =>
+    api
+      .post<{
+        reason: string
+      }>(`/hr/review/applications/${id}/rejection-suggestion`, { text })
+      .then((r) => r.data.reason),
 }

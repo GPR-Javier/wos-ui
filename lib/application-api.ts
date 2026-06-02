@@ -24,6 +24,11 @@ export interface JobApplication {
   appliedAt: string
   updatedAt: string | null
   withdrawnAt: string | null
+  /** Reviewer's reason for rejection — present when status is REJECTED. */
+  rejectionReason: string | null
+  rejectedAt: string | null
+  /** When a rejected candidate may apply again. null = no cooldown / not rejected. */
+  reapplyAvailableAt: string | null
 }
 
 export const APPLICATION_STATUS_LABEL: Record<ApplicationStatus, string> = {

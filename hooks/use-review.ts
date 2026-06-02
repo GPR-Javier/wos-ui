@@ -61,6 +61,13 @@ export function useSaveResumeText() {
   })
 }
 
+export function useSuggestRejection() {
+  return useMutation({
+    mutationFn: ({ id, text }: { id: number; text?: string }) =>
+      reviewApi.suggestRejection(id, text),
+  })
+}
+
 export function useSetApplicationStatus() {
   const qc = useQueryClient()
   return useMutation({

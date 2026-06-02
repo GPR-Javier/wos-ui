@@ -66,6 +66,8 @@ export interface JobPosting {
   salaryGradeToId?: number | null
   salaryGradeToName?: string | null
   status: "new" | "urgent" | "open" | "closed"
+  /** Days a rejected candidate must wait before reapplying. null/0 = no cooldown. */
+  reapplyCooldownDays?: number | null
   applicantsCount: number
   tags: string[]
 }
@@ -84,6 +86,7 @@ export interface CreateJobPayload {
   salaryGradeFromId?: number | null
   salaryGradeToId?: number | null
   status: "new" | "urgent" | "open" | "closed"
+  reapplyCooldownDays?: number | null
   tags: string[]
 }
 

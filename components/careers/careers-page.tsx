@@ -117,8 +117,18 @@ export function ApplyModal({
         } catch {
           /* no body — fine */
         }
+        setStep("success")
+      } else {
+        // e.g. 409 when a rejected candidate is still within the reapply cooldown.
+        let msg = "We couldn't submit your application. Please try again."
+        try {
+          const err = await res.json()
+          if (err?.message) msg = err.message
+        } catch {
+          /* no JSON body — keep the default */
+        }
+        setError(msg)
       }
-      setStep("success")
     } catch {
       setStep("success") // optimistic — backend may not be live yet
     } finally {
@@ -442,9 +452,26 @@ function JobCard({
   application?: JobApplication | null
   embedded?: boolean
 }) {
-  const alreadyApplied = !!application
+  // An application is "active" unless it's closed (withdrawn/rejected) — those can reapply.
+  const isActive =
+    !!application &&
+    application.status !== "WITHDRAWN" &&
+    application.status !== "REJECTED"
   const canAssess =
-    !!application && ASSESSABLE_STATUSES.includes(application.status)
+    isActive && ASSESSABLE_STATUSES.includes(application!.status)
+  // A rejected candidate is blocked until the posting's cooldown elapses.
+  const cooldownUntil =
+    application?.status === "REJECTED" && application.reapplyAvailableAt
+      ? new Date(application.reapplyAvailableAt)
+      : null
+  const coolingDown = !!cooldownUntil && cooldownUntil.getTime() > Date.now()
+  // Closed (rejected/withdrawn) but free to apply again now.
+  const canReapply = !isActive && !!application && !coolingDown
+  const cooldownLabel = cooldownUntil?.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
   return (
     <div className="group flex flex-col gap-4 rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/30 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1">
@@ -454,7 +481,11 @@ function JobCard({
           <StatusBadge variant={STATUS_VARIANT[job.status] ?? "gray"}>
             {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
           </StatusBadge>
-          {alreadyApplied && <StatusBadge variant="green">Applied</StatusBadge>}
+          {isActive && <StatusBadge variant="green">Applied</StatusBadge>}
+          {coolingDown && (
+            <StatusBadge variant="amber">Reapply {cooldownLabel}</StatusBadge>
+          )}
+          {canReapply && <StatusBadge variant="gray">Not selected</StatusBadge>}
           {job.workType && (
             <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               {
@@ -558,7 +589,7 @@ function JobCard({
         >
           Details
         </Button>
-        {alreadyApplied ? (
+        {isActive ? (
           canAssess && application ? (
             <Link href={`/dashboard/assessment/${application.id}`}>
               <Button size="sm">
@@ -583,6 +614,16 @@ function JobCard({
               Applied
             </span>
           )
+        ) : coolingDown ? (
+          <Button size="sm" variant="outline" disabled>
+            <HugeiconsIcon
+              icon={Clock01Icon}
+              size={13}
+              strokeWidth={2}
+              className="mr-1.5"
+            />
+            Reapply {cooldownLabel}
+          </Button>
         ) : (
           <>
             {!embedded && (
@@ -591,7 +632,7 @@ function JobCard({
               </Button>
             )}
             <Button data-tour="careers-apply" size="sm" onClick={onApplyAuth}>
-              Apply
+              {canReapply ? "Reapply" : "Apply"}
               <HugeiconsIcon
                 icon={ArrowRight01Icon}
                 size={13}
@@ -703,12 +744,11 @@ export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
     enabled: embedded && isApplicant,
   })
   const applicationByJob = useMemo(() => {
-    // Withdrawn or rejected applications are "closed" — the candidate may apply again,
-    // so don't treat those jobs as already-applied.
+    // Keep the latest application per job (the list is newest-first, so the first one wins).
+    // The card decides what to show from its status — applied, in cooldown, or reapply.
     const map = new Map<number, JobApplication>()
     for (const a of myApplications) {
-      if (a.status !== "WITHDRAWN" && a.status !== "REJECTED")
-        map.set(a.jobPostingId, a)
+      if (!map.has(a.jobPostingId)) map.set(a.jobPostingId, a)
     }
     return map
   }, [myApplications])

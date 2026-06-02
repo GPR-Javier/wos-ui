@@ -98,6 +98,7 @@ type JobForm = {
   salaryGradeFromId: string
   salaryGradeToId: string
   status: JobPosting["status"]
+  reapplyCooldownDays: string
   tags: string[]
   interviewUseCustom: boolean
   interviewQuestionIds: number[]
@@ -121,6 +122,7 @@ const EMPTY_FORM: JobForm = {
   salaryGradeFromId: "",
   salaryGradeToId: "",
   status: "open",
+  reapplyCooldownDays: "",
   tags: [],
   interviewUseCustom: false,
   interviewQuestionIds: [],
@@ -145,6 +147,8 @@ function postingToForm(j: JobPosting): JobForm {
     salaryGradeFromId: j.salaryGradeFromId ? String(j.salaryGradeFromId) : "",
     salaryGradeToId: j.salaryGradeToId ? String(j.salaryGradeToId) : "",
     status: j.status,
+    reapplyCooldownDays:
+      j.reapplyCooldownDays != null ? String(j.reapplyCooldownDays) : "",
     tags: j.tags,
     interviewUseCustom: false,
     interviewQuestionIds: [],
@@ -178,6 +182,9 @@ function formToPayload(f: JobForm): CreateJobPayload {
         ? Number(f.salaryGradeToId)
         : null,
     status: f.status,
+    reapplyCooldownDays: f.reapplyCooldownDays.trim()
+      ? Math.max(0, parseInt(f.reapplyCooldownDays, 10) || 0)
+      : null,
     tags: f.tags,
   }
 }
@@ -811,6 +818,28 @@ function JobModal({
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Reapply cooldown */}
+          <div className="space-y-1.5">
+            <Label className="text-[12px] text-muted-foreground">
+              Reapply cooldown (days)
+            </Label>
+            <Input
+              type="number"
+              min={0}
+              className="h-9 text-[13px]"
+              placeholder="0 — rejected candidates can reapply immediately"
+              value={form.reapplyCooldownDays}
+              onChange={(e) =>
+                setForm({ ...form, reapplyCooldownDays: e.target.value })
+              }
+            />
+            <p className="text-[11px] text-muted-foreground">
+              How long a rejected candidate must wait before applying again.
+              Leave blank or 0 for no waiting period. Doesn&apos;t affect
+              withdrawn applicants.
+            </p>
           </div>
 
           {/* Tags */}

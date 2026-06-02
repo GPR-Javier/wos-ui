@@ -39,9 +39,25 @@ function formatDate(iso: string) {
   })
 }
 
+/** A rejected application is still cooling down if its reapply date is in the future. */
+function cooldownUntil(app: JobApplication): Date | null {
+  if (app.status !== "REJECTED" || !app.reapplyAvailableAt) return null
+  const until = new Date(app.reapplyAvailableAt)
+  return until.getTime() > Date.now() ? until : null
+}
+
 export function MyApplicationsScreen() {
   const { data: applications = [], isLoading, isError } = useMyApplications()
   const withdrawMut = useWithdrawApplication()
+
+  // The list is newest-first, so the first row per job is the candidate's current application.
+  // Older rows for the same job are history (a prior rejection they've already reapplied past),
+  // so only the latest one carries the reapply / cooldown actions.
+  const latestIdByJob = new Map<number, number>()
+  for (const a of applications) {
+    if (!latestIdByJob.has(a.jobPostingId))
+      latestIdByJob.set(a.jobPostingId, a.id)
+  }
   const [toast, setToast] = useState<{
     msg: string
     type: "success" | "error"
@@ -132,13 +148,21 @@ export function MyApplicationsScreen() {
         <div className="space-y-3">
           {applications.map((app) => {
             const canWithdraw = !TERMINAL.includes(app.status)
-            const canReapply = CAN_REAPPLY.includes(app.status)
+            const isLatestForJob = latestIdByJob.get(app.jobPostingId) === app.id
+            // Only the current application for a job offers reapply / shows its cooldown;
+            // older superseded rows are history.
+            const coolingDown = isLatestForJob ? cooldownUntil(app) : null
+            // Withdrawn can always reapply; rejected only once the cooldown has elapsed.
+            const canReapply =
+              isLatestForJob &&
+              CAN_REAPPLY.includes(app.status) &&
+              !coolingDown
             return (
               <div
                 key={app.id}
                 className={cn(
                   "flex flex-col gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/30 sm:flex-row sm:items-center sm:justify-between",
-                  app.status === "WITHDRAWN" && "opacity-60"
+                  (app.status === "WITHDRAWN" || !isLatestForJob) && "opacity-60"
                 )}
               >
                 <div className="min-w-0 flex-1">
@@ -151,6 +175,11 @@ export function MyApplicationsScreen() {
                     >
                       {APPLICATION_STATUS_LABEL[app.status]}
                     </StatusBadge>
+                    {!isLatestForJob && (
+                      <span className="text-[11px] text-muted-foreground">
+                        · earlier attempt
+                      </span>
+                    )}
                   </div>
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
                     {app.department && (
@@ -182,6 +211,19 @@ export function MyApplicationsScreen() {
                       </span>
                     )}
                   </div>
+
+                  {app.status === "REJECTED" && app.rejectionReason && (
+                    <div className="mt-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-[12px] text-muted-foreground">
+                      <p className="mb-1 font-medium text-foreground">
+                        Message from the hiring team
+                      </p>
+                      <div
+                        className="rte-content"
+                        dangerouslySetInnerHTML={{ __html: app.rejectionReason }}
+                      />
+                    </div>
+                  )}
+
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2">
@@ -200,7 +242,17 @@ export function MyApplicationsScreen() {
                       </Button>
                     </Link>
                   )}
-                  {canReapply && (
+                  {coolingDown ? (
+                    <Button size="sm" variant="outline" disabled>
+                      <HugeiconsIcon
+                        icon={Clock01Icon}
+                        size={13}
+                        strokeWidth={2}
+                        className="mr-1.5"
+                      />
+                      Reapply {formatDate(coolingDown.toISOString())}
+                    </Button>
+                  ) : canReapply ? (
                     <Link href={`/dashboard/careers/${app.jobPostingId}`}>
                       <Button size="sm">
                         Reapply
@@ -212,7 +264,7 @@ export function MyApplicationsScreen() {
                         />
                       </Button>
                     </Link>
-                  )}
+                  ) : null}
                   <Link href={`/dashboard/careers/${app.jobPostingId}`}>
                     <Button size="sm" variant="outline">
                       View job

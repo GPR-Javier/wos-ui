@@ -3,12 +3,15 @@
 import { useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
 import { StatusBadge } from "@/components/custom/status-badge"
+import { RichTextEditor } from "@/components/custom/rich-text-editor"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Cancel01Icon,
   Briefcase01Icon,
   File01Icon,
+  SparklesIcon,
 } from "@hugeicons/core-free-icons"
 import {
   useReviewList,
@@ -18,6 +21,7 @@ import {
   useReviewCoverLetter,
   useReviewResume,
   useSaveResumeText,
+  useSuggestRejection,
 } from "@/hooks/use-review"
 import {
   type ApplicationStatus,
@@ -45,6 +49,11 @@ const ACTIONS: {
   { label: "Mark hired", status: "HIRED", variant: "outline" },
   { label: "Reject", status: "REJECTED", variant: "destructive" },
 ]
+
+/** True when rich-text HTML has no real content (e.g. "" or "<p></p>"). */
+function htmlIsEmpty(html: string) {
+  return !html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim()
+}
 
 function traitLabel(t: string) {
   return t.charAt(0) + t.slice(1).toLowerCase()
@@ -269,6 +278,43 @@ function ReviewDetailModal({
   const [showResumeEditor, setShowResumeEditor] = useState(false)
   // Uncontrolled textarea; keyed by applicant id so it resets per candidate.
   const resumeRef = useRef<HTMLTextAreaElement>(null)
+  // Reject flow captures a reason the candidate will see.
+  const [rejecting, setRejecting] = useState(false)
+  const [rejectReason, setRejectReason] = useState("")
+  const suggestRejectionMut = useSuggestRejection()
+  const [suggestError, setSuggestError] = useState<string | null>(null)
+
+  function handleSuggestReason() {
+    setSuggestError(null)
+    const draft = htmlIsEmpty(rejectReason) ? undefined : rejectReason
+    suggestRejectionMut.mutate(
+      { id, text: draft },
+      {
+        onSuccess: (reason) => {
+          if (reason) setRejectReason(reason)
+        },
+        onError: () =>
+          setSuggestError("AI is unavailable right now. Please try again."),
+      }
+    )
+  }
+
+  function handleReject() {
+    if (!detail) return
+    statusMut.mutate(
+      {
+        id: detail.id,
+        status: "REJECTED",
+        note: htmlIsEmpty(rejectReason) ? undefined : rejectReason,
+      },
+      {
+        onSuccess: () => {
+          setRejecting(false)
+          setRejectReason("")
+        },
+      }
+    )
+  }
 
   function handleSaveResumeText() {
     setResumeError(null)
@@ -382,6 +428,18 @@ function ReviewDetailModal({
                 </span>
               )}
             </div>
+
+            {detail.status === "REJECTED" && detail.rejectionReason && (
+              <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+                <p className="text-[11px] font-semibold tracking-wider text-destructive uppercase">
+                  Rejection email
+                </p>
+                <div
+                  className="rte-content mt-1.5 text-[13px] text-foreground"
+                  dangerouslySetInnerHTML={{ __html: detail.rejectionReason }}
+                />
+              </div>
+            )}
 
             {detail.message && (
               <div className="mt-4 rounded-xl border border-border p-4">
@@ -673,26 +731,115 @@ function ReviewDetailModal({
             )}
 
             {/* Status actions */}
-            <div className="mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
-              {ACTIONS.map((act) => (
-                <Button
-                  key={act.status}
-                  variant={
-                    act.variant === "default"
-                      ? "default"
-                      : act.variant === "destructive"
-                        ? "destructive"
-                        : "outline"
-                  }
-                  size="sm"
-                  disabled={detail.status === act.status || statusMut.isPending}
-                  onClick={() =>
-                    statusMut.mutate({ id: detail.id, status: act.status })
-                  }
-                >
-                  {act.label}
-                </Button>
-              ))}
+            <div className="mt-6 border-t border-border pt-4">
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {ACTIONS.map((act) => (
+                  <Button
+                    key={act.status}
+                    variant={
+                      act.variant === "default"
+                        ? "default"
+                        : act.variant === "destructive"
+                          ? "destructive"
+                          : "outline"
+                    }
+                    size="sm"
+                    disabled={
+                      detail.status === act.status || statusMut.isPending
+                    }
+                    onClick={() => {
+                      if (act.status === "REJECTED") {
+                        setRejectReason(detail.rejectionReason ?? "")
+                        setRejecting(true)
+                      } else {
+                        statusMut.mutate({ id: detail.id, status: act.status })
+                      }
+                    }}
+                  >
+                    {act.label}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Reject reason capture */}
+              {rejecting && (
+                <div className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <Label className="text-[12px] font-medium text-foreground">
+                        Reason for rejection
+                      </Label>
+                      <p className="mt-0.5 mb-2 text-[11px] text-muted-foreground">
+                        Shared with the candidate. They may reapply
+                        {detail.status === "REJECTED"
+                          ? " "
+                          : " after any cooldown "}
+                        once rejected.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 gap-1.5"
+                      disabled={suggestRejectionMut.isPending}
+                      onClick={handleSuggestReason}
+                    >
+                      <HugeiconsIcon
+                        icon={SparklesIcon}
+                        size={13}
+                        strokeWidth={1.8}
+                      />
+                      {suggestRejectionMut.isPending
+                        ? "Thinking…"
+                        : htmlIsEmpty(rejectReason)
+                          ? "Suggest"
+                          : "Enhance"}
+                    </Button>
+                  </div>
+                  {/* Rich-text editor — content is HTML so the note is email-ready. */}
+                  <div
+                    className={cn(
+                      "rounded-lg bg-background",
+                      suggestRejectionMut.isPending &&
+                        "pointer-events-none opacity-60"
+                    )}
+                    aria-busy={suggestRejectionMut.isPending}
+                  >
+                    <RichTextEditor
+                      value={rejectReason}
+                      onChange={setRejectReason}
+                      placeholder="Write the rejection email, or use Suggest to draft one…"
+                    />
+                  </div>
+                  {suggestError && (
+                    <p className="mt-1.5 text-[11px] text-destructive">
+                      {suggestError}
+                    </p>
+                  )}
+                  <div className="mt-2 flex items-center justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={statusMut.isPending}
+                      onClick={() => {
+                        setRejecting(false)
+                        setRejectReason("")
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={statusMut.isPending || suggestRejectionMut.isPending}
+                      onClick={handleReject}
+                    >
+                      {statusMut.isPending ? "Rejecting…" : "Confirm rejection"}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}

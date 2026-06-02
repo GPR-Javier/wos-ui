@@ -12,10 +12,14 @@ import {
   Location01Icon,
   Clock01Icon,
   UserGroupIcon,
+  CheckmarkCircle01Icon,
+  Mail01Icon,
 } from "@hugeicons/core-free-icons"
 import { usePublicJobs } from "@/hooks/use-hr"
+import { useMyApplications } from "@/hooks/use-applications"
 import { useAuthStore } from "@/store/auth-store"
 import type { JobPosting } from "@/lib/hr-api"
+import { APPLICATION_STATUS_LABEL } from "@/lib/application-api"
 import { ApplyModal } from "./careers-page"
 
 const STATUS_VARIANT: Record<string, "green" | "amber" | "blue" | "gray"> = {
@@ -82,6 +86,26 @@ export function JobDetails({
   const isApplicant = apiRole?.toUpperCase() === "APPLICANT"
   const [applyOpen, setApplyOpen] = useState(false)
 
+  // Only the signed-in applicant has applications to match against — skip the
+  // authed call on the public page for guests.
+  const { data: myApplications } = useMyApplications({
+    enabled: embedded || isApplicant,
+  })
+  // The candidate's latest application to this job (the list is newest-first). With reapplies
+  // there can be several rows; the most recent one decides the current state.
+  const latestApplication = myApplications?.find((a) => a.jobPostingId === jobId)
+  const hasApplied =
+    latestApplication != null &&
+    latestApplication.status !== "WITHDRAWN" &&
+    latestApplication.status !== "REJECTED"
+  // A rejected candidate is blocked until the posting's cooldown elapses.
+  const cooldownUntil =
+    latestApplication?.status === "REJECTED" &&
+    latestApplication.reapplyAvailableAt &&
+    new Date(latestApplication.reapplyAvailableAt).getTime() > Date.now()
+      ? new Date(latestApplication.reapplyAvailableAt)
+      : null
+
   const backHref = embedded ? "/dashboard/careers" : "/careers"
   // Where a guest is sent after signing in — straight back to this job in the dashboard.
   const loginRedirect = `/auth/login?redirect=${encodeURIComponent(`/dashboard/careers/${jobId}`)}`
@@ -144,6 +168,16 @@ export function JobDetails({
               {WORK_TYPE_LABEL[job.workType] ?? job.workType}
             </span>
           )}
+          {hasApplied && (
+            <StatusBadge variant="green" dot={false}>
+              <HugeiconsIcon
+                icon={CheckmarkCircle01Icon}
+                size={11}
+                strokeWidth={2}
+              />
+              Applied
+            </StatusBadge>
+          )}
         </div>
 
         {/* Meta */}
@@ -196,7 +230,40 @@ export function JobDetails({
 
         {/* Apply */}
         <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-border pt-5">
-          {embedded || isApplicant ? (
+          {hasApplied ? (
+            <>
+              <Button variant="outline" disabled>
+                <HugeiconsIcon
+                  icon={CheckmarkCircle01Icon}
+                  size={14}
+                  strokeWidth={2}
+                  className="mr-1.5"
+                />
+                Applied · {APPLICATION_STATUS_LABEL[latestApplication.status]}
+              </Button>
+              <Link
+                href="/dashboard/my-applications"
+                className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Track your application →
+              </Link>
+            </>
+          ) : cooldownUntil ? (
+            <Button variant="outline" disabled>
+              <HugeiconsIcon
+                icon={Clock01Icon}
+                size={14}
+                strokeWidth={2}
+                className="mr-1.5"
+              />
+              Reapply on{" "}
+              {cooldownUntil.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </Button>
+          ) : embedded || isApplicant ? (
             <Button onClick={() => setApplyOpen(true)}>
               Apply for this role
               <HugeiconsIcon
@@ -230,6 +297,42 @@ export function JobDetails({
           )}
         </div>
       </div>
+
+      {/* Rejection email — highlighted so the candidate sees why and when they can reapply */}
+      {latestApplication?.status === "REJECTED" &&
+        latestApplication.rejectionReason && (
+          <div className="mt-5 overflow-hidden rounded-2xl border border-at">
+            <div className="flex flex-wrap items-center gap-2 border-b border-at bg-abg px-6 py-3.5">
+              <span className="flex size-7 items-center justify-center rounded-lg bg-abg text-amber">
+                <HugeiconsIcon icon={Mail01Icon} size={15} strokeWidth={1.8} />
+              </span>
+              <h2 className="text-[15px] font-semibold">
+                Message from the hiring team
+              </h2>
+              {cooldownUntil && (
+                <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-at bg-abg px-2.5 py-1 text-[11px] font-medium text-amber">
+                  <HugeiconsIcon
+                    icon={Clock01Icon}
+                    size={11}
+                    strokeWidth={2}
+                  />
+                  Reapply on{" "}
+                  {cooldownUntil.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </span>
+              )}
+            </div>
+            <div
+              className="rte-content bg-card px-6 py-5 text-[13px] leading-relaxed text-foreground"
+              dangerouslySetInnerHTML={{
+                __html: latestApplication.rejectionReason,
+              }}
+            />
+          </div>
+        )}
 
       {/* Description */}
       {job.description ? (

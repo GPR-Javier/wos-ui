@@ -73,7 +73,18 @@
       "Bash(./mvnw.cmd -q compile)",
       "Bash(JAVA_HOME=\"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\" ./mvnw.cmd -q compile)",
       "PowerShell(Get-NetTCPConnection -LocalPort 8083 -State Listen | Select-Object -Expand OwningProcess | ForEach-Object { Get-Process -Id $_ | Select-Object Id, ProcessName, StartTime })",
-      "PowerShell(Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue | Select-Object -Expand OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force; \"Killed PID $_\" }; Start-Sleep -Milliseconds 500; if \\(Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue\\) { \"STILL IN USE\" } else { \"Port 8083 is now free\" })"
+      "PowerShell(Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue | Select-Object -Expand OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force; \"Killed PID $_\" }; Start-Sleep -Milliseconds 500; if \\(Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue\\) { \"STILL IN USE\" } else { \"Port 8083 is now free\" })",
+      "PowerShell($hr = \"c:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; if \\(Test-Path \"$hr\\\\mvnw.cmd\"\\) { & \"$hr\\\\mvnw.cmd\" -q -o -f \"$hr\\\\pom.xml\" compile 2>&1 | Select-Object -Last 30 } else { \"no mvnw\"; \\(Get-Command mvn -ErrorAction SilentlyContinue\\).Source })",
+      "PowerShell($j = Get-ChildItem \"C:\\\\Program Files\\\\Java\",\"C:\\\\Program Files\\\\Eclipse Adoptium\",\"$env:LOCALAPPDATA\\\\Programs\" -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match \"jdk\" } | Select-Object -Expand FullName; $j; \"JAVA_HOME=$env:JAVA_HOME\"; \\(Get-Command java -ErrorAction SilentlyContinue\\).Source)",
+      "Bash(echo \"=== EXIT: $? \\(no lines above = clean\\) ===\")",
+      "Bash(node -e \"const i=require\\('@hugeicons/core-free-icons'\\); console.log\\(['AiMagicIcon','SparklesIcon','MagicWand01Icon','AiBeautifyIcon','AiIdeaIcon'].filter\\(n=>n in i\\)\\)\")",
+      "Bash(echo \"=== EXIT $? \\(no lines = clean for my files\\) ===\")",
+      "PowerShell($c = Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue; if \\($c\\) { $c | Select-Object LocalAddress,LocalPort,OwningProcess | Format-Table -AutoSize; $c.OwningProcess | Select-Object -Unique | ForEach-Object { Get-Process -Id $_ -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime,@{n='CmdLine';e={\\(Get-CimInstance Win32_Process -Filter \"ProcessId=$\\($_.Id\\)\"\\).CommandLine}} } | Format-List } else { \"Nothing is listening on 8083.\" })",
+      "PowerShell(Stop-Process -Id 36668 -Force; Start-Sleep -Milliseconds 800; $c = Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue; if \\($c\\) { \"STILL IN USE by PID\\(s\\): $\\($c.OwningProcess -join ', '\\)\" } else { \"Port 8083 is now free.\" })",
+      "Bash(echo \"=== EXIT $? \\(no lines = my files clean\\) ===\")",
+      "Bash(echo \"=== EXIT $? \\(no careers-page lines = clean\\) ===\")",
+      "Bash(echo \"=== EXIT $? \\(no lines = clean\\) ===\")",
+      "Bash(node -e \"const i=require\\('@hugeicons/core-free-icons'\\); console.log\\(['Mail01Icon','MailOpen01Icon','Message01Icon','MailAccount01Icon'].filter\\(n=>i[n]\\)\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-auth\\src\\main\\java\\com\\gpm\\auth\\controller",
