@@ -10,8 +10,14 @@ import {
   ArrowRight01Icon,
   CheckmarkCircle01Icon,
   Alert01Icon,
+  AiBrain01Icon,
 } from "@hugeicons/core-free-icons"
-import type { StartResponse, AnswerInput } from "@/lib/assessment-runtime-api"
+import type {
+  StartResponse,
+  AnswerInput,
+  NextQuestionResponse,
+} from "@/lib/assessment-runtime-api"
+import { useBotPersona } from "@/hooks/use-bot-persona"
 
 // ── Minimal Web Speech typings (avoids `any`) ─────────────────────────────────
 interface SRAlt {
@@ -47,14 +53,6 @@ function getSRCtor(): SRCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null
 }
 
-function speak(text: string) {
-  if (typeof window === "undefined" || !window.speechSynthesis) return
-  window.speechSynthesis.cancel()
-  const u = new SpeechSynthesisUtterance(text)
-  u.lang = "en-US"
-  window.speechSynthesis.speak(u)
-}
-
 function createAudioCtx(): AudioContext | null {
   if (typeof window === "undefined") return null
   const AC =
@@ -72,18 +70,41 @@ export function AIInterviewRunner({
   busy,
   onSubmit,
   onCancel,
+  onRequestNext,
 }: {
   run: StartResponse
   busy: boolean
   onSubmit: (answers: AnswerInput[]) => void
   onCancel: () => void
+  /** Conversational mode: fetch the next AI-generated question given the answer just recorded. */
+  onRequestNext?: (transcript: string) => Promise<NextQuestionResponse>
 }) {
+  const { name: botName, speak, stop: stopSpeaking } = useBotPersona()
+
+  // Conversational ("AI follow-up") interviews generate one question at a time; fixed interviews
+  // have all questions up front.
+  const aiFollowUp = !!run.aiFollowUp
+  const total = aiFollowUp
+    ? (run.maxQuestions ?? run.questions.length)
+    : run.questions.length
+
   const [index, setIndex] = useState(0)
+  // Question text by index. Fixed mode seeds from run.questions; follow-up mode grows as the AI
+  // generates each follow-up.
+  const [questionTexts, setQuestionTexts] = useState<string[]>(() =>
+    run.questions.map((q) => q.text)
+  )
+  // Transcripts keyed by index (the stable key in both modes).
   const [transcripts, setTranscripts] = useState<Record<number, string>>({})
   const [recording, setRecording] = useState(false)
   const [levels, setLevels] = useState<number[]>(ZERO_BARS)
   const recRef = useRef<SpeechRec | null>(null)
   const [srSupported] = useState(() => !!getSRCtor())
+
+  // Follow-up flow state.
+  const [thinking, setThinking] = useState(false)
+  const [reachedEnd, setReachedEnd] = useState(false)
+  const [dynError, setDynError] = useState<string | null>(null)
 
   // Proctoring: leaving the interview (exit fullscreen / tab switch / alt-tab) ends it.
   const [endedReason, setEndedReason] = useState<string | null>(null)
@@ -195,22 +216,22 @@ export function AIInterviewRunner({
     }
   }
 
-  const question = run.questions[index]
-  const isLast = index === run.questions.length - 1
-  const answeredCount = run.questions.filter((q) =>
-    (transcripts[q.id] ?? "").trim()
+  const questionText = questionTexts[index] ?? ""
+  const isLast = aiFollowUp
+    ? reachedEnd || index >= total - 1
+    : index === run.questions.length - 1
+  const answeredCount = Object.values(transcripts).filter((t) =>
+    (t ?? "").trim()
   ).length
-  const answer = (transcripts[question.id] ?? "").trim()
+  const answer = (transcripts[index] ?? "").trim()
   const answered = answer.length > 0
   const wordCount = answered ? answer.split(/\s+/).length : 0
 
-  // Read each question aloud when it appears; cancel speech on unmount.
+  // Read each question aloud when its text appears; cancel speech on unmount.
   useEffect(() => {
-    speak(question.text)
-    return () => {
-      if (typeof window !== "undefined") window.speechSynthesis?.cancel()
-    }
-  }, [index]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (questionText) speak(questionText)
+    return () => stopSpeaking()
+  }, [questionText]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function stopRecording() {
     recRef.current?.stop()
@@ -222,8 +243,8 @@ export function AIInterviewRunner({
   function startRecording() {
     const Ctor = getSRCtor()
     if (!Ctor) return
-    if (typeof window !== "undefined") window.speechSynthesis?.cancel()
-    const qid = question.id
+    stopSpeaking()
+    const key = index
     const rec = new Ctor()
     rec.lang = "en-US"
     rec.continuous = true
@@ -237,7 +258,7 @@ export function AIInterviewRunner({
       if (finalChunk) {
         setTranscripts((t) => ({
           ...t,
-          [qid]: `${(t[qid] ?? "").trim()} ${finalChunk.trim()}`.trim(),
+          [key]: `${(t[key] ?? "").trim()} ${finalChunk.trim()}`.trim(),
         }))
       }
     }
@@ -254,19 +275,53 @@ export function AIInterviewRunner({
     setIndex(next)
   }
 
+  // Conversational mode: record the current answer, ask the backend for the next question.
+  async function nextFollowUp() {
+    if (!onRequestNext || thinking) return
+    if (recording) stopRecording()
+    stopSpeaking()
+    const ans = (transcripts[index] ?? "").trim()
+    setThinking(true)
+    setDynError(null)
+    try {
+      const res = await onRequestNext(ans)
+      if (res.done || !res.question) {
+        setReachedEnd(true) // server says no more — show "Finish"
+      } else {
+        setQuestionTexts((qs) => {
+          const arr = qs.slice()
+          arr[res.questionNumber - 1] = res.question as string
+          return arr
+        })
+        setIndex((i) => i + 1)
+      }
+    } catch {
+      setDynError(
+        `${botName} couldn't think of the next question. Please try again.`
+      )
+    } finally {
+      setThinking(false)
+    }
+  }
+
   function finish() {
     if (recording) stopRecording()
+    stopSpeaking()
     leaveFullscreen()
-    onSubmit(
-      run.questions.map((q) => ({
-        questionId: q.id,
-        transcript: (transcripts[q.id] ?? "").trim(),
-      }))
-    )
+    const count = aiFollowUp ? questionTexts.length : run.questions.length
+    const payload: AnswerInput[] = []
+    for (let i = 0; i < count; i++) {
+      payload.push({
+        questionId: aiFollowUp ? i : run.questions[i].id,
+        transcript: (transcripts[i] ?? "").trim(),
+      })
+    }
+    onSubmit(payload)
   }
 
   function handleCancel() {
     if (recording) stopRecording()
+    stopSpeaking()
     leaveFullscreen()
     onCancel()
   }
@@ -292,20 +347,20 @@ export function AIInterviewRunner({
 
       <div className="mb-4 flex items-center justify-between text-[12px] text-muted-foreground">
         <span>
-          Question {index + 1} of {run.questions.length}
+          Question {index + 1} of {total}
         </span>
-        <span>{answeredCount} answered</span>
+        {!aiFollowUp && <span>{answeredCount} answered</span>}
       </div>
 
       {/* Question */}
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="relative rounded-2xl border border-border bg-card p-6">
         <div className="flex items-start justify-between gap-3">
           <p className="text-[16px] leading-relaxed font-medium">
-            {question.text}
+            {questionText}
           </p>
           <button
             type="button"
-            onClick={() => speak(question.text)}
+            onClick={() => speak(questionText)}
             title="Replay question"
             className="flex size-8 shrink-0 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
@@ -368,9 +423,7 @@ export function AIInterviewRunner({
               </span>
               <button
                 type="button"
-                onClick={() =>
-                  setTranscripts((t) => ({ ...t, [question.id]: "" }))
-                }
+                onClick={() => setTranscripts((t) => ({ ...t, [index]: "" }))}
                 className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
               >
                 Re-record
@@ -389,14 +442,45 @@ export function AIInterviewRunner({
               rows={4}
               className="mt-1.5 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-[13px] focus:ring-2 focus:ring-ring focus:outline-none"
               placeholder="Type your answer…"
-              value={transcripts[question.id] ?? ""}
+              value={transcripts[index] ?? ""}
               onChange={(e) =>
-                setTranscripts((t) => ({ ...t, [question.id]: e.target.value }))
+                setTranscripts((t) => ({ ...t, [index]: e.target.value }))
               }
             />
           </div>
         )}
+
+        {/* "Evaluating your answer" overlay while the AI generates the next question. */}
+        {thinking && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-card/90 backdrop-blur-sm">
+            <div className="flex size-12 items-center justify-center rounded-full bg-primary/10">
+              <HugeiconsIcon
+                icon={AiBrain01Icon}
+                size={24}
+                strokeWidth={1.8}
+                className="animate-pulse text-primary"
+              />
+            </div>
+            <p className="flex items-center text-[13px] font-medium">
+              {botName} is evaluating your answer
+              <span className="ml-0.5 inline-flex">
+                <Dot delay="0ms" />
+                <Dot delay="150ms" />
+                <Dot delay="300ms" />
+              </span>
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Preparing your next question — please wait.
+            </p>
+          </div>
+        )}
       </div>
+
+      {dynError && (
+        <p className="mt-3 text-center text-[12px] font-medium text-destructive">
+          {dynError}
+        </p>
+      )}
 
       {/* Nav */}
       <div className="mt-6 flex items-center justify-between">
@@ -408,7 +492,8 @@ export function AIInterviewRunner({
           Cancel
         </button>
         <div className="flex items-center gap-2">
-          {index > 0 && (
+          {/* Previous only makes sense for fixed interviews — a live conversation can't rewind. */}
+          {!aiFollowUp && index > 0 && (
             <Button variant="ghost" size="sm" onClick={() => go(index - 1)}>
               <HugeiconsIcon
                 icon={ArrowLeft01Icon}
@@ -420,8 +505,24 @@ export function AIInterviewRunner({
             </Button>
           )}
           {isLast ? (
-            <Button size="sm" onClick={finish} disabled={busy}>
+            <Button size="sm" onClick={finish} disabled={busy || thinking}>
               {busy ? "Submitting…" : "Finish interview"}
+            </Button>
+          ) : aiFollowUp ? (
+            <Button
+              size="sm"
+              onClick={nextFollowUp}
+              disabled={thinking || (srSupported && !answered)}
+            >
+              {thinking ? "Thinking…" : "Next"}
+              {!thinking && (
+                <HugeiconsIcon
+                  icon={ArrowRight01Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="ml-1.5"
+                />
+              )}
             </Button>
           ) : (
             <Button size="sm" onClick={() => go(index + 1)}>
@@ -461,6 +562,15 @@ export function AIInterviewRunner({
         </div>
       )}
     </div>
+  )
+}
+
+function Dot({ delay }: { delay: string }) {
+  return (
+    <span
+      className="mx-px size-1 animate-bounce rounded-full bg-foreground"
+      style={{ animationDelay: delay }}
+    />
   )
 }
 

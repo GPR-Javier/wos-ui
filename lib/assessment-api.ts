@@ -268,4 +268,8 @@ export const assessmentApi = {
 export interface JobInterviewConfig {
   useCustom: boolean
   questionIds: number[]
+  /** Conversational AI interview: questions generated live from resume + role (no question bank). */
+  aiFollowUpEnabled?: boolean
+  /** Total questions asked in AI follow-up mode (opener + follow-ups). */
+  maxQuestions?: number
 }

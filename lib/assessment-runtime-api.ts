@@ -41,6 +41,21 @@ export interface StartResponse {
   timeLimitSeconds: number | null
   minPassingScore: number | null
   questions: RunQuestion[]
+  /** True for a conversational AI interview (questions generated live, one at a time). */
+  aiFollowUp?: boolean
+  /** Total questions the AI follow-up interview will ask (opener + follow-ups). */
+  maxQuestions?: number | null
+}
+
+export interface NextQuestionResponse {
+  partAttemptId: number
+  /** The next question to ask, or null when {@link done} is true. */
+  question: string | null
+  /** 1-based number of `question` within the interview. */
+  questionNumber: number
+  totalQuestions: number
+  /** True when no more questions remain — the candidate should finish. */
+  done: boolean
 }
 
 export interface SubmitResponse {
@@ -83,6 +98,14 @@ export const assessmentRuntimeApi = {
       .post<SubmitResponse>(
         `/hr/assessments/my/${applicationId}/parts/${partType}/submit`,
         { answers }
+      )
+      .then((r) => r.data),
+  /** Conversational AI interview: submit the answer just given, get the next question (or done). */
+  nextQuestion: (applicationId: number, transcript: string) =>
+    api
+      .post<NextQuestionResponse>(
+        `/hr/assessments/my/${applicationId}/parts/AI_INTERVIEW/next`,
+        { transcript }
       )
       .then((r) => r.data),
 }

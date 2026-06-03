@@ -18,17 +18,20 @@ import {
   useStartPart,
   useSubmitPart,
 } from "@/hooks/use-assessment-runtime"
-import type {
-  PartOverview,
-  StartResponse,
-  SubmitResponse,
-  AnswerInput,
+import {
+  assessmentRuntimeApi,
+  type PartOverview,
+  type StartResponse,
+  type SubmitResponse,
+  type AnswerInput,
 } from "@/lib/assessment-runtime-api"
 import { PART_TYPE_LABEL, type AssessmentPartType } from "@/lib/assessment-api"
 import { AIInterviewRunner } from "./ai-interview-runner"
 import { InterviewPreflight } from "./interview-preflight"
+import { InterviewIntro } from "./interview-intro"
+import { resetSessionPersona } from "@/lib/interview-voice"
 
-type Phase = "landing" | "preflight" | "running" | "result"
+type Phase = "landing" | "preflight" | "intro" | "running" | "result"
 
 export function AssessmentShell({ applicationId }: { applicationId: number }) {
   const {
@@ -75,6 +78,33 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
         setError(msg)
       },
     })
+  }
+
+  // AI interview: show the bot's greeting while the opening question is generated in the background,
+  // so clicking "Yes, I'm ready" leads straight into it.
+  function enterIntro(partType: AssessmentPartType) {
+    setError(null)
+    setRun(null)
+    setAnswers({})
+    setResult(null)
+    resetSessionPersona() // re-roll the interviewer voice/name for this interview
+    setPhase("intro")
+    startMut.mutate(partType, {
+      onSuccess: (data) => setRun(data),
+      onError: (e: unknown) => {
+        const msg =
+          (e as { response?: { data?: { message?: string } } })?.response?.data
+            ?.message ??
+          "Couldn't prepare your interview. The AI service may be unavailable."
+        setError(msg)
+      },
+    })
+  }
+
+  function exitFullscreen() {
+    if (typeof document !== "undefined" && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {})
+    }
   }
 
   function doSubmit(payload: AnswerInput[]) {
@@ -143,8 +173,29 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
             setPendingPart(null)
             setPhase("landing")
           }}
-          onStart={() => startPart(pendingPart)}
+          onStart={() => enterIntro(pendingPart)}
         />
+      </div>
+    )
+  }
+
+  // ── Interview intro (bot greeting + readiness) ──────────────────────────────
+  if (phase === "intro" && pendingPart) {
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-background">
+        <div className="flex min-h-full items-center justify-center">
+          <InterviewIntro
+            ready={!!run}
+            error={error}
+            onYes={() => setPhase("running")}
+            onNo={() => {
+              exitFullscreen()
+              setRun(null)
+              setPendingPart(null)
+              setPhase("landing")
+            }}
+          />
+        </div>
       </div>
     )
   }
@@ -193,6 +244,12 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
             busy={submitMut.isPending}
             onSubmit={doSubmit}
             onCancel={() => setPhase("landing")}
+            onRequestNext={
+              run.aiFollowUp
+                ? (transcript) =>
+                    assessmentRuntimeApi.nextQuestion(applicationId, transcript)
+                : undefined
+            }
           />
         ) : (
           <>
@@ -385,7 +442,7 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
             </Button>
           ) : result.canRetake ? (
             <Button
-              onClick={() => startPart(run.partType)}
+              onClick={() => beginPart(run.partType)}
               disabled={startMut.isPending}
             >
               {startMut.isPending ? "Loading…" : "Retake this part"}

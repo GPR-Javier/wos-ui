@@ -102,6 +102,8 @@ type JobForm = {
   tags: string[]
   interviewUseCustom: boolean
   interviewQuestionIds: number[]
+  interviewAiFollowUp: boolean
+  interviewMaxQuestions: number
 }
 
 type JobErrors = Partial<Record<"title" | "department" | "location", string>>
@@ -126,6 +128,8 @@ const EMPTY_FORM: JobForm = {
   tags: [],
   interviewUseCustom: false,
   interviewQuestionIds: [],
+  interviewAiFollowUp: false,
+  interviewMaxQuestions: 6,
 }
 
 function postingToForm(j: JobPosting): JobForm {
@@ -152,6 +156,8 @@ function postingToForm(j: JobPosting): JobForm {
     tags: j.tags,
     interviewUseCustom: false,
     interviewQuestionIds: [],
+    interviewAiFollowUp: false,
+    interviewMaxQuestions: 6,
   }
 }
 
@@ -857,106 +863,171 @@ function JobModal({
 
           {/* AI Interview Questions */}
           <div className="space-y-2 border-t border-border pt-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-[12px] text-muted-foreground">
-                AI Interview Questions
-              </Label>
-              <label className="flex cursor-pointer items-center gap-2 text-[12px]">
+            <Label className="text-[12px] text-muted-foreground">
+              AI Interview Questions
+            </Label>
+
+            {/* Conversational AI follow-up interview */}
+            <div className="rounded-lg border border-border p-3">
+              <label className="flex cursor-pointer items-start gap-2 text-[12px]">
                 <input
                   type="checkbox"
-                  checked={form.interviewUseCustom}
+                  checked={form.interviewAiFollowUp}
                   onChange={(e) =>
-                    setForm({ ...form, interviewUseCustom: e.target.checked })
+                    setForm({ ...form, interviewAiFollowUp: e.target.checked })
                   }
-                  className="size-4 accent-primary"
+                  className="mt-0.5 size-4 shrink-0 accent-primary"
                 />
-                Use custom questions
+                <span>
+                  <span className="font-medium text-foreground">
+                    Enable AI follow-up interview
+                  </span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    A conversational interview: the AI opens from the
+                    applicant&apos;s resume and asks live follow-up questions
+                    based on each answer, the role, and their cover letter. No
+                    question bank is used.
+                  </span>
+                </span>
               </label>
+
+              {form.interviewAiFollowUp && (
+                <div className="mt-2 flex items-center gap-2 pl-6 text-[12px]">
+                  <span className="text-muted-foreground">
+                    Number of questions
+                  </span>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={20}
+                    className="h-8 w-20 text-[13px]"
+                    value={form.interviewMaxQuestions}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        interviewMaxQuestions: Math.max(
+                          1,
+                          Math.min(20, Number(e.target.value) || 1)
+                        ),
+                      })
+                    }
+                  />
+                </div>
+              )}
             </div>
 
-            {!form.interviewUseCustom ? (
-              <p className="text-[11px] text-muted-foreground">
-                Using the global default interview questions. Toggle on to
-                choose a custom set for this posting.
-              </p>
-            ) : (
+            {/* Fixed question bank (only when AI follow-up is off) */}
+            {!form.interviewAiFollowUp && (
               <>
-                {interviewQuestions.length > 0 && (
-                  <div className="max-h-44 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
-                    {interviewQuestions.map((q) => {
-                      const checked = form.interviewQuestionIds.includes(q.id)
-                      return (
-                        <label
-                          key={q.id}
-                          className="flex cursor-pointer items-start gap-2 rounded px-1.5 py-1 text-[12px] hover:bg-muted/40"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                interviewQuestionIds: e.target.checked
-                                  ? [...form.interviewQuestionIds, q.id]
-                                  : form.interviewQuestionIds.filter(
-                                      (x) => x !== q.id
-                                    ),
-                              })
-                            }
-                            className="mt-0.5 size-4 shrink-0 accent-primary"
-                          />
-                          <span>{q.text}</span>
-                        </label>
-                      )
-                    })}
-                  </div>
-                )}
-
-                {/* Add a custom question (created in the AI interview bank, then selected) */}
-                <div className="space-y-1.5 rounded-lg border border-dashed border-border p-2">
-                  <Input
-                    className="h-8 text-[13px]"
-                    placeholder="Add a custom question…"
-                    value={newQ}
-                    onChange={(e) => setNewQ(e.target.value)}
-                  />
-                  <div className="flex items-center gap-2">
-                    <Input
-                      className="h-8 flex-1 text-[13px]"
-                      placeholder="Optional rubric — or click Suggest"
-                      value={newRubric}
-                      onChange={(e) => setNewRubric(e.target.value)}
+                <div className="flex items-center justify-between">
+                  <Label className="text-[12px] text-muted-foreground">
+                    Fixed questions
+                  </Label>
+                  <label className="flex cursor-pointer items-center gap-2 text-[12px]">
+                    <input
+                      type="checkbox"
+                      checked={form.interviewUseCustom}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          interviewUseCustom: e.target.checked,
+                        })
+                      }
+                      className="size-4 accent-primary"
                     />
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      onClick={suggestRubric}
-                      disabled={!newQ.trim() || suggesting}
-                      title="Ask AI to draft a rubric for this question"
-                    >
-                      {suggesting ? "Suggesting…" : "Suggest"}
-                    </Button>
-                  </div>
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    onClick={addInterviewQuestion}
-                    disabled={!newQ.trim() || createQuestionMut.isPending}
-                  >
-                    <HugeiconsIcon
-                      icon={Add01Icon}
-                      size={12}
-                      strokeWidth={2}
-                      className="mr-1"
-                    />
-                    {createQuestionMut.isPending ? "Adding…" : "Add question"}
-                  </Button>
+                    Use custom questions
+                  </label>
                 </div>
 
-                <p className="text-[11px] text-muted-foreground">
-                  {form.interviewQuestionIds.length} selected — these replace
-                  the global questions for this posting.
-                </p>
+                {!form.interviewUseCustom ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    Using the global default interview questions. Toggle on to
+                    choose a custom set for this posting.
+                  </p>
+                ) : (
+                  <>
+                    {interviewQuestions.length > 0 && (
+                      <div className="max-h-44 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
+                        {interviewQuestions.map((q) => {
+                          const checked = form.interviewQuestionIds.includes(
+                            q.id
+                          )
+                          return (
+                            <label
+                              key={q.id}
+                              className="flex cursor-pointer items-start gap-2 rounded px-1.5 py-1 text-[12px] hover:bg-muted/40"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(e) =>
+                                  setForm({
+                                    ...form,
+                                    interviewQuestionIds: e.target.checked
+                                      ? [...form.interviewQuestionIds, q.id]
+                                      : form.interviewQuestionIds.filter(
+                                          (x) => x !== q.id
+                                        ),
+                                  })
+                                }
+                                className="mt-0.5 size-4 shrink-0 accent-primary"
+                              />
+                              <span>{q.text}</span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {/* Add a custom question (created in the AI interview bank, then selected) */}
+                    <div className="space-y-1.5 rounded-lg border border-dashed border-border p-2">
+                      <Input
+                        className="h-8 text-[13px]"
+                        placeholder="Add a custom question…"
+                        value={newQ}
+                        onChange={(e) => setNewQ(e.target.value)}
+                      />
+                      <div className="flex items-center gap-2">
+                        <Input
+                          className="h-8 flex-1 text-[13px]"
+                          placeholder="Optional rubric — or click Suggest"
+                          value={newRubric}
+                          onChange={(e) => setNewRubric(e.target.value)}
+                        />
+                        <Button
+                          size="xs"
+                          variant="ghost"
+                          onClick={suggestRubric}
+                          disabled={!newQ.trim() || suggesting}
+                          title="Ask AI to draft a rubric for this question"
+                        >
+                          {suggesting ? "Suggesting…" : "Suggest"}
+                        </Button>
+                      </div>
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={addInterviewQuestion}
+                        disabled={!newQ.trim() || createQuestionMut.isPending}
+                      >
+                        <HugeiconsIcon
+                          icon={Add01Icon}
+                          size={12}
+                          strokeWidth={2}
+                          className="mr-1"
+                        />
+                        {createQuestionMut.isPending
+                          ? "Adding…"
+                          : "Add question"}
+                      </Button>
+                    </div>
+
+                    <p className="text-[11px] text-muted-foreground">
+                      {form.interviewQuestionIds.length} selected — these
+                      replace the global questions for this posting.
+                    </p>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -1082,6 +1153,8 @@ export function RecruitmentSection() {
           ...f,
           interviewUseCustom: cfg.useCustom,
           interviewQuestionIds: cfg.questionIds ?? [],
+          interviewAiFollowUp: cfg.aiFollowUpEnabled ?? false,
+          interviewMaxQuestions: cfg.maxQuestions ?? 6,
         }))
       )
       .catch(() => {})
@@ -1102,6 +1175,8 @@ export function RecruitmentSection() {
     const interview = {
       useCustom: form.interviewUseCustom,
       questionIds: form.interviewQuestionIds,
+      aiFollowUpEnabled: form.interviewAiFollowUp,
+      maxQuestions: form.interviewMaxQuestions,
     }
     if (editingId) {
       updateMut.mutate(

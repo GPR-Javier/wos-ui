@@ -84,7 +84,16 @@
       "Bash(echo \"=== EXIT $? \\(no lines = my files clean\\) ===\")",
       "Bash(echo \"=== EXIT $? \\(no careers-page lines = clean\\) ===\")",
       "Bash(echo \"=== EXIT $? \\(no lines = clean\\) ===\")",
-      "Bash(node -e \"const i=require\\('@hugeicons/core-free-icons'\\); console.log\\(['Mail01Icon','MailOpen01Icon','Message01Icon','MailAccount01Icon'].filter\\(n=>i[n]\\)\\)\")"
+      "Bash(node -e \"const i=require\\('@hugeicons/core-free-icons'\\); console.log\\(['Mail01Icon','MailOpen01Icon','Message01Icon','MailAccount01Icon'].filter\\(n=>i[n]\\)\\)\")",
+      "Bash(node -e \"const i=require\\('@hugeicons/core-free-icons'\\); ['AiBrain01Icon','Loading03Icon','SparklesIcon','AiMagicIcon','RoboticIcon','Robot01Icon'].forEach\\(n=>console.log\\(n, n in i\\)\\)\")",
+      "Bash(node -e \"const i=require\\('@hugeicons/core-free-icons'\\); const k=Object.keys\\(i\\); console.log\\('total',k.length\\); ['AiBrain','Loading','Sparkles','Robot','Bot','Brain','Loading03','Reload'].forEach\\(p=>console.log\\(p+':', k.filter\\(x=>x.toLowerCase\\(\\).includes\\(p.toLowerCase\\(\\)\\)\\).slice\\(0,6\\).join\\(', '\\)\\)\\)\")",
+      "Bash(node -e \"const s=require\\('./package.json'\\).scripts; console.log\\(JSON.stringify\\(s,null,2\\)\\)\")",
+      "Bash(ls wos-common/pom.xml wos-hr/pom.xml wos-common/build.gradle wos-hr/build.gradle)",
+      "Bash(ls wos-hr/mvnw wos-hr/gradlew)",
+      "Bash(npx prettier *)",
+      "PowerShell(\\(Get-CimInstance Win32_Process -Filter \"ProcessId = 34580\"\\).CommandLine)",
+      "Bash(sed -n '1,40p' src/main/resources/application.yaml)",
+      "Bash(grep -nE \"port|devtools|server\" src/main/resources/application-dev.yaml)"
     ],
     "additionalDirectories": [
       "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-auth\\src\\main\\java\\com\\gpm\\auth\\controller",
