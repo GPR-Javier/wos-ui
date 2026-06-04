@@ -15,6 +15,14 @@ export interface PartOverview {
   attemptsUsed: number
   passed: boolean | null
   lastScore: number | null
+  /** AI interview submitted but awaiting a reviewer's pass/reject (gates the next stage). */
+  awaitingReview: boolean
+  /** Human-run stage status (Live/Final), set by HR: PENDING | UNDER_REVIEW | PASSED | REJECTED | SKIPPED. */
+  stageStatus: string | null
+  /** Candidate-facing meeting details for a scheduled human stage. */
+  meetingLink: string | null
+  scheduledAt: string | null
+  stageNotes: string | null
 }
 
 export interface AssessmentOverview {
@@ -101,10 +109,14 @@ export const assessmentRuntimeApi = {
       )
       .then((r) => r.data),
   /** Conversational AI interview: submit the answer just given, get the next question (or done). */
-  nextQuestion: (applicationId: number, transcript: string) =>
+  nextQuestion: (
+    applicationId: number,
+    partType: AssessmentPartType,
+    transcript: string
+  ) =>
     api
       .post<NextQuestionResponse>(
-        `/hr/assessments/my/${applicationId}/parts/AI_INTERVIEW/next`,
+        `/hr/assessments/my/${applicationId}/parts/${partType}/next`,
         { transcript }
       )
       .then((r) => r.data),

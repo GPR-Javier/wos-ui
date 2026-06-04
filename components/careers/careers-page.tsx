@@ -435,7 +435,9 @@ export function ApplyModal({
 
 // ── Job Card ──────────────────────────────────────────────────────────────────
 
-const ASSESSABLE_STATUSES = ["SUBMITTED", "ASSESSMENT"]
+// UNDER_REVIEW is assessable too: after a reviewer passes an interview stage, the candidate is in
+// "under review" but must be able to re-enter to take the newly-unlocked next stage.
+const ASSESSABLE_STATUSES = ["SUBMITTED", "ASSESSMENT", "UNDER_REVIEW"]
 
 function JobCard({
   job,
@@ -593,7 +595,8 @@ function JobCard({
           canAssess && application ? (
             <Link href={`/dashboard/assessment/${application.id}`}>
               <Button size="sm">
-                {application.status === "ASSESSMENT"
+                {application.status === "ASSESSMENT" ||
+                application.status === "UNDER_REVIEW"
                   ? "Continue assessment"
                   : "Take assessment"}
                 <HugeiconsIcon

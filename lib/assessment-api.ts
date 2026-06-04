@@ -6,6 +6,7 @@ export type AssessmentPartType =
   | "BASIC_QA"
   | "PERSONALITY"
   | "AI_INTERVIEW"
+  | "AI_TECHNICAL_INTERVIEW"
   | "HR_INTERVIEW"
   | "FINAL_INTERVIEW"
 
@@ -123,10 +124,11 @@ export interface JobAssessment {
 // ── Display helpers ───────────────────────────────────────────────────────────
 
 export const PART_TYPE_LABEL: Record<AssessmentPartType, string> = {
-  BASIC_QA: "Basic Q&A",
-  PERSONALITY: "Personality",
-  AI_INTERVIEW: "AI Interview",
-  HR_INTERVIEW: "HR Interview",
+  BASIC_QA: "Assessment",
+  PERSONALITY: "Personality Exam",
+  AI_INTERVIEW: "HR AI Interview",
+  AI_TECHNICAL_INTERVIEW: "Technical AI Interview",
+  HR_INTERVIEW: "Live Interview",
   FINAL_INTERVIEW: "Final Interview",
 }
 
@@ -152,6 +154,7 @@ export const KINDS_FOR_PART: Record<AssessmentPartType, QuestionKind[]> = {
   BASIC_QA: ["MULTIPLE_CHOICE", "ESSAY", "SHORT_ANSWER"],
   PERSONALITY: ["LIKERT"],
   AI_INTERVIEW: ["OPEN_SPOKEN"],
+  AI_TECHNICAL_INTERVIEW: ["OPEN_SPOKEN"],
   HR_INTERVIEW: ["OPEN_SPOKEN"],
   FINAL_INTERVIEW: ["OPEN_SPOKEN"],
 }
@@ -243,15 +246,21 @@ export const assessmentApi = {
   detachTemplate: (jobId: number) =>
     api.delete(`/hr/assessments/jobs/${jobId}`),
 
-  // Per-job AI interview question override
-  getJobInterview: (jobId: number) =>
+  // Per-job AI interview question override, per stage (AI_INTERVIEW or AI_TECHNICAL_INTERVIEW)
+  getJobInterview: (jobId: number, partType: AssessmentPartType = "AI_INTERVIEW") =>
     api
-      .get<JobInterviewConfig>(`/hr/assessments/jobs/${jobId}/interview`)
+      .get<JobInterviewConfig>(
+        `/hr/assessments/jobs/${jobId}/interview/${partType}`
+      )
       .then((r) => r.data),
-  saveJobInterview: (jobId: number, payload: JobInterviewConfig) =>
+  saveJobInterview: (
+    jobId: number,
+    payload: JobInterviewConfig,
+    partType: AssessmentPartType = "AI_INTERVIEW"
+  ) =>
     api
       .put<JobInterviewConfig>(
-        `/hr/assessments/jobs/${jobId}/interview`,
+        `/hr/assessments/jobs/${jobId}/interview/${partType}`,
         payload
       )
       .then((r) => r.data),
@@ -266,6 +275,8 @@ export const assessmentApi = {
 }
 
 export interface JobInterviewConfig {
+  /** Which AI interview stage this config is for. */
+  partType?: AssessmentPartType
   useCustom: boolean
   questionIds: number[]
   /** Conversational AI interview: questions generated live from resume + role (no question bank). */

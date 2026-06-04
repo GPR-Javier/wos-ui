@@ -12,6 +12,7 @@ import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Clock01Icon,
+  Video01Icon,
 } from "@hugeicons/core-free-icons"
 import {
   useAssessmentOverview,
@@ -51,10 +52,10 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
     null
   )
 
-  // AI Interview goes through a readiness gate first; other parts start immediately.
+  // AI interviews go through a readiness gate first; other parts start immediately.
   function beginPart(partType: AssessmentPartType) {
     setError(null)
-    if (partType === "AI_INTERVIEW") {
+    if (partType === "AI_INTERVIEW" || partType === "AI_TECHNICAL_INTERVIEW") {
       setPendingPart(partType)
       setPhase("preflight")
     } else {
@@ -206,7 +207,9 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
       (q) => answers[q.id] != null
     ).length
     const isLikert = run.partType === "PERSONALITY"
-    const isAiInterview = run.partType === "AI_INTERVIEW"
+    const isAiInterview =
+      run.partType === "AI_INTERVIEW" ||
+      run.partType === "AI_TECHNICAL_INTERVIEW"
     const inner = (
       <div className="mx-auto max-w-2xl px-6 py-8">
         <StepBar parts={overview.parts} activeType={run.partType} />
@@ -247,7 +250,11 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
             onRequestNext={
               run.aiFollowUp
                 ? (transcript) =>
-                    assessmentRuntimeApi.nextQuestion(applicationId, transcript)
+                    assessmentRuntimeApi.nextQuestion(
+                      applicationId,
+                      run.partType,
+                      transcript
+                    )
                 : undefined
             }
           />
@@ -546,55 +553,100 @@ function StepBar({
   activeType: AssessmentPartType | null
 }) {
   return (
-    <div className="flex items-center justify-center py-2">
-      {parts.map((p, i) => {
-        const done = p.passed === true
-        const current = p.type === activeType
-        const connectorActive = i > 0 && parts[i - 1].passed === true
-        return (
-          <Fragment key={p.type}>
-            {i > 0 && (
-              <div
-                className={cn(
-                  "mx-1 h-0.5 w-8 sm:w-16",
-                  connectorActive ? "bg-green-500" : "bg-border"
-                )}
-              />
-            )}
-            <div className="flex flex-col items-center gap-1.5">
-              <div
-                className={cn(
-                  "flex size-8 items-center justify-center rounded-full border-2 text-[12px] font-semibold transition-colors",
-                  done
-                    ? "border-green-500 bg-green-500 text-white"
-                    : current
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-card text-muted-foreground"
-                )}
-              >
-                {done ? (
-                  <HugeiconsIcon
-                    icon={CheckmarkCircle01Icon}
-                    size={16}
-                    strokeWidth={2.5}
-                  />
-                ) : (
-                  i + 1
-                )}
+    <div className="overflow-x-auto py-2">
+      <div className="flex w-full items-start">
+        {parts.map((p, i) => {
+          const isHuman =
+            p.type === "HR_INTERVIEW" || p.type === "FINAL_INTERVIEW"
+          const skipped = isHuman && p.stageStatus === "SKIPPED"
+          const done =
+            p.passed === true || (isHuman && p.stageStatus === "PASSED")
+          // Current = the part being taken, or the first stage that isn't cleared yet.
+          const current =
+            p.type === activeType ||
+            (!done &&
+              !skipped &&
+              i === parts.findIndex((x) => !partCleared(x)))
+          const connectorActive = i > 0 && partCleared(parts[i - 1])
+          return (
+            <Fragment key={p.type}>
+              {i > 0 && (
+                <div
+                  className={cn(
+                    "mt-4 h-0.5 min-w-3 flex-1",
+                    connectorActive ? "bg-green-500" : "bg-border"
+                  )}
+                />
+              )}
+              <div className="flex w-16 shrink-0 flex-col items-center gap-1.5">
+                <div
+                  className={cn(
+                    "flex size-8 items-center justify-center rounded-full border-2 text-[12px] font-semibold transition-colors",
+                    done
+                      ? "border-green-500 bg-green-500 text-white"
+                      : skipped
+                        ? "border-dashed border-muted-foreground/40 bg-muted text-muted-foreground"
+                        : current
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-card text-muted-foreground"
+                  )}
+                >
+                  {done ? (
+                    <HugeiconsIcon
+                      icon={CheckmarkCircle01Icon}
+                      size={16}
+                      strokeWidth={2.5}
+                    />
+                  ) : skipped ? (
+                    "–"
+                  ) : (
+                    i + 1
+                  )}
+                </div>
+                <span
+                  className={cn(
+                    "text-center text-[11px] leading-tight font-medium",
+                    current || done
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {STEP_LABEL[p.type]}
+                </span>
+                {skipped ? (
+                  <span className="text-[9px] text-muted-foreground">
+                    Skipped
+                  </span>
+                ) : current && !done ? (
+                  <span className="text-[9px] font-medium text-primary">
+                    Current
+                  </span>
+                ) : null}
               </div>
-              <span
-                className={cn(
-                  "text-[11px] font-medium",
-                  current || done ? "text-foreground" : "text-muted-foreground"
-                )}
-              >
-                {PART_TYPE_LABEL[p.type]}
-              </span>
-            </div>
-          </Fragment>
-        )
-      })}
+            </Fragment>
+          )
+        })}
+      </div>
     </div>
+  )
+}
+
+/** Short labels for the compact step bar (PART_TYPE_LABEL is the full form used elsewhere). */
+const STEP_LABEL: Record<AssessmentPartType, string> = {
+  BASIC_QA: "Assessment",
+  PERSONALITY: "Personality",
+  AI_INTERVIEW: "HR AI",
+  AI_TECHNICAL_INTERVIEW: "Technical AI",
+  HR_INTERVIEW: "Live",
+  FINAL_INTERVIEW: "Final",
+}
+
+/** A part counts as "cleared" (chain continues) when passed, or a human stage Passed/Skipped. */
+function partCleared(p: PartOverview) {
+  const isHuman = p.type === "HR_INTERVIEW" || p.type === "FINAL_INTERVIEW"
+  return (
+    p.passed === true ||
+    (isHuman && (p.stageStatus === "PASSED" || p.stageStatus === "SKIPPED"))
   )
 }
 
@@ -608,8 +660,19 @@ function PartCard({
   onStart: () => void
 }) {
   const passed = part.passed === true
+  const awaiting = part.awaitingReview
   const locked = !part.available
-  const retake = part.attempted && part.passed === false
+  const isAi =
+    part.type === "AI_INTERVIEW" || part.type === "AI_TECHNICAL_INTERVIEW"
+  // passed===false means failed (scored parts → retake) or rejected (AI interviews → terminal).
+  const failed = part.attempted && part.passed === false
+  const retake = failed && !isAi
+  // Human-run stages (Live/Final) carry their status separately (HR-set).
+  const isHuman =
+    part.type === "HR_INTERVIEW" || part.type === "FINAL_INTERVIEW"
+  const stageSkipped = part.stageStatus === "SKIPPED"
+  const stagePassed = part.stageStatus === "PASSED"
+  const stageRejected = part.stageStatus === "REJECTED"
 
   return (
     <div
@@ -628,14 +691,41 @@ function PartCard({
               Passed{part.lastScore != null ? ` · ${part.lastScore}%` : ""}
             </StatusBadge>
           )}
-          {!passed && retake && (
-            <StatusBadge variant="red">Retake needed</StatusBadge>
+          {awaiting && <StatusBadge variant="amber">Under review</StatusBadge>}
+          {failed && isAi && (
+            <StatusBadge variant="red">Not selected</StatusBadge>
           )}
-          {!part.runnable && (
+          {retake && <StatusBadge variant="red">Retake needed</StatusBadge>}
+          {isHuman && stagePassed && (
+            <StatusBadge variant="green">Passed</StatusBadge>
+          )}
+          {isHuman && stageRejected && (
+            <StatusBadge variant="red">Not selected</StatusBadge>
+          )}
+          {isHuman && stageSkipped && (
             <StatusBadge variant="gray" dot={false}>
-              Coming soon
+              Skipped
             </StatusBadge>
           )}
+          {isHuman &&
+            part.meetingLink &&
+            !stagePassed &&
+            !stageRejected &&
+            !stageSkipped && <StatusBadge variant="blue">Scheduled</StatusBadge>}
+          {!part.runnable &&
+            !passed &&
+            !awaiting &&
+            !(
+              isHuman &&
+              (stagePassed ||
+                stageRejected ||
+                stageSkipped ||
+                part.meetingLink)
+            ) && (
+              <StatusBadge variant="gray" dot={false}>
+                Coming soon
+              </StatusBadge>
+            )}
         </div>
         <p className="mt-1 text-[12px] text-muted-foreground">
           {part.questionCount} question{part.questionCount !== 1 ? "s" : ""}
@@ -644,11 +734,69 @@ function PartCard({
             ` · ${part.attemptsUsed} attempt${part.attemptsUsed !== 1 ? "s" : ""}`}
           {part.gated ? " · required" : " · optional"}
         </p>
+
+        {/* Scheduled human interview: meeting link + details for the candidate. */}
+        {isHuman && !stageSkipped && (part.meetingLink || part.stageNotes) && (
+          <div className="mt-2 rounded-lg border border-primary/30 bg-primary/5 p-2.5">
+            {part.meetingLink && (
+              <a
+                href={part.meetingLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-fit items-center gap-1.5 text-[12px] font-medium text-primary hover:underline"
+              >
+                <HugeiconsIcon icon={Video01Icon} size={13} strokeWidth={1.8} />
+                Join meeting
+                {part.scheduledAt
+                  ? ` · ${new Date(part.scheduledAt).toLocaleString()}`
+                  : ""}
+              </a>
+            )}
+            {part.stageNotes && (
+              <p className="mt-1 text-[11px] whitespace-pre-line text-muted-foreground">
+                {part.stageNotes}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="shrink-0">
         {locked ? (
           <span className="text-[12px] text-muted-foreground">Locked</span>
+        ) : awaiting ? (
+          <span className="text-[12px] font-medium text-amber-600 dark:text-amber-400">
+            Awaiting review
+          </span>
+        ) : failed && isAi ? (
+          <span className="text-[12px] font-medium text-destructive">
+            Not selected
+          </span>
+        ) : isHuman ? (
+          stagePassed ? (
+            <span className="flex items-center gap-1 text-[12px] font-medium text-green-600 dark:text-green-400">
+              <HugeiconsIcon
+                icon={CheckmarkCircle01Icon}
+                size={14}
+                strokeWidth={2}
+              />
+              Done
+            </span>
+          ) : stageRejected ? (
+            <span className="text-[12px] font-medium text-destructive">
+              Not selected
+            </span>
+          ) : stageSkipped ? (
+            <span className="text-[12px] text-muted-foreground">Skipped</span>
+          ) : part.meetingLink ? (
+            <span className="text-[12px] font-medium text-blue-600 dark:text-blue-400">
+              Scheduled
+            </span>
+          ) : (
+            <span className="text-[12px] text-muted-foreground">
+              Available later
+            </span>
+          )
         ) : !part.runnable ? (
           <span className="text-[12px] text-muted-foreground">
             Available later

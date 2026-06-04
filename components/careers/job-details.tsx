@@ -20,6 +20,7 @@ import { useMyApplications } from "@/hooks/use-applications"
 import { useAuthStore } from "@/store/auth-store"
 import type { JobPosting } from "@/lib/hr-api"
 import { APPLICATION_STATUS_LABEL } from "@/lib/application-api"
+import { ApplicationJourney } from "./application-journey"
 import { ApplyModal } from "./careers-page"
 
 const STATUS_VARIANT: Record<string, "green" | "amber" | "blue" | "gray"> = {
@@ -297,6 +298,13 @@ export function JobDetails({
           )}
         </div>
       </div>
+
+      {/* Application status journey — shown once the candidate has applied (incl. rejected). */}
+      {latestApplication && (
+        <div className="mt-5">
+          <ApplicationJourney application={latestApplication} />
+        </div>
+      )}
 
       {/* Rejection email — highlighted so the candidate sees why and when they can reapply */}
       {latestApplication?.status === "REJECTED" &&

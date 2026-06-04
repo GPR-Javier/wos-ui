@@ -38,6 +38,7 @@ const ACTIVE_PART_TYPES: AssessmentPartType[] = [
   "BASIC_QA",
   "PERSONALITY",
   "AI_INTERVIEW",
+  "AI_TECHNICAL_INTERVIEW",
 ]
 const LIKERT_DEFAULT = [
   "Strongly disagree",
@@ -79,6 +80,8 @@ const PART_BADGE: Record<AssessmentPartType, string> = {
     "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
   AI_INTERVIEW:
     "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  AI_TECHNICAL_INTERVIEW:
+    "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
   HR_INTERVIEW:
     "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
   FINAL_INTERVIEW:

@@ -7,11 +7,14 @@ import {
 } from "@/lib/assessment-runtime-api"
 import type { AssessmentPartType } from "@/lib/assessment-api"
 
-export function useAssessmentOverview(applicationId: number) {
+export function useAssessmentOverview(
+  applicationId: number,
+  options?: { enabled?: boolean }
+) {
   return useQuery({
     queryKey: ["assessment", "overview", applicationId],
     queryFn: () => assessmentRuntimeApi.overview(applicationId),
-    enabled: Number.isFinite(applicationId),
+    enabled: Number.isFinite(applicationId) && (options?.enabled ?? true),
   })
 }
 

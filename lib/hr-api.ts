@@ -1,5 +1,6 @@
 import { api, publicApi } from "./api"
 import type { PageResponse } from "./admin-api"
+import type { AssessmentPartType } from "./assessment-api"
 
 export interface HrEmployee {
   id: number
@@ -70,6 +71,8 @@ export interface JobPosting {
   reapplyCooldownDays?: number | null
   applicantsCount: number
   tags: string[]
+  /** Pipeline stages enabled for this posting; null/absent = all template stages. */
+  enabledStages?: AssessmentPartType[] | null
 }
 
 export interface CreateJobPayload {
@@ -88,6 +91,7 @@ export interface CreateJobPayload {
   status: "new" | "urgent" | "open" | "closed"
   reapplyCooldownDays?: number | null
   tags: string[]
+  enabledStages?: AssessmentPartType[] | null
 }
 
 export interface HrStats {

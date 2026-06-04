@@ -1,5 +1,17 @@
 import { api } from "./api"
 import type { ApplicationStatus } from "./application-api"
+import type { AssessmentPartType } from "./assessment-api"
+import type { Pipeline } from "./pipeline-api"
+
+export type { Pipeline } from "./pipeline-api"
+
+export type ReviewDecision = "PENDING" | "PASSED" | "REJECTED"
+export type StageStatus =
+  | "PENDING"
+  | "UNDER_REVIEW"
+  | "PASSED"
+  | "REJECTED"
+  | "SKIPPED"
 
 export interface ReviewListItem {
   id: number
@@ -18,6 +30,13 @@ export interface ReviewListItem {
   coverLetterScore: number | null
   resumeScore: number | null
   overall: number | null
+  // Per-stage interview status: null = n/a, else PENDING | UNDER_REVIEW | PASSED | REJECTED | SKIPPED
+  hrAiScore: number | null
+  hrAiStatus: StageStatus | null
+  technicalAiScore: number | null
+  technicalAiStatus: StageStatus | null
+  liveStatus: StageStatus | null
+  finalStatus: StageStatus | null
 }
 
 export interface ReviewInterviewAnswer {
@@ -28,6 +47,32 @@ export interface ReviewInterviewAnswer {
   aiImprovements: string | null
   /** Optional human reviewer note for this question. */
   reviewerComment: string | null
+}
+
+/** One AI interview stage (HR AI or Technical AI) in the review detail. */
+export interface ReviewInterviewBlock {
+  partType: AssessmentPartType
+  label: string
+  submitted: boolean
+  answers: ReviewInterviewAnswer[] | null
+  aiScore: number | null
+  aiGraded: boolean
+  reviewDecision: ReviewDecision
+  reviewedBy: string | null
+  reviewedAt: string | null
+  reviewed: boolean
+}
+
+/** One human-run stage (Human / Final interview). */
+export interface ReviewHumanStage {
+  stageType: AssessmentPartType
+  label: string
+  status: StageStatus
+  meetingLink: string | null
+  scheduledAt: string | null
+  notes: string | null
+  decidedBy: string | null
+  decidedAt: string | null
 }
 
 export interface ReviewDetail {
@@ -57,18 +102,22 @@ export interface ReviewDetail {
   basicScore: number | null
   basicPassed: boolean | null
   traitScores: Record<string, number> | null
-  interviewAnswers: ReviewInterviewAnswer[] | null
-  aiScore: number | null
-  aiGraded: boolean
-  // Human review of the AI interview (per-question comments live on interviewAnswers)
-  reviewedBy: string | null
-  reviewedAt: string | null
-  reviewed: boolean
+  /** AI interview stages (HR AI + Technical AI), each with answers, grade, review and decision. */
+  interviews: ReviewInterviewBlock[] | null
+  /** Human-run stages (Human / Final interview). */
+  humanStages: ReviewHumanStage[] | null
 }
 
 export interface ReviewPayload {
-  /** Per-question comments, aligned by index to interviewAnswers. Blank = not reviewed. */
+  /** Per-question comments, aligned by index to the stage's answers. Blank = not reviewed. */
   reviewerComments: string[]
+}
+
+export interface HumanStagePayload {
+  status?: StageStatus
+  meetingLink?: string
+  scheduledAt?: string
+  notes?: string
 }
 
 // AI (Ollama) endpoints far exceed the default 15s axios timeout — without these overrides the
@@ -93,16 +142,51 @@ export const reviewApi = {
         note,
       })
       .then((r) => r.data),
-  grade: (id: number) =>
+  /** Grade (or re-grade) one AI interview stage's answers. */
+  grade: (id: number, partType: AssessmentPartType) =>
     api
-      .post<ReviewDetail>(`/hr/review/applications/${id}/grade`, undefined, {
-        timeout: AI_GRADE_TIMEOUT,
-      })
+      .post<ReviewDetail>(
+        `/hr/review/applications/${id}/interviews/${partType}/grade`,
+        undefined,
+        { timeout: AI_GRADE_TIMEOUT }
+      )
       .then((r) => r.data),
-  /** Save the human reviewer's per-question comments for the AI interview. */
-  saveReview: (id: number, payload: ReviewPayload) =>
+  /** Save the reviewer's per-question comments for one AI interview stage. */
+  saveReview: (id: number, partType: AssessmentPartType, payload: ReviewPayload) =>
     api
-      .post<ReviewDetail>(`/hr/review/applications/${id}/review`, payload)
+      .post<ReviewDetail>(
+        `/hr/review/applications/${id}/interviews/${partType}/review`,
+        payload
+      )
+      .then((r) => r.data),
+  /** Record the reviewer's pass/reject decision for one AI interview stage. */
+  decideInterview: (
+    id: number,
+    partType: AssessmentPartType,
+    decision: ReviewDecision
+  ) =>
+    api
+      .post<ReviewDetail>(
+        `/hr/review/applications/${id}/interviews/${partType}/decision`,
+        { decision }
+      )
+      .then((r) => r.data),
+  /** Create/update a human-run stage (Human / Final interview). */
+  upsertStage: (
+    id: number,
+    stageType: AssessmentPartType,
+    payload: HumanStagePayload
+  ) =>
+    api
+      .put<ReviewDetail>(
+        `/hr/review/applications/${id}/stages/${stageType}`,
+        payload
+      )
+      .then((r) => r.data),
+  /** The full hiring pipeline (HR view, with interviewer notes). */
+  pipeline: (id: number) =>
+    api
+      .get<Pipeline>(`/hr/review/applications/${id}/pipeline`)
       .then((r) => r.data),
   /** AI-polish a single per-question reviewer comment; returns the improved text. */
   enhanceComment: (id: number, text: string, question: string) =>

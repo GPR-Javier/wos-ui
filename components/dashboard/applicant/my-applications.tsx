@@ -27,7 +27,9 @@ import {
 
 const TERMINAL: ApplicationStatus[] = ["WITHDRAWN", "HIRED", "REJECTED"]
 // Show the assessment CTA only before/while taking it — not once it's submitted for review.
-const CAN_ASSESS: ApplicationStatus[] = ["SUBMITTED", "ASSESSMENT"]
+// UNDER_REVIEW included: after a reviewer passes an interview stage the candidate must re-enter to
+// take the newly-unlocked next stage.
+const CAN_ASSESS: ApplicationStatus[] = ["SUBMITTED", "ASSESSMENT", "UNDER_REVIEW"]
 // Closed applications the candidate can submit again.
 const CAN_REAPPLY: ApplicationStatus[] = ["WITHDRAWN", "REJECTED"]
 
@@ -230,7 +232,8 @@ export function MyApplicationsScreen() {
                   {CAN_ASSESS.includes(app.status) && (
                     <Link href={`/dashboard/assessment/${app.id}`}>
                       <Button size="sm">
-                        {app.status === "ASSESSMENT"
+                        {app.status === "ASSESSMENT" ||
+                        app.status === "UNDER_REVIEW"
                           ? "Continue assessment"
                           : "Take assessment"}
                         <HugeiconsIcon
