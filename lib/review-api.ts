@@ -49,13 +49,25 @@ export interface ReviewInterviewAnswer {
   reviewerComment: string | null
 }
 
+/** One closing reverse-Q&A turn: a question the candidate asked us and the interviewer's reply. */
+export interface ReviewCandidateQa {
+  question: string
+  answer: string
+}
+
 /** One AI interview stage (HR AI or Technical AI) in the review detail. */
 export interface ReviewInterviewBlock {
   partType: AssessmentPartType
   label: string
   submitted: boolean
   answers: ReviewInterviewAnswer[] | null
+  /** Questions the candidate asked the interviewer in the closing wrap-up (not graded). */
+  candidateQa: ReviewCandidateQa[] | null
   aiScore: number | null
+  /** Final overall AI evaluation of the interview (whole interview + closing Q&A). */
+  aiSummary: string | null
+  aiStrengths: string | null
+  aiImprovements: string | null
   aiGraded: boolean
   reviewDecision: ReviewDecision
   reviewedBy: string | null
@@ -113,6 +125,12 @@ export interface ReviewPayload {
   reviewerComments: string[]
 }
 
+export interface InterviewSummaryPayload {
+  summary: string
+  strengths: string
+  improvements: string
+}
+
 export interface HumanStagePayload {
   status?: StageStatus
   meetingLink?: string
@@ -156,6 +174,18 @@ export const reviewApi = {
     api
       .post<ReviewDetail>(
         `/hr/review/applications/${id}/interviews/${partType}/review`,
+        payload
+      )
+      .then((r) => r.data),
+  /** Save the reviewer's manual edit of an interview's overall evaluation. */
+  editSummary: (
+    id: number,
+    partType: AssessmentPartType,
+    payload: InterviewSummaryPayload
+  ) =>
+    api
+      .post<ReviewDetail>(
+        `/hr/review/applications/${id}/interviews/${partType}/summary`,
         payload
       )
       .then((r) => r.data),

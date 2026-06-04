@@ -6,6 +6,7 @@ import {
   type ReviewPayload,
   type ReviewDecision,
   type HumanStagePayload,
+  type InterviewSummaryPayload,
 } from "@/lib/review-api"
 import type { ApplicationStatus } from "@/lib/application-api"
 import type { AssessmentPartType } from "@/lib/assessment-api"
@@ -54,6 +55,25 @@ export function useSaveReview() {
       partType: AssessmentPartType
       payload: ReviewPayload
     }) => reviewApi.saveReview(id, partType, payload),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["review", "application", vars.id] })
+      qc.invalidateQueries({ queryKey: ["review", "applications"] })
+    },
+  })
+}
+
+export function useEditInterviewSummary() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id,
+      partType,
+      payload,
+    }: {
+      id: number
+      partType: AssessmentPartType
+      payload: InterviewSummaryPayload
+    }) => reviewApi.editSummary(id, partType, payload),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["review", "application", vars.id] })
       qc.invalidateQueries({ queryKey: ["review", "applications"] })

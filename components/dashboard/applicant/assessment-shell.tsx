@@ -759,6 +759,37 @@ function PartCard({
             )}
           </div>
         )}
+
+        {/* AI interview feedback — shown to the candidate once their interview is graded. */}
+        {isAi && part.aiSummary && (
+          <div className="mt-2 rounded-lg border border-border bg-muted/30 p-2.5">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                Interview feedback
+              </p>
+              {part.aiScore != null && (
+                <span className="text-[11px] font-semibold text-primary">
+                  {part.aiScore}%
+                </span>
+              )}
+            </div>
+            <p className="text-[12px] leading-relaxed text-foreground/90">
+              {part.aiSummary}
+            </p>
+            {part.aiStrengths && (
+              <p className="mt-1.5 text-[11px] leading-relaxed text-green-700 dark:text-green-400">
+                <span className="font-semibold">＋ Strengths · </span>
+                {part.aiStrengths}
+              </p>
+            )}
+            {part.aiImprovements && (
+              <p className="mt-1 text-[11px] leading-relaxed text-amber-700 dark:text-amber-400">
+                <span className="font-semibold">－ To improve · </span>
+                {part.aiImprovements}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="shrink-0">

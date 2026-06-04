@@ -17,6 +17,12 @@ export interface PartOverview {
   lastScore: number | null
   /** AI interview submitted but awaiting a reviewer's pass/reject (gates the next stage). */
   awaitingReview: boolean
+  /** Overall AI grade for an AI interview, once graded (shown to the candidate as feedback). */
+  aiScore: number | null
+  /** Final overall AI evaluation of the interview (narrative + strengths + areas to improve). */
+  aiSummary: string | null
+  aiStrengths: string | null
+  aiImprovements: string | null
   /** Human-run stage status (Live/Final), set by HR: PENDING | UNDER_REVIEW | PASSED | REJECTED | SKIPPED. */
   stageStatus: string | null
   /** Candidate-facing meeting details for a scheduled human stage. */
@@ -64,6 +70,11 @@ export interface NextQuestionResponse {
   totalQuestions: number
   /** True when no more questions remain — the candidate should finish. */
   done: boolean
+  /**
+   * True once the interview has flipped into the closing reverse-Q&A: `question` holds the
+   * interviewer's prompt/answer and the candidate's transcript is their question for us.
+   */
+  candidateQa?: boolean
 }
 
 export interface SubmitResponse {

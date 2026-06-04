@@ -23,6 +23,7 @@ import {
   useSaveReview,
   useEnhanceComment,
   useDecideInterview,
+  useEditInterviewSummary,
   useUpsertStage,
   useReviewPipeline,
   useReviewCoverLetter,
@@ -1325,6 +1326,29 @@ function InterviewReviewBlock({
   const [enhancingIndex, setEnhancingIndex] = useState<number | null>(null)
   const [comments, setComments] = useState<Record<number, string>>({})
   const [openReview, setOpenReview] = useState<Record<number, boolean>>({})
+  // Manual edit of the overall evaluation (summary / strengths / improvements).
+  const editSummaryMut = useEditInterviewSummary()
+  const [editingSummary, setEditingSummary] = useState(false)
+  const [summaryDraft, setSummaryDraft] = useState({
+    summary: "",
+    strengths: "",
+    improvements: "",
+  })
+
+  function startEditSummary() {
+    setSummaryDraft({
+      summary: block.aiSummary ?? "",
+      strengths: block.aiStrengths ?? "",
+      improvements: block.aiImprovements ?? "",
+    })
+    setEditingSummary(true)
+  }
+  function saveSummary() {
+    editSummaryMut.mutate(
+      { id, partType, payload: summaryDraft },
+      { onSuccess: () => setEditingSummary(false) }
+    )
+  }
 
   // Seed comments from the server when switching applicant/stage (not while typing).
   useEffect(() => {
@@ -1336,6 +1360,7 @@ function InterviewReviewBlock({
     })
     setComments(c)
     setOpenReview(o)
+    setEditingSummary(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, partType])
 
@@ -1433,6 +1458,104 @@ function InterviewReviewBlock({
               {gradeError}
             </p>
           )}
+
+          {/* Final overall evaluation (whole interview + closing Q&A) — set when AI-graded, editable. */}
+          {(block.aiSummary || editingSummary) && (
+            <div className="mb-4 rounded-xl border border-primary/30 bg-primary/5 p-3">
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <p className="text-[10px] font-semibold tracking-wider text-primary uppercase">
+                  Overall evaluation
+                </p>
+                <div className="flex items-center gap-2">
+                  {block.aiScore != null && (
+                    <span className="text-[11px] font-semibold text-primary">
+                      {block.aiScore}%
+                    </span>
+                  )}
+                  {!editingSummary && (
+                    <button
+                      type="button"
+                      onClick={startEditSummary}
+                      className="text-[11px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {editingSummary ? (
+                <div className="space-y-2">
+                  <SummaryField
+                    label="Summary"
+                    value={summaryDraft.summary}
+                    rows={3}
+                    onChange={(v) =>
+                      setSummaryDraft((d) => ({ ...d, summary: v }))
+                    }
+                  />
+                  <SummaryField
+                    label="Strengths"
+                    value={summaryDraft.strengths}
+                    rows={2}
+                    onChange={(v) =>
+                      setSummaryDraft((d) => ({ ...d, strengths: v }))
+                    }
+                  />
+                  <SummaryField
+                    label="To improve"
+                    value={summaryDraft.improvements}
+                    rows={2}
+                    onChange={(v) =>
+                      setSummaryDraft((d) => ({ ...d, improvements: v }))
+                    }
+                  />
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      onClick={() => setEditingSummary(false)}
+                      disabled={editSummaryMut.isPending}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="xs"
+                      onClick={saveSummary}
+                      disabled={editSummaryMut.isPending}
+                    >
+                      {editSummaryMut.isPending ? "Saving…" : "Save evaluation"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-[12px] leading-relaxed text-foreground/90">
+                    {block.aiSummary}
+                  </p>
+                  {(block.aiStrengths || block.aiImprovements) && (
+                    <div className="mt-2 space-y-1.5">
+                      {block.aiStrengths && (
+                        <FeedbackNote
+                          tone="pos"
+                          label="Strengths"
+                          text={block.aiStrengths}
+                        />
+                      )}
+                      {block.aiImprovements && (
+                        <FeedbackNote
+                          tone="neg"
+                          label="To improve"
+                          text={block.aiImprovements}
+                        />
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
           <div className="space-y-3">
             {answers.map((qa, i) => (
               <div key={i}>
@@ -1475,7 +1598,7 @@ function InterviewReviewBlock({
                     }
                     className="size-3.5 accent-violet-600"
                   />
-                  Human review
+                  Additional review
                 </label>
                 {openReview[i] && (
                   <div className="mt-1.5">
@@ -1513,6 +1636,27 @@ function InterviewReviewBlock({
             ))}
           </div>
 
+          {block.candidateQa && block.candidateQa.length > 0 && (
+            <div className="mt-4 rounded-lg border border-border/70 bg-muted/20 p-3">
+              <p className="mb-2 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                Candidate&apos;s questions at the end
+              </p>
+              <div className="space-y-2.5">
+                {block.candidateQa.map((qa, i) => (
+                  <div key={i} className="text-[12px]">
+                    <p className="font-medium text-foreground">
+                      <span className="text-muted-foreground">Q:</span>{" "}
+                      {qa.question}
+                    </p>
+                    <p className="mt-0.5 text-muted-foreground italic">
+                      <span className="not-italic">A:</span> {qa.answer}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {enhanceError && (
             <p className="mt-2 text-[11px] font-medium text-destructive">
               {enhanceError}
@@ -1527,7 +1671,7 @@ function InterviewReviewBlock({
                       ? ` · ${new Date(block.reviewedAt).toLocaleDateString()}`
                       : ""
                   }`
-                : "Optional — tick “Human review” on any question to comment."}
+                : "Optional — tick “Additional review” on any question to comment."}
             </span>
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -1674,6 +1818,33 @@ function HumanStagePanel({
           {mut.isPending ? "Saving…" : "Save stage"}
         </Button>
       </div>
+    </div>
+  )
+}
+
+/** Labeled textarea used when manually editing an interview's overall evaluation. */
+function SummaryField({
+  label,
+  value,
+  rows,
+  onChange,
+}: {
+  label: string
+  value: string
+  rows: number
+  onChange: (v: string) => void
+}) {
+  return (
+    <div>
+      <label className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+        {label}
+      </label>
+      <textarea
+        rows={rows}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-0.5 w-full resize-y rounded-lg border border-input bg-background px-2.5 py-1.5 text-[12px] focus:ring-2 focus:ring-ring focus:outline-none"
+      />
     </div>
   )
 }

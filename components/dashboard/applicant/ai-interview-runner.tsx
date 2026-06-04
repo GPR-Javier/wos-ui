@@ -105,6 +105,8 @@ export function AIInterviewRunner({
   const [thinking, setThinking] = useState(false)
   const [reachedEnd, setReachedEnd] = useState(false)
   const [dynError, setDynError] = useState<string | null>(null)
+  // Closing reverse-Q&A: the interview's questions are done and the candidate now asks us questions.
+  const [qaPhase, setQaPhase] = useState(false)
 
   // Proctoring: leaving the interview (exit fullscreen / tab switch / alt-tab) ends it.
   const [endedReason, setEndedReason] = useState<string | null>(null)
@@ -217,8 +219,10 @@ export function AIInterviewRunner({
   }
 
   const questionText = questionTexts[index] ?? ""
+  // In follow-up mode the server drives the ending (after the closing candidate-Q&A), so we only
+  // show "Finish" once it signals done — never just because the question cap was hit.
   const isLast = aiFollowUp
-    ? reachedEnd || index >= total - 1
+    ? reachedEnd
     : index === run.questions.length - 1
   const answeredCount = Object.values(transcripts).filter((t) =>
     (t ?? "").trim()
@@ -226,6 +230,8 @@ export function AIInterviewRunner({
   const answer = (transcripts[index] ?? "").trim()
   const answered = answer.length > 0
   const wordCount = answered ? answer.split(/\s+/).length : 0
+  // During the closing Q&A the candidate records a QUESTION rather than an answer.
+  const noun = qaPhase ? "question" : "answer"
 
   // Read each question aloud when its text appears; cancel speech on unmount.
   useEffect(() => {
@@ -275,33 +281,47 @@ export function AIInterviewRunner({
     setIndex(next)
   }
 
-  // Conversational mode: record the current answer, ask the backend for the next question.
-  async function nextFollowUp() {
+  // Conversational mode: send `ans` (the recorded answer/question), advance to the next turn.
+  async function sendTurn(ans: string) {
     if (!onRequestNext || thinking) return
     if (recording) stopRecording()
     stopSpeaking()
-    const ans = (transcripts[index] ?? "").trim()
     setThinking(true)
     setDynError(null)
     try {
       const res = await onRequestNext(ans)
-      if (res.done || !res.question) {
-        setReachedEnd(true) // server says no more — show "Finish"
-      } else {
+      // The server flips into the closing reverse-Q&A once the interview's questions run out;
+      // from then on the displayed text is the interviewer's prompt/answer/sign-off.
+      if (res.candidateQa) setQaPhase(true)
+      // Whether it's the next question or the closing remark, show it as a spoken turn.
+      if (res.question) {
+        const slot = index + 1
         setQuestionTexts((qs) => {
           const arr = qs.slice()
-          arr[res.questionNumber - 1] = res.question as string
+          arr[slot] = res.question as string
           return arr
         })
-        setIndex((i) => i + 1)
+        setIndex(slot)
       }
+      // `done` means no more turns — the closing remark (if any) is the last thing shown.
+      if (res.done || !res.question) setReachedEnd(true)
     } catch {
       setDynError(
-        `${botName} couldn't think of the next question. Please try again.`
+        `${botName} couldn't continue the interview. Please try again.`
       )
     } finally {
       setThinking(false)
     }
+  }
+
+  // Submit the recorded answer/question and get the next turn.
+  function nextFollowUp() {
+    sendTurn((transcripts[index] ?? "").trim())
+  }
+
+  // Closing Q&A: end with no further question — the server returns the interviewer's sign-off.
+  function endQa() {
+    sendTurn("")
   }
 
   function finish() {
@@ -347,7 +367,11 @@ export function AIInterviewRunner({
 
       <div className="mb-4 flex items-center justify-between text-[12px] text-muted-foreground">
         <span>
-          Question {index + 1} of {total}
+          {reachedEnd
+            ? "Interview complete"
+            : qaPhase
+              ? "Your turn — ask us anything"
+              : `Question ${index + 1} of ${total}`}
         </span>
         {!aiFollowUp && <span>{answeredCount} answered</span>}
       </div>
@@ -368,7 +392,8 @@ export function AIInterviewRunner({
           </button>
         </div>
 
-        {/* Record control */}
+        {/* Record control — hidden once the interview has ended (the closing remark needs no reply). */}
+        {!reachedEnd && (
         <div className="mt-5 flex flex-col items-center gap-3">
           {srSupported && (
             <button
@@ -386,12 +411,12 @@ export function AIInterviewRunner({
           )}
           <p className="text-[12px] text-muted-foreground">
             {!srSupported
-              ? "Voice answers need Chrome or Edge — type your answer below."
+              ? `Voice ${noun}s need Chrome or Edge — type your ${noun} below.`
               : recording
                 ? "Listening… click the button to stop."
                 : answered
-                  ? "Answer captured. You can re-record if needed."
-                  : "Click the mic and speak your answer."}
+                  ? `${noun === "question" ? "Question" : "Answer"} captured. You can re-record if needed.`
+                  : `Click the mic and speak your ${noun}.`}
           </p>
           {recording && (
             <div className="flex flex-col items-center gap-1.5">
@@ -419,7 +444,8 @@ export function AIInterviewRunner({
                   size={14}
                   strokeWidth={2}
                 />
-                Answer recorded · {wordCount} word{wordCount !== 1 ? "s" : ""}
+                {noun === "question" ? "Question" : "Answer"} recorded ·{" "}
+                {wordCount} word{wordCount !== 1 ? "s" : ""}
               </span>
               <button
                 type="button"
@@ -431,17 +457,18 @@ export function AIInterviewRunner({
             </div>
           )}
         </div>
+        )}
 
         {/* Typed answer ONLY when speech recognition is unavailable (fallback). */}
-        {!srSupported && (
+        {!srSupported && !reachedEnd && (
           <div className="mt-4">
             <label className="text-[12px] text-muted-foreground">
-              Your answer
+              Your {noun}
             </label>
             <textarea
               rows={4}
               className="mt-1.5 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-[13px] focus:ring-2 focus:ring-ring focus:outline-none"
-              placeholder="Type your answer…"
+              placeholder={`Type your ${noun}…`}
               value={transcripts[index] ?? ""}
               onChange={(e) =>
                 setTranscripts((t) => ({ ...t, [index]: e.target.value }))
@@ -462,7 +489,7 @@ export function AIInterviewRunner({
               />
             </div>
             <p className="flex items-center text-[13px] font-medium">
-              {botName} is evaluating your answer
+              {botName} is {qaPhase ? "considering your question" : "evaluating your answer"}
               <span className="ml-0.5 inline-flex">
                 <Dot delay="0ms" />
                 <Dot delay="150ms" />
@@ -470,7 +497,9 @@ export function AIInterviewRunner({
               </span>
             </p>
             <p className="text-[11px] text-muted-foreground">
-              Preparing your next question — please wait.
+              {qaPhase
+                ? "Preparing a response — please wait."
+                : "Preparing your next question — please wait."}
             </p>
           </div>
         )}
@@ -509,21 +538,35 @@ export function AIInterviewRunner({
               {busy ? "Submitting…" : "Finish interview"}
             </Button>
           ) : aiFollowUp ? (
-            <Button
-              size="sm"
-              onClick={nextFollowUp}
-              disabled={thinking || (srSupported && !answered)}
-            >
-              {thinking ? "Thinking…" : "Next"}
-              {!thinking && (
-                <HugeiconsIcon
-                  icon={ArrowRight01Icon}
-                  size={13}
-                  strokeWidth={2}
-                  className="ml-1.5"
-                />
+            <>
+              {/* Closing Q&A: the candidate can end the interview when they've no more questions. */}
+              {qaPhase && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={endQa}
+                  disabled={busy || thinking}
+                  title="End the interview"
+                >
+                  No more questions
+                </Button>
               )}
-            </Button>
+              <Button
+                size="sm"
+                onClick={nextFollowUp}
+                disabled={thinking || (srSupported && !answered)}
+              >
+                {thinking ? "Thinking…" : qaPhase ? "Ask" : "Next"}
+                {!thinking && (
+                  <HugeiconsIcon
+                    icon={ArrowRight01Icon}
+                    size={13}
+                    strokeWidth={2}
+                    className="ml-1.5"
+                  />
+                )}
+              </Button>
+            </>
           ) : (
             <Button size="sm" onClick={() => go(index + 1)}>
               Next
