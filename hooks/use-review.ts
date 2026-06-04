@@ -1,7 +1,7 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { reviewApi } from "@/lib/review-api"
+import { reviewApi, type ReviewPayload } from "@/lib/review-api"
 import type { ApplicationStatus } from "@/lib/application-api"
 
 export function useReviewList(status?: ApplicationStatus) {
@@ -27,6 +27,32 @@ export function useGradeApplication() {
       qc.invalidateQueries({ queryKey: ["review", "application", id] })
       qc.invalidateQueries({ queryKey: ["review", "applications"] })
     },
+  })
+}
+
+export function useSaveReview() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: ReviewPayload }) =>
+      reviewApi.saveReview(id, payload),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["review", "application", vars.id] })
+      qc.invalidateQueries({ queryKey: ["review", "applications"] })
+    },
+  })
+}
+
+export function useEnhanceComment() {
+  return useMutation({
+    mutationFn: ({
+      id,
+      text,
+      question,
+    }: {
+      id: number
+      text: string
+      question: string
+    }) => reviewApi.enhanceComment(id, text, question),
   })
 }
 

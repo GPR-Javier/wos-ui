@@ -93,7 +93,17 @@
       "Bash(npx prettier *)",
       "PowerShell(\\(Get-CimInstance Win32_Process -Filter \"ProcessId = 34580\"\\).CommandLine)",
       "Bash(sed -n '1,40p' src/main/resources/application.yaml)",
-      "Bash(grep -nE \"port|devtools|server\" src/main/resources/application-dev.yaml)"
+      "Bash(grep -nE \"port|devtools|server\" src/main/resources/application-dev.yaml)",
+      "PowerShell(foreach \\($p in 3000,8081\\) { $c = Get-NetTCPConnection -LocalPort $p -State Listen -ErrorAction SilentlyContinue; if \\($c\\) { \"Port $p : LISTENING \\(PID $\\($c.OwningProcess | Select-Object -First 1\\)\\)\" } else { \"Port $p : not listening\" } })",
+      "Bash(curl -s -i -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -H \"Origin: http://localhost:3000\" -d \"{\\\\\"email\\\\\":\\\\\"test@test.com\\\\\",\\\\\"password\\\\\":\\\\\"x\\\\\"}\")",
+      "Bash(curl -s -i -X POST http://localhost:8081/api/auth/login -H \"Content-Type: application/json\" -H \"Origin: http://localhost:3000\" -d \"{\\\\\"email\\\\\":\\\\\"test@test.com\\\\\",\\\\\"password\\\\\":\\\\\"x\\\\\"}\")",
+      "PowerShell(\\(Get-CimInstance Win32_Process -Filter 'ProcessId=27328'\\).CommandLine)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { $p = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue; \"PID $\\($_.OwningProcess\\)  $\\($p.ProcessName\\)  started $\\($p.StartTime\\)\" })",
+      "PowerShell(Stop-Process -Id 27328 -Force; Start-Sleep -Milliseconds 800; $c = Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue; if \\($c\\) { \"STILL IN USE by PID\\(s\\): $\\($c.OwningProcess -join ', '\\)\" } else { \"Port 8081 is now free.\" })",
+      "PowerShell(foreach \\($d in \"wos-common\",\"wos-hr\"\\) { $p = \"c:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\$d\\\\mvnw.cmd\"; \"$d wrapper: \" + \\(Test-Path $p\\) }; \"--- mvn on disk ---\"; Get-Command mvn -ErrorAction SilentlyContinue; \"--- M2_HOME ---\"; $env:M2_HOME; \"--- IntelliJ bundled maven? ---\"; Get-ChildItem \"C:\\\\Program Files\\\\JetBrains\" -Directory -ErrorAction SilentlyContinue | Select-Object -Expand Name)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; cd \"c:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; .\\\\mvnw.cmd -q -DskipTests install 2>&1 | Select-Object -Last 30)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; cd \"c:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; .\\\\mvnw.cmd -q -DskipTests compile 2>&1 | Select-String -Pattern \"BUILD|ERROR|error:|cannot find|symbol\" | Select-Object -Last 40)",
+      "PowerShell(Stop-Process -Id 30360 -Force; Start-Sleep -Milliseconds 700; $c = Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue; if \\($c\\) { \"8083 STILL in use by $\\($c.OwningProcess\\)\" } else { \"Port 8083 is now free.\" })"
     ],
     "additionalDirectories": [
       "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-auth\\src\\main\\java\\com\\gpm\\auth\\controller",

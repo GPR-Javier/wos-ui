@@ -26,6 +26,8 @@ export interface ReviewInterviewAnswer {
   aiScore: number | null
   aiFeedback: string | null
   aiImprovements: string | null
+  /** Optional human reviewer note for this question. */
+  reviewerComment: string | null
 }
 
 export interface ReviewDetail {
@@ -58,7 +60,22 @@ export interface ReviewDetail {
   interviewAnswers: ReviewInterviewAnswer[] | null
   aiScore: number | null
   aiGraded: boolean
+  // Human review of the AI interview (per-question comments live on interviewAnswers)
+  reviewedBy: string | null
+  reviewedAt: string | null
+  reviewed: boolean
 }
+
+export interface ReviewPayload {
+  /** Per-question comments, aligned by index to interviewAnswers. Blank = not reviewed. */
+  reviewerComments: string[]
+}
+
+// AI (Ollama) endpoints far exceed the default 15s axios timeout — without these overrides the
+// browser aborts the request mid-flight ("(canceled)"). Grade loops over every question, so it gets
+// the most headroom; the single-shot helpers a generous cap.
+const AI_TIMEOUT = 120_000
+const AI_GRADE_TIMEOUT = 300_000
 
 export const reviewApi = {
   list: (status?: ApplicationStatus) =>
@@ -78,15 +95,41 @@ export const reviewApi = {
       .then((r) => r.data),
   grade: (id: number) =>
     api
-      .post<ReviewDetail>(`/hr/review/applications/${id}/grade`)
+      .post<ReviewDetail>(`/hr/review/applications/${id}/grade`, undefined, {
+        timeout: AI_GRADE_TIMEOUT,
+      })
       .then((r) => r.data),
+  /** Save the human reviewer's per-question comments for the AI interview. */
+  saveReview: (id: number, payload: ReviewPayload) =>
+    api
+      .post<ReviewDetail>(`/hr/review/applications/${id}/review`, payload)
+      .then((r) => r.data),
+  /** AI-polish a single per-question reviewer comment; returns the improved text. */
+  enhanceComment: (id: number, text: string, question: string) =>
+    api
+      .post<{
+        text: string
+      }>(
+        `/hr/review/applications/${id}/review/enhance-comment`,
+        { text, question },
+        { timeout: AI_TIMEOUT }
+      )
+      .then((r) => r.data.text),
   reviewCoverLetter: (id: number) =>
     api
-      .post<ReviewDetail>(`/hr/review/applications/${id}/cover-letter-review`)
+      .post<ReviewDetail>(
+        `/hr/review/applications/${id}/cover-letter-review`,
+        undefined,
+        { timeout: AI_TIMEOUT }
+      )
       .then((r) => r.data),
   reviewResume: (id: number) =>
     api
-      .post<ReviewDetail>(`/hr/review/applications/${id}/resume-review`)
+      .post<ReviewDetail>(
+        `/hr/review/applications/${id}/resume-review`,
+        undefined,
+        { timeout: AI_TIMEOUT }
+      )
       .then((r) => r.data),
   saveResumeText: (id: number, text: string) =>
     api
@@ -97,6 +140,10 @@ export const reviewApi = {
     api
       .post<{
         reason: string
-      }>(`/hr/review/applications/${id}/rejection-suggestion`, { text })
+      }>(
+        `/hr/review/applications/${id}/rejection-suggestion`,
+        { text },
+        { timeout: AI_TIMEOUT }
+      )
       .then((r) => r.data.reason),
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -18,6 +18,8 @@ import {
   useReviewDetail,
   useSetApplicationStatus,
   useGradeApplication,
+  useSaveReview,
+  useEnhanceComment,
   useReviewCoverLetter,
   useReviewResume,
   useSaveResumeText,
@@ -270,6 +272,25 @@ function ReviewDetailModal({
   const statusMut = useSetApplicationStatus()
   const gradeMut = useGradeApplication()
   const [gradeError, setGradeError] = useState<string | null>(null)
+  const reviewMut = useSaveReview()
+  const enhanceMut = useEnhanceComment()
+  const [enhancingIndex, setEnhancingIndex] = useState<number | null>(null)
+  const [enhanceError, setEnhanceError] = useState<string | null>(null)
+  // Per-question human review: comment text + whether the reviewer opened the toggle, keyed by index.
+  const [comments, setComments] = useState<Record<number, string>>({})
+  const [openReview, setOpenReview] = useState<Record<number, boolean>>({})
+  // Seed once per applicant (won't clobber edits on refetch of the same id).
+  useEffect(() => {
+    const c: Record<number, string> = {}
+    const o: Record<number, boolean> = {}
+    detail?.interviewAnswers?.forEach((a, i) => {
+      c[i] = a.reviewerComment ?? ""
+      o[i] = !!a.reviewerComment
+    })
+    setComments(c)
+    setOpenReview(o)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detail?.id])
   const coverMut = useReviewCoverLetter()
   const [coverError, setCoverError] = useState<string | null>(null)
   const resumeMut = useReviewResume()
@@ -336,6 +357,50 @@ function ReviewDetailModal({
         setGradeError(msg)
       },
     })
+  }
+
+  // Per-question comments aligned by index to the interview's questions (blank = not reviewed).
+  function commentsPayload(): string[] {
+    const n = detail?.interviewAnswers?.length ?? 0
+    return Array.from({ length: n }, (_, i) => (comments[i] ?? "").trim())
+  }
+
+  const hasAnyComment = commentsPayload().some((c) => c.length > 0)
+
+  function handleSaveReview() {
+    reviewMut.mutate({ id, payload: { reviewerComments: commentsPayload() } })
+  }
+
+  // Persist the reviewer's notes first, then re-run AI grading so each question folds in its note.
+  function handleRegradeWithNotes() {
+    setGradeError(null)
+    reviewMut.mutate(
+      { id, payload: { reviewerComments: commentsPayload() } },
+      { onSuccess: () => handleGrade() }
+    )
+  }
+
+  function toggleReview(i: number) {
+    setOpenReview((o) => ({ ...o, [i]: !o[i] }))
+  }
+
+  // AI-polish a single question's comment in place. enhancingIndex tracks which one is in flight.
+  function handleEnhanceComment(i: number, question: string) {
+    const text = (comments[i] ?? "").trim()
+    if (!text) return
+    setEnhanceError(null)
+    setEnhancingIndex(i)
+    enhanceMut.mutate(
+      { id, text, question },
+      {
+        onSuccess: (enhanced) => {
+          if (enhanced) setComments((c) => ({ ...c, [i]: enhanced }))
+        },
+        onError: () =>
+          setEnhanceError("AI is unavailable right now. Please try again."),
+        onSettled: () => setEnhancingIndex(null),
+      }
+    )
   }
 
   function handleReviewCover() {
@@ -669,7 +734,7 @@ function ReviewDetailModal({
                             size="xs"
                             variant="outline"
                             onClick={handleGrade}
-                            disabled={gradeMut.isPending}
+                            disabled={gradeMut.isPending || reviewMut.isPending}
                           >
                             {gradeMut.isPending
                               ? "Grading…"
@@ -718,8 +783,108 @@ function ReviewDetailModal({
                                 )}
                               </div>
                             )}
+
+                            {/* Optional per-question human review (toggle reveals the comment). */}
+                            <label className="mt-2 flex w-fit cursor-pointer items-center gap-1.5 text-[11px] font-medium text-muted-foreground select-none">
+                              <input
+                                type="checkbox"
+                                checked={openReview[i] ?? false}
+                                onChange={() => toggleReview(i)}
+                                className="size-3.5 accent-violet-600"
+                              />
+                              Human review
+                            </label>
+                            {openReview[i] && (
+                              <div className="mt-1.5">
+                                <textarea
+                                  rows={2}
+                                  value={comments[i] ?? ""}
+                                  onChange={(e) =>
+                                    setComments((c) => ({
+                                      ...c,
+                                      [i]: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Your comment on this answer — what the AI missed, follow-ups for the human interview, etc."
+                                  className="w-full resize-y rounded-lg border border-violet-500/40 bg-violet-500/5 px-3 py-2 text-[12px] focus:ring-2 focus:ring-ring focus:outline-none"
+                                />
+                                <div className="mt-1 flex justify-end">
+                                  <Button
+                                    type="button"
+                                    size="xs"
+                                    variant="outline"
+                                    className="gap-1.5"
+                                    disabled={
+                                      enhancingIndex === i ||
+                                      !(comments[i] ?? "").trim()
+                                    }
+                                    onClick={() =>
+                                      handleEnhanceComment(i, qa.question)
+                                    }
+                                  >
+                                    <HugeiconsIcon
+                                      icon={SparklesIcon}
+                                      size={12}
+                                      strokeWidth={1.8}
+                                    />
+                                    {enhancingIndex === i
+                                      ? "Enhancing…"
+                                      : "Enhance"}
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
+                      </div>
+
+                      {enhanceError && (
+                        <p className="mt-2 text-[11px] font-medium text-destructive">
+                          {enhanceError}
+                        </p>
+                      )}
+
+                      {/* Review actions — comments are per-question above; this saves them together. */}
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+                        <span className="text-[10px] text-muted-foreground">
+                          {detail.reviewedBy
+                            ? `Reviewed by ${detail.reviewedBy}${
+                                detail.reviewedAt
+                                  ? ` · ${new Date(detail.reviewedAt).toLocaleDateString()}`
+                                  : ""
+                              }`
+                            : "Optional — tick “Human review” on any question to add a comment."}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            onClick={handleSaveReview}
+                            disabled={reviewMut.isPending || gradeMut.isPending}
+                          >
+                            {reviewMut.isPending && !gradeMut.isPending
+                              ? "Saving…"
+                              : "Save review"}
+                          </Button>
+                          <Button
+                            size="xs"
+                            onClick={handleRegradeWithNotes}
+                            disabled={
+                              reviewMut.isPending ||
+                              gradeMut.isPending ||
+                              !hasAnyComment
+                            }
+                            title={
+                              hasAnyComment
+                                ? undefined
+                                : "Add a comment on a question first"
+                            }
+                          >
+                            {gradeMut.isPending
+                              ? "Re-grading…"
+                              : "Re-grade with notes"}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   )}
