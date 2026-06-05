@@ -154,14 +154,20 @@
       "Bash(rm \"wos-ai/src/main/java/com/gpm/ai/controller/AiController.java\")",
       "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; .\\\\mvnw.cmd -q -DskipTests install; \"COMMON_EXIT=$LASTEXITCODE\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-ai\"; .\\\\mvnw.cmd -q -o compile; \"AI_EXIT=$LASTEXITCODE\")",
       "Bash(rm \"/c/Users/User/Documents/development/Work-OS/wos-hr/src/main/java/com/gpm/hr/config/AiConfig.java\" && echo \"deleted AiConfig\")",
-      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-ai\"; .\\\\mvnw.cmd -q -o compile; \"AI_EXIT=$LASTEXITCODE\")"
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-ai\"; .\\\\mvnw.cmd -q -o compile; \"AI_EXIT=$LASTEXITCODE\")",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; .\\\\mvnw.cmd -q spotless:check 2>&1 | Select-Object -Last 40; \"EXIT=$LASTEXITCODE\")",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; $out = .\\\\mvnw.cmd spotless:check 2>&1 | Out-String; \\($out -split \"`n\" | Select-String -Pattern \"ERROR|Exception|Caused by|Unsupported|class file|module|java\\\\.\" | Select-Object -First 30\\))",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; $out = .\\\\mvnw.cmd spotless:check 2>&1 | Out-String; \\($out -split \"`n\" | Select-String -Pattern \"BUILD SUCCESS|BUILD FAILURE|spotless|format|NoSuchMethod|ERROR\\\\]\" | Select-Object -First 25\\); \"EXIT=$LASTEXITCODE\")",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; $out = .\\\\mvnw.cmd spotless:check 2>&1 | Out-String; \\($out -split \"`n\" | Select-String -Pattern \"keeping|needs changes|BUILD SUCCESS|BUILD FAILURE|format violations\" | Select-Object -First 10\\); \"EXIT=$LASTEXITCODE\")",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; $out = .\\\\mvnw.cmd spotless:check 2>&1 | Out-String; \\($out -split \"`n\" | Select-String -Pattern \"^\\\\[ERROR\\\\]\\\\s+\\(src|@@|[-+]\\)\" | Select-Object -First 22\\))"
     ],
     "additionalDirectories": [
       "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-auth\\src\\main\\java\\com\\gpm\\auth\\controller",
       "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-common\\src\\main\\java\\com\\gpm\\common\\dto",
       "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-common",
       "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-ai\\src\\main\\java\\com\\gpm\\ai\\security",
-      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-hr\\src\\main\\java\\com\\gpm\\hr\\config"
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-hr\\src\\main\\java\\com\\gpm\\hr\\config",
+      "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-analytics"
     ]
   }
 }
