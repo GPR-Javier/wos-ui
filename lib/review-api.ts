@@ -197,15 +197,15 @@ export const reviewApi = {
     api
       .post<ReviewDetail>(`/hr/review/applications/${id}/offer`, payload)
       .then((r) => r.data),
-  /** Grade (or re-grade) one AI interview stage's answers. */
+  /** Grade (or re-grade) one AI interview stage's answers (wos-ai; refetch detail after). */
   grade: (id: number, partType: AssessmentPartType) =>
     api
-      .post<ReviewDetail>(
-        `/hr/review/applications/${id}/interviews/${partType}/grade`,
+      .post(
+        `/ai/review/applications/${id}/interviews/${partType}/grade`,
         undefined,
         { timeout: AI_GRADE_TIMEOUT }
       )
-      .then((r) => r.data),
+      .then(() => {}),
   /** Save the reviewer's per-question comments for one AI interview stage. */
   saveReview: (id: number, partType: AssessmentPartType, payload: ReviewPayload) =>
     api
@@ -261,27 +261,29 @@ export const reviewApi = {
       .post<{
         text: string
       }>(
-        `/hr/review/applications/${id}/review/enhance-comment`,
+        `/ai/review/applications/${id}/review/enhance-comment`,
         { text, question },
         { timeout: AI_TIMEOUT }
       )
       .then((r) => r.data.text),
+  /** AI-review the cover letter (wos-ai persists; refetch detail after). */
   reviewCoverLetter: (id: number) =>
     api
-      .post<ReviewDetail>(
-        `/hr/review/applications/${id}/cover-letter-review`,
+      .post(
+        `/ai/review/applications/${id}/cover-letter-review`,
         undefined,
         { timeout: AI_TIMEOUT }
       )
-      .then((r) => r.data),
+      .then(() => {}),
+  /** AI-review the resume (wos-ai persists; refetch detail after). */
   reviewResume: (id: number) =>
     api
-      .post<ReviewDetail>(
-        `/hr/review/applications/${id}/resume-review`,
+      .post(
+        `/ai/review/applications/${id}/resume-review`,
         undefined,
         { timeout: AI_TIMEOUT }
       )
-      .then((r) => r.data),
+      .then(() => {}),
   saveResumeText: (id: number, text: string) =>
     api
       .post<ReviewDetail>(`/hr/review/applications/${id}/resume-text`, { text })
@@ -292,7 +294,7 @@ export const reviewApi = {
       .post<{
         reason: string
       }>(
-        `/hr/review/applications/${id}/rejection-suggestion`,
+        `/ai/review/applications/${id}/rejection-suggestion`,
         { text },
         { timeout: AI_TIMEOUT }
       )

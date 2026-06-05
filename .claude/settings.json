@@ -145,11 +145,23 @@
       "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; .\\\\mvnw.cmd -q -o compile; \"HR_EXIT=$LASTEXITCODE\")",
       "PowerShell(Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-ui\"; npx tsc --noEmit; \"TSC_EXIT=$LASTEXITCODE\")",
       "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; .\\\\mvnw.cmd -q -DskipTests install; \"COMMON_EXIT=$LASTEXITCODE\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; .\\\\mvnw.cmd -q -o compile; \"HR_EXIT=$LASTEXITCODE\")",
-      "PowerShell(Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force; \"Killed PID $_\" }; Start-Sleep -Milliseconds 400; if \\(Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue\\) { \"STILL_IN_USE\" } else { \"PORT_8083_FREE\" })"
+      "PowerShell(Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force; \"Killed PID $_\" }; Start-Sleep -Milliseconds 400; if \\(Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue\\) { \"STILL_IN_USE\" } else { \"PORT_8083_FREE\" })",
+      "Bash(rm \"/c/Users/User/Documents/development/Work-OS/wos-ai/src/main/java/com/gpm/ai/security/JwtAuthenticationFilter.java\" \"/c/Users/User/Documents/development/Work-OS/wos-ai/src/main/java/com/gpm/ai/security/JwtService.java\" && echo \"removed\")",
+      "Bash(mkdir -p \"/c/Users/User/Documents/development/Work-OS/wos-ai/src/main/java/com/gpm/ai/service\")",
+      "Bash(cp \"/c/Users/User/Documents/development/Work-OS/wos-hr/src/main/java/com/gpm/hr/service/AiGradingService.java\" \"/c/Users/User/Documents/development/Work-OS/wos-ai/src/main/java/com/gpm/ai/service/AiGradingService.java\")",
+      "Bash(rm \"wos-hr/src/main/java/com/gpm/hr/service/AiGradingService.java\")",
+      "Bash(rm -rf \"wos-common/src/main/java/com/gpm/common/ai\")",
+      "Bash(rm \"wos-ai/src/main/java/com/gpm/ai/controller/AiController.java\")",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; .\\\\mvnw.cmd -q -DskipTests install; \"COMMON_EXIT=$LASTEXITCODE\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-ai\"; .\\\\mvnw.cmd -q -o compile; \"AI_EXIT=$LASTEXITCODE\")",
+      "Bash(rm \"/c/Users/User/Documents/development/Work-OS/wos-hr/src/main/java/com/gpm/hr/config/AiConfig.java\" && echo \"deleted AiConfig\")",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-ai\"; .\\\\mvnw.cmd -q -o compile; \"AI_EXIT=$LASTEXITCODE\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-auth\\src\\main\\java\\com\\gpm\\auth\\controller",
-      "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-common\\src\\main\\java\\com\\gpm\\common\\dto"
+      "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-common\\src\\main\\java\\com\\gpm\\common\\dto",
+      "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-common",
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-ai\\src\\main\\java\\com\\gpm\\ai\\security",
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-hr\\src\\main\\java\\com\\gpm\\hr\\config"
     ]
   }
 }

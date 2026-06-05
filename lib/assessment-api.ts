@@ -270,7 +270,7 @@ export const assessmentApi = {
     api
       .post<{
         rubric: string
-      }>("/hr/assessments/suggest-rubric", { question, jobId })
+      }>("/ai/assessments/suggest-rubric", { question, jobId })
       .then((r) => r.data.rubric),
 }
 

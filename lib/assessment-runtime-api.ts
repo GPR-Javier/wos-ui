@@ -129,7 +129,7 @@ export const assessmentRuntimeApi = {
   ) =>
     api
       .post<NextQuestionResponse>(
-        `/hr/assessments/my/${applicationId}/parts/${partType}/next`,
+        `/ai/assessments/my/${applicationId}/parts/${partType}/next`,
         { transcript }
       )
       .then((r) => r.data),
