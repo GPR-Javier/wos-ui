@@ -73,6 +73,12 @@ export interface JobPosting {
   tags: string[]
   /** Pipeline stages enabled for this posting; null/absent = all template stages. */
   enabledStages?: AssessmentPartType[] | null
+  /** UserRole an applicant is converted into when hired for this posting. */
+  hireUserRoleId?: number | null
+  hireUserRoleName?: string | null
+  /** JobPosition this posting recruits for; seeds the offer/contract. */
+  jobPositionId?: number | null
+  jobPositionTitle?: string | null
 }
 
 export interface CreateJobPayload {
@@ -92,6 +98,8 @@ export interface CreateJobPayload {
   reapplyCooldownDays?: number | null
   tags: string[]
   enabledStages?: AssessmentPartType[] | null
+  hireUserRoleId?: number | null
+  jobPositionId?: number | null
 }
 
 export interface HrStats {

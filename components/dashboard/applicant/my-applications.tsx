@@ -18,6 +18,7 @@ import {
   useMyApplications,
   useWithdrawApplication,
 } from "@/hooks/use-applications"
+import { OfferReviewModal } from "@/components/dashboard/applicant/offer-review-modal"
 import {
   type JobApplication,
   type ApplicationStatus,
@@ -64,6 +65,8 @@ export function MyApplicationsScreen() {
     msg: string
     type: "success" | "error"
   } | null>(null)
+  // Which application's offer is open for review/signing.
+  const [offerAppId, setOfferAppId] = useState<number | null>(null)
 
   function showToast(msg: string, type: "success" | "error") {
     setToast({ msg, type })
@@ -229,6 +232,21 @@ export function MyApplicationsScreen() {
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2">
+                  {app.status === "OFFER" && (
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => setOfferAppId(app.id)}
+                    >
+                      Review &amp; sign offer
+                      <HugeiconsIcon
+                        icon={ArrowRight01Icon}
+                        size={13}
+                        strokeWidth={2}
+                        className="ml-1.5"
+                      />
+                    </Button>
+                  )}
                   {CAN_ASSESS.includes(app.status) && (
                     <Link href={`/dashboard/assessment/${app.id}`}>
                       <Button size="sm">
@@ -289,6 +307,13 @@ export function MyApplicationsScreen() {
             )
           })}
         </div>
+      )}
+
+      {offerAppId != null && (
+        <OfferReviewModal
+          applicationId={offerAppId}
+          onClose={() => setOfferAppId(null)}
+        />
       )}
     </div>
   )

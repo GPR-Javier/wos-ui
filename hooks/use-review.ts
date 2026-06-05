@@ -7,6 +7,7 @@ import {
   type ReviewDecision,
   type HumanStagePayload,
   type InterviewSummaryPayload,
+  type OfferPayload,
 } from "@/lib/review-api"
 import type { ApplicationStatus } from "@/lib/application-api"
 import type { AssessmentPartType } from "@/lib/assessment-api"
@@ -193,6 +194,18 @@ export function useSetApplicationStatus() {
       status: ApplicationStatus
       note?: string
     }) => reviewApi.setStatus(id, status, note),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["review", "applications"] })
+      qc.invalidateQueries({ queryKey: ["review", "application", vars.id] })
+    },
+  })
+}
+
+export function useGiveOffer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: OfferPayload }) =>
+      reviewApi.giveOffer(id, payload),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["review", "applications"] })
       qc.invalidateQueries({ queryKey: ["review", "application", vars.id] })

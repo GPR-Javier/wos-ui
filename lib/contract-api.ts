@@ -69,6 +69,9 @@ export interface EmploymentContract {
   id: number
   contractNumber?: string | null
   employmentType: EmploymentType
+  workType?: string | null
+  salaryPeriod?: string | null
+  applicantSignature?: string | null
   contractStatus: ContractStatus
   startDate: string // "YYYY-MM-DD"
   endDate?: string | null
@@ -87,6 +90,8 @@ export interface EmploymentContract {
 
 export interface CreateContractPayload {
   employmentType: EmploymentType
+  workType?: string | null
+  salaryPeriod?: string | null
   startDate: string
   endDate?: string | null
   probationEndDate?: string | null
@@ -100,6 +105,8 @@ export interface CreateContractPayload {
 
 export interface UpdateContractPayload {
   employmentType?: EmploymentType
+  workType?: string | null
+  salaryPeriod?: string | null
   contractStatus?: ContractStatus
   startDate?: string
   endDate?: string | null

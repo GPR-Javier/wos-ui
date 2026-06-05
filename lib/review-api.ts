@@ -1,5 +1,5 @@
 import { api } from "./api"
-import type { ApplicationStatus } from "./application-api"
+import type { ApplicationStatus, OfferView } from "./application-api"
 import type { AssessmentPartType } from "./assessment-api"
 import type { Pipeline } from "./pipeline-api"
 
@@ -92,6 +92,19 @@ export interface ReviewDetail {
   jobPostingId: number
   jobTitle: string | null
   department: string | null
+  /** Role the applicant is converted into on hire (from the posting). null = not configured. */
+  hireUserRoleId: number | null
+  hireUserRoleName: string | null
+  // Employment-config seeds from the posting — initial values for the give-offer form.
+  hireJobPositionId: number | null
+  hireJobPositionTitle: string | null
+  hireDepartment: string | null
+  hireWorkType: string | null
+  hirePostingType: string | null
+  hireSalaryGradeId: number | null
+  hireSalaryPeriod: string | null
+  /** The extended offer/contract once one exists; null before an offer is given. */
+  offer: OfferView | null
   applicantName: string | null
   applicantEmail: string
   applicantPhone: string | null
@@ -118,6 +131,19 @@ export interface ReviewDetail {
   interviews: ReviewInterviewBlock[] | null
   /** Human-run stages (Human / Final interview). */
   humanStages: ReviewHumanStage[] | null
+}
+
+/** HR's negotiated employment config when extending an offer. */
+export interface OfferPayload {
+  userRoleId: number
+  jobPositionId?: number | null
+  salaryGradeId?: number | null
+  employmentType: string
+  workType?: string | null
+  salaryPeriod?: string | null
+  startDate: string // "YYYY-MM-DD"
+  probationEndDate?: string | null
+  notes?: string | null
 }
 
 export interface ReviewPayload {
@@ -159,6 +185,11 @@ export const reviewApi = {
         status,
         note,
       })
+      .then((r) => r.data),
+  /** Extend an employment offer with the negotiated config; moves the application to OFFER. */
+  giveOffer: (id: number, payload: OfferPayload) =>
+    api
+      .post<ReviewDetail>(`/hr/review/applications/${id}/offer`, payload)
       .then((r) => r.data),
   /** Grade (or re-grade) one AI interview stage's answers. */
   grade: (id: number, partType: AssessmentPartType) =>

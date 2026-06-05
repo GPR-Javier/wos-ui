@@ -35,14 +35,21 @@ import type {
   ReviewInterviewBlock as ReviewInterviewBlockType,
   ReviewHumanStage,
   StageStatus,
+  ReviewDetail,
 } from "@/lib/review-api"
 import type { AssessmentPartType } from "@/lib/assessment-api"
 import type { PipelineStageStatus } from "@/lib/pipeline-api"
+import { EmploymentOfferModal } from "@/components/dashboard/hr/employment-offer-modal"
 import {
   type ApplicationStatus,
   APPLICATION_STATUS_LABEL,
   APPLICATION_STATUS_VARIANT,
 } from "@/lib/application-api"
+import { currencySymbol } from "@/lib/employee-profile-api"
+import {
+  EMPLOYMENT_TYPE_LABELS,
+  type EmploymentType,
+} from "@/lib/contract-api"
 
 const FILTERS: { label: string; value: ApplicationStatus | "" }[] = [
   { label: "All", value: "" },
@@ -366,7 +373,8 @@ function ReviewDetailModal({
   // Footer actions are contextual to the active stage tab.
   const stageKeys = tabs.filter((t) => t.key !== "BASIC").map((t) => t.key)
   const lastStageKey = stageKeys[stageKeys.length - 1]
-  const isStageTab = activeTab !== "BASIC"
+  const isStageTab = activeTab !== "BASIC" && activeTab !== "OFFER"
+  const isOfferTab = activeTab === "OFFER"
   const isLastStage = activeTab === lastStageKey
   const isAiStage =
     activeTab === "AI_INTERVIEW" || activeTab === "AI_TECHNICAL_INTERVIEW"
@@ -420,6 +428,8 @@ function ReviewDetailModal({
   // Reject flow captures a reason the candidate will see.
   const [rejecting, setRejecting] = useState(false)
   const [rejectReason, setRejectReason] = useState("")
+  // Offer flow: the employment-config confirmation modal.
+  const [showOffer, setShowOffer] = useState(false)
   const suggestRejectionMut = useSuggestRejection()
   const [suggestError, setSuggestError] = useState<string | null>(null)
 
@@ -564,6 +574,7 @@ function ReviewDetailModal({
                 tabs={tabs}
                 active={activeTab}
                 onSelect={setActiveTab}
+                tailStatus={detail?.status ?? null}
               />
             </div>
             </div>
@@ -840,12 +851,43 @@ function ReviewDetailModal({
               </div>
             )}
 
+            {/* Offer tab */}
+            {isOfferTab && (
+              <div className="mt-4">
+                <OfferSummaryPanel detail={detail} />
+              </div>
+            )}
+
             </div>
 
             {/* Pinned footer: status actions */}
             <div className="shrink-0 border-t border-border px-6 py-4">
               <div className="flex flex-wrap items-center justify-end gap-2">
-                {!isStageTab ? (
+                {isOfferTab ? (
+                  // Offer tab: revise the offer, or reject.
+                  <>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={statusMut.isPending || detail.status === "HIRED"}
+                      onClick={openReject}
+                    >
+                      Reject
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      disabled={statusMut.isPending || detail.status === "HIRED"}
+                      onClick={() => setShowOffer(true)}
+                    >
+                      {detail.status === "OFFER"
+                        ? "Update offer"
+                        : detail.status === "HIRED"
+                          ? "Hired"
+                          : "Give Offer"}
+                    </Button>
+                  </>
+                ) : !isStageTab ? (
                   // Basic Information: shortlist early or reject.
                   <>
                     <Button
@@ -870,7 +912,7 @@ function ReviewDetailModal({
                     </Button>
                   </>
                 ) : isLastStage ? (
-                  // Final stage: the hire pipeline.
+                  // Final stage: shortlist, reject, or extend an employment offer.
                   <>
                     <Button
                       variant="destructive"
@@ -894,18 +936,15 @@ function ReviewDetailModal({
                     </Button>
                     <Button
                       size="sm"
-                      disabled={detail.status === "OFFER" || statusMut.isPending}
-                      onClick={() => statusMut.mutate({ id, status: "OFFER" })}
-                    >
-                      Make offer
-                    </Button>
-                    <Button
-                      size="sm"
                       className="bg-green-600 hover:bg-green-700"
                       disabled={detail.status === "HIRED" || statusMut.isPending}
-                      onClick={() => statusMut.mutate({ id, status: "HIRED" })}
+                      onClick={() => setShowOffer(true)}
                     >
-                      Mark hired
+                      {detail.status === "OFFER"
+                        ? "Update offer"
+                        : detail.status === "HIRED"
+                          ? "Hired"
+                          : "Give Offer"}
                     </Button>
                   </>
                 ) : (
@@ -1057,6 +1096,13 @@ function ReviewDetailModal({
           </>
         )}
       </div>
+
+      {showOffer && detail && (
+        <EmploymentOfferModal
+          detail={detail}
+          onClose={() => setShowOffer(false)}
+        />
+      )}
     </div>
   )
 }
@@ -1102,11 +1148,34 @@ function ReviewTabBar({
   tabs,
   active,
   onSelect,
+  tailStatus,
 }: {
   tabs: ReviewTab[]
   active: string
   onSelect: (k: string) => void
+  tailStatus?: ApplicationStatus | null
 }) {
+  // Read-only hiring tail (Shortlisted → Offer → Hired) appended after the interactive stage tabs.
+  const rank =
+    tailStatus === "HIRED"
+      ? 3
+      : tailStatus === "OFFER"
+        ? 2
+        : tailStatus === "SHORTLISTED"
+          ? 1
+          : 0
+  // Offer is "current" while pending the candidate; both turn green only once HIRED. Shortlist is an
+  // optional side-action (the Shortlist button), so it isn't shown as a sequential step here.
+  const tail = [
+    {
+      key: "OFFER",
+      label: "Offer",
+      done: rank >= 3,
+      current: tailStatus === "OFFER",
+      rejected: tailStatus === "OFFER_DECLINED",
+    },
+    { key: "HIRED", label: "Hired", done: rank >= 3, current: false, rejected: false },
+  ]
   return (
     // p-2 gives the selected node's ring room so overflow-x-auto doesn't clip it.
     <div className="overflow-x-auto p-2">
@@ -1184,7 +1253,186 @@ function ReviewTabBar({
             </Fragment>
           )
         })}
+
+        {/* Hiring tail — Offer is a selectable tab; Hired is a read-only indicator. */}
+        {tail.map((t) => {
+          const selectable = t.key === "OFFER"
+          const selected = active === t.key
+          return (
+          <Fragment key={t.key}>
+            <div className="mt-3.5 h-0.5 w-5 shrink-0 bg-border sm:w-8" />
+            <button
+              type="button"
+              onClick={() => selectable && onSelect(t.key)}
+              className={cn(
+                "flex w-16 shrink-0 flex-col items-center gap-1 sm:w-20",
+                selectable ? "cursor-pointer" : "cursor-default"
+              )}
+            >
+              <div
+                className={cn(
+                  "flex size-7 items-center justify-center rounded-full border-2 text-[11px] font-semibold",
+                  t.done
+                    ? "border-green-500 bg-green-500 text-white"
+                    : t.rejected
+                      ? "border-red-500 bg-red-500 text-white"
+                      : t.current
+                        ? "border-amber-500 bg-amber-500 text-white"
+                        : "border-border bg-card text-muted-foreground",
+                  selected && "ring-2 ring-primary ring-offset-1 ring-offset-card"
+                )}
+              >
+                {t.done ? (
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle01Icon}
+                    size={13}
+                    strokeWidth={2.5}
+                  />
+                ) : t.rejected ? (
+                  <HugeiconsIcon icon={Cancel01Icon} size={13} strokeWidth={2.5} />
+                ) : (
+                  ""
+                )}
+              </div>
+              <span
+                className={cn(
+                  "text-center text-[9px] leading-tight font-medium",
+                  t.done || t.current || t.rejected
+                    ? "text-foreground"
+                    : "text-muted-foreground"
+                )}
+              >
+                {t.label}
+              </span>
+              {t.current && (
+                <span className="text-[8px] font-medium text-amber-600 dark:text-amber-400">
+                  Current
+                </span>
+              )}
+              {t.rejected && (
+                <span className="text-[8px] font-medium text-destructive">
+                  Declined
+                </span>
+              )}
+            </button>
+          </Fragment>
+          )
+        })}
       </div>
+    </div>
+  )
+}
+
+/** Read-only summary of the extended offer/contract, shown on the Offer tab. */
+function OfferSummaryPanel({ detail }: { detail: ReviewDetail }) {
+  const offer = detail.offer
+  if (!offer) {
+    return (
+      <div className="rounded-xl border border-dashed py-8 text-center text-[13px] text-muted-foreground">
+        No offer extended yet. Use &ldquo;Give Offer&rdquo; below to send the
+        employment offer.
+      </div>
+    )
+  }
+  const fmt = (d: string | null) =>
+    d
+      ? new Date(d).toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "—"
+  const money =
+    offer.salaryAmount != null
+      ? `${currencySymbol(offer.salaryCurrency)}${offer.salaryAmount.toLocaleString("en-PH")}${
+          offer.salaryPeriod ? ` · ${offer.salaryPeriod}` : ""
+        }`
+      : (offer.salaryGradeName ?? "—")
+  const statusLabel =
+    detail.status === "HIRED"
+      ? "Accepted & signed"
+      : detail.status === "OFFER_DECLINED"
+        ? "Declined by candidate"
+        : "Awaiting candidate"
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2 text-[12px]">
+        <span className="text-muted-foreground">Offer status</span>
+        <span className="font-medium">
+          {statusLabel}
+          {offer.contractNumber ? ` · ${offer.contractNumber}` : ""}
+        </span>
+      </div>
+
+      <dl className="divide-y divide-border/60 overflow-hidden rounded-lg border border-border/60 text-[13px]">
+        <OfferRow label="Role" value={offer.roleName} />
+        <OfferRow label="Position" value={offer.jobPositionTitle} />
+        <OfferRow label="Department" value={offer.department} />
+        <OfferRow
+          label="Employment type"
+          value={
+            offer.employmentType
+              ? (EMPLOYMENT_TYPE_LABELS[
+                  offer.employmentType as EmploymentType
+                ] ?? offer.employmentType)
+              : null
+          }
+        />
+        <OfferRow
+          label="Work type"
+          value={
+            offer.workType
+              ? offer.workType[0].toUpperCase() + offer.workType.slice(1)
+              : null
+          }
+        />
+        <OfferRow label="Compensation" value={money} />
+        <OfferRow label="Start date" value={fmt(offer.startDate)} />
+        {offer.probationEndDate && (
+          <OfferRow label="Probation until" value={fmt(offer.probationEndDate)} />
+        )}
+      </dl>
+
+      {offer.notes && (
+        <div className="text-[12px]">
+          <p className="mb-1 font-medium">Notes</p>
+          <p className="whitespace-pre-wrap text-muted-foreground">
+            {offer.notes}
+          </p>
+        </div>
+      )}
+
+      {offer.signature && (
+        <div>
+          <p className="mb-1 text-[12px] font-medium">Candidate signature</p>
+          <img
+            src={offer.signature}
+            alt="Candidate signature"
+            className="h-20 rounded-lg border border-border bg-white p-2"
+          />
+          {offer.signingDate && (
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Signed {fmt(offer.signingDate)}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function OfferRow({
+  label,
+  value,
+}: {
+  label: string
+  value?: string | null
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-3 py-2">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="text-right font-medium">{value || "—"}</dd>
     </div>
   )
 }

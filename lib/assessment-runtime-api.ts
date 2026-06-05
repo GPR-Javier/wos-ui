@@ -37,6 +37,8 @@ export interface AssessmentOverview {
   jobTitle: string | null
   templateName: string
   completed: boolean
+  /** Coarse application status — drives the hiring tail (Shortlisted/Offer/Hired) in the stepper. */
+  applicationStatus: string | null
   parts: PartOverview[]
 }
 

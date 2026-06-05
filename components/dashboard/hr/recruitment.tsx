@@ -27,7 +27,12 @@ import {
   useDeleteJob,
 } from "@/hooks/use-hr"
 import { RichTextEditor } from "@/components/custom/rich-text-editor"
-import { useSalaryGrades, useDepartments } from "@/hooks/use-employee-profile"
+import {
+  useSalaryGrades,
+  useDepartments,
+  useJobPositions,
+} from "@/hooks/use-employee-profile"
+import { useUserRoles } from "@/hooks/use-admin-roles"
 import type {
   JobPosting,
   CreateJobPayload,
@@ -104,6 +109,10 @@ type JobForm = {
   salaryGradeToId: string
   status: JobPosting["status"]
   reapplyCooldownDays: string
+  /** UserRole id (as string for the <select>) the applicant becomes when hired. */
+  hireUserRoleId: string
+  /** JobPosition id (as string) this posting recruits for; seeds the offer. */
+  jobPositionId: string
   tags: string[]
   /** Which pipeline stages are enabled for this posting. */
   enabledStages: AssessmentPartType[]
@@ -408,6 +417,8 @@ const EMPTY_FORM: JobForm = {
   salaryGradeToId: "",
   status: "open",
   reapplyCooldownDays: "",
+  hireUserRoleId: "",
+  jobPositionId: "",
   tags: [],
   enabledStages: [...PIPELINE_STAGES],
   interviewConfigs: emptyInterviewConfigs(),
@@ -434,6 +445,8 @@ function postingToForm(j: JobPosting): JobForm {
     status: j.status,
     reapplyCooldownDays:
       j.reapplyCooldownDays != null ? String(j.reapplyCooldownDays) : "",
+    hireUserRoleId: j.hireUserRoleId != null ? String(j.hireUserRoleId) : "",
+    jobPositionId: j.jobPositionId != null ? String(j.jobPositionId) : "",
     tags: j.tags,
     enabledStages:
       j.enabledStages && j.enabledStages.length > 0
@@ -473,6 +486,8 @@ function formToPayload(f: JobForm): CreateJobPayload {
     reapplyCooldownDays: f.reapplyCooldownDays.trim()
       ? Math.max(0, parseInt(f.reapplyCooldownDays, 10) || 0)
       : null,
+    hireUserRoleId: f.hireUserRoleId ? Number(f.hireUserRoleId) : null,
+    jobPositionId: f.jobPositionId ? Number(f.jobPositionId) : null,
     tags: f.tags,
     enabledStages: f.enabledStages,
   }
@@ -635,6 +650,13 @@ function JobModal({
 }) {
   const { data: grades = [] } = useSalaryGrades()
   const { data: departments = [] } = useDepartments()
+  const { data: userRoles = [] } = useUserRoles()
+  const { data: jobPositions = [] } = useJobPositions()
+  // Only non-applicant roles can be a hire target.
+  const hireRoleOptions = userRoles.filter(
+    (r) => r.roleType === "EMPLOYEE" || r.roleType === "ADMIN"
+  )
+  const activePositions = jobPositions.filter((p) => p.active)
   const activeDepts = departments.filter((d) => d.active)
   const activeGrades = grades.filter((g) => g.active)
   const gradeFrom = grades.find((g) => String(g.id) === form.salaryGradeFromId)
@@ -1096,6 +1118,58 @@ function JobModal({
             />
             <p className="text-[11px] text-muted-foreground">
               Type and press Enter, or pick from existing tags
+            </p>
+          </div>
+
+          {/* Role on hire — applicant is converted into this role when hired */}
+          <div className="space-y-1.5 border-t border-border pt-4">
+            <Label className="text-[12px] text-muted-foreground">
+              Role on hire *
+            </Label>
+            <select
+              value={form.hireUserRoleId}
+              onChange={(e) =>
+                setForm({ ...form, hireUserRoleId: e.target.value })
+              }
+              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+            >
+              <option value="">Select role…</option>
+              {hireRoleOptions.map((r) => (
+                <option key={r.id} value={String(r.id)}>
+                  {r.name}
+                  {r.roleType === "ADMIN" ? " (Admin)" : ""}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-muted-foreground">
+              When an applicant accepts an offer, their account is converted to
+              this role. Required before you can extend an offer.
+            </p>
+          </div>
+
+          {/* Job position — seeds the offer's position, department & salary grades */}
+          <div className="space-y-1.5">
+            <Label className="text-[12px] text-muted-foreground">
+              Job position
+            </Label>
+            <select
+              value={form.jobPositionId}
+              onChange={(e) =>
+                setForm({ ...form, jobPositionId: e.target.value })
+              }
+              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+            >
+              <option value="">Select position…</option>
+              {activePositions.map((p) => (
+                <option key={p.id} value={String(p.id)}>
+                  {p.title}
+                  {p.department ? ` · ${p.department}` : ""}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-muted-foreground">
+              The position the new hire is assigned to. Seeds the offer&apos;s
+              position, department and salary grade.
             </p>
           </div>
 

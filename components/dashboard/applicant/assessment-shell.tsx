@@ -30,6 +30,7 @@ import { PART_TYPE_LABEL, type AssessmentPartType } from "@/lib/assessment-api"
 import { AIInterviewRunner } from "./ai-interview-runner"
 import { InterviewPreflight } from "./interview-preflight"
 import { InterviewIntro } from "./interview-intro"
+import { OfferReviewModal } from "./offer-review-modal"
 import { resetSessionPersona } from "@/lib/interview-voice"
 
 type Phase = "landing" | "preflight" | "intro" | "running" | "result"
@@ -51,6 +52,7 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
   const [pendingPart, setPendingPart] = useState<AssessmentPartType | null>(
     null
   )
+  const [showOffer, setShowOffer] = useState(false)
 
   // AI interviews go through a readiness gate first; other parts start immediately.
   function beginPart(partType: AssessmentPartType) {
@@ -166,7 +168,7 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
     return (
       <div>
         <div className="mx-auto max-w-2xl px-6 pt-6">
-          <StepBar parts={overview.parts} activeType={pendingPart} />
+          <StepBar parts={overview.parts} activeType={pendingPart} applicationStatus={overview.applicationStatus} />
         </div>
         <InterviewPreflight
           busy={startMut.isPending}
@@ -212,7 +214,7 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
       run.partType === "AI_TECHNICAL_INTERVIEW"
     const inner = (
       <div className="mx-auto max-w-2xl px-6 py-8">
-        <StepBar parts={overview.parts} activeType={run.partType} />
+        <StepBar parts={overview.parts} activeType={run.partType} applicationStatus={overview.applicationStatus} />
         <div className={cn("mt-4 mb-5", isAiInterview && "text-center")}>
           <h1 className="text-lg font-semibold">
             {PART_TYPE_LABEL[run.partType]}
@@ -372,7 +374,7 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
     const isPendingReview = result.pendingReview
     return (
       <div className="mx-auto max-w-md px-6 py-10 text-center">
-        <StepBar parts={overview.parts} activeType={run.partType} />
+        <StepBar parts={overview.parts} activeType={run.partType} applicationStatus={overview.applicationStatus} />
         <div
           className={cn(
             "mx-auto mt-6 mb-4 flex size-16 items-center justify-center rounded-full",
@@ -491,10 +493,32 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
       </div>
 
       <div className="mt-5">
-        <StepBar parts={overview.parts} activeType={landingActiveType} />
+        <StepBar parts={overview.parts} activeType={landingActiveType} applicationStatus={overview.applicationStatus} />
       </div>
 
-      {overview.completed && (
+      {/* Offer call-to-action — the candidate reviews and signs their contract here. */}
+      {(overview.applicationStatus === "OFFER" ||
+        overview.applicationStatus === "HIRED") && (
+        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-green-300 bg-green-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-green-900/40 dark:bg-green-900/20">
+          <div className="flex items-center gap-2 text-[13px] font-medium text-green-700 dark:text-green-400">
+            <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} strokeWidth={2} />
+            {overview.applicationStatus === "OFFER"
+              ? "You have an employment offer! Review the contract and sign to accept."
+              : "You're hired — view your signed contract anytime."}
+          </div>
+          <Button
+            size="sm"
+            className="shrink-0 bg-green-600 hover:bg-green-700"
+            onClick={() => setShowOffer(true)}
+          >
+            {overview.applicationStatus === "OFFER"
+              ? "Review & sign offer"
+              : "View offer"}
+          </Button>
+        </div>
+      )}
+
+      {overview.completed && overview.applicationStatus !== "OFFER" && overview.applicationStatus !== "HIRED" && (
         <div className="mt-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-[13px] font-medium text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400">
           <HugeiconsIcon
             icon={CheckmarkCircle01Icon}
@@ -536,6 +560,13 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
           />
         ))}
       </div>
+
+      {showOffer && (
+        <OfferReviewModal
+          applicationId={applicationId}
+          onClose={() => setShowOffer(false)}
+        />
+      )}
     </div>
   )
 }
@@ -544,14 +575,38 @@ function traitLabel(t: string) {
   return t.charAt(0) + t.slice(1).toLowerCase()
 }
 
-/** Immersive progress stepper across the assessment parts. */
+/** Immersive progress stepper across the assessment parts and the hiring tail. */
 function StepBar({
   parts,
   activeType,
+  applicationStatus,
 }: {
   parts: PartOverview[]
   activeType: AssessmentPartType | null
+  applicationStatus?: string | null
 }) {
+  // Hiring tail (Shortlisted → Offer → Hired) from the coarse application status.
+  const rank =
+    applicationStatus === "HIRED"
+      ? 3
+      : applicationStatus === "OFFER"
+        ? 2
+        : applicationStatus === "SHORTLISTED"
+          ? 1
+          : 0
+  // Offer is "current" while pending the candidate; both turn green only once HIRED. Shortlist is an
+  // optional side-action (not a sequential gate), so it isn't shown as a step here.
+  const tail = [
+    {
+      key: "OFFER",
+      label: "Offer",
+      done: rank >= 3,
+      current: applicationStatus === "OFFER",
+      rejected: applicationStatus === "OFFER_DECLINED",
+    },
+    { key: "HIRED", label: "Hired", done: rank >= 3, current: false, rejected: false },
+  ]
+  const lastPartCleared = parts.length > 0 && partCleared(parts[parts.length - 1])
   return (
     <div className="overflow-x-auto py-2">
       <div className="flex w-full items-start">
@@ -626,6 +681,70 @@ function StepBar({
             </Fragment>
           )
         })}
+
+        {/* Hiring tail — Shortlisted → Offer → Hired */}
+        {tail.map((t, ti) => {
+          const connectorActive = ti === 0 ? lastPartCleared : tail[ti - 1].done
+          return (
+            <Fragment key={t.key}>
+              <div
+                className={cn(
+                  "mt-4 h-0.5 min-w-3 flex-1",
+                  connectorActive ? "bg-green-500" : "bg-border"
+                )}
+              />
+              <div className="flex w-16 shrink-0 flex-col items-center gap-1.5">
+                <div
+                  className={cn(
+                    "flex size-8 items-center justify-center rounded-full border-2 text-[12px] font-semibold transition-colors",
+                    t.done
+                      ? "border-green-500 bg-green-500 text-white"
+                      : t.rejected
+                        ? "border-red-500 bg-red-500 text-white"
+                        : t.current
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-card text-muted-foreground"
+                  )}
+                >
+                  {t.done ? (
+                    <HugeiconsIcon
+                      icon={CheckmarkCircle01Icon}
+                      size={16}
+                      strokeWidth={2.5}
+                    />
+                  ) : t.rejected ? (
+                    <HugeiconsIcon
+                      icon={Cancel01Icon}
+                      size={16}
+                      strokeWidth={2.5}
+                    />
+                  ) : (
+                    parts.length + ti + 1
+                  )}
+                </div>
+                <span
+                  className={cn(
+                    "text-center text-[11px] leading-tight font-medium",
+                    t.done || t.current || t.rejected
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {t.label}
+                </span>
+                {t.current ? (
+                  <span className="text-[9px] font-medium text-primary">
+                    Current
+                  </span>
+                ) : t.rejected ? (
+                  <span className="text-[9px] font-medium text-destructive">
+                    Declined
+                  </span>
+                ) : null}
+              </div>
+            </Fragment>
+          )
+        })}
       </div>
     </div>
   )
@@ -673,6 +792,8 @@ function PartCard({
   const stageSkipped = part.stageStatus === "SKIPPED"
   const stagePassed = part.stageStatus === "PASSED"
   const stageRejected = part.stageStatus === "REJECTED"
+  // Human stage the reviewer has marked as held and now under review (HR set it to "Under review").
+  const stageUnderReview = part.stageStatus === "UNDER_REVIEW"
 
   return (
     <div
@@ -707,11 +828,17 @@ function PartCard({
               Skipped
             </StatusBadge>
           )}
+          {isHuman && stageUnderReview && (
+            <StatusBadge variant="amber">Under review</StatusBadge>
+          )}
           {isHuman &&
             part.meetingLink &&
             !stagePassed &&
             !stageRejected &&
-            !stageSkipped && <StatusBadge variant="blue">Scheduled</StatusBadge>}
+            !stageSkipped &&
+            !stageUnderReview && (
+              <StatusBadge variant="blue">Scheduled</StatusBadge>
+            )}
           {!part.runnable &&
             !passed &&
             !awaiting &&
@@ -720,6 +847,7 @@ function PartCard({
               (stagePassed ||
                 stageRejected ||
                 stageSkipped ||
+                stageUnderReview ||
                 part.meetingLink)
             ) && (
               <StatusBadge variant="gray" dot={false}>
@@ -819,6 +947,10 @@ function PartCard({
             </span>
           ) : stageSkipped ? (
             <span className="text-[12px] text-muted-foreground">Skipped</span>
+          ) : stageUnderReview ? (
+            <span className="text-[12px] font-medium text-amber-600 dark:text-amber-400">
+              Under review
+            </span>
           ) : part.meetingLink ? (
             <span className="text-[12px] font-medium text-blue-600 dark:text-blue-400">
               Scheduled

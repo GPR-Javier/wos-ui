@@ -1,15 +1,18 @@
 "use client"
 
-import { Fragment } from "react"
+import { Fragment, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   CheckmarkCircle01Icon,
   Cancel01Icon,
   Video01Icon,
+  ArrowRight01Icon,
 } from "@hugeicons/core-free-icons"
 import { type JobApplication } from "@/lib/application-api"
+import { OfferReviewModal } from "@/components/dashboard/applicant/offer-review-modal"
 import {
   pipelineApi,
   type PipelineStage,
@@ -27,6 +30,7 @@ export function ApplicationJourney({
 }: {
   application: JobApplication
 }) {
+  const [showOffer, setShowOffer] = useState(false)
   const { data: pipeline } = useQuery({
     queryKey: ["pipeline", "mine", application.id],
     queryFn: () => pipelineApi.mine(application.id),
@@ -34,6 +38,9 @@ export function ApplicationJourney({
 
   const stages = pipeline?.stages ?? []
   if (stages.length === 0) return null
+
+  const hasOffer =
+    application.status === "OFFER" || application.status === "HIRED"
 
   const currentIndex = stages.findIndex(
     (s) => !isTerminal(s.status) && s.status !== "PASSED"
@@ -69,6 +76,35 @@ export function ApplicationJourney({
           ))}
         </div>
       </div>
+
+      {/* Offer call-to-action — review & sign the contract, or view it once hired. */}
+      {hasOffer && (
+        <div className="mt-3 flex flex-col gap-3 rounded-xl border border-green-300 bg-green-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-green-900/40 dark:bg-green-900/20">
+          <div className="flex items-center gap-2 text-[13px] font-medium text-green-700 dark:text-green-400">
+            <HugeiconsIcon
+              icon={CheckmarkCircle01Icon}
+              size={16}
+              strokeWidth={2}
+            />
+            {application.status === "OFFER"
+              ? "You have an employment offer! Review the contract and sign to accept."
+              : "You're hired — view your signed contract anytime."}
+          </div>
+          <Button
+            size="sm"
+            className="shrink-0 bg-green-600 hover:bg-green-700"
+            onClick={() => setShowOffer(true)}
+          >
+            {application.status === "OFFER" ? "Review & sign offer" : "View offer"}
+            <HugeiconsIcon
+              icon={ArrowRight01Icon}
+              size={13}
+              strokeWidth={2}
+              className="ml-1.5"
+            />
+          </Button>
+        </div>
+      )}
 
       {/* Assessment sub-parts */}
       {assessment?.subSteps && assessment.subSteps.length > 0 && (
@@ -133,6 +169,13 @@ export function ApplicationJourney({
             )}
           </div>
         ))}
+
+      {showOffer && (
+        <OfferReviewModal
+          applicationId={application.id}
+          onClose={() => setShowOffer(false)}
+        />
+      )}
     </div>
   )
 }
