@@ -2,6 +2,8 @@ import { api } from "./api"
 import type { ApplicationStatus, OfferView } from "./application-api"
 import type { AssessmentPartType } from "./assessment-api"
 import type { Pipeline } from "./pipeline-api"
+import type { SchedulePolicyPayload } from "./schedule-policy-api"
+import type { LeaveCredits } from "./contract-api"
 
 export type { Pipeline } from "./pipeline-api"
 
@@ -141,9 +143,13 @@ export interface OfferPayload {
   employmentType: string
   workType?: string | null
   salaryPeriod?: string | null
+  leaveCredits?: LeaveCredits | null
   startDate: string // "YYYY-MM-DD"
   probationEndDate?: string | null
   notes?: string | null
+  /** TRUE = save schedulePolicy as a USER override for the hire; FALSE = clear; omit = none. */
+  overrideSchedule?: boolean
+  schedulePolicy?: SchedulePolicyPayload | null
 }
 
 export interface ReviewPayload {

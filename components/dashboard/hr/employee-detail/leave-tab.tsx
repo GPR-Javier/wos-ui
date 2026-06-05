@@ -1,11 +1,8 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useMemo } from "react"
 import type { Employee } from "@/lib/types"
 import { StatusBadge } from "@/components/custom/status-badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Table,
   TableHeader,
@@ -14,8 +11,10 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table"
-import { leaveBalances, leaveRequests } from "@/lib/mock-data"
+import { leaveRequests } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
+import { useContracts } from "@/hooks/use-contract"
+import { activeLeaveTypes, accruedDays, monthlyRate } from "@/lib/contract-api"
 
 interface Props {
   employee: Employee
@@ -37,17 +36,15 @@ function fmtDate(date: Date): string {
   })
 }
 
-function fmtDateInput(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const dd = String(date.getDate()).padStart(2, "0")
-  return `${y}-${m}-${dd}`
-}
-
 function monthsBetween(a: Date, b: Date): number {
   return (
     (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth())
   )
+}
+
+/** Compact rate text, e.g. 2 or 1.3 (drops trailing .0). */
+function fmtNum(r: number): string {
+  return r % 1 === 0 ? String(r) : r.toFixed(1)
 }
 
 interface AccrualEntry {
@@ -89,130 +86,13 @@ function buildAccrualTimeline(
   return entries
 }
 
-// ── Leave accrual config card ──────────────────────────────────────────────────
+// ── Accrual timeline ───────────────────────────────────────────────────────────
 
 interface AccrualConfig {
   startDate: string // YYYY-MM-DD
   intervalMonths: number
   creditPerInterval: number
 }
-
-function AccrualSettings({
-  config,
-  onChange,
-}: {
-  config: AccrualConfig
-  onChange: (c: AccrualConfig) => void
-}) {
-  const [draft, setDraft] = useState<AccrualConfig>(config)
-  const [saved, setSaved] = useState(false)
-
-  function save() {
-    onChange(draft)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-  }
-
-  const dirty =
-    draft.startDate !== config.startDate ||
-    draft.intervalMonths !== config.intervalMonths ||
-    draft.creditPerInterval !== config.creditPerInterval
-
-  return (
-    <div className="rounded-xl border bg-card p-5">
-      <h3 className="mb-1 text-[13px] font-semibold">Accrual Settings</h3>
-      <p className="mb-4 text-[12px] text-muted-foreground">
-        Configure when leave credits start accumulating and at what rate.
-      </p>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {/* Start date */}
-        <div className="space-y-1.5">
-          <Label className="text-[12px]">Accrual start date</Label>
-          <Input
-            type="date"
-            className="h-9 text-[13px]"
-            value={draft.startDate}
-            onChange={(e) =>
-              setDraft((d) => ({ ...d, startDate: e.target.value }))
-            }
-          />
-          <p className="text-[11px] text-muted-foreground">
-            When the employee begins earning credits
-          </p>
-        </div>
-
-        {/* Interval */}
-        <div className="space-y-1.5">
-          <Label className="text-[12px]">Accrual interval (months)</Label>
-          <div className="flex items-center gap-2">
-            <Input
-              type="number"
-              min={1}
-              max={12}
-              className="h-9 w-20 text-[13px]"
-              value={draft.intervalMonths}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  intervalMonths: Math.max(1, Number(e.target.value)),
-                }))
-              }
-            />
-            <span className="text-[12px] text-muted-foreground">months</span>
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            1 credit every <strong>{draft.intervalMonths}</strong> month
-            {draft.intervalMonths > 1 ? "s" : ""}
-          </p>
-        </div>
-
-        {/* Credits per interval */}
-        <div className="space-y-1.5">
-          <Label className="text-[12px]">Credits per interval</Label>
-          <div className="flex items-center gap-2">
-            <Input
-              type="number"
-              min={0.5}
-              max={5}
-              step={0.5}
-              className="h-9 w-20 text-[13px]"
-              value={draft.creditPerInterval}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  creditPerInterval: Math.max(0.5, Number(e.target.value)),
-                }))
-              }
-            />
-            <span className="text-[12px] text-muted-foreground">
-              leave day{draft.creditPerInterval !== 1 ? "s" : ""}
-            </span>
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            Earned per {draft.intervalMonths}-month period
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 flex items-center gap-2">
-        <Button size="sm" disabled={!dirty} onClick={save}>
-          {saved ? "Saved!" : "Save settings"}
-        </Button>
-        {dirty && (
-          <button
-            onClick={() => setDraft(config)}
-            className="text-[12px] text-muted-foreground hover:text-foreground"
-          >
-            Reset
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ── Accrual timeline ───────────────────────────────────────────────────────────
 
 function AccrualTimeline({ config }: { config: AccrualConfig }) {
   const startDate = useMemo(
@@ -246,9 +126,8 @@ function AccrualTimeline({ config }: { config: AccrualConfig }) {
         <div>
           <h3 className="text-[13px] font-semibold">Accrual Timeline</h3>
           <p className="mt-0.5 text-[12px] text-muted-foreground">
-            Started {fmtDate(startDate)} · {config.creditPerInterval} credit
-            every {config.intervalMonths} month
-            {config.intervalMonths > 1 ? "s" : ""}
+            Started {fmtDate(startDate)} · {fmtNum(config.creditPerInterval)}{" "}
+            credit/mo (total pool)
           </p>
         </div>
         <div className="flex shrink-0 gap-3 text-right">
@@ -256,7 +135,9 @@ function AccrualTimeline({ config }: { config: AccrualConfig }) {
             <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
               Total Earned
             </p>
-            <p className="text-lg font-semibold tabular-nums">{totalEarned}</p>
+            <p className="text-lg font-semibold tabular-nums">
+              {fmtNum(totalEarned)}
+            </p>
           </div>
           {daysUntilNext !== null && (
             <div>
@@ -349,10 +230,10 @@ function AccrualTimeline({ config }: { config: AccrualConfig }) {
                       entry.earned ? "text-primary" : "text-muted-foreground"
                     )}
                   >
-                    +{config.creditPerInterval}
+                    +{fmtNum(config.creditPerInterval)}
                   </span>
                   <span className="text-[11px] text-muted-foreground tabular-nums">
-                    = {entry.cumulative} total
+                    = {fmtNum(entry.cumulative)} total
                   </span>
                   <StatusBadge variant={entry.earned ? "green" : "gray"}>
                     {entry.earned ? "Earned" : "Upcoming"}
@@ -369,47 +250,78 @@ function AccrualTimeline({ config }: { config: AccrualConfig }) {
 
 // ── Main ───────────────────────────────────────────────────────────────────────
 
-const DEFAULT_START = fmtDateInput(new Date(new Date().getFullYear(), 0, 1)) // Jan 1 current year
-
 export function LeaveTab({ employee }: Props) {
-  const [config, setConfig] = useState<AccrualConfig>({
-    startDate: DEFAULT_START,
-    intervalMonths: 2,
-    creditPerInterval: 1,
-  })
+  const { data: contracts = [] } = useContracts(Number(employee.id))
+
+  // Source of truth: the employee's ACTIVE contract (fall back to latest on file).
+  const active = useMemo(
+    () => contracts.find((c) => c.contractStatus === "ACTIVE") ?? contracts[0],
+    [contracts]
+  )
+  const lc = active?.leaveCredits
+  const startDate = active?.startDate ?? null
+  const accrue = !!lc?.accrueMonthly
+  const pools = activeLeaveTypes(lc)
+  const hasConfig = !!lc && pools.some((p) => lc[p.key] != null)
+  const totalAnnual = pools.reduce((sum, p) => sum + (lc?.[p.key] ?? 0), 0)
+
+  const timelineConfig: AccrualConfig | null =
+    accrue && startDate && totalAnnual > 0
+      ? { startDate, intervalMonths: 1, creditPerInterval: totalAnnual / 12 }
+      : null
 
   const myRequests = leaveRequests.filter((r) => r.employee === employee.name)
 
   return (
     <div className="space-y-4">
-      {/* Balance cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {leaveBalances.map((bal) => (
-          <div key={bal.type} className="rounded-xl border bg-card p-4">
-            <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-              {bal.type.replace(" Leave", "")}
-            </p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums">
-              {bal.remaining}
-              <span className="ml-1 text-sm font-normal text-muted-foreground">
-                / {bal.total}
-              </span>
-            </p>
-            <div className="mt-2 h-1.5 w-full rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary"
-                style={{ width: `${(bal.remaining / bal.total) * 100}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Entitlement cards — derived from the active contract */}
+      {hasConfig ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {pools.map((p) => {
+            const annual = lc?.[p.key] ?? 0
+            const accrued = accruedDays(annual, startDate, accrue)
+            const pct = annual > 0 ? Math.min(100, (accrued / annual) * 100) : 0
+            return (
+              <div key={p.key} className="rounded-xl border bg-card p-4">
+                <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                  {p.label.replace(" Leave", "")}
+                </p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums">
+                  {accrue ? fmtNum(accrued) : annual}
+                  <span className="ml-1 text-sm font-normal text-muted-foreground">
+                    / {annual}
+                  </span>
+                </p>
+                <div className="mt-2 h-1.5 w-full rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <p className="mt-1.5 text-[10px] text-muted-foreground">
+                  {accrue
+                    ? `Accrued · ~${fmtNum(monthlyRate(annual))}/mo`
+                    : "Granted upfront"}
+                </p>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed bg-card py-10 text-center text-[13px] text-muted-foreground">
+          No leave entitlement configured on an active contract.
+        </div>
+      )}
 
-      {/* Accrual settings */}
-      <AccrualSettings config={config} onChange={setConfig} />
+      {hasConfig && (
+        <p className="text-[11px] text-muted-foreground">
+          Accrued-to-date is computed from the contract. Used / remaining
+          tracking is not yet wired.
+        </p>
+      )}
 
-      {/* Accrual timeline */}
-      <AccrualTimeline config={config} />
+      {/* Accrual timeline — only when accruing monthly */}
+      {timelineConfig && <AccrualTimeline config={timelineConfig} />}
 
       {/* Leave history */}
       <div className="rounded-xl border bg-card">

@@ -11,7 +11,12 @@ import {
 import { cn } from "@/lib/utils"
 import { useMyOffer, useAcceptOffer, useDeclineOffer } from "@/hooks/use-applications"
 import { useLogout } from "@/hooks/use-auth"
-import { EMPLOYMENT_TYPE_LABELS, type EmploymentType } from "@/lib/contract-api"
+import {
+  EMPLOYMENT_TYPE_LABELS,
+  activeLeaveTypes,
+  leaveCreditLabel,
+  type EmploymentType,
+} from "@/lib/contract-api"
 import { currencySymbol } from "@/lib/employee-profile-api"
 import type { OfferView } from "@/lib/application-api"
 import { SignaturePad } from "@/components/dashboard/applicant/signature-pad"
@@ -36,6 +41,16 @@ function fmtDate(d: string | null) {
   return d ? new Date(d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "—"
 }
 
+/** [label, value] rows for each active leave pool that has a value set. */
+function leaveRows(o: OfferView): [string, string][] {
+  const lc = o.leaveCredits
+  if (!lc) return []
+  return activeLeaveTypes(lc).flatMap((lt) => {
+    const label = leaveCreditLabel(lc, lt.key)
+    return label ? [[lt.label, label] as [string, string]] : []
+  })
+}
+
 /** Builds a standalone printable HTML doc for the offer and opens the print dialog. */
 function printOffer(o: OfferView, signature: string | null) {
   const rows: [string, string][] = [
@@ -45,6 +60,7 @@ function printOffer(o: OfferView, signature: string | null) {
     ["Employment type", o.employmentType ? (EMPLOYMENT_TYPE_LABELS[o.employmentType as EmploymentType] ?? o.employmentType) : "—"],
     ["Work arrangement", o.workType ? o.workType[0].toUpperCase() + o.workType.slice(1) : "—"],
     ["Compensation", fmtMoney(o)],
+    ...leaveRows(o),
     ["Start date", fmtDate(o.startDate)],
     ["Probation until", fmtDate(o.probationEndDate)],
   ]
@@ -195,6 +211,9 @@ export function OfferReviewModal({
                         }
                       />
                       <Row label="Compensation" value={fmtMoney(offer)} />
+                      {leaveRows(offer).map(([label, value]) => (
+                        <Row key={label} label={label} value={value} />
+                      ))}
                       <Row label="Start date" value={fmtDate(offer.startDate)} />
                       {offer.probationEndDate && (
                         <Row

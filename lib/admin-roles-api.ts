@@ -70,18 +70,18 @@ export const adminRolesApi = {
     api.post<UserRole>("/auth/user-roles", payload).then((r) => r.data),
 
   updateUserRole: (id: number, payload: UserRolePayload) =>
-    api.put<UserRole>(`/admin/user-roles/${id}`, payload).then((r) => r.data),
+    api.put<UserRole>(`/auth/user-roles/${id}`, payload).then((r) => r.data),
 
-  deleteUserRole: (id: number) => api.delete(`/admin/user-roles/${id}`),
+  deleteUserRole: (id: number) => api.delete(`/auth/user-roles/${id}`),
 
   // Access Roles assignment
   addAccessRole: (userRoleId: number, accessRoleId: number) =>
     api
-      .post(`/admin/user-roles/${userRoleId}/access-roles`, { accessRoleId })
+      .post(`/auth/user-roles/${userRoleId}/access-roles`, { accessRoleId })
       .then((r) => r.data),
 
   removeAccessRole: (userRoleId: number, accessRoleId: number) =>
-    api.delete(`/admin/user-roles/${userRoleId}/access-roles/${accessRoleId}`),
+    api.delete(`/auth/user-roles/${userRoleId}/access-roles/${accessRoleId}`),
 
   // Temporary access
   setTemporaryAccess: (
@@ -91,7 +91,7 @@ export const adminRolesApi = {
   ) =>
     api
       .put(
-        `/admin/user-roles/${userRoleId}/access-roles/${accessRoleId}/temporary-access`,
+        `/auth/user-roles/${userRoleId}/access-roles/${accessRoleId}/temporary-access`,
         payload
       )
       .then((r) => r.data),
@@ -105,7 +105,7 @@ export const adminRolesApi = {
   ) =>
     api
       .put(
-        `/admin/user-roles/${userRoleId}/access-roles/${accessRoleId}/functionalities/${functionalityId}`,
+        `/auth/user-roles/${userRoleId}/access-roles/${accessRoleId}/functionalities/${functionalityId}`,
         { enabled }
       )
       .then((r) => r.data),

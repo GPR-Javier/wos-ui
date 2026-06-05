@@ -13,7 +13,14 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  SchedulePolicyForm,
+  type SchedulePolicyFormValue,
+} from "@/components/custom/schedule-policy-form"
+import { LeaveCreditsForm } from "@/components/custom/leave-credits-form"
+import type { SchedulePolicyPayload } from "@/lib/schedule-policy-api"
 import {
   Select,
   SelectContent,
@@ -33,6 +40,8 @@ import {
   EMPLOYMENT_TYPE_LABELS,
   CONTRACT_STATUS_LABELS,
   CONTRACT_STATUS_COLORS,
+  activeLeaveTypes,
+  leaveCreditLabel,
   type EmploymentType,
   type ContractStatus,
   type CreateContractPayload,
@@ -71,6 +80,19 @@ const EMPTY_FORM: CreateContractPayload = {
   content: null,
   jobPositionId: null,
   salaryGradeId: null,
+  leaveCredits: null,
+}
+
+const DEFAULT_SCHEDULE: SchedulePolicyPayload = {
+  earliestClockIn: "06:00",
+  latestClockIn: "09:00",
+  lateGraceMins: 10,
+  earliestClockOut: "15:00",
+  latestClockOut: "19:00",
+  requiredHours: 8,
+  undertimeGraceMins: 10,
+  workdays: ["MON", "TUE", "WED", "THU", "FRI"],
+  timezone: "Asia/Manila",
 }
 
 export function ContractTab({ employeeId }: Props) {
@@ -84,14 +106,29 @@ export function ContractTab({ employeeId }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [form, setForm] = useState<CreateContractPayload>(EMPTY_FORM)
+  const [overrideSchedule, setOverrideSchedule] = useState(false)
+  const [schedule, setSchedule] = useState<SchedulePolicyFormValue>({
+    payload: DEFAULT_SCHEDULE,
+    note: "",
+  })
 
   const set = (k: keyof CreateContractPayload, v: unknown) =>
     setForm((f) => ({ ...f, [k]: v }))
 
+  const resetForm = () => {
+    setForm(EMPTY_FORM)
+    setOverrideSchedule(false)
+    setSchedule({ payload: DEFAULT_SCHEDULE, note: "" })
+  }
+
   const handleCreate = async () => {
     if (!form.startDate || !form.employmentType) return
-    await createContract.mutateAsync(form)
-    setForm(EMPTY_FORM)
+    await createContract.mutateAsync({
+      ...form,
+      overrideSchedule,
+      schedulePolicy: overrideSchedule ? schedule.payload : null,
+    })
+    resetForm()
     setShowForm(false)
   }
 
@@ -152,7 +189,7 @@ export function ContractTab({ employeeId }: Props) {
               size="icon-sm"
               onClick={() => {
                 setShowForm(false)
-                setForm(EMPTY_FORM)
+                resetForm()
               }}
             >
               <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
@@ -305,6 +342,48 @@ export function ContractTab({ employeeId }: Props) {
                 </SelectContent>
               </Select>
             </div>
+
+          </div>
+
+          {/* Leave entitlement */}
+          <div className="mt-4 rounded-lg border bg-background p-4">
+            <Label className="text-[13px] font-semibold">Leave entitlement</Label>
+            <p className="mt-0.5 mb-3 text-[11px] text-muted-foreground">
+              Annual paid-leave credits for this contract.
+            </p>
+            <LeaveCreditsForm
+              value={form.leaveCredits ?? {}}
+              onChange={(lc) => set("leaveCredits", lc)}
+            />
+          </div>
+
+          {/* Schedule policy override */}
+          <div className="mt-4 rounded-lg border bg-background p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <Label className="text-[13px] font-semibold">
+                  Custom schedule policy
+                </Label>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {overrideSchedule
+                    ? "This employee will use the custom schedule below for attendance."
+                    : "Off — uses the role / organization default schedule policy."}
+                </p>
+              </div>
+              <Switch
+                checked={overrideSchedule}
+                onCheckedChange={setOverrideSchedule}
+              />
+            </div>
+            {overrideSchedule && (
+              <div className="mt-4 border-t pt-4">
+                <SchedulePolicyForm
+                  value={schedule}
+                  onChange={setSchedule}
+                  showNote={false}
+                />
+              </div>
+            )}
           </div>
 
           {/* Notes */}
@@ -324,7 +403,7 @@ export function ContractTab({ employeeId }: Props) {
               size="sm"
               onClick={() => {
                 setShowForm(false)
-                setForm(EMPTY_FORM)
+                resetForm()
               }}
             >
               Cancel
@@ -520,6 +599,15 @@ function ContractCard({
                 label="Salary Grade"
                 value={`${c.salaryGrade.name} (₱${c.salaryGrade.salaryAmount.toLocaleString("en-PH")})`}
               />
+            )}
+            {activeLeaveTypes(c.leaveCredits).map((lt) => {
+              const label = leaveCreditLabel(c.leaveCredits, lt.key)
+              return label ? (
+                <Field key={lt.key} label={lt.label} value={label} />
+              ) : null
+            })}
+            {c.scheduleOverridden && (
+              <Field label="Schedule" value="Custom policy" />
             )}
           </div>
 

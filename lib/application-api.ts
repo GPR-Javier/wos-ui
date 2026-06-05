@@ -1,4 +1,6 @@
 import { api } from "./api"
+import type { SchedulePolicyPayload } from "./schedule-policy-api"
+import type { LeaveCredits } from "./contract-api"
 
 export type ApplicationStatus =
   | "SUBMITTED"
@@ -78,11 +80,14 @@ export interface OfferView {
   salaryAmount: number | null
   salaryCurrency: string | null
   salaryPeriod: string | null
+  leaveCredits: LeaveCredits | null
   startDate: string | null
   probationEndDate: string | null
   notes: string | null
   signature: string | null
   signingDate: string | null
+  scheduleOverridden: boolean
+  schedulePolicy: SchedulePolicyPayload | null
 }
 
 export const applicationApi = {

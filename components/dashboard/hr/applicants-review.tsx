@@ -48,6 +48,8 @@ import {
 import { currencySymbol } from "@/lib/employee-profile-api"
 import {
   EMPLOYMENT_TYPE_LABELS,
+  activeLeaveTypes,
+  leaveCreditLabel,
   type EmploymentType,
 } from "@/lib/contract-api"
 
@@ -1388,6 +1390,12 @@ function OfferSummaryPanel({ detail }: { detail: ReviewDetail }) {
           }
         />
         <OfferRow label="Compensation" value={money} />
+        {activeLeaveTypes(offer.leaveCredits).map((lt) => {
+          const label = leaveCreditLabel(offer.leaveCredits, lt.key)
+          return label ? (
+            <OfferRow key={lt.key} label={lt.label} value={label} />
+          ) : null
+        })}
         <OfferRow label="Start date" value={fmt(offer.startDate)} />
         {offer.probationEndDate && (
           <OfferRow label="Probation until" value={fmt(offer.probationEndDate)} />

@@ -149,7 +149,7 @@ export const adminUsersApi = {
 
   assignRoles: (id: number, userRoleIds: number[]) =>
     api
-      .put<AdminUser>(`/admin/users/${id}/employee-roles`, {
+      .put<AdminUser>(`/auth/users/${id}/employee-roles`, {
         userRoleIds,
         employeeRoleIds: userRoleIds,
       })

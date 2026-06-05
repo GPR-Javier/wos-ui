@@ -4,6 +4,12 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import {
+  SchedulePolicyForm,
+  type SchedulePolicyFormValue,
+} from "@/components/custom/schedule-policy-form"
+import type { SchedulePolicyPayload } from "@/lib/schedule-policy-api"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Cancel01Icon, CheckmarkCircle01Icon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
@@ -17,7 +23,9 @@ import {
 import {
   EMPLOYMENT_TYPE_LABELS,
   type EmploymentType,
+  type LeaveCredits,
 } from "@/lib/contract-api"
+import { LeaveCreditsForm } from "@/components/custom/leave-credits-form"
 import { currencySymbol } from "@/lib/employee-profile-api"
 
 const WORK_TYPE_OPTIONS = [
@@ -52,6 +60,18 @@ function seedEmploymentType(postingType?: string | null): EmploymentType {
 
 function today() {
   return new Date().toISOString().slice(0, 10)
+}
+
+const DEFAULT_SCHEDULE: SchedulePolicyPayload = {
+  earliestClockIn: "06:00",
+  latestClockIn: "09:00",
+  lateGraceMins: 10,
+  earliestClockOut: "15:00",
+  latestClockOut: "19:00",
+  requiredHours: 8,
+  undertimeGraceMins: 10,
+  workdays: ["MON", "TUE", "WED", "THU", "FRI"],
+  timezone: "Asia/Manila",
 }
 
 export function EmploymentOfferModal({
@@ -91,6 +111,16 @@ export function EmploymentOfferModal({
   const [startDate, setStartDate] = useState(today())
   const [probationEndDate, setProbationEndDate] = useState("")
   const [notes, setNotes] = useState("")
+  const [leaveCredits, setLeaveCredits] = useState<LeaveCredits>(
+    detail.offer?.leaveCredits ?? {}
+  )
+  const [overrideSchedule, setOverrideSchedule] = useState(
+    detail.offer?.scheduleOverridden ?? false
+  )
+  const [schedule, setSchedule] = useState<SchedulePolicyFormValue>({
+    payload: detail.offer?.schedulePolicy ?? DEFAULT_SCHEDULE,
+    note: "",
+  })
   const [error, setError] = useState<string | null>(null)
 
   const selectedPosition = activePositions.find(
@@ -118,6 +148,9 @@ export function EmploymentOfferModal({
       startDate,
       probationEndDate: probationEndDate || null,
       notes: notes.trim() || null,
+      leaveCredits,
+      overrideSchedule,
+      schedulePolicy: overrideSchedule ? schedule.payload : null,
     }
     giveOffer.mutate(
       { id: detail.id, payload },
@@ -322,6 +355,44 @@ export function EmploymentOfferModal({
                 onChange={(e) => setProbationEndDate(e.target.value)}
               />
             </div>
+          </div>
+
+          {/* Leave entitlement */}
+          <div className="rounded-lg border border-border p-3">
+            <Label className="text-[13px] font-semibold">Leave entitlement</Label>
+            <p className="mt-0.5 mb-3 text-[11px] text-muted-foreground">
+              Annual paid-leave credits for this hire.
+            </p>
+            <LeaveCreditsForm value={leaveCredits} onChange={setLeaveCredits} />
+          </div>
+
+          {/* Schedule policy override */}
+          <div className="rounded-lg border border-border p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <Label className="text-[13px] font-semibold">
+                  Custom schedule policy
+                </Label>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {overrideSchedule
+                    ? "The hire will use the custom schedule below for attendance."
+                    : "Off — uses the role / organization default schedule policy."}
+                </p>
+              </div>
+              <Switch
+                checked={overrideSchedule}
+                onCheckedChange={setOverrideSchedule}
+              />
+            </div>
+            {overrideSchedule && (
+              <div className="mt-3 border-t pt-3">
+                <SchedulePolicyForm
+                  value={schedule}
+                  onChange={setSchedule}
+                  showNote={false}
+                />
+              </div>
+            )}
           </div>
 
           {/* Notes */}
