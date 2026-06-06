@@ -5,11 +5,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import {
   authApi,
+  sessionApi,
   AuthResponse,
   LoginPayload,
   RegisterPayload,
-  SelectRolePayload,
-  SwitchRolePayload,
+  SessionRolePayload,
 } from "@/lib/auth-api"
 import { useAuthStore } from "@/store/auth-store"
 import { resolveLandingPath } from "@/lib/nav-config"
@@ -46,7 +46,10 @@ export function useLogin() {
   const { setFromAuth } = useAuthStore()
 
   return useMutation({
-    mutationFn: (payload: LoginPayload) => authApi.login(payload),
+    mutationFn: async (payload: LoginPayload) => {
+      await authApi.login(payload) // authenticate identity (gpr-auth sets the cookie)
+      return sessionApi.establish() // wos-hr resolves roles + mints the role token (or prompts selection)
+    },
     onSuccess: (data) => {
       if (data.requiresRoleSelection) return // caller handles role picker
       const res = data as AuthResponse
@@ -65,7 +68,7 @@ export function useSelectRole() {
   const { setFromAuth } = useAuthStore()
 
   return useMutation({
-    mutationFn: (payload: SelectRolePayload) => authApi.selectRole(payload),
+    mutationFn: (payload: SessionRolePayload) => sessionApi.selectRole(payload),
     onSuccess: (res) => {
       setFromAuth(res) // cookies set by server automatically
       qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
@@ -81,7 +84,7 @@ export function useSwitchRole() {
   const { setFromAuth, setActiveUserRoleId } = useAuthStore()
 
   return useMutation({
-    mutationFn: (payload: SwitchRolePayload) => authApi.switchRole(payload),
+    mutationFn: (payload: SessionRolePayload) => sessionApi.switchRole(payload),
     onSuccess: (res, { userRoleId }) => {
       setFromAuth(res)
       setActiveUserRoleId(userRoleId)

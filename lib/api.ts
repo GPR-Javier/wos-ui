@@ -37,6 +37,9 @@ const AUTH_ENDPOINTS = [
   "/auth/login/select-role",
   "/auth/register",
   "/auth/refresh",
+  // Phase 3 (Option A): wos-hr session minting — a 401 here means "establish failed", not "expired".
+  "/hr/auth/session",
+  "/hr/auth/session/select-role",
 ]
 
 api.interceptors.response.use(

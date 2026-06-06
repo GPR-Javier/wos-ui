@@ -76,7 +76,7 @@ export default function LoginPage() {
   function handleRoleContinue() {
     if (!selectedRoleId) return
     selectRoleMutation.mutate(
-      { email, password, userRoleId: selectedRoleId },
+      { userRoleId: selectedRoleId },
       {
         onSuccess: () => {
           useAuthStore
