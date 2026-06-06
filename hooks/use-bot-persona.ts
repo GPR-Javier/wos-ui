@@ -11,7 +11,7 @@ import { getSessionPersona } from "@/lib/interview-voice"
  * may settle from the neutral default once `voiceschanged` fires.
  */
 export function useBotPersona() {
-  const [name, setName] = useState("Alex")
+  const [name, setName] = useState("Gennette")
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null)
 
   useEffect(() => {

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { AiBrain01Icon, Loading03Icon } from "@hugeicons/core-free-icons"
 import { useBotPersona } from "@/hooks/use-bot-persona"
+import { useAiPersona } from "@/hooks/use-ai-persona"
+import { FALLBACK_AVATAR_URL } from "@/lib/ai-persona-api"
 
 /**
  * Conversational warm-up shown right before the AI interview begins: the bot introduces itself
@@ -23,7 +25,11 @@ export function InterviewIntro({
   onYes: () => void
   onNo: () => void
 }) {
-  const { name, speak, stop } = useBotPersona()
+  const { name: voiceName, speak, stop } = useBotPersona()
+  const { data: persona } = useAiPersona()
+  // Admin-configured name/avatar (per active provider) wins; fall back to the voice-derived name.
+  const name = persona?.name ?? voiceName
+  const avatarUrl = persona?.avatarUrl ?? FALLBACK_AVATAR_URL
 
   // Greet once the persona name has settled (debounced so it isn't spoken twice as voices load).
   useEffect(() => {
@@ -42,10 +48,19 @@ export function InterviewIntro({
 
   return (
     <div className="mx-auto max-w-md px-6 py-12 text-center">
-      <div className="mx-auto mb-5 flex size-20 items-center justify-center rounded-full bg-primary/10">
-        <div className="flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <HugeiconsIcon icon={AiBrain01Icon} size={28} strokeWidth={1.8} />
-        </div>
+      <div className="mx-auto mb-5 flex size-20 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={avatarUrl}
+            alt={name}
+            className="size-full rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <HugeiconsIcon icon={AiBrain01Icon} size={28} strokeWidth={1.8} />
+          </div>
+        )}
       </div>
 
       <h1 className="text-xl font-bold tracking-tight">Hi, I&apos;m {name}</h1>

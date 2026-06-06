@@ -18,6 +18,8 @@ import type {
   NextQuestionResponse,
 } from "@/lib/assessment-runtime-api"
 import { useBotPersona } from "@/hooks/use-bot-persona"
+import { useAiPersona } from "@/hooks/use-ai-persona"
+import { FALLBACK_AVATAR_URL } from "@/lib/ai-persona-api"
 
 // ── Minimal Web Speech typings (avoids `any`) ─────────────────────────────────
 interface SRAlt {
@@ -79,7 +81,11 @@ export function AIInterviewRunner({
   /** Conversational mode: fetch the next AI-generated question given the answer just recorded. */
   onRequestNext?: (transcript: string) => Promise<NextQuestionResponse>
 }) {
-  const { name: botName, speak, stop: stopSpeaking } = useBotPersona()
+  const { name: voiceName, speak, stop: stopSpeaking } = useBotPersona()
+  const { data: persona } = useAiPersona()
+  // Admin-configured persona (per active provider) wins; fall back to the voice-derived name.
+  const botName = persona?.name ?? voiceName
+  const avatarUrl = persona?.avatarUrl ?? FALLBACK_AVATAR_URL
 
   // Conversational ("AI follow-up") interviews generate one question at a time; fixed interviews
   // have all questions up front.
@@ -348,6 +354,27 @@ export function AIInterviewRunner({
 
   return (
     <div>
+      {/* Interviewer identity */}
+      <div className="mb-4 flex items-center justify-center gap-2.5">
+        <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatarUrl} alt={botName} className="size-full object-cover" />
+          ) : (
+            <HugeiconsIcon
+              icon={AiBrain01Icon}
+              size={18}
+              strokeWidth={1.8}
+              className="text-primary"
+            />
+          )}
+        </div>
+        <div className="text-left">
+          <p className="text-[13px] font-semibold leading-tight">{botName}</p>
+          <p className="text-[11px] text-muted-foreground">Your interviewer</p>
+        </div>
+      </div>
+
       {/* Camera */}
       <div className="mb-4 flex justify-center">
         <div className="relative w-64 overflow-hidden rounded-xl border border-border bg-black">
@@ -480,13 +507,22 @@ export function AIInterviewRunner({
         {/* "Evaluating your answer" overlay while the AI generates the next question. */}
         {thinking && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-card/90 backdrop-blur-sm">
-            <div className="flex size-12 items-center justify-center rounded-full bg-primary/10">
-              <HugeiconsIcon
-                icon={AiBrain01Icon}
-                size={24}
-                strokeWidth={1.8}
-                className="animate-pulse text-primary"
-              />
+            <div className="flex size-12 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarUrl}
+                  alt={botName}
+                  className="size-full animate-pulse object-cover"
+                />
+              ) : (
+                <HugeiconsIcon
+                  icon={AiBrain01Icon}
+                  size={24}
+                  strokeWidth={1.8}
+                  className="animate-pulse text-primary"
+                />
+              )}
             </div>
             <p className="flex items-center text-[13px] font-medium">
               {botName} is {qaPhase ? "considering your question" : "evaluating your answer"}

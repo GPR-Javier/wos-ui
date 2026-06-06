@@ -12,7 +12,7 @@ export interface BotPersona {
 // The interviewer is a fixed female persona ("Genette"), so we must pick a FEMALE voice — the system
 // default can be male. Among the female voices we prefer the natural-sounding ones (Google / "Natural"
 // / "Online") over the robotic Microsoft "Zira".
-const BOT_NAME = "Genette"
+const BOT_NAME = "Gennette"
 
 function isFemaleVoice(name: string): boolean {
   const n = name.toLowerCase()

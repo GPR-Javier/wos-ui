@@ -23,3 +23,9 @@ export function useUpdateAiSettings() {
     onSuccess: (data: AiSettings) => qc.setQueryData(AI_SETTINGS_KEY, data),
   })
 }
+
+export function useTestGemini() {
+  return useMutation({
+    mutationFn: (apiKey?: string) => aiSettingsApi.testGemini(apiKey),
+  })
+}

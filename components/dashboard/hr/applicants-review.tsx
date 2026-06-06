@@ -444,8 +444,6 @@ function ReviewDetailModal({
         onSuccess: (reason) => {
           if (reason) setRejectReason(reason)
         },
-        onError: () =>
-          setSuggestError("AI is unavailable right now. Please try again."),
       }
     )
   }
@@ -471,34 +469,17 @@ function ReviewDetailModal({
     setResumeError(null)
     const text = resumeRef.current?.value.trim() ?? ""
     if (!text) return
-    saveResumeMut.mutate(
-      { id, text },
-      { onError: () => setResumeError("Couldn't save the resume text.") }
-    )
+    saveResumeMut.mutate({ id, text })
   }
 
   function handleReviewCover() {
     setCoverError(null)
-    coverMut.mutate(id, {
-      onError: (e: unknown) => {
-        const msg =
-          (e as { response?: { data?: { message?: string } } })?.response?.data
-            ?.message ?? "AI review failed — is Ollama running?"
-        setCoverError(msg)
-      },
-    })
+    coverMut.mutate(id)
   }
 
   function handleReviewResume() {
     setResumeError(null)
-    resumeMut.mutate(id, {
-      onError: (e: unknown) => {
-        const msg =
-          (e as { response?: { data?: { message?: string } } })?.response?.data
-            ?.message ?? "AI review failed — is Ollama running?"
-        setResumeError(msg)
-      },
-    })
+    resumeMut.mutate(id)
   }
 
   return (
@@ -1629,16 +1610,7 @@ function InterviewReviewBlock({
 
   function handleGrade() {
     setGradeError(null)
-    gradeMut.mutate(
-      { id, partType },
-      {
-        onError: (e: unknown) =>
-          setGradeError(
-            (e as { response?: { data?: { message?: string } } })?.response
-              ?.data?.message ?? "AI grading failed — is Ollama running?"
-          ),
-      }
-    )
+    gradeMut.mutate({ id, partType })
   }
   function handleSaveReview() {
     reviewMut.mutate({
@@ -1665,8 +1637,6 @@ function InterviewReviewBlock({
         onSuccess: (enhanced) => {
           if (enhanced) setComments((c) => ({ ...c, [i]: enhanced }))
         },
-        onError: () =>
-          setEnhanceError("AI is unavailable right now. Please try again."),
         onSettled: () => setEnhancingIndex(null),
       }
     )

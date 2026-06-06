@@ -53,7 +53,14 @@ export function AppToaster() {
                   className="mt-0.5 shrink-0 text-muted-foreground"
                 />
               )}
-              <span className="leading-snug font-medium">{toast.message}</span>
+              <div className="leading-snug">
+                {toast.title && (
+                  <p className="font-semibold">{toast.title}</p>
+                )}
+                <p className={cn(toast.title ? "mt-0.5 opacity-90" : "font-medium")}>
+                  {toast.message}
+                </p>
+              </div>
             </div>
             <button
               type="button"

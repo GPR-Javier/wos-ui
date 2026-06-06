@@ -1,4 +1,12 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios"
+import { toastApiError } from "./api-error"
+
+declare module "axios" {
+  interface AxiosRequestConfig {
+    /** Set true to suppress the global backend-error toast for this request (degrades gracefully). */
+    skipErrorToast?: boolean
+  }
+}
 
 /** No-auth instance for public endpoints — never redirects on 401. */
 export const publicApi = axios.create({
@@ -34,39 +42,42 @@ const AUTH_ENDPOINTS = [
 api.interceptors.response.use(
   (res) => res,
   async (err: AxiosError) => {
-    const original = err.config as InternalAxiosRequestConfig & {
-      _retry?: boolean
-    }
+    const original = err.config as
+      | (InternalAxiosRequestConfig & {
+          _retry?: boolean
+          skipErrorToast?: boolean
+        })
+      | undefined
+    const status = err.response?.status
+    const isAuthEndpoint =
+      !!original?.url && AUTH_ENDPOINTS.some((p) => original.url!.includes(p))
 
-    if (err.response?.status !== 401 || original._retry) {
-      return Promise.reject(err)
-    }
-
-    // Let the caller handle 401s from auth endpoints (e.g. show "invalid credentials").
-    // Never refresh or hard-redirect — that would wipe the login form.
-    if (
-      original.url &&
-      AUTH_ENDPOINTS.some((path) => original.url!.includes(path))
-    ) {
-      return Promise.reject(err)
-    }
-
-    original._retry = true
-
-    try {
-      if (!refreshing) {
-        refreshing = api
-          .post("/auth/refresh")
-          .then(() => {})
-          .finally(() => {
-            refreshing = null
-          })
+    // 401 → try a one-time refresh, then redirect to login. Auth endpoints handle their own 401s
+    // inline (e.g. "invalid credentials"), so never refresh/redirect for those.
+    if (status === 401 && original && !original._retry && !isAuthEndpoint) {
+      original._retry = true
+      try {
+        if (!refreshing) {
+          refreshing = api
+            .post("/auth/refresh")
+            .then(() => {})
+            .finally(() => {
+              refreshing = null
+            })
+        }
+        await refreshing
+        return api(original)
+      } catch {
+        if (typeof window !== "undefined") window.location.href = "/auth/login"
+        return Promise.reject(err)
       }
-      await refreshing
-      return api(original)
-    } catch {
-      if (typeof window !== "undefined") window.location.href = "/auth/login"
-      return Promise.reject(err)
     }
+
+    // Globalized backend-error toast. Skipped for: 401s (handled above / redirect), auth endpoints
+    // (inline errors), and any request that opts out via `skipErrorToast` (graceful fallbacks).
+    if (status !== 401 && !isAuthEndpoint && !original?.skipErrorToast) {
+      toastApiError(err)
+    }
+    return Promise.reject(err)
   }
 )
