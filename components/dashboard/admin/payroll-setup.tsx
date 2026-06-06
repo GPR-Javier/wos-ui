@@ -30,7 +30,6 @@ import {
   useUpdatePayrollSetup,
   useDeletePayrollSetup,
   useJobPositions,
-  useSalaryGrades,
 } from "@/hooks/use-employee-profile"
 import type {
   PayrollSetup,
@@ -40,7 +39,7 @@ import type {
   PayrollSetupLineItem,
   JobPosition,
 } from "@/lib/employee-profile-api"
-import { currencySymbol } from "@/lib/employee-profile-api"
+import { currencySymbol, CURRENCY_OPTIONS } from "@/lib/employee-profile-api"
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -148,7 +147,8 @@ type DeductionDraft = {
 
 type SetupForm = {
   jobPositionId: string
-  salaryGradeId: string
+  baseSalary: string
+  currency: string
   compensationBasis: CompensationBasis
   cutoffPeriod: string
   overtimeEligible: boolean
@@ -165,7 +165,8 @@ type FormErrors = Partial<
 
 const EMPTY_FORM: SetupForm = {
   jobPositionId: "",
-  salaryGradeId: "",
+  baseSalary: "",
+  currency: "PHP",
   compensationBasis: "MONTHLY",
   cutoffPeriod: "",
   overtimeEligible: false,
@@ -179,7 +180,8 @@ const EMPTY_FORM: SetupForm = {
 function setupToForm(s: PayrollSetup): SetupForm {
   return {
     jobPositionId: String(s.jobPositionId),
-    salaryGradeId: String(s.salaryGradeId),
+    baseSalary: String(s.baseSalary),
+    currency: s.currency ?? "PHP",
     compensationBasis: s.compensationBasis,
     cutoffPeriod: s.cutoffPeriod,
     overtimeEligible: s.overtimeEligible,
@@ -571,7 +573,6 @@ function SetupModal({
   errors,
   busy,
   positions,
-  grades,
   onClose,
   onSubmit,
   setField,
@@ -581,30 +582,12 @@ function SetupModal({
   errors: FormErrors
   busy: boolean
   positions: JobPosition[]
-  grades: {
-    id: number
-    name: string
-    currency?: string
-    salaryAmount?: number
-    active: boolean
-  }[]
   onClose: () => void
   onSubmit: () => void
   setField: <K extends keyof SetupForm>(k: K, v: SetupForm[K]) => void
 }) {
   const cutoffOptions = CUTOFF_PERIOD_OPTIONS[form.compensationBasis] ?? []
-  const selectedGrade = grades.find((g) => String(g.id) === form.salaryGradeId)
-  const selectedGradeCurrency = selectedGrade?.currency
-  const symbol = currencySymbol(selectedGradeCurrency)
-  const selectedPosition = positions.find(
-    (p) => String(p.id) === form.jobPositionId
-  )
-  const positionHasGrade = !!(
-    selectedPosition &&
-    (selectedPosition.salaryGradeId ??
-      selectedPosition.salaryGrades?.find((g) => g.isDefault)?.id ??
-      selectedPosition.salaryGrades?.[0]?.id)
-  )
+  const symbol = currencySymbol(form.currency)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -671,54 +654,44 @@ function SetupModal({
                 </Select>
               </FieldWrap>
 
-              <FieldWrap label="Salary Grade *" error={errors.salaryGradeId}>
-                {positionHasGrade ? (
-                  <div className="flex h-9 cursor-not-allowed items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 text-[13px]">
-                    <span className="flex-1 truncate text-foreground">
-                      {selectedGrade
-                        ? `${selectedGrade.name}${selectedGrade.salaryAmount != null ? ` — ${currencySymbol(selectedGrade.currency)}${selectedGrade.salaryAmount.toLocaleString("en-PH")}` : ""}`
-                        : "—"}
-                    </span>
-                    <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      from position
-                    </span>
-                  </div>
-                ) : (
+              <FieldWrap label="Base Salary *" error={errors.baseSalary}>
+                <div className="flex gap-2">
                   <Select
-                    value={form.salaryGradeId}
-                    onValueChange={(v) => setField("salaryGradeId", v)}
+                    value={form.currency}
+                    onValueChange={(v) => setField("currency", v)}
                   >
-                    <SelectTrigger
-                      className={cn(
-                        "h-9 text-[13px]",
-                        errors.salaryGradeId && "border-destructive"
-                      )}
-                    >
-                      <SelectValue placeholder="Select grade…" />
+                    <SelectTrigger className="h-9 w-24 text-[13px]">
+                      <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="max-h-60">
-                      {grades
-                        .filter(
-                          (g) => g.active || String(g.id) === form.salaryGradeId
-                        )
-                        .map((g) => (
-                          <SelectItem
-                            key={g.id}
-                            value={String(g.id)}
-                            className="text-[13px]"
-                          >
-                            {g.name}
-                            {g.salaryAmount != null && (
-                              <span className="ml-2 text-muted-foreground">
-                                — {currencySymbol(g.currency)}
-                                {g.salaryAmount.toLocaleString("en-PH")}
-                              </span>
-                            )}
-                          </SelectItem>
-                        ))}
+                    <SelectContent>
+                      {CURRENCY_OPTIONS.map((c) => (
+                        <SelectItem
+                          key={c.code}
+                          value={c.code}
+                          className="text-[13px]"
+                        >
+                          {c.symbol} {c.code}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                )}
+                  <div className="relative flex-1">
+                    <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[12px] text-muted-foreground">
+                      {symbol}
+                    </span>
+                    <Input
+                      type="number"
+                      min={0}
+                      className={cn(
+                        "h-9 pl-7 text-[13px]",
+                        errors.baseSalary && "border-destructive"
+                      )}
+                      placeholder="0"
+                      value={form.baseSalary}
+                      onChange={(e) => setField("baseSalary", e.target.value)}
+                    />
+                  </div>
+                </div>
               </FieldWrap>
             </div>
           </FormCard>
@@ -916,7 +889,6 @@ function SetupModal({
 export function PayrollSetupSection() {
   const { data: setups = [], isLoading } = usePayrollSetups()
   const { data: positions = [] } = useJobPositions()
-  const { data: grades = [] } = useSalaryGrades()
   const createMut = useCreatePayrollSetup()
   const updateMut = useUpdatePayrollSetup()
   const deleteMut = useDeletePayrollSetup()
@@ -941,9 +913,7 @@ export function PayrollSetupSection() {
     const q = search.toLowerCase()
     return setups.filter((s) => {
       const matchSearch =
-        !q ||
-        s.jobPositionTitle.toLowerCase().includes(q) ||
-        s.salaryGradeName.toLowerCase().includes(q)
+        !q || s.jobPositionTitle.toLowerCase().includes(q)
       const matchStatus =
         filterStatus === "all" ||
         (filterStatus === "active" ? s.active : !s.active)
@@ -963,14 +933,6 @@ export function PayrollSetupSection() {
     setForm((f) => {
       const next = { ...f, [k]: v }
       if (k === "compensationBasis") next.cutoffPeriod = ""
-      if (k === "jobPositionId") {
-        const pos = positions.find((p) => String(p.id) === String(v))
-        const gradeId =
-          pos?.salaryGradeId ??
-          pos?.salaryGrades?.find((g) => g.isDefault)?.id ??
-          pos?.salaryGrades?.[0]?.id
-        if (gradeId) next.salaryGradeId = String(gradeId)
-      }
       return next
     })
     setErrors((e) => ({ ...e, [k]: undefined }))
@@ -979,7 +941,8 @@ export function PayrollSetupSection() {
   function validate(): boolean {
     const errs: FormErrors = {}
     if (!form.jobPositionId) errs.jobPositionId = "Job position is required"
-    if (!form.salaryGradeId) errs.salaryGradeId = "Salary grade is required"
+    if (!form.baseSalary || isNaN(parseFloat(form.baseSalary)))
+      errs.baseSalary = "Valid base salary is required"
     if (!form.cutoffPeriod.trim())
       errs.cutoffPeriod = "Cutoff period is required"
     if (
@@ -994,7 +957,8 @@ export function PayrollSetupSection() {
   function toPayload(f: SetupForm, isEdit: boolean) {
     return {
       jobPositionId: parseInt(f.jobPositionId),
-      salaryGradeId: parseInt(f.salaryGradeId),
+      baseSalary: parseFloat(f.baseSalary) || 0,
+      currency: f.currency,
       compensationBasis: f.compensationBasis,
       cutoffPeriod: f.cutoffPeriod.trim(),
       overtimeEligible: f.overtimeEligible,
@@ -1211,10 +1175,9 @@ export function PayrollSetupSection() {
                       {s.jobPositionTitle}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-[13px]">{s.salaryGradeName}</div>
-                      <div className="font-mono text-[11px] text-muted-foreground">
-                        {s.salaryAmount != null
-                          ? `${currencySymbol(grades.find((g) => g.id === s.salaryGradeId)?.currency)}${s.salaryAmount.toLocaleString("en-PH")}`
+                      <div className="font-mono text-[13px]">
+                        {s.baseSalary != null
+                          ? `${currencySymbol(s.currency)}${s.baseSalary.toLocaleString("en-PH")}`
                           : "—"}
                       </div>
                     </td>
@@ -1342,7 +1305,6 @@ export function PayrollSetupSection() {
           errors={errors}
           busy={busy}
           positions={positions}
-          grades={grades}
           onClose={closeForm}
           onSubmit={handleSubmit}
           setField={setField}
@@ -1352,10 +1314,7 @@ export function PayrollSetupSection() {
       {/* View Modal */}
       {viewingItem &&
         (() => {
-          const gradeCurrency = grades.find(
-            (g) => g.id === viewingItem.salaryGradeId
-          )?.currency
-          const sym = currencySymbol(gradeCurrency)
+          const sym = currencySymbol(viewingItem.currency)
           return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <div
@@ -1383,10 +1342,10 @@ export function PayrollSetupSection() {
                   </button>
                 </div>
                 <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5 text-[13px]">
-                  {/* Position & Grade */}
+                  {/* Position & Salary */}
                   <div>
                     <p className="mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
-                      Position & Grade
+                      Position & Salary
                     </p>
                     <div className="divide-y divide-border/60 rounded-lg border border-border/60">
                       <div className="flex justify-between px-3 py-2">
@@ -1399,16 +1358,12 @@ export function PayrollSetupSection() {
                       </div>
                       <div className="flex justify-between px-3 py-2">
                         <span className="text-muted-foreground">
-                          Salary Grade
+                          Base Salary
                         </span>
-                        <span className="font-medium">
-                          {viewingItem.salaryGradeName}
-                          {viewingItem.salaryAmount != null && (
-                            <span className="ml-1.5 font-mono text-muted-foreground">
-                              — {sym}
-                              {viewingItem.salaryAmount.toLocaleString("en-PH")}
-                            </span>
-                          )}
+                        <span className="font-mono font-medium">
+                          {viewingItem.baseSalary != null
+                            ? `${sym}${viewingItem.baseSalary.toLocaleString("en-PH")}`
+                            : "—"}
                         </span>
                       </div>
                     </div>

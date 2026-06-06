@@ -21,19 +21,16 @@ import {
 } from "@hugeicons/core-free-icons"
 import { SchedulePoliciesSection } from "@/components/dashboard/admin/schedule-policies"
 import { AttendanceConfigSection } from "@/components/dashboard/admin/attendance-config"
-import { SalaryGradesSection } from "@/components/dashboard/admin/salary-grades"
 import { PayrollSetupSection } from "@/components/dashboard/admin/payroll-setup"
 import { DepartmentsSection } from "@/components/dashboard/admin/departments"
 import { QuestionBankSection } from "@/components/dashboard/admin/question-bank"
+import { AiProviderConfigSection } from "@/components/dashboard/admin/ai-provider-config"
 import { useAuthStore } from "@/store/auth-store"
-import { currencySymbol } from "@/lib/employee-profile-api"
 import {
   useJobPositions,
   useCreateJobPosition,
   useUpdateJobPosition,
   useDeleteJobPosition,
-  useLinkGradeToPosition,
-  useSalaryGrades,
   useDepartments,
 } from "@/hooks/use-employee-profile"
 
@@ -107,12 +104,13 @@ export function ConfigSection() {
   const canManageQuestions = useAuthStore((s) =>
     s.authorities.includes("INTERVIEW_MANAGEMENT:MANAGE_QUESTIONS")
   )
+  const isAdmin = useAuthStore((s) => s.apiRole?.toUpperCase() === "ADMIN")
 
   const defaultTab = useMemo(() => {
     if (canViewSchedulePolicy) return "schedule"
     if (canEditAttendance) return "attendance"
     if (canEditLeave) return "leave"
-    return "salary-grades"
+    return "departments"
   }, [canViewSchedulePolicy, canEditAttendance, canEditLeave])
 
   const activeTab = searchParams.get("tab") ?? defaultTab
@@ -131,13 +129,13 @@ export function ConfigSection() {
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
         )}
         {canEditLeave && <TabsTrigger value="leave">Leave</TabsTrigger>}
-        <TabsTrigger value="salary-grades">Salary Grades</TabsTrigger>
         <TabsTrigger value="departments">Departments</TabsTrigger>
         <TabsTrigger value="positions">Job Positions</TabsTrigger>
         <TabsTrigger value="payroll-setup">Payroll Setup</TabsTrigger>
         {canManageQuestions && (
           <TabsTrigger value="question-bank">Question Bank</TabsTrigger>
         )}
+        {isAdmin && <TabsTrigger value="ai-provider">AI Provider</TabsTrigger>}
       </TabsList>
 
       {canViewSchedulePolicy && (
@@ -182,10 +180,6 @@ export function ConfigSection() {
         <PositionsSection />
       </TabsContent>
 
-      <TabsContent value="salary-grades">
-        <SalaryGradesSection />
-      </TabsContent>
-
       <TabsContent value="payroll-setup">
         <PayrollSetupSection />
       </TabsContent>
@@ -193,6 +187,12 @@ export function ConfigSection() {
       {canManageQuestions && (
         <TabsContent value="question-bank">
           <QuestionBankSection />
+        </TabsContent>
+      )}
+
+      {isAdmin && (
+        <TabsContent value="ai-provider">
+          <AiProviderConfigSection />
         </TabsContent>
       )}
     </Tabs>
@@ -215,7 +215,6 @@ type PosForm = {
   title: string
   department: string
   level: string
-  salaryGradeId: string
   active: boolean
 }
 type PosErrors = Partial<Record<"title", string>>
@@ -223,7 +222,6 @@ const EMPTY_POS_FORM: PosForm = {
   title: "",
   department: "",
   level: "",
-  salaryGradeId: "",
   active: true,
 }
 
@@ -235,7 +233,6 @@ function PosModal({
   errors,
   busy,
   departments,
-  grades,
   onClose,
   onSubmit,
   setForm,
@@ -245,13 +242,6 @@ function PosModal({
   errors: PosErrors
   busy: boolean
   departments: { id: number; name: string; active: boolean }[]
-  grades: {
-    id: number
-    name: string
-    currency?: string
-    salaryAmount?: number
-    active: boolean
-  }[]
   onClose: () => void
   onSubmit: () => void
   setForm: (v: PosForm) => void
@@ -343,32 +333,6 @@ function PosModal({
             </div>
           </div>
 
-          {/* Salary Grade */}
-          <div className="space-y-1.5">
-            <label className="text-[12px] text-muted-foreground">
-              Salary Grade
-            </label>
-            <select
-              value={form.salaryGradeId}
-              onChange={(e) =>
-                setForm({ ...form, salaryGradeId: e.target.value })
-              }
-              className="h-9 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
-            >
-              <option value="">None</option>
-              {grades
-                .filter((g) => g.active || String(g.id) === form.salaryGradeId)
-                .map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                    {g.salaryAmount != null
-                      ? ` — ${currencySymbol(g.currency)}${g.salaryAmount.toLocaleString("en-PH")}`
-                      : ""}
-                  </option>
-                ))}
-            </select>
-          </div>
-
           {/* Status — edit only */}
           {editingId && (
             <div className="space-y-1.5">
@@ -421,12 +385,10 @@ function PosModal({
 
 function PositionsSection() {
   const { data: positions = [], isLoading } = useJobPositions()
-  const { data: grades = [] } = useSalaryGrades()
   const { data: departments = [] } = useDepartments()
   const createMut = useCreateJobPosition()
   const updateMut = useUpdateJobPosition()
   const deleteMut = useDeleteJobPosition()
-  const linkGradeMut = useLinkGradeToPosition()
 
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -446,10 +408,7 @@ function PositionsSection() {
   )
 
   const busy =
-    createMut.isPending ||
-    updateMut.isPending ||
-    deleteMut.isPending ||
-    linkGradeMut.isPending
+    createMut.isPending || updateMut.isPending || deleteMut.isPending
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
@@ -500,7 +459,6 @@ function PositionsSection() {
       title: f.title.trim(),
       department: f.department.trim() || null,
       level: f.level || null,
-      salaryGradeId: f.salaryGradeId ? Number(f.salaryGradeId) : null,
       ...(isEdit && { active: f.active }),
     }
   }
@@ -514,13 +472,10 @@ function PositionsSection() {
 
   function openEdit(p: (typeof positions)[0]) {
     setEditingId(p.id)
-    const defaultGrade =
-      p.salaryGrades?.find((g) => g.isDefault) ?? p.salaryGrades?.[0]
     setForm({
       title: p.title,
       department: p.department ?? "",
       level: p.level ?? "",
-      salaryGradeId: defaultGrade ? String(defaultGrade.id) : "",
       active: p.active,
     })
     setErrors({})
@@ -537,18 +492,12 @@ function PositionsSection() {
   function handleSubmit() {
     if (!validate()) return
     const payload = toPayload(form, !!editingId)
-    const gradeId = form.salaryGradeId ? Number(form.salaryGradeId) : null
-
-    function linkGradeIfSelected(positionId: number) {
-      if (gradeId) linkGradeMut.mutate({ positionId, salaryGradeId: gradeId })
-    }
 
     if (editingId) {
       updateMut.mutate(
         { id: editingId, payload },
         {
           onSuccess: () => {
-            linkGradeIfSelected(editingId)
             closeForm()
             showToast("Position updated.", "success")
           },
@@ -557,8 +506,7 @@ function PositionsSection() {
       )
     } else {
       createMut.mutate(payload, {
-        onSuccess: (created) => {
-          linkGradeIfSelected(created.id)
+        onSuccess: () => {
           closeForm()
           showToast("Position created.", "success")
         },
@@ -756,16 +704,8 @@ function PositionsSection() {
                     <div className="min-w-0 flex-1">
                       <p className="text-[13px] font-medium">{p.title}</p>
                       <p className="text-[11px] text-muted-foreground">
-                        {[
-                          p.level,
-                          p.salaryGrade?.name ??
-                            (p.salaryGradeId
-                              ? `Grade #${p.salaryGradeId}`
-                              : null),
-                        ]
-                          .filter(Boolean)
-                          .join(" · ") || (
-                          <span className="italic">No level or grade</span>
+                        {p.level || (
+                          <span className="italic">No level</span>
                         )}
                       </p>
                     </div>
@@ -844,7 +784,6 @@ function PositionsSection() {
           errors={errors}
           busy={busy}
           departments={departments}
-          grades={grades}
           onClose={closeForm}
           onSubmit={handleSubmit}
           setForm={setForm}
@@ -886,25 +825,6 @@ function PositionsSection() {
                 <span className="text-muted-foreground">Level</span>
                 <span className="font-medium">{viewingItem.level ?? "—"}</span>
               </div>
-              {viewingItem.salaryGrades &&
-                viewingItem.salaryGrades.length > 0 && (
-                  <div className="flex flex-col gap-1.5 border-b pb-2">
-                    <span className="text-muted-foreground">Salary Grades</span>
-                    {viewingItem.salaryGrades.map((g) => (
-                      <div
-                        key={g.id}
-                        className="flex items-center justify-between rounded-md bg-muted/40 px-2 py-1"
-                      >
-                        <span className="font-medium">{g.name}</span>
-                        {g.isDefault && (
-                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                            Default
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status</span>
                 <span

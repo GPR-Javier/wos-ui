@@ -30,11 +30,11 @@ const PERIOD_LABEL: Record<string, string> = {
 }
 
 function fmtMoney(o: OfferView) {
-  if (o.salaryAmount == null) return o.salaryGradeName ?? "—"
+  if (o.salaryAmount == null) return "—"
   const sym = currencySymbol(o.salaryCurrency)
   const amount = `${sym}${o.salaryAmount.toLocaleString("en-PH")}`
   const period = o.salaryPeriod ? ` ${PERIOD_LABEL[o.salaryPeriod] ?? o.salaryPeriod}` : ""
-  return `${amount}${period}${o.salaryGradeName ? ` · ${o.salaryGradeName}` : ""}`
+  return `${amount}${period}`
 }
 
 function fmtDate(d: string | null) {

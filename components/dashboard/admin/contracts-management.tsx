@@ -252,12 +252,10 @@ export function ContractsManagement() {
                           <span className="opacity-40">—</span>
                         )}
                       </p>
-                      {c.salaryGrade && (
+                      {c.salaryAmount != null && (
                         <p className="text-[11px] text-muted-foreground">
-                          {c.salaryGrade.name}
-                          {c.salaryGrade.salaryAmount
-                            ? ` · ₱${c.salaryGrade.salaryAmount.toLocaleString("en-PH")}`
-                            : ""}
+                          {c.currency ?? "PHP"}{" "}
+                          {c.salaryAmount.toLocaleString("en-PH")}
                         </p>
                       )}
                     </td>

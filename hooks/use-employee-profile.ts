@@ -7,7 +7,6 @@ import {
   type CreateKpiPayload,
   type CreateMilestonePayload,
   type CreateJobPositionPayload,
-  type CreateSalaryGradePayload,
   type CreatePayrollSetupPayload,
   type CreateDepartmentPayload,
   type AssignPositionPayload,
@@ -201,64 +200,6 @@ export function useDeleteJobPosition() {
   })
 }
 
-export function useLinkGradeToPosition() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({
-      positionId,
-      salaryGradeId,
-    }: {
-      positionId: number
-      salaryGradeId: number
-    }) =>
-      employeeProfileApi.linkGradeToPosition(positionId, salaryGradeId, true),
-    onSuccess: () => qc.invalidateQueries({ queryKey: POSITIONS_KEY }),
-  })
-}
-
-// ── Salary Grades ─────────────────────────────────────────────────────────────
-
-const SALARY_GRADES_KEY = ["salary-grades"] as const
-
-export function useSalaryGrades() {
-  return useQuery({
-    queryKey: SALARY_GRADES_KEY,
-    queryFn: () => employeeProfileApi.listSalaryGrades(),
-    staleTime: 5 * 60 * 1000,
-  })
-}
-
-export function useCreateSalaryGrade() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (payload: CreateSalaryGradePayload) =>
-      employeeProfileApi.createSalaryGrade(payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: SALARY_GRADES_KEY }),
-  })
-}
-
-export function useUpdateSalaryGrade() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: number
-      payload: Partial<CreateSalaryGradePayload>
-    }) => employeeProfileApi.updateSalaryGrade(id, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: SALARY_GRADES_KEY }),
-  })
-}
-
-export function useDeleteSalaryGrade() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (id: number) => employeeProfileApi.deleteSalaryGrade(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: SALARY_GRADES_KEY }),
-  })
-}
-
 // ── Departments ───────────────────────────────────────────────────────────────
 
 const DEPARTMENTS_KEY = ["departments"] as const
@@ -342,20 +283,6 @@ export function useDeletePayrollSetup() {
   return useMutation({
     mutationFn: (id: number) => employeeProfileApi.deletePayrollSetup(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: PAYROLL_SETUP_KEY }),
-  })
-}
-
-export function useUnlinkGradeFromPosition() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({
-      positionId,
-      gradeId,
-    }: {
-      positionId: number
-      gradeId: number
-    }) => employeeProfileApi.unlinkGradeFromPosition(positionId, gradeId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: POSITIONS_KEY }),
   })
 }
 

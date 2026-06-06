@@ -28,7 +28,6 @@ import {
 } from "@/hooks/use-hr"
 import { RichTextEditor } from "@/components/custom/rich-text-editor"
 import {
-  useSalaryGrades,
   useDepartments,
   useJobPositions,
 } from "@/hooks/use-employee-profile"
@@ -89,7 +88,6 @@ const STATUS_VARIANT: Record<string, "green" | "amber" | "blue" | "gray"> = {
 
 // ── Form types ────────────────────────────────────────────────────────────────
 
-type SalaryMode = "custom" | "grade"
 type SalaryInputType = "fixed" | "range"
 
 type JobForm = {
@@ -99,14 +97,11 @@ type JobForm = {
   type: string
   workType: WorkType
   description: string
-  salaryMode: SalaryMode
   salaryInputType: SalaryInputType
   salaryPeriod: SalaryPeriod | ""
   salaryCurrency: string
   salaryFrom: string
   salaryTo: string
-  salaryGradeFromId: string
-  salaryGradeToId: string
   status: JobPosting["status"]
   reapplyCooldownDays: string
   /** UserRole id (as string for the <select>) the applicant becomes when hired. */
@@ -407,14 +402,11 @@ const EMPTY_FORM: JobForm = {
   type: "Full-time",
   workType: "onsite",
   description: "",
-  salaryMode: "custom",
   salaryInputType: "range",
   salaryPeriod: "monthly",
   salaryCurrency: "PHP",
   salaryFrom: "",
   salaryTo: "",
-  salaryGradeFromId: "",
-  salaryGradeToId: "",
   status: "open",
   reapplyCooldownDays: "",
   hireUserRoleId: "",
@@ -432,7 +424,6 @@ function postingToForm(j: JobPosting): JobForm {
     type: j.type,
     workType: j.workType ?? "onsite",
     description: j.description ?? "",
-    salaryMode: j.salaryGradeFromId ? "grade" : "custom",
     salaryInputType: (j.salaryTo != null
       ? "range"
       : "fixed") as SalaryInputType,
@@ -440,8 +431,6 @@ function postingToForm(j: JobPosting): JobForm {
     salaryCurrency: j.salaryCurrency ?? "PHP",
     salaryFrom: j.salaryFrom != null ? String(j.salaryFrom) : "",
     salaryTo: j.salaryTo != null ? String(j.salaryTo) : "",
-    salaryGradeFromId: j.salaryGradeFromId ? String(j.salaryGradeFromId) : "",
-    salaryGradeToId: j.salaryGradeToId ? String(j.salaryGradeToId) : "",
     status: j.status,
     reapplyCooldownDays:
       j.reapplyCooldownDays != null ? String(j.reapplyCooldownDays) : "",
@@ -464,24 +453,13 @@ function formToPayload(f: JobForm): CreateJobPayload {
     type: f.type,
     workType: f.workType,
     description: f.description || null,
-    salaryCurrency: f.salaryMode === "custom" ? f.salaryCurrency || null : null,
-    salaryFrom:
-      f.salaryMode === "custom" && f.salaryFrom
-        ? parseFloat(f.salaryFrom)
-        : null,
+    salaryCurrency: f.salaryCurrency || null,
+    salaryFrom: f.salaryFrom ? parseFloat(f.salaryFrom) : null,
     salaryTo:
-      f.salaryMode === "custom" && f.salaryInputType === "range" && f.salaryTo
+      f.salaryInputType === "range" && f.salaryTo
         ? parseFloat(f.salaryTo)
         : null,
     salaryPeriod: f.salaryPeriod || null,
-    salaryGradeFromId:
-      f.salaryMode === "grade" && f.salaryGradeFromId
-        ? Number(f.salaryGradeFromId)
-        : null,
-    salaryGradeToId:
-      f.salaryMode === "grade" && f.salaryGradeToId
-        ? Number(f.salaryGradeToId)
-        : null,
     status: f.status,
     reapplyCooldownDays: f.reapplyCooldownDays.trim()
       ? Math.max(0, parseInt(f.reapplyCooldownDays, 10) || 0)
@@ -648,7 +626,6 @@ function JobModal({
   onSubmit: () => void
   setForm: (v: JobForm) => void
 }) {
-  const { data: grades = [] } = useSalaryGrades()
   const { data: departments = [] } = useDepartments()
   const { data: userRoles = [] } = useUserRoles()
   const { data: jobPositions = [] } = useJobPositions()
@@ -658,9 +635,6 @@ function JobModal({
   )
   const activePositions = jobPositions.filter((p) => p.active)
   const activeDepts = departments.filter((d) => d.active)
-  const activeGrades = grades.filter((g) => g.active)
-  const gradeFrom = grades.find((g) => String(g.id) === form.salaryGradeFromId)
-  const gradeTo = grades.find((g) => String(g.id) === form.salaryGradeToId)
 
   const showLocation = form.workType === "onsite" || form.workType === "hybrid"
   const hasErrors = Object.keys(errors).length > 0
@@ -845,41 +819,9 @@ function JobModal({
             />
           </div>
 
-          {/* Salary — mode toggle */}
+          {/* Salary (advertised range) */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-[12px] text-muted-foreground">
-                Salary
-              </Label>
-              <div className="flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-0.5">
-                {(["custom", "grade"] as SalaryMode[]).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() =>
-                      setForm({
-                        ...form,
-                        salaryMode: mode,
-                        salaryInputType: "range",
-                        salaryCurrency: "PHP",
-                        salaryFrom: "",
-                        salaryTo: "",
-                        salaryGradeFromId: "",
-                        salaryGradeToId: "",
-                      })
-                    }
-                    className={cn(
-                      "rounded-md px-2.5 py-1 text-[11px] font-medium transition-all",
-                      form.salaryMode === mode
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {mode === "custom" ? "Custom range" : "Salary grade range"}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <Label className="text-[12px] text-muted-foreground">Salary</Label>
 
             {/* Pay period pills */}
             <div className="flex flex-wrap gap-1.5">
@@ -900,10 +842,9 @@ function JobModal({
               ))}
             </div>
 
-            {form.salaryMode === "custom" ? (
-              <div className="space-y-2">
-                {/* Fixed / Range toggle */}
-                <div className="flex items-center gap-1.5">
+            <div className="space-y-2">
+              {/* Fixed / Range toggle */}
+              <div className="flex items-center gap-1.5">
                   {(["fixed", "range"] as SalaryInputType[]).map((t) => (
                     <button
                       key={t}
@@ -997,73 +938,7 @@ function JobModal({
                   )}
                 </div>
               </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  {/* From */}
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">From</p>
-                    <select
-                      value={form.salaryGradeFromId}
-                      onChange={(e) =>
-                        setForm({ ...form, salaryGradeFromId: e.target.value })
-                      }
-                      className="h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
-                    >
-                      <option value="">Select grade…</option>
-                      {activeGrades.map((g) => (
-                        <option key={g.id} value={String(g.id)}>
-                          {g.name}
-                          {g.salaryAmount != null
-                            ? ` (${currencySymbol(g.currency)}${g.salaryAmount.toLocaleString("en-PH")})`
-                            : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* To */}
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">To</p>
-                    <select
-                      value={form.salaryGradeToId}
-                      onChange={(e) =>
-                        setForm({ ...form, salaryGradeToId: e.target.value })
-                      }
-                      className="h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
-                    >
-                      <option value="">Select grade…</option>
-                      {activeGrades.map((g) => (
-                        <option key={g.id} value={String(g.id)}>
-                          {g.name}
-                          {g.salaryAmount != null
-                            ? ` (${currencySymbol(g.currency)}${g.salaryAmount.toLocaleString("en-PH")})`
-                            : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Range preview */}
-                {(gradeFrom || gradeTo) && (
-                  <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-[12px]">
-                    <span className="font-medium text-foreground">
-                      {gradeFrom
-                        ? `${gradeFrom.name} — ${currencySymbol(gradeFrom.currency)}${gradeFrom.salaryAmount?.toLocaleString("en-PH")}`
-                        : "—"}
-                    </span>
-                    <span className="text-muted-foreground">to</span>
-                    <span className="font-medium text-foreground">
-                      {gradeTo
-                        ? `${gradeTo.name} — ${currencySymbol(gradeTo.currency)}${gradeTo.salaryAmount?.toLocaleString("en-PH")}`
-                        : "—"}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+            </div>
 
           {/* Status */}
           <div className="space-y-1.5">
@@ -1671,12 +1546,11 @@ export function RecruitmentSection() {
                     {job.department}
                     {job.location ? ` · ${job.location}` : ""}
                     {` · ${job.type}`}
-                    {(job.salaryFrom != null || job.salaryGradeFromName) &&
+                    {job.salaryFrom != null &&
                       (() => {
                         const sym = currencySymbol(job.salaryCurrency)
-                        const amount = job.salaryGradeFromName
-                          ? `${job.salaryGradeFromName}${job.salaryGradeToName ? ` – ${job.salaryGradeToName}` : ""}`
-                          : job.salaryFrom != null
+                        const amount =
+                          job.salaryFrom != null
                             ? `${sym}${job.salaryFrom.toLocaleString("en-PH")}${job.salaryTo != null ? ` – ${sym}${job.salaryTo.toLocaleString("en-PH")}` : ""}`
                             : null
                         const period = job.salaryPeriod

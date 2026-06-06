@@ -1960,9 +1960,6 @@ export function OverviewTab({ employee, employeeId }: Props) {
   const setPrimaryMut = useSetPrimaryPosition(employeeId)
 
   const primaryPosition = userPositions.find((up) => up.primary && up.active)
-  const primaryGrade =
-    primaryPosition?.position.salaryGrades.find((g) => g.isDefault) ??
-    primaryPosition?.position.salaryGrades[0]
 
   const [personal, setPersonal] = useState({
     name: employee.name,
@@ -2341,9 +2338,6 @@ export function OverviewTab({ employee, employeeId }: Props) {
             {userPositions
               .filter((up) => up.active)
               .map((up) => {
-                const defaultGrade =
-                  up.position.salaryGrades.find((g) => g.isDefault) ??
-                  up.position.salaryGrades[0]
                 return (
                   <div
                     key={up.id}
@@ -2371,20 +2365,6 @@ export function OverviewTab({ employee, employeeId }: Props) {
                         )}
                       </div>
                     </div>
-                    {defaultGrade && (
-                      <div className="flex shrink-0 items-center gap-1.5">
-                        <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-                          {defaultGrade.name}
-                        </span>
-                        <span className="text-[12px] font-medium">
-                          {new Intl.NumberFormat("en-PH", {
-                            style: "currency",
-                            currency: "PHP",
-                            maximumFractionDigits: 0,
-                          }).format(defaultGrade.salaryAmount)}
-                        </span>
-                      </div>
-                    )}
                     <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                       {!up.primary && (
                         <button
@@ -2408,24 +2388,6 @@ export function OverviewTab({ employee, employeeId }: Props) {
                   </div>
                 )
               })}
-          </div>
-        )}
-
-        {primaryGrade && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
-            <span className="text-[11px] text-muted-foreground">
-              Payroll base pay resolves to
-            </span>
-            <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-              {primaryGrade.name}
-            </span>
-            <span className="text-[12px] font-semibold text-foreground">
-              {new Intl.NumberFormat("en-PH", {
-                style: "currency",
-                currency: "PHP",
-                maximumFractionDigits: 0,
-              }).format(primaryGrade.salaryAmount)}
-            </span>
           </div>
         )}
       </div>

@@ -16,17 +16,14 @@ import { cn } from "@/lib/utils"
 import { useGiveOffer } from "@/hooks/use-review"
 import type { ReviewDetail, OfferPayload } from "@/lib/review-api"
 import { useUserRoles } from "@/hooks/use-admin-roles"
-import {
-  useJobPositions,
-  useSalaryGrades,
-} from "@/hooks/use-employee-profile"
+import { useJobPositions } from "@/hooks/use-employee-profile"
 import {
   EMPLOYMENT_TYPE_LABELS,
   type EmploymentType,
   type LeaveCredits,
 } from "@/lib/contract-api"
 import { LeaveCreditsForm } from "@/components/custom/leave-credits-form"
-import { currencySymbol } from "@/lib/employee-profile-api"
+import { CURRENCY_OPTIONS } from "@/lib/employee-profile-api"
 
 const WORK_TYPE_OPTIONS = [
   { value: "remote", label: "Remote" },
@@ -84,13 +81,11 @@ export function EmploymentOfferModal({
   const giveOffer = useGiveOffer()
   const { data: userRoles = [] } = useUserRoles()
   const { data: jobPositions = [] } = useJobPositions()
-  const { data: grades = [] } = useSalaryGrades()
 
   const roleOptions = userRoles.filter(
     (r) => r.roleType === "EMPLOYEE" || r.roleType === "ADMIN"
   )
   const activePositions = jobPositions.filter((p) => p.active)
-  const activeGrades = grades.filter((g) => g.active)
 
   const [userRoleId, setUserRoleId] = useState(
     detail.hireUserRoleId != null ? String(detail.hireUserRoleId) : ""
@@ -98,8 +93,11 @@ export function EmploymentOfferModal({
   const [jobPositionId, setJobPositionId] = useState(
     detail.hireJobPositionId != null ? String(detail.hireJobPositionId) : ""
   )
-  const [salaryGradeId, setSalaryGradeId] = useState(
-    detail.hireSalaryGradeId != null ? String(detail.hireSalaryGradeId) : ""
+  const [salaryAmount, setSalaryAmount] = useState(
+    detail.offer?.salaryAmount != null ? String(detail.offer.salaryAmount) : ""
+  )
+  const [currency, setCurrency] = useState(
+    detail.offer?.salaryCurrency ?? "PHP"
   )
   const [employmentType, setEmploymentType] = useState<EmploymentType>(
     seedEmploymentType(detail.hirePostingType)
@@ -141,7 +139,8 @@ export function EmploymentOfferModal({
     const payload: OfferPayload = {
       userRoleId: Number(userRoleId),
       jobPositionId: jobPositionId ? Number(jobPositionId) : null,
-      salaryGradeId: salaryGradeId ? Number(salaryGradeId) : null,
+      salaryAmount: salaryAmount ? Number(salaryAmount) : null,
+      currency,
       employmentType,
       workType,
       salaryPeriod,
@@ -291,27 +290,31 @@ export function EmploymentOfferModal({
             </div>
           </div>
 
-          {/* Salary grade + period */}
+          {/* Salary + period */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-[12px] text-muted-foreground">
-                Salary grade
-              </Label>
-              <select
-                value={salaryGradeId}
-                onChange={(e) => setSalaryGradeId(e.target.value)}
-                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] focus:ring-2 focus:ring-ring focus:outline-none"
-              >
-                <option value="">Select grade…</option>
-                {activeGrades.map((g) => (
-                  <option key={g.id} value={String(g.id)}>
-                    {g.name}
-                    {g.salaryAmount != null
-                      ? ` (${currencySymbol(g.currency)}${g.salaryAmount.toLocaleString("en-PH")})`
-                      : ""}
-                  </option>
-                ))}
-              </select>
+              <Label className="text-[12px] text-muted-foreground">Salary</Label>
+              <div className="flex gap-2">
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="h-9 w-20 rounded-lg border border-input bg-background px-2 text-[13px] focus:ring-2 focus:ring-ring focus:outline-none"
+                >
+                  {CURRENCY_OPTIONS.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.symbol} {c.code}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  type="number"
+                  min={0}
+                  className="h-9 flex-1 text-[13px]"
+                  placeholder="0"
+                  value={salaryAmount}
+                  onChange={(e) => setSalaryAmount(e.target.value)}
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-[12px] text-muted-foreground">

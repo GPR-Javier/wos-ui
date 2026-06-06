@@ -103,7 +103,6 @@ export interface ReviewDetail {
   hireDepartment: string | null
   hireWorkType: string | null
   hirePostingType: string | null
-  hireSalaryGradeId: number | null
   hireSalaryPeriod: string | null
   /** The extended offer/contract once one exists; null before an offer is given. */
   offer: OfferView | null
@@ -139,9 +138,10 @@ export interface ReviewDetail {
 export interface OfferPayload {
   userRoleId: number
   jobPositionId?: number | null
-  salaryGradeId?: number | null
   employmentType: string
   workType?: string | null
+  salaryAmount?: number | null
+  currency?: string | null
   salaryPeriod?: string | null
   leaveCredits?: LeaveCredits | null
   startDate: string // "YYYY-MM-DD"

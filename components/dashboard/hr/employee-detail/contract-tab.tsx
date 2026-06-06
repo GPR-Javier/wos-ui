@@ -35,7 +35,8 @@ import {
   useUpdateContractStatus,
   useDeleteContract,
 } from "@/hooks/use-contract"
-import { useJobPositions, useSalaryGrades } from "@/hooks/use-employee-profile"
+import { useJobPositions } from "@/hooks/use-employee-profile"
+import { CURRENCY_OPTIONS } from "@/lib/employee-profile-api"
 import {
   EMPLOYMENT_TYPE_LABELS,
   CONTRACT_STATUS_LABELS,
@@ -79,7 +80,8 @@ const EMPTY_FORM: CreateContractPayload = {
   notes: null,
   content: null,
   jobPositionId: null,
-  salaryGradeId: null,
+  salaryAmount: null,
+  currency: "PHP",
   leaveCredits: null,
 }
 
@@ -98,7 +100,6 @@ const DEFAULT_SCHEDULE: SchedulePolicyPayload = {
 export function ContractTab({ employeeId }: Props) {
   const { data: contracts = [], isLoading } = useContracts(employeeId)
   const { data: positions = [] } = useJobPositions()
-  const { data: grades = [] } = useSalaryGrades()
   const createContract = useCreateContract(employeeId)
   const updateStatus = useUpdateContractStatus(employeeId)
   const deleteContract = useDeleteContract(employeeId)
@@ -311,36 +312,43 @@ export function ContractTab({ employeeId }: Props) {
               </Select>
             </div>
 
-            {/* Salary Grade */}
+            {/* Salary */}
             <div className="space-y-1.5">
-              <Label className="text-[12px]">Salary Grade</Label>
-              <Select
-                value={form.salaryGradeId?.toString() ?? "none"}
-                onValueChange={(v) =>
-                  set("salaryGradeId", v === "none" ? null : Number(v))
-                }
-              >
-                <SelectTrigger className="h-8 text-[13px]">
-                  <SelectValue placeholder="Select grade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none" className="text-[13px]">
-                    None
-                  </SelectItem>
-                  {grades
-                    .filter((g) => g.active)
-                    .map((g) => (
+              <Label className="text-[12px]">Salary</Label>
+              <div className="flex gap-2">
+                <Select
+                  value={form.currency ?? "PHP"}
+                  onValueChange={(v) => set("currency", v)}
+                >
+                  <SelectTrigger className="h-8 w-24 text-[13px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENCY_OPTIONS.map((c) => (
                       <SelectItem
-                        key={g.id}
-                        value={g.id.toString()}
+                        key={c.code}
+                        value={c.code}
                         className="text-[13px]"
                       >
-                        {g.name}
-                        {` (₱${g.salaryAmount.toLocaleString("en-PH")})`}
+                        {c.symbol} {c.code}
                       </SelectItem>
                     ))}
-                </SelectContent>
-              </Select>
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="number"
+                  min={0}
+                  className="h-8 flex-1 text-[13px]"
+                  placeholder="0"
+                  value={form.salaryAmount ?? ""}
+                  onChange={(e) =>
+                    set(
+                      "salaryAmount",
+                      e.target.value === "" ? null : Number(e.target.value)
+                    )
+                  }
+                />
+              </div>
             </div>
 
           </div>
@@ -551,7 +559,8 @@ function ContractCard({
               <span className="italic">Open-ended</span>
             )}
             {c.jobPosition && ` · ${c.jobPosition.title}`}
-            {c.salaryGrade && ` · ${c.salaryGrade.name}`}
+            {c.salaryAmount != null &&
+              ` · ${c.currency ?? "PHP"} ${c.salaryAmount.toLocaleString("en-PH")}`}
           </p>
         </div>
         <HugeiconsIcon
@@ -594,10 +603,10 @@ function ContractCard({
                 value={`${c.jobPosition.title}${c.jobPosition.department ? ` · ${c.jobPosition.department}` : ""}`}
               />
             )}
-            {c.salaryGrade && (
+            {c.salaryAmount != null && (
               <Field
-                label="Salary Grade"
-                value={`${c.salaryGrade.name} (₱${c.salaryGrade.salaryAmount.toLocaleString("en-PH")})`}
+                label="Salary"
+                value={`${c.currency ?? "PHP"} ${c.salaryAmount.toLocaleString("en-PH")}`}
               />
             )}
             {activeLeaveTypes(c.leaveCredits).map((lt) => {

@@ -159,7 +159,22 @@
       "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; $out = .\\\\mvnw.cmd spotless:check 2>&1 | Out-String; \\($out -split \"`n\" | Select-String -Pattern \"ERROR|Exception|Caused by|Unsupported|class file|module|java\\\\.\" | Select-Object -First 30\\))",
       "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; $out = .\\\\mvnw.cmd spotless:check 2>&1 | Out-String; \\($out -split \"`n\" | Select-String -Pattern \"BUILD SUCCESS|BUILD FAILURE|spotless|format|NoSuchMethod|ERROR\\\\]\" | Select-Object -First 25\\); \"EXIT=$LASTEXITCODE\")",
       "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; $out = .\\\\mvnw.cmd spotless:check 2>&1 | Out-String; \\($out -split \"`n\" | Select-String -Pattern \"keeping|needs changes|BUILD SUCCESS|BUILD FAILURE|format violations\" | Select-Object -First 10\\); \"EXIT=$LASTEXITCODE\")",
-      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; $out = .\\\\mvnw.cmd spotless:check 2>&1 | Out-String; \\($out -split \"`n\" | Select-String -Pattern \"^\\\\[ERROR\\\\]\\\\s+\\(src|@@|[-+]\\)\" | Select-Object -First 22\\))"
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; $out = .\\\\mvnw.cmd spotless:check 2>&1 | Out-String; \\($out -split \"`n\" | Select-String -Pattern \"^\\\\[ERROR\\\\]\\\\s+\\(src|@@|[-+]\\)\" | Select-Object -First 22\\))",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; .\\\\mvnw.cmd -q -DskipTests install 2>&1 | Select-Object -Last 15; \"EXIT=$LASTEXITCODE\")",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-ai\"; .\\\\mvnw.cmd -q -DskipTests compile 2>&1 | Select-String -Pattern \"ERROR|BUILD|error:\" | Select-Object -First 30; \"EXIT=$LASTEXITCODE\")",
+      "PowerShell(Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-ui\"; pnpm exec tsc --noEmit 2>&1 | Select-Object -First 40; \"EXIT=$LASTEXITCODE\")",
+      "PowerShell($c = Get-NetTCPConnection -LocalPort 8083 -State Listen -ErrorAction SilentlyContinue; if \\($c\\) { $c | ForEach-Object { $p = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue; \"PID $\\($_.OwningProcess\\)  $\\($p.ProcessName\\)  Started:$\\($p.StartTime\\)\" } } else { \"Nothing listening on 8083\" })",
+      "Bash(grep -v \":0$\")",
+      "Bash(sort -t: -k2 -rn)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-common\"; .\\\\mvnw.cmd -q -DskipTests install 2>&1 | Select-String -Pattern \"ERROR|BUILD FAIL|error:\" | Select-Object -First 30; \"COMMON_EXIT=$LASTEXITCODE\")",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; .\\\\mvnw.cmd -q -DskipTests compile 2>&1 | Select-String -Pattern \"ERROR|BUILD FAIL|error:|cannot find|symbol\" | Select-Object -First 40; \"HR_EXIT=$LASTEXITCODE\")",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-payroll\"; .\\\\mvnw.cmd -q -DskipTests compile 2>&1 | Select-String -Pattern \"ERROR|BUILD FAIL|error:|cannot find|symbol\" | Select-Object -First 40; \"PAYROLL_EXIT=$LASTEXITCODE\")",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-hr\"; .\\\\mvnw.cmd -q -DskipTests compile 2>&1 | Select-String -Pattern \"ERROR|BUILD FAIL|error:\" | Select-Object -First 20; \"HR_EXIT=$LASTEXITCODE\")",
+      "PowerShell($c = Get-NetTCPConnection -LocalPort 8081 -State Listen -EA SilentlyContinue; if \\($c\\) { Stop-Process -Id \\($c|Select -First 1\\).OwningProcess -Force; \"freed 8081\" } else { \"8081 already free\" })",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; foreach \\($s in \"wos-auth\",\"wos-payroll\",\"wos-analytics\"\\) { Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\$s\"; .\\\\mvnw.cmd -q -DskipTests compile 2>&1 | Select-String -Pattern \"ERROR|BUILD FAIL|error:\" | Select-Object -First 8; \"$s EXIT=$LASTEXITCODE\" })",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-auth\"; .\\\\mvnw.cmd -q -DskipTests compile 2>&1 | Select-String -Pattern \"ERROR|BUILD FAIL|error:\" | Select-Object -First 8; \"EXIT=$LASTEXITCODE\")",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\wos-auth\"; .\\\\mvnw.cmd -q -DskipTests compile 2>&1 | Select-String -Pattern \"ERROR|BUILD FAIL|error:|unmappable\" | Select-Object -First 10; \"EXIT=$LASTEXITCODE\")",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\User\\\\.jdks\\\\corretto-26\"; foreach \\($s in \"wos-auth\",\"wos-hr\",\"wos-payroll\",\"wos-analytics\",\"wos-ai\"\\) { Set-Location \"C:\\\\Users\\\\User\\\\Documents\\\\development\\\\Work-OS\\\\$s\"; .\\\\mvnw.cmd -q -DskipTests compile 2>&1 | Select-String -Pattern \"ERROR|BUILD FAIL|error:|unmappable\" | Select-Object -First 5; \"$s EXIT=$LASTEXITCODE\" })"
     ],
     "additionalDirectories": [
       "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-auth\\src\\main\\java\\com\\gpm\\auth\\controller",
@@ -167,7 +182,21 @@
       "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-common",
       "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-ai\\src\\main\\java\\com\\gpm\\ai\\security",
       "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-hr\\src\\main\\java\\com\\gpm\\hr\\config",
-      "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-analytics"
+      "c:\\Users\\User\\Documents\\development\\Work-OS\\wos-analytics",
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-ai\\src\\main\\java\\com\\gpm\\ai\\repository",
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-ai\\src\\main\\java\\com\\gpm\\ai\\service",
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-ai\\src\\main\\java\\com\\gpm\\ai\\gateway",
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-ai\\src\\main\\java\\com\\gpm\\ai\\dto",
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-ai\\src\\main\\java\\com\\gpm\\ai\\controller",
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-ai\\src\\main\\resources",
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-hr\\src\\main\\java\\com\\gpm\\hr\\controller",
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-hr\\src\\main\\java\\com\\gpm\\hr\\dto",
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-hr\\src\\main\\java\\com\\gpm\\hr\\repository",
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-hr\\src\\main\\java\\com\\gpm\\hr\\entity",
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-hr\\src\\main\\java\\com\\gpm\\hr\\service",
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-payroll\\src\\main\\java\\com\\gpm\\payroll\\entity",
+      "C:\\Users\\User\\Documents\\development\\Work-OS\\wos-payroll\\src\\main\\java\\com\\gpm\\payroll\\service",
+      "C:\\Users\\User\\Documents\\development\\Work-OS"
     ]
   }
 }

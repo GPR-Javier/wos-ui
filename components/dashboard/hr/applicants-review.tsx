@@ -1349,7 +1349,7 @@ function OfferSummaryPanel({ detail }: { detail: ReviewDetail }) {
       ? `${currencySymbol(offer.salaryCurrency)}${offer.salaryAmount.toLocaleString("en-PH")}${
           offer.salaryPeriod ? ` · ${offer.salaryPeriod}` : ""
         }`
-      : (offer.salaryGradeName ?? "—")
+      : "—"
   const statusLabel =
     detail.status === "HIRED"
       ? "Accepted & signed"

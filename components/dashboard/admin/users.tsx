@@ -50,7 +50,7 @@ import {
   useAssignRoles,
   useSetTempRoleAccess,
 } from "@/hooks/use-admin-users"
-import { useJobPositions, useSalaryGrades } from "@/hooks/use-employee-profile"
+import { useJobPositions } from "@/hooks/use-employee-profile"
 import type {
   AdminUser,
   CreateUserPayload,
@@ -130,7 +130,6 @@ function CreateUserModal({ onClose }: CreateModalProps) {
   const createMutation = useCreateUser()
   const activeRolesQ = useActiveUserRoles()
   const { data: jobPositions = [] } = useJobPositions()
-  const { data: salaryGrades = [] } = useSalaryGrades()
   const [roleSearch, setRoleSearch] = useState("")
   const [roleMenuOpen, setRoleMenuOpen] = useState(false)
   const [selectedPositionIds, setSelectedPositionIds] = useState<number[]>([])
@@ -303,12 +302,10 @@ function CreateUserModal({ onClose }: CreateModalProps) {
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
-          {/* Show selected positions with their default salary grade */}
+          {/* Show selected positions */}
           {selectedPositions.length > 0 && (
             <div className="space-y-1">
               {selectedPositions.map((p, i) => {
-                const defaultGrade =
-                  p.salaryGrades.find((g) => g.isDefault) ?? p.salaryGrades[0]
                 return (
                   <div
                     key={p.id}
@@ -320,25 +317,10 @@ function CreateUserModal({ onClose }: CreateModalProps) {
                       </span>
                     )}
                     <span className="text-[12px] font-medium">{p.title}</span>
-                    {defaultGrade && (
-                      <>
-                        <span className="text-muted-foreground">·</span>
-                        <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-                          {defaultGrade.name}
-                        </span>
-                        <span className="ml-auto text-[11px] text-muted-foreground">
-                          {new Intl.NumberFormat("en-PH", {
-                            style: "currency",
-                            currency: "PHP",
-                            maximumFractionDigits: 0,
-                          }).format(defaultGrade.salaryAmount)}
-                        </span>
-                      </>
-                    )}
                     <button
                       type="button"
                       onClick={() => togglePosition(p.id)}
-                      className="ml-1 text-[11px] text-muted-foreground hover:text-foreground"
+                      className="ml-auto text-[11px] text-muted-foreground hover:text-foreground"
                     >
                       ×
                     </button>

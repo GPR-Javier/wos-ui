@@ -76,7 +76,6 @@ export interface OfferView {
   department: string | null
   employmentType: string | null
   workType: string | null
-  salaryGradeName: string | null
   salaryAmount: number | null
   salaryCurrency: string | null
   salaryPeriod: string | null

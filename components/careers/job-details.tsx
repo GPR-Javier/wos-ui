@@ -58,9 +58,6 @@ function salaryText(job: JobPosting): string | null {
   const sym = job.salaryCurrency
     ? (CURRENCY_SYMBOLS[job.salaryCurrency] ?? job.salaryCurrency)
     : "₱"
-  if (job.salaryGradeFromName) {
-    return `${job.salaryGradeFromName}${job.salaryGradeToName ? ` – ${job.salaryGradeToName}` : ""}`
-  }
   if (job.salaryFrom != null) {
     return `${sym}${job.salaryFrom.toLocaleString()}${
       job.salaryTo != null ? ` – ${sym}${job.salaryTo.toLocaleString()}` : ""

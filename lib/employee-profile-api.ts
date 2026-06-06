@@ -54,25 +54,7 @@ export interface CreateKpiPayload {
   period: string
 }
 
-// ── Salary Grades (admin-configured) ─────────────────────────────────────────
-
-export interface SalaryGrade {
-  id: number
-  name: string
-  currency: string
-  salaryAmount: number
-  effectiveDate?: string | null // "YYYY-MM-DD"
-  active: boolean
-  employeeCount: number
-}
-
-export interface CreateSalaryGradePayload {
-  name: string
-  currency?: string
-  salaryAmount: number
-  effectiveDate?: string | null
-  active?: boolean
-}
+// ── Currency ─────────────────────────────────────────────────────────────────
 
 export const CURRENCY_OPTIONS = [
   { code: "PHP", symbol: "₱", label: "PHP — Philippine Peso" },
@@ -119,9 +101,8 @@ export interface PayrollSetup {
   id: number
   jobPositionId: number
   jobPositionTitle: string
-  salaryGradeId: number
-  salaryGradeName: string
-  salaryAmount: number
+  baseSalary: number
+  currency: string
   compensationBasis: CompensationBasis
   cutoffPeriod: string
   overtimeEligible: boolean
@@ -134,7 +115,8 @@ export interface PayrollSetup {
 
 export interface CreatePayrollSetupPayload {
   jobPositionId: number
-  salaryGradeId: number
+  baseSalary: number
+  currency?: string
   compensationBasis: CompensationBasis
   cutoffPeriod: string
   overtimeEligible: boolean
@@ -160,31 +142,18 @@ export interface CreateDepartmentPayload {
 
 // ── Job Positions (admin-configured) ─────────────────────────────────────────
 
-/** A salary grade as embedded inside a JobPosition response */
-export interface PositionSalaryGrade {
-  id: number
-  name: string
-  salaryAmount: number
-  isDefault: boolean
-  effectiveDate?: string | null
-}
-
 export interface JobPosition {
   id: number
   title: string
   department?: string | null
   level?: string | null
   active: boolean
-  salaryGradeId?: number | null
-  salaryGrade?: PositionSalaryGrade | null
-  salaryGrades: PositionSalaryGrade[]
 }
 
 export interface CreateJobPositionPayload {
   title: string
   department?: string | null
   level?: string | null
-  salaryGradeId?: number | null
 }
 
 // ── User Positions (employee ↔ job position junction) ────────────────────────
@@ -197,7 +166,6 @@ export interface UserPosition {
     title: string
     department?: string | null
     level?: string | null
-    salaryGrades: PositionSalaryGrade[]
   }
   primary: boolean
   startDate?: string | null
@@ -338,35 +306,6 @@ export const employeeProfileApi = {
     api.put<JobPosition>(`/hr/positions/${id}`, payload).then((r) => r.data),
 
   deletePosition: (id: number) => api.delete(`/hr/positions/${id}`),
-
-  linkGradeToPosition: (
-    positionId: number,
-    salaryGradeId: number,
-    isDefault: boolean
-  ) =>
-    api
-      .post<JobPosition>(`/hr/positions/${positionId}/salary-grades`, {
-        salaryGradeId,
-        isDefault,
-      })
-      .then((r) => r.data),
-
-  unlinkGradeFromPosition: (positionId: number, gradeId: number) =>
-    api.delete(`/hr/positions/${positionId}/salary-grades/${gradeId}`),
-
-  // Salary Grades — admin-managed
-  listSalaryGrades: () =>
-    api.get<SalaryGrade[]>("/hr/salary-grades").then((r) => r.data),
-
-  createSalaryGrade: (payload: CreateSalaryGradePayload) =>
-    api.post<SalaryGrade>("/hr/salary-grades", payload).then((r) => r.data),
-
-  updateSalaryGrade: (id: number, payload: Partial<CreateSalaryGradePayload>) =>
-    api
-      .put<SalaryGrade>(`/hr/salary-grades/${id}`, payload)
-      .then((r) => r.data),
-
-  deleteSalaryGrade: (id: number) => api.delete(`/hr/salary-grades/${id}`),
 
   // Departments — admin-managed
   listDepartments: () =>

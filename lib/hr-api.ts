@@ -16,11 +16,6 @@ export interface HrEmployee {
     title: string
     level?: string | null
     department?: string | null
-    salaryGrade?: {
-      id: number
-      name?: string | null
-      salaryAmount: number
-    } | null
   } | null
   team?: string | null
   status: "active" | "on-leave" | "inactive"
@@ -62,10 +57,6 @@ export interface JobPosting {
   salaryFrom?: number | null
   salaryTo?: number | null
   salaryPeriod?: SalaryPeriod | null
-  salaryGradeFromId?: number | null
-  salaryGradeFromName?: string | null
-  salaryGradeToId?: number | null
-  salaryGradeToName?: string | null
   status: "new" | "urgent" | "open" | "closed"
   /** Days a rejected candidate must wait before reapplying. null/0 = no cooldown. */
   reapplyCooldownDays?: number | null
@@ -92,8 +83,6 @@ export interface CreateJobPayload {
   salaryFrom?: number | null
   salaryTo?: number | null
   salaryPeriod?: SalaryPeriod | null
-  salaryGradeFromId?: number | null
-  salaryGradeToId?: number | null
   status: "new" | "urgent" | "open" | "closed"
   reapplyCooldownDays?: number | null
   tags: string[]

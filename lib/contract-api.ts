@@ -136,12 +136,6 @@ export interface ContractPositionSummary {
   department?: string | null
 }
 
-export interface ContractGradeSummary {
-  id: number
-  name: string
-  salaryAmount: number
-}
-
 export interface ContractEmployeeSummary {
   id: number
   firstName?: string | null
@@ -155,6 +149,8 @@ export interface EmploymentContract {
   contractNumber?: string | null
   employmentType: EmploymentType
   workType?: string | null
+  salaryAmount?: number | null
+  currency?: string | null
   salaryPeriod?: string | null
   leaveCredits?: LeaveCredits | null
   applicantSignature?: string | null
@@ -166,7 +162,6 @@ export interface EmploymentContract {
   notes?: string | null
   content?: string | null
   jobPosition?: ContractPositionSummary | null
-  salaryGrade?: ContractGradeSummary | null
   employee?: ContractEmployeeSummary | null
   /** Whether the employee currently has a USER-scope schedule override. */
   scheduleOverridden?: boolean
@@ -181,6 +176,8 @@ export interface EmploymentContract {
 export interface CreateContractPayload {
   employmentType: EmploymentType
   workType?: string | null
+  salaryAmount?: number | null
+  currency?: string | null
   salaryPeriod?: string | null
   leaveCredits?: LeaveCredits | null
   startDate: string
@@ -191,7 +188,6 @@ export interface CreateContractPayload {
   notes?: string | null
   content?: string | null
   jobPositionId?: number | null
-  salaryGradeId?: number | null
   /** TRUE = save schedulePolicy as a USER override; FALSE = clear it; omit = leave as-is. */
   overrideSchedule?: boolean
   schedulePolicy?: SchedulePolicyPayload | null
@@ -200,6 +196,8 @@ export interface CreateContractPayload {
 export interface UpdateContractPayload {
   employmentType?: EmploymentType
   workType?: string | null
+  salaryAmount?: number | null
+  currency?: string | null
   salaryPeriod?: string | null
   leaveCredits?: LeaveCredits | null
   contractStatus?: ContractStatus
@@ -210,7 +208,6 @@ export interface UpdateContractPayload {
   notes?: string | null
   content?: string | null
   jobPositionId?: number | null
-  salaryGradeId?: number | null
   overrideSchedule?: boolean
   schedulePolicy?: SchedulePolicyPayload | null
 }

@@ -528,7 +528,7 @@ function JobCard({
             <HugeiconsIcon icon={Clock01Icon} size={11} strokeWidth={1.8} />
             {job.type}
           </span>
-          {(job.salaryGradeFromName ?? job.salaryFrom) &&
+          {job.salaryFrom != null &&
             (() => {
               const sym = job.salaryCurrency
                 ? ((
@@ -543,9 +543,8 @@ function JobCard({
                     } as Record<string, string>
                   )[job.salaryCurrency] ?? job.salaryCurrency)
                 : "₱"
-              const amount = job.salaryGradeFromName
-                ? `${job.salaryGradeFromName}${job.salaryGradeToName ? ` – ${job.salaryGradeToName}` : ""}`
-                : job.salaryFrom != null
+              const amount =
+                job.salaryFrom != null
                   ? `${sym}${job.salaryFrom.toLocaleString()}${job.salaryTo != null ? ` – ${sym}${job.salaryTo.toLocaleString()}` : ""}`
                   : null
               const periodLabel = {
