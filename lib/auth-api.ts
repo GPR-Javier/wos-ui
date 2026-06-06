@@ -85,6 +85,23 @@ export const authApi = {
   refresh: () => api.post("/auth/refresh"),
 }
 
+// ── WorkOS session (Phase 3, Option A) ──────────────────────────────────────────
+// gpr-auth (/auth/*) authenticates identity; wos-hr (/hr/auth/*) resolves WorkOS roles and mints
+// the role-bearing access token. Call sessionApi.establish() right after a successful /auth/login.
+
+export interface SessionRolePayload {
+  userRoleId: number
+}
+
+export const sessionApi = {
+  /** Mint a WorkOS session from the identity token — returns role info or a role-selection prompt. */
+  establish: () => api.post<LoginResponse>("/hr/auth/session").then((r) => r.data),
+  selectRole: (payload: SessionRolePayload) =>
+    api.post<AuthResponse>("/hr/auth/session/select-role", payload).then((r) => r.data),
+  switchRole: (payload: SessionRolePayload) =>
+    api.post<AuthResponse>("/hr/auth/switch-role", payload).then((r) => r.data),
+}
+
 // ── Onboarding ────────────────────────────────────────────────────────────────
 // The active role is resolved server-side from the JWT, so these take no role id.
 
