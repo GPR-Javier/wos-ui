@@ -18,6 +18,11 @@ const TABS: { label: string; href: string; icon: IconSvgElement }[] = [
     icon: Setting06Icon,
   },
   {
+    label: "Account",
+    href: "/dashboard/settings/account",
+    icon: ShieldUserIcon,
+  },
+  {
     label: "Security",
     href: "/dashboard/settings/security",
     icon: ShieldUserIcon,

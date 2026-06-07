@@ -120,10 +120,10 @@ export default function LoginPage() {
 
               <div className="mt-7 space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="email">Work email</Label>
+                  <Label htmlFor="email">Email, username, or phone</Label>
                   <Input
                     id="email"
-                    type="email"
+                    type="text"
                     placeholder="you@company.com"
                     className="h-11"
                     value={email}
