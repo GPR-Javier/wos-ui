@@ -7,10 +7,16 @@ export interface PricingPlan {
   slug: string
   name: string
   tagline: string
+  /** ISO-4217 currency the prices are quoted in (e.g. "PHP"). */
+  currency: string
   monthlyPrice: number | null
   annualPrice: number | null
   customPrice: boolean
   seatLimit: number | null
+  /** Seats included in the base price; extra seats cost perSeat*. */
+  includedSeats: number | null
+  perSeatMonthly: number | null
+  perSeatAnnual: number | null
   trialDays: number | null
   recommended: boolean
   sortOrder: number

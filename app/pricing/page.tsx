@@ -26,6 +26,15 @@ import {
   type PricingPlan,
   type PlanComparison,
 } from "@/lib/pricing-api"
+import { currencySymbol, formatAmount } from "@/lib/money"
+import { useCurrency } from "@/lib/use-currency"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 type Cycle = "monthly" | "annual"
 
@@ -48,6 +57,9 @@ export default function PricingPage() {
   // Render fully even if wos-hr isn't up yet (UI-first): fall back to local data.
   const plans = fetchedPlans && fetchedPlans.length ? fetchedPlans : FALLBACK_PLANS
   const comparison = fetchedComparison ?? FALLBACK_COMPARISON
+
+  // Local currency, auto-detected from location (USD prices converted at today's rate).
+  const cur = useCurrency()
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -75,22 +87,36 @@ export default function PricingPage() {
             </p>
           </div>
 
-          {/* Billing toggle (shadcn Tabs) */}
+          {/* Billing toggle (shadcn Tabs) + currency switcher */}
           <div className="mt-10 flex flex-col items-center gap-2.5">
-            <Tabs value={cycle} onValueChange={(v) => setCycle(v as Cycle)}>
-              <TabsList>
-                <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                <TabsTrigger value="annual">Yearly</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Tabs value={cycle} onValueChange={(v) => setCycle(v as Cycle)}>
+                <TabsList>
+                  <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                  <TabsTrigger value="annual">Yearly</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <Select value={cur.currency} onValueChange={cur.setCurrency}>
+                <SelectTrigger size="sm" className="w-[92px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {cur.available.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <p className="text-[12.5px] text-muted-foreground">
-              Save{" "}
-              <span className="font-semibold text-primary">2 months</span> with yearly billing
+              Save <span className="font-semibold text-primary">2 months</span> with yearly billing
+              {cur.converted && " · converted from USD at today's rate"}
             </p>
           </div>
 
           {/* Integrated pricing + feature comparison table (Free Trial is the leftmost column) */}
-          <PricingTable plans={plans} comparison={comparison} cycle={cycle} />
+          <PricingTable plans={plans} comparison={comparison} cycle={cycle} cur={cur} />
 
           <Separator className="mx-auto mt-12 max-w-sm" />
           <p className="mt-6 text-center text-[13px] text-muted-foreground">
@@ -132,10 +158,12 @@ function PricingTable({
   plans,
   comparison,
   cycle,
+  cur,
 }: {
   plans: PricingPlan[]
   comparison: PlanComparison
   cycle: Cycle
+  cur: ReturnType<typeof useCurrency>
 }) {
   const [hovered, setHovered] = useState<string | null>(null)
   const bySlug = new Map(plans.map((p) => [p.slug, p]))
@@ -191,14 +219,14 @@ function PricingTable({
                   </p>
                 )}
                 <div className="mt-3">
-                  <PriceLabel plan={c.pricing} cycle={cycle} />
+                  <PriceLabel plan={c.pricing} cycle={cycle} cur={cur} />
                 </div>
                 <div className="mt-2 text-[11.5px] font-medium text-muted-foreground">
                   {c.pricing?.trialDays != null
                     ? `${c.pricing.trialDays}-day trial`
-                    : c.pricing?.seatLimit == null
+                    : c.pricing?.includedSeats == null
                       ? "Unlimited seats"
-                      : `Up to ${c.pricing.seatLimit} employees`}
+                      : `${c.pricing.includedSeats} seats included`}
                 </div>
                 <Button
                   asChild
@@ -206,7 +234,15 @@ function PricingTable({
                   variant={c.recommended ? "default" : "outline"}
                   className="mx-auto mt-5 w-[92%] rounded-full"
                 >
-                  <Link href={c.pricing?.customPrice ? "mailto:sales@gpr.com" : "/auth/register"}>
+                  <Link
+                    href={
+                      c.pricing?.customPrice
+                        ? "mailto:sales@gpr.com"
+                        : c.pricing?.trialDays != null
+                          ? `/onboarding?plan=${c.slug}&cycle=${cycle}`
+                          : `/checkout?plan=${c.slug}&cycle=${cycle}`
+                    }
+                  >
                     {c.pricing?.ctaLabel ?? "Choose"}
                   </Link>
                 </Button>
@@ -316,7 +352,15 @@ function PricingTable({
   )
 }
 
-function PriceLabel({ plan, cycle }: { plan?: PricingPlan; cycle: Cycle }) {
+function PriceLabel({
+  plan,
+  cycle,
+  cur,
+}: {
+  plan?: PricingPlan
+  cycle: Cycle
+  cur: ReturnType<typeof useCurrency>
+}) {
   if (!plan) return null
   if (plan.customPrice) {
     return (
@@ -329,18 +373,20 @@ function PriceLabel({ plan, cycle }: { plan?: PricingPlan; cycle: Cycle }) {
     )
   }
   const isTrial = plan.trialDays != null
-  const monthly =
+  // Canonical price is USD; convert the effective monthly to the visitor's local currency.
+  const monthlyUsd =
     cycle === "annual" && plan.annualPrice != null
       ? Math.round(plan.annualPrice / 12)
       : plan.monthlyPrice ?? 0
+  const monthly = cur.convert(monthlyUsd)
   return (
     <div>
       <p className="text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground">
         {isTrial ? "Free" : "Starts at"}
       </p>
       <div className="mt-0.5 inline-flex items-baseline gap-0.5">
-        <span className="text-[14px] font-semibold text-foreground">$</span>
-        <span className="text-[30px] font-bold leading-none text-foreground">{monthly}</span>
+        <span className="text-[14px] font-semibold text-foreground">{currencySymbol(cur.currency)}</span>
+        <span className="text-[30px] font-bold leading-none text-foreground">{formatAmount(monthly)}</span>
         <span className="text-[12px] text-muted-foreground">/mo</span>
       </div>
     </div>
@@ -350,11 +396,11 @@ function PriceLabel({ plan, cycle }: { plan?: PricingPlan; cycle: Cycle }) {
 // ── Local fallback (mirrors GET /hr/plans*) so the page renders before wos-hr is up ──
 
 const FALLBACK_PLANS: PricingPlan[] = [
-  { slug: "trial", name: "Free Trial", tagline: "Try everything, no card required", monthlyPrice: 0, annualPrice: 0, customPrice: false, seatLimit: 10, trialDays: 14, recommended: false, sortOrder: 0, ctaLabel: "Start free trial", features: [] },
-  { slug: "starter", name: "Starter", tagline: "The HR essentials for small teams", monthlyPrice: 39, annualPrice: 390, customPrice: false, seatLimit: 15, trialDays: null, recommended: false, sortOrder: 1, ctaLabel: "Choose Starter", features: [] },
-  { slug: "business", name: "Business", tagline: "Run payroll and the full request flow", monthlyPrice: 129, annualPrice: 1290, customPrice: false, seatLimit: 60, trialDays: null, recommended: false, sortOrder: 2, ctaLabel: "Choose Business", features: [] },
-  { slug: "professional", name: "Professional", tagline: "Hiring, AI and analytics at scale", monthlyPrice: 329, annualPrice: 3290, customPrice: false, seatLimit: 250, trialDays: null, recommended: true, sortOrder: 3, ctaLabel: "Choose Professional", features: [] },
-  { slug: "enterprise", name: "Enterprise", tagline: "Security, scale and dedicated support", monthlyPrice: null, annualPrice: null, customPrice: true, seatLimit: null, trialDays: null, recommended: false, sortOrder: 4, ctaLabel: "Talk to sales", features: [] },
+  { slug: "trial", name: "Free Trial", tagline: "Try everything, no card required", currency: "USD", monthlyPrice: 0, annualPrice: 0, customPrice: false, seatLimit: 10, includedSeats: 10, perSeatMonthly: null, perSeatAnnual: null, trialDays: 14, recommended: false, sortOrder: 0, ctaLabel: "Start free trial", features: [] },
+  { slug: "starter", name: "Starter", tagline: "The HR essentials for small teams", currency: "USD", monthlyPrice: 29, annualPrice: 290, customPrice: false, seatLimit: null, includedSeats: 15, perSeatMonthly: 9, perSeatAnnual: 90, trialDays: null, recommended: false, sortOrder: 1, ctaLabel: "Choose Starter", features: [] },
+  { slug: "business", name: "Business", tagline: "Run payroll and the full request flow", currency: "USD", monthlyPrice: 99, annualPrice: 990, customPrice: false, seatLimit: null, includedSeats: 60, perSeatMonthly: 9, perSeatAnnual: 90, trialDays: null, recommended: false, sortOrder: 2, ctaLabel: "Choose Business", features: [] },
+  { slug: "professional", name: "Professional", tagline: "Hiring, AI and analytics at scale", currency: "USD", monthlyPrice: 249, annualPrice: 2490, customPrice: false, seatLimit: null, includedSeats: 250, perSeatMonthly: 9, perSeatAnnual: 90, trialDays: null, recommended: true, sortOrder: 3, ctaLabel: "Choose Professional", features: [] },
+  { slug: "enterprise", name: "Enterprise", tagline: "Security, scale and dedicated support", currency: "USD", monthlyPrice: null, annualPrice: null, customPrice: true, seatLimit: null, includedSeats: null, perSeatMonthly: null, perSeatAnnual: null, trialDays: null, recommended: false, sortOrder: 4, ctaLabel: "Talk to sales", features: [] },
 ]
 
 const FB_STARTER = ["attendance", "directory", "scheduling", "roles"]
