@@ -64,24 +64,24 @@ export interface UserRolePayload {
 export const adminRolesApi = {
   // User Roles CRUD
   listUserRoles: () =>
-    api.get<UserRole[]>("/auth/user-roles").then((r) => r.data),
+    api.get<UserRole[]>("/hr/user-roles").then((r) => r.data),
 
   createUserRole: (payload: UserRolePayload) =>
-    api.post<UserRole>("/auth/user-roles", payload).then((r) => r.data),
+    api.post<UserRole>("/hr/user-roles", payload).then((r) => r.data),
 
   updateUserRole: (id: number, payload: UserRolePayload) =>
-    api.put<UserRole>(`/auth/user-roles/${id}`, payload).then((r) => r.data),
+    api.put<UserRole>(`/hr/user-roles/${id}`, payload).then((r) => r.data),
 
-  deleteUserRole: (id: number) => api.delete(`/auth/user-roles/${id}`),
+  deleteUserRole: (id: number) => api.delete(`/hr/user-roles/${id}`),
 
   // Access Roles assignment
   addAccessRole: (userRoleId: number, accessRoleId: number) =>
     api
-      .post(`/auth/user-roles/${userRoleId}/access-roles`, { accessRoleId })
+      .post(`/hr/user-roles/${userRoleId}/access-roles`, { accessRoleId })
       .then((r) => r.data),
 
   removeAccessRole: (userRoleId: number, accessRoleId: number) =>
-    api.delete(`/auth/user-roles/${userRoleId}/access-roles/${accessRoleId}`),
+    api.delete(`/hr/user-roles/${userRoleId}/access-roles/${accessRoleId}`),
 
   // Temporary access
   setTemporaryAccess: (
@@ -91,7 +91,7 @@ export const adminRolesApi = {
   ) =>
     api
       .put(
-        `/auth/user-roles/${userRoleId}/access-roles/${accessRoleId}/temporary-access`,
+        `/hr/user-roles/${userRoleId}/access-roles/${accessRoleId}/temporary-access`,
         payload
       )
       .then((r) => r.data),
@@ -105,12 +105,12 @@ export const adminRolesApi = {
   ) =>
     api
       .put(
-        `/auth/user-roles/${userRoleId}/access-roles/${accessRoleId}/functionalities/${functionalityId}`,
+        `/hr/user-roles/${userRoleId}/access-roles/${accessRoleId}/functionalities/${functionalityId}`,
         { enabled }
       )
       .then((r) => r.data),
 
   // Available access roles (for the permission matrix)
   listAccessRoles: () =>
-    api.get<AccessRole[]>("/auth/access-roles").then((r) => r.data),
+    api.get<AccessRole[]>("/hr/access-roles").then((r) => r.data),
 }

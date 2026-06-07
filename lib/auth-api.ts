@@ -74,14 +74,16 @@ export const authApi = {
     api.post<AuthResponse>("/auth/register", payload).then((r) => r.data),
   login: (payload: LoginPayload) =>
     api.post<LoginResponse>("/auth/login", payload).then((r) => r.data),
+  // Role selection/switch live in WorkOS (wos-hr) under Option A — these mint the role token.
   selectRole: (payload: SelectRolePayload) =>
     api
-      .post<AuthResponse>("/auth/login/select-role", payload)
+      .post<AuthResponse>("/hr/auth/session/select-role", payload)
       .then((r) => r.data),
   switchRole: (payload: SwitchRolePayload) =>
-    api.post<AuthResponse>("/auth/switch-role", payload).then((r) => r.data),
+    api.post<AuthResponse>("/hr/auth/switch-role", payload).then((r) => r.data),
   logout: () => api.post("/auth/logout"),
-  me: () => api.get<MeResponse>("/auth/me").then((r) => r.data),
+  // Profile (employee record + roles + onboarding) is resolved by WorkOS, not the identity service.
+  me: () => api.get<MeResponse>("/hr/auth/me").then((r) => r.data),
   refresh: () => api.post("/auth/refresh"),
 }
 
@@ -109,9 +111,9 @@ export const onboardingApi = {
   /** Mark one screen's tour completed/skipped for the active role. */
   completeScreen: (screenKey: string) =>
     api
-      .post<AuthResponse>(`/auth/onboarding/screen/${screenKey}/complete`)
+      .post<AuthResponse>(`/hr/auth/onboarding/screen/${screenKey}/complete`)
       .then((r) => r.data),
   /** Skip all remaining onboarding for the active role. */
   skipAll: () =>
-    api.post<AuthResponse>("/auth/onboarding/skip-all").then((r) => r.data),
+    api.post<AuthResponse>("/hr/auth/onboarding/skip-all").then((r) => r.data),
 }

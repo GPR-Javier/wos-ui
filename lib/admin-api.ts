@@ -136,20 +136,20 @@ export const adminUsersApi = {
     api
       .get<
         PageResponse<AdminUser>
-      >("/auth/users", { params: { page: 0, size: 20, ...params } })
+      >("/hr/users", { params: { page: 0, size: 20, ...params } })
       .then((r) => r.data),
 
   create: (payload: CreateUserPayload) =>
-    api.post<AdminUser>("/auth/users", payload).then((r) => r.data),
+    api.post<AdminUser>("/hr/users", payload).then((r) => r.data),
 
   listActiveUserRoles: () =>
-    api.get<ActiveUserRole[]>("/auth/user-roles/active").then((r) => r.data),
+    api.get<ActiveUserRole[]>("/hr/user-roles/active").then((r) => r.data),
 
-  delete: (id: number) => api.delete(`/auth/users/${id}`),
+  delete: (id: number) => api.delete(`/hr/users/${id}`),
 
   assignRoles: (id: number, userRoleIds: number[]) =>
     api
-      .put<AdminUser>(`/auth/users/${id}/employee-roles`, {
+      .put<AdminUser>(`/hr/users/${id}/employee-roles`, {
         userRoleIds,
         employeeRoleIds: userRoleIds,
       })
@@ -162,7 +162,7 @@ export const adminUsersApi = {
   ) =>
     api
       .put<TempRoleAccessResponse>(
-        `/auth/users/${userId}/employee-roles/${roleId}/temporary-access`,
+        `/hr/users/${userId}/employee-roles/${roleId}/temporary-access`,
         payload
       )
       .then((r) => r.data),
