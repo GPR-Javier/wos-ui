@@ -257,10 +257,15 @@ function PricingTable({
                             </button>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-60 text-center">
-                            {row.description}
+                            {row.note ? `${row.description} ${row.note}` : row.description}
                           </TooltipContent>
                         </Tooltip>
                       </span>
+                      {row.note && (
+                        <span className="mt-0.5 block text-[10.5px] font-medium leading-snug text-amber-600 dark:text-amber-400/90">
+                          Requires your own AI API key
+                        </span>
+                      )}
                     </td>
                     {cols.map((c) => (
                       <td
@@ -366,7 +371,7 @@ const FALLBACK_COMPARISON: PlanComparison = {
     { key: "payroll", label: "Payroll & overtime", description: "Run payroll, generate payslips, and compute overtime." },
     { key: "requests", label: "Full request workflows", description: "COE, official business, change-time, schedule-change and dispute flows." },
     { key: "recruitment", label: "Recruitment", description: "Post jobs, collect applications, and manage candidates end to end." },
-    { key: "ai", label: "AI interviews & assessments", description: "AI-assisted interviews and automated candidate assessments." },
+    { key: "ai", label: "AI interviews & assessments", description: "AI-assisted interviews and automated candidate assessments.", note: "Requires your own AI provider API key — billed by the provider, not included in the plan." },
     { key: "analytics", label: "Analytics", description: "Dashboards and reports across attendance, payroll, and hiring." },
     { key: "audit", label: "Audit log", description: "A full audit trail of who changed what, and when." },
     { key: "rewards", label: "Rewards & contracts", description: "Rewards, ratings, and employment-contract management." },

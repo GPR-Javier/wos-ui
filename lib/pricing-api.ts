@@ -23,6 +23,8 @@ export interface FeatureRow {
   key: string
   label: string
   description: string
+  /** Optional caveat shown inline under the feature (e.g. AI needs your own API key). */
+  note?: string | null
 }
 export interface PlanColumn {
   slug: string
