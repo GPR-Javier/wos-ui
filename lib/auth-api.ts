@@ -69,11 +69,36 @@ export interface RegisterPayload {
   password: string
 }
 
+// ── Multi-tenant company selection ──────────────────────────────────────────────
+// gpr-auth owns companies. Login returns the user's companies; a multi-company user picks one
+// (select-company re-mints the identity token with companyId) before the WorkOS session resolves
+// roles within that company. switch-company changes tenant later.
+
+export interface CompanyInfo {
+  id: number
+  name: string
+  slug: string
+}
+
+export interface CompanyLoginResponse {
+  requiresCompanySelection: boolean
+  companies: CompanyInfo[]
+  companyId: number | null
+}
+
+export const companyApi = {
+  list: () => api.get<CompanyInfo[]>("/auth/companies").then((r) => r.data),
+  select: (companyId: number) =>
+    api.post<CompanyLoginResponse>("/auth/select-company", { companyId }).then((r) => r.data),
+  switch: (companyId: number) =>
+    api.post<CompanyLoginResponse>("/auth/switch-company", { companyId }).then((r) => r.data),
+}
+
 export const authApi = {
   register: (payload: RegisterPayload) =>
     api.post<AuthResponse>("/auth/register", payload).then((r) => r.data),
   login: (payload: LoginPayload) =>
-    api.post<LoginResponse>("/auth/login", payload).then((r) => r.data),
+    api.post<CompanyLoginResponse>("/auth/login", payload).then((r) => r.data),
   // Role selection/switch live in WorkOS (wos-hr) under Option A — these mint the role token.
   selectRole: (payload: SelectRolePayload) =>
     api

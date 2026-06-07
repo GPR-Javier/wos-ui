@@ -20,9 +20,9 @@ import {
   Alert01Icon,
   User03Icon,
 } from "@hugeicons/core-free-icons"
-import { useLogin, useSelectRole } from "@/hooks/use-auth"
+import { useLogin, useSelectRole, useSelectCompany } from "@/hooks/use-auth"
 import { useAuthStore } from "@/store/auth-store"
-import type { AvailableRole } from "@/lib/auth-api"
+import type { AvailableRole, CompanyInfo } from "@/lib/auth-api"
 
 type PunchType = "in" | "out"
 
@@ -51,11 +51,18 @@ export default function LoginPage() {
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
   const [showRoleModal, setShowRoleModal] = useState(false)
 
+  // Company-selection state (when the user belongs to multiple companies)
+  const [availableCompanies, setAvailableCompanies] = useState<CompanyInfo[]>([])
+  const [showCompanyModal, setShowCompanyModal] = useState(false)
+
   const loginMutation = useLogin()
   const selectRoleMutation = useSelectRole()
+  const selectCompanyMutation = useSelectCompany()
 
-  const isPending = loginMutation.isPending || selectRoleMutation.isPending
-  const apiError = loginMutation.error || selectRoleMutation.error
+  const isPending =
+    loginMutation.isPending || selectRoleMutation.isPending || selectCompanyMutation.isPending
+  const apiError =
+    loginMutation.error || selectRoleMutation.error || selectCompanyMutation.error
 
   function handleLogin() {
     if (!email || !password) return
@@ -63,14 +70,32 @@ export default function LoginPage() {
       { email, password },
       {
         onSuccess: (data) => {
+          if ("companySelect" in data) {
+            setAvailableCompanies(data.companySelect)
+            setShowCompanyModal(true)
+            return
+          }
           if (data.requiresRoleSelection) {
             setAvailableRoles(data.availableRoles)
             setShowRoleModal(true)
           }
-          // if not requiresRoleSelection, useLogin's onSuccess handles redirect
+          // otherwise useLogin's onSuccess handles redirect
         },
       }
     )
+  }
+
+  function handleSelectCompany(companyId: number) {
+    selectCompanyMutation.mutate(companyId, {
+      onSuccess: (data) => {
+        setShowCompanyModal(false)
+        if (data.requiresRoleSelection) {
+          setAvailableRoles(data.availableRoles)
+          setShowRoleModal(true)
+        }
+        // otherwise useSelectCompany's onSuccess handles redirect
+      },
+    })
   }
 
   function handleRoleContinue() {
@@ -314,6 +339,30 @@ export default function LoginPage() {
       </div>
 
       {/* ── Role modal (shown when API returns requiresRoleSelection: true) ── */}
+      {showCompanyModal && (
+        <Modal onClose={() => setShowCompanyModal(false)}>
+          <h2 className="text-[16px] font-semibold text-foreground">
+            Select a company
+          </h2>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            You belong to multiple companies. Choose which one to sign in to.
+          </p>
+          <div className="mt-5 flex flex-col gap-2">
+            {availableCompanies.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => handleSelectCompany(c.id)}
+                disabled={selectCompanyMutation.isPending}
+                className="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 text-left transition-colors hover:bg-muted disabled:opacity-60"
+              >
+                <span className="text-[14px] font-medium text-foreground">{c.name}</span>
+                <span className="text-[12px] text-muted-foreground">{c.slug}</span>
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
+
       {showRoleModal && (
         <Modal onClose={() => setShowRoleModal(false)}>
           <h2 className="text-[16px] font-semibold text-foreground">

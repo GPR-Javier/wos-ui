@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import {
   authApi,
   sessionApi,
+  companyApi,
   AuthResponse,
   LoginPayload,
   RegisterPayload,
@@ -47,13 +48,63 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: async (payload: LoginPayload) => {
-      await authApi.login(payload) // authenticate identity (gpr-auth sets the cookie)
-      return sessionApi.establish() // wos-hr resolves roles + mints the role token (or prompts selection)
+      // 1. Authenticate identity (gpr-auth sets the cookie + returns the user's companies).
+      const company = await authApi.login(payload)
+      if (company.requiresCompanySelection) {
+        return { companySelect: company.companies } // caller shows the company picker
+      }
+      // 2. Single company (token already scoped) → WorkOS resolves roles + mints the role token.
+      return sessionApi.establish()
+    },
+    onSuccess: (data) => {
+      if ("companySelect" in data) return // caller handles company picker
+      if (data.requiresRoleSelection) return // caller handles role picker
+      const res = data as AuthResponse
+      setFromAuth(res) // cookies set by server automatically
+      qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
+      redirectAfterAuth(res, router)
+    },
+  })
+}
+
+// ── Select company (when requiresCompanySelection: true) ─────────────────────────
+
+export function useSelectCompany() {
+  const qc = useQueryClient()
+  const router = useRouter()
+  const { setFromAuth } = useAuthStore()
+
+  return useMutation({
+    mutationFn: async (companyId: number) => {
+      await companyApi.select(companyId) // re-mints the identity token with companyId
+      return sessionApi.establish() // then resolve WorkOS roles within that company
     },
     onSuccess: (data) => {
       if (data.requiresRoleSelection) return // caller handles role picker
       const res = data as AuthResponse
-      setFromAuth(res) // cookies set by server automatically
+      setFromAuth(res)
+      qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
+      redirectAfterAuth(res, router)
+    },
+  })
+}
+
+// ── Switch company (mid-session) ─────────────────────────────────────────────────
+
+export function useSwitchCompany() {
+  const qc = useQueryClient()
+  const router = useRouter()
+  const { setFromAuth } = useAuthStore()
+
+  return useMutation({
+    mutationFn: async (companyId: number) => {
+      await companyApi.switch(companyId)
+      return sessionApi.establish()
+    },
+    onSuccess: (data) => {
+      if (data.requiresRoleSelection) return
+      const res = data as AuthResponse
+      setFromAuth(res)
       qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
       redirectAfterAuth(res, router)
     },
