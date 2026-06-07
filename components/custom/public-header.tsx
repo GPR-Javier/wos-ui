@@ -17,6 +17,12 @@ export function PublicHeader({ right }: { right?: React.ReactNode }) {
         ) : (
           <nav className="flex items-center gap-6">
             <Link
+              href="/pricing"
+              className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Pricing
+            </Link>
+            <Link
               href="/careers"
               className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
             >
