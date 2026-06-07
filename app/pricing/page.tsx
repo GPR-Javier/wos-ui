@@ -119,9 +119,14 @@ const FEATURE_GROUPS: { title: string; keys: string[] }[] = [
 ]
 
 // Recommended-column band: a bordered, tinted highlight that runs the full height.
+// Recommended column = primary band (always on). Hovered column = a muted "card" lift.
 const REC_TOP = "rounded-t-2xl border-x border-t border-primary/25 bg-primary/5"
 const REC_MID = "border-x border-primary/25 bg-primary/5"
 const REC_BOT = "rounded-b-2xl border-x border-b border-primary/25 bg-primary/5"
+const HOV_TOP = "rounded-t-2xl border-x border-t border-border bg-muted/40"
+const HOV_MID = "border-x border-border bg-muted/40"
+const HOV_BOT = "rounded-b-2xl border-x border-b border-border bg-muted/40"
+const STICKY = "sticky left-0 z-10 bg-background"
 
 function PricingTable({
   plans,
@@ -132,16 +137,31 @@ function PricingTable({
   comparison: PlanComparison
   cycle: Cycle
 }) {
+  const [hovered, setHovered] = useState<string | null>(null)
   const bySlug = new Map(plans.map((p) => [p.slug, p]))
   const cols = comparison.plans.map((c) => ({ ...c, pricing: bySlug.get(c.slug) }))
   const featureByKey = new Map(comparison.features.map((f) => [f.key, f]))
 
+  // Highlight the recommended column always, and whichever column is hovered as a card lift.
+  const band = (slug: string, recommended: boolean, pos: "top" | "mid" | "bot") => {
+    if (recommended) return pos === "top" ? REC_TOP : pos === "bot" ? REC_BOT : REC_MID
+    if (hovered === slug) return pos === "top" ? HOV_TOP : pos === "bot" ? HOV_BOT : HOV_MID
+    return ""
+  }
+
   return (
     <div className="mt-12 overflow-x-auto pb-2">
-      <table className="w-full min-w-240 border-separate border-spacing-0 text-[13px]">
+      <table
+        className="w-full min-w-240 border-separate border-spacing-0 text-[13px]"
+        onMouseOver={(e) => {
+          const el = (e.target as HTMLElement).closest<HTMLElement>("[data-col]")
+          setHovered(el?.dataset.col ?? null)
+        }}
+        onMouseLeave={() => setHovered(null)}
+      >
         <thead>
           <tr>
-            <th className="w-[20%] px-4 pb-6 text-left align-bottom">
+            <th className={cn(STICKY, "w-[20%] px-4 pb-6 text-left align-bottom")}>
               <span className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Compare plans
               </span>
@@ -149,7 +169,11 @@ function PricingTable({
             {cols.map((c) => (
               <th
                 key={c.slug}
-                className={cn("px-3 pb-6 pt-7 text-center align-top", c.recommended && REC_TOP)}
+                data-col={c.slug}
+                className={cn(
+                  "px-3 pb-6 pt-7 text-center align-top transition-colors",
+                  band(c.slug, c.recommended, "top")
+                )}
               >
                 <div className="flex h-5 items-center justify-center">
                   {c.recommended && (
@@ -196,13 +220,17 @@ function PricingTable({
             <Fragment key={group.title}>
               {/* group heading */}
               <tr>
-                <td className="px-4 pb-2 pt-7 align-bottom">
+                <td className={cn(STICKY, "px-4 pb-2 pt-7 align-bottom")}>
                   <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70">
                     {group.title}
                   </span>
                 </td>
                 {cols.map((c) => (
-                  <td key={c.slug} className={cn(c.recommended && REC_MID)} />
+                  <td
+                    key={c.slug}
+                    data-col={c.slug}
+                    className={cn("transition-colors", band(c.slug, c.recommended, "mid"))}
+                  />
                 ))}
               </tr>
 
@@ -210,8 +238,8 @@ function PricingTable({
                 const row = featureByKey.get(key)
                 if (!row) return null
                 return (
-                  <tr key={key} className="group/row">
-                    <td className="rounded-l-lg px-4 py-3 text-left text-foreground/90 transition-colors group-hover/row:bg-muted/25">
+                  <tr key={key}>
+                    <td className={cn(STICKY, "px-4 py-3 text-left text-foreground/90")}>
                       <span className="inline-flex items-center gap-1.5">
                         {row.label}
                         <Tooltip>
@@ -237,11 +265,10 @@ function PricingTable({
                     {cols.map((c) => (
                       <td
                         key={c.slug}
+                        data-col={c.slug}
                         className={cn(
-                          "px-4 py-3 text-center",
-                          c.recommended
-                            ? REC_MID
-                            : "transition-colors group-hover/row:bg-muted/25"
+                          "px-4 py-3 text-center transition-colors",
+                          band(c.slug, c.recommended, "mid")
                         )}
                       >
                         {c.included.includes(key) ? (
@@ -267,11 +294,15 @@ function PricingTable({
             </Fragment>
           ))}
 
-          {/* spacer row closes the recommended band */}
+          {/* spacer row closes the recommended / hovered band */}
           <tr>
-            <td />
+            <td className={STICKY} />
             {cols.map((c) => (
-              <td key={c.slug} className={cn("h-5", c.recommended && REC_BOT)} />
+              <td
+                key={c.slug}
+                data-col={c.slug}
+                className={cn("h-5 transition-colors", band(c.slug, c.recommended, "bot"))}
+              />
             ))}
           </tr>
         </tbody>
