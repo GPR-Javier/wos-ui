@@ -6,7 +6,6 @@ import { useQuery } from "@tanstack/react-query"
 import { PublicHeader } from "@/components/custom/public-header"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -19,8 +18,6 @@ import { cn } from "@/lib/utils"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   CheckmarkBadge01Icon,
-  ArrowRight01Icon,
-  Rocket01Icon,
   InformationCircleIcon,
   Cancel01Icon,
 } from "@hugeicons/core-free-icons"
@@ -51,7 +48,6 @@ export default function PricingPage() {
   // Render fully even if wos-hr isn't up yet (UI-first): fall back to local data.
   const plans = fetchedPlans && fetchedPlans.length ? fetchedPlans : FALLBACK_PLANS
   const comparison = fetchedComparison ?? FALLBACK_COMPARISON
-  const trial = plans.find((p) => p.trialDays != null)
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -93,30 +89,7 @@ export default function PricingPage() {
             </p>
           </div>
 
-          {/* Free-trial banner */}
-          {trial && (
-            <Card className="mt-10 flex flex-col items-center justify-between gap-4 border-primary/30 bg-primary/4 px-6 py-5 sm:flex-row">
-              <div className="flex items-center gap-3.5">
-                <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <HugeiconsIcon icon={Rocket01Icon} size={22} strokeWidth={1.8} />
-                </span>
-                <div>
-                  <p className="text-[14.5px] font-semibold text-foreground">
-                    {trial.name} — {trial.trialDays} days, no credit card
-                  </p>
-                  <p className="text-[13px] text-muted-foreground">{trial.tagline}</p>
-                </div>
-              </div>
-              <Button asChild className="shrink-0">
-                <Link href="/auth/register" className="gap-1.5">
-                  {trial.ctaLabel}
-                  <HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2} />
-                </Link>
-              </Button>
-            </Card>
-          )}
-
-          {/* Integrated pricing + feature comparison table */}
+          {/* Integrated pricing + feature comparison table (Free Trial is the leftmost column) */}
           <PricingTable plans={plans} comparison={comparison} cycle={cycle} />
 
           <Separator className="mx-auto mt-12 max-w-sm" />
@@ -165,10 +138,10 @@ function PricingTable({
 
   return (
     <div className="mt-12 overflow-x-auto pb-2">
-      <table className="w-full min-w-200 border-separate border-spacing-0 text-[13px]">
+      <table className="w-full min-w-240 border-separate border-spacing-0 text-[13px]">
         <thead>
           <tr>
-            <th className="w-[30%] px-4 pb-6 text-left align-bottom">
+            <th className="w-[20%] px-4 pb-6 text-left align-bottom">
               <span className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Compare plans
               </span>
@@ -176,7 +149,7 @@ function PricingTable({
             {cols.map((c) => (
               <th
                 key={c.slug}
-                className={cn("px-4 pb-6 pt-7 text-center align-top", c.recommended && REC_TOP)}
+                className={cn("px-3 pb-6 pt-7 text-center align-top", c.recommended && REC_TOP)}
               >
                 <div className="flex h-5 items-center justify-center">
                   {c.recommended && (
@@ -188,13 +161,20 @@ function PricingTable({
                 <div className="mt-3 text-[15px] font-bold tracking-tight text-foreground">
                   {c.name}
                 </div>
-                <div className="mt-3.5">
+                {c.pricing?.tagline && (
+                  <p className="mx-auto mt-1.5 min-h-9 max-w-44 text-[11.5px] font-normal leading-snug text-muted-foreground">
+                    {c.pricing.tagline}
+                  </p>
+                )}
+                <div className="mt-3">
                   <PriceLabel plan={c.pricing} cycle={cycle} />
                 </div>
                 <div className="mt-2 text-[11.5px] font-medium text-muted-foreground">
-                  {c.pricing?.seatLimit == null
-                    ? "Unlimited seats"
-                    : `Up to ${c.pricing.seatLimit} employees`}
+                  {c.pricing?.trialDays != null
+                    ? `${c.pricing.trialDays}-day trial`
+                    : c.pricing?.seatLimit == null
+                      ? "Unlimited seats"
+                      : `Up to ${c.pricing.seatLimit} employees`}
                 </div>
                 <Button
                   asChild
@@ -303,8 +283,16 @@ function PricingTable({
 function PriceLabel({ plan, cycle }: { plan?: PricingPlan; cycle: Cycle }) {
   if (!plan) return null
   if (plan.customPrice) {
-    return <div className="text-2xl font-bold text-foreground">Custom</div>
+    return (
+      <div>
+        <p className="text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground">
+          Custom pricing
+        </p>
+        <div className="mt-0.5 text-[26px] font-bold leading-none text-foreground">Custom</div>
+      </div>
+    )
   }
+  const isTrial = plan.trialDays != null
   const monthly =
     cycle === "annual" && plan.annualPrice != null
       ? Math.round(plan.annualPrice / 12)
@@ -312,7 +300,7 @@ function PriceLabel({ plan, cycle }: { plan?: PricingPlan; cycle: Cycle }) {
   return (
     <div>
       <p className="text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground">
-        Starts at
+        {isTrial ? "Free" : "Starts at"}
       </p>
       <div className="mt-0.5 inline-flex items-baseline gap-0.5">
         <span className="text-[14px] font-semibold text-foreground">$</span>
@@ -355,6 +343,7 @@ const FALLBACK_COMPARISON: PlanComparison = {
     { key: "support", label: "Priority support & SLA", description: "Priority support with a guaranteed response-time SLA." },
   ],
   plans: [
+    { slug: "trial", name: "Free Trial", recommended: false, included: FB_PROFESSIONAL },
     { slug: "starter", name: "Starter", recommended: false, included: FB_STARTER },
     { slug: "business", name: "Business", recommended: false, included: FB_BUSINESS },
     { slug: "professional", name: "Professional", recommended: true, included: FB_PROFESSIONAL },
