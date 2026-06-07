@@ -16,8 +16,10 @@ import {
   Building03Icon,
   CheckmarkBadge01Icon,
   ArrowRight01Icon,
+  SquareLock02Icon,
 } from "@hugeicons/core-free-icons"
-import { pricingApi } from "@/lib/pricing-api"
+import { pricingApi, type FeatureRow } from "@/lib/pricing-api"
+import { FALLBACK_COMPARISON } from "@/lib/pricing-fallback"
 
 const slugify = (s: string) =>
   s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
@@ -37,6 +39,16 @@ function Onboarding() {
   const { data: plans } = useQuery({ queryKey: ["pricing", "plans"], queryFn: pricingApi.list, retry: false })
   const planName = plans?.find((p) => p.slug === slug)?.name ?? "your"
   const seatNote = seats ? ` · ${seats} ${Number(seats) === 1 ? "seat" : "seats"}` : ""
+
+  // Which feature/config modules this plan unlocks (for the availability indicator).
+  const { data: comparison } = useQuery({
+    queryKey: ["pricing", "comparison"],
+    queryFn: pricingApi.comparison,
+    retry: false,
+  })
+  const cmp = comparison ?? FALLBACK_COMPARISON
+  const includedKeys = new Set(cmp.plans.find((p) => p.slug === slug)?.included ?? [])
+  const includedCount = cmp.features.filter((f) => includedKeys.has(f.key)).length
 
   const [company, setCompany] = useState("")
   const [companySlug, setCompanySlug] = useState("")
@@ -65,7 +77,7 @@ function Onboarding() {
     <div className="h-screen overflow-y-auto bg-background">
       <PublicHeader right={<Button asChild size="sm" variant="ghost"><Link href="/pricing">Pricing</Link></Button>} />
 
-      <main className="mx-auto max-w-xl px-4 pb-24 pt-12">
+      <main className="mx-auto max-w-4xl px-4 pb-24 pt-12">
         {!created ? (
           <>
             <div className="text-center">
@@ -81,7 +93,8 @@ function Onboarding() {
               </p>
             </div>
 
-            <Card className="mt-8 p-6">
+            <div className="mt-8 grid gap-6 md:grid-cols-[1fr_320px]">
+            <Card className="h-fit p-6">
               <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">Company</p>
               <div className="mt-4 space-y-4">
                 <Field label="Company name">
@@ -139,6 +152,14 @@ function Onboarding() {
                 Demo only — no company or account is created yet.
               </p>
             </Card>
+
+            <PlanFeaturePanel
+              planName={planName}
+              features={cmp.features}
+              includedKeys={includedKeys}
+              includedCount={includedCount}
+            />
+            </div>
           </>
         ) : (
           <div className="mx-auto max-w-md text-center">
@@ -174,5 +195,67 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <Label className="text-[12.5px]">{label}</Label>
       {children}
     </div>
+  )
+}
+
+/** Shows which feature/config modules the chosen plan unlocks vs. which are locked. */
+function PlanFeaturePanel({
+  planName,
+  features,
+  includedKeys,
+  includedCount,
+}: {
+  planName: string
+  features: FeatureRow[]
+  includedKeys: Set<string>
+  includedCount: number
+}) {
+  const lockedCount = features.length - includedCount
+  return (
+    <Card className="h-fit p-5">
+      <div className="flex items-center justify-between">
+        <p className="text-[13px] font-semibold text-foreground">Included on {planName}</p>
+        <Badge variant="secondary" className="text-[11px]">
+          {includedCount}/{features.length} modules
+        </Badge>
+      </div>
+      <p className="mt-1 text-[11.5px] text-muted-foreground">
+        Config modules your workspace can turn on. Locked ones need a higher plan.
+      </p>
+
+      <Separator className="my-4" />
+
+      <ul className="space-y-2.5">
+        {features.map((f) => {
+          const on = includedKeys.has(f.key)
+          return (
+            <li key={f.key} className="flex items-start gap-2.5">
+              <HugeiconsIcon
+                icon={on ? CheckmarkBadge01Icon : SquareLock02Icon}
+                size={16}
+                strokeWidth={1.8}
+                className={on ? "mt-0.5 shrink-0 text-primary" : "mt-0.5 shrink-0 text-muted-foreground/60"}
+              />
+              <span className={on ? "text-[12.5px] text-foreground" : "text-[12.5px] text-muted-foreground line-through decoration-muted-foreground/40"}>
+                {f.label}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+
+      {lockedCount > 0 && (
+        <>
+          <Separator className="my-4" />
+          <Link
+            href="/pricing"
+            className="flex items-center justify-center gap-1 text-[12px] font-medium text-primary hover:underline"
+          >
+            Unlock {lockedCount} more with a higher plan
+            <HugeiconsIcon icon={ArrowRight01Icon} size={14} strokeWidth={2} />
+          </Link>
+        </>
+      )}
+    </Card>
   )
 }

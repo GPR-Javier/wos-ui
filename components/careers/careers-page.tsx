@@ -794,17 +794,7 @@ export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
         embedded ? "" : "min-h-screen bg-background"
       )}
     >
-      {!embedded && (
-        <PublicHeader
-          right={
-            <Link href="/auth/login">
-              <Button variant="outline" size="sm" className="text-[13px]">
-                Employee login
-              </Button>
-            </Link>
-          }
-        />
-      )}
+      {!embedded && <PublicHeader />}
 
       {/* ── Embedded heading (dashboard) ── */}
       {embedded && (

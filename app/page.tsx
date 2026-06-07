@@ -138,8 +138,9 @@ const STATS = [
 
 export default function LandingPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <PublicHeader />
+    <div className="h-screen overflow-y-auto bg-background text-foreground">
+      <div className="flex min-h-full flex-col">
+        <PublicHeader />
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden border-b border-border">
@@ -314,6 +315,7 @@ export default function LandingPage() {
           </p>
         </div>
       </footer>
+      </div>
     </div>
   )
 }
