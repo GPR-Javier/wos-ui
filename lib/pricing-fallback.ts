@@ -10,9 +10,11 @@ export const FALLBACK_PLANS: PricingPlan[] = [
   { slug: "enterprise", name: "Enterprise", tagline: "Security, scale and dedicated support", currency: "USD", monthlyPrice: null, annualPrice: null, customPrice: true, seatLimit: null, includedSeats: null, perSeatMonthly: null, perSeatAnnual: null, trialDays: null, recommended: false, sortOrder: 4, ctaLabel: "Talk to sales", features: [] },
 ]
 
+const AI_NOTE = "Requires your own AI provider API key — billed by the provider, not included in the plan."
+
 const FB_STARTER = ["attendance", "directory", "scheduling", "roles"]
-const FB_BUSINESS = [...FB_STARTER, "payroll", "requests", "recruitment"]
-const FB_PROFESSIONAL = [...FB_BUSINESS, "ai", "analytics", "audit", "rewards"]
+const FB_BUSINESS = [...FB_STARTER, "payroll", "requests", "recruitment", "role_access"]
+const FB_PROFESSIONAL = [...FB_BUSINESS, "config", "temp_role", "ai", "ai_persona", "ai_interview", "ai_scoring", "analytics", "audit", "rewards"]
 const FB_ENTERPRISE = [...FB_PROFESSIONAL, "sso", "support"]
 
 export const FALLBACK_COMPARISON: PlanComparison = {
@@ -21,10 +23,16 @@ export const FALLBACK_COMPARISON: PlanComparison = {
     { key: "directory", label: "Employee directory", description: "A searchable directory of every employee and their profile." },
     { key: "scheduling", label: "Scheduling", description: "Build and publish shifts; employees see their own schedule." },
     { key: "roles", label: "Custom roles & permissions", description: "Define custom roles with fine-grained page and action permissions." },
+    { key: "role_access", label: "Role access customization", description: "Fine-tune exactly which pages and actions each role can access." },
+    { key: "temp_role", label: "Temporary roles", description: "Grant time-bound roles that auto-expire — ideal for coverage, audits, or short projects." },
+    { key: "config", label: "Configuration & customization", description: "Customize modules, fields, and approval flows to match how your company runs." },
     { key: "payroll", label: "Payroll & overtime", description: "Run payroll, generate payslips, and compute overtime." },
     { key: "requests", label: "Full request workflows", description: "COE, official business, change-time, schedule-change and dispute flows." },
     { key: "recruitment", label: "Recruitment", description: "Post jobs, collect applications, and manage candidates end to end." },
-    { key: "ai", label: "AI interviews & assessments", description: "AI-assisted interviews and automated candidate assessments.", note: "Requires your own AI provider API key — billed by the provider, not included in the plan." },
+    { key: "ai", label: "AI interviews & assessments", description: "AI-assisted interviews and automated candidate assessments.", note: AI_NOTE },
+    { key: "ai_persona", label: "AI persona customization", description: "Shape the AI interviewer's tone, focus, and personality for each role and your brand.", note: AI_NOTE },
+    { key: "ai_interview", label: "Interactive AI interviews", description: "Live, conversational AI interviews that adapt their questions to each candidate in real time.", note: AI_NOTE },
+    { key: "ai_scoring", label: "AI candidate scoring & ranking", description: "Automatically score and rank candidates from their interviews and assessments.", note: AI_NOTE },
     { key: "analytics", label: "Analytics", description: "Dashboards and reports across attendance, payroll, and hiring." },
     { key: "audit", label: "Audit log", description: "A full audit trail of who changed what, and when." },
     { key: "rewards", label: "Rewards & contracts", description: "Rewards, ratings, and employment-contract management." },

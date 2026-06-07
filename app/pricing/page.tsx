@@ -92,13 +92,16 @@ export default function PricingPage() {
                 </TabsList>
               </Tabs>
               <Select value={cur.currency} onValueChange={cur.setCurrency}>
-                <SelectTrigger size="sm" className="w-[92px]">
+                <SelectTrigger size="sm" className="w-26">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {cur.available.map((c) => (
                     <SelectItem key={c} value={c}>
-                      {c}
+                      <span className="flex items-center gap-2">
+                        <CurrencyFlag code={c} />
+                        {c}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -133,11 +136,34 @@ export default function PricingPage() {
 
 const FEATURE_GROUPS: { title: string; keys: string[] }[] = [
   { title: "Core HR", keys: ["attendance", "directory", "scheduling", "roles"] },
+  { title: "Access & configuration", keys: ["role_access", "temp_role", "config"] },
   { title: "Operations", keys: ["payroll", "requests"] },
-  { title: "Hiring", keys: ["recruitment", "ai"] },
+  { title: "Hiring & AI", keys: ["recruitment", "ai", "ai_persona", "ai_interview", "ai_scoring"] },
   { title: "Insights & finance", keys: ["analytics", "audit", "rewards"] },
   { title: "Security & support", keys: ["sso", "support"] },
 ]
+
+// Currency → ISO country (for the flag image). Flag emoji don't render on Windows, so use flagcdn.
+const CURRENCY_COUNTRY: Record<string, string> = {
+  USD: "us", PHP: "ph", EUR: "eu", GBP: "gb", JPY: "jp",
+  SGD: "sg", AUD: "au", CAD: "ca", INR: "in", AED: "ae",
+}
+
+function CurrencyFlag({ code }: { code: string }) {
+  const cc = CURRENCY_COUNTRY[code]
+  if (!cc) return null
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`https://flagcdn.com/h20/${cc}.png`}
+      srcSet={`https://flagcdn.com/h40/${cc}.png 2x`}
+      alt=""
+      width={16}
+      height={12}
+      className="h-3 w-4 shrink-0 rounded-xs object-cover"
+    />
+  )
+}
 
 // Recommended-column band: a bordered, tinted highlight that runs the full height.
 // Recommended column = primary band (always on). Hovered column = a muted "card" lift.
@@ -255,6 +281,11 @@ function PricingTable({
                   <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70">
                     {group.title}
                   </span>
+                  {group.keys.some((k) => featureByKey.get(k)?.note) && (
+                    <span className="mt-1 block text-[10.5px] font-medium normal-case leading-snug text-amber-600 dark:text-amber-400/90">
+                      AI features require your own AI provider API key
+                    </span>
+                  )}
                 </td>
                 {cols.map((c) => (
                   <td
@@ -292,11 +323,6 @@ function PricingTable({
                           </TooltipContent>
                         </Tooltip>
                       </span>
-                      {row.note && (
-                        <span className="mt-0.5 block text-[10.5px] font-medium leading-snug text-amber-600 dark:text-amber-400/90">
-                          Requires your own AI API key
-                        </span>
-                      )}
                     </td>
                     {cols.map((c) => (
                       <td
