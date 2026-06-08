@@ -374,6 +374,7 @@ export const sectionTitles: Record<string, string> = {
   audit: "Audit Log",
   config: "Configuration",
   "schedule-changes": "Schedule Change Requests",
+  "my-company": "My Company",
   settings: "Settings",
   general: "My Profile",
   security: "Security",

@@ -22,10 +22,12 @@ import {
   Clock01Icon,
   CalendarMinus01Icon,
   Building03Icon,
+  Building04Icon,
   MoneyBag02Icon,
   HelpSquareIcon,
   AiBrain01Icon,
 } from "@hugeicons/core-free-icons"
+import { MyCompanySection } from "@/components/dashboard/my-company"
 import { SchedulePoliciesSection } from "@/components/dashboard/admin/schedule-policies"
 import { AttendanceConfigSection } from "@/components/dashboard/admin/attendance-config"
 import { PayrollSetupSection } from "@/components/dashboard/admin/payroll-setup"
@@ -113,6 +115,9 @@ export function ConfigSection() {
   const canManageQuestions = useAuthStore((s) =>
     s.authorities.includes("INTERVIEW_MANAGEMENT:MANAGE_QUESTIONS")
   )
+  const canEditCompany = useAuthStore((s) =>
+    s.authorities.includes("CONFIGURATION:EDIT_COMPANY_DETAILS")
+  )
   const isAdmin = useAuthStore((s) => s.apiRole?.toUpperCase() === "ADMIN")
 
   const defaultTab = useMemo(() => {
@@ -130,6 +135,12 @@ export function ConfigSection() {
 
   // Categorized side-nav. Each group only renders when it has at least one permitted item.
   const navGroups: { title: string; items: ConfigNavItem[] }[] = [
+    {
+      title: "Company",
+      items: [
+        canEditCompany && { value: "company", label: "Company details", icon: Building04Icon },
+      ].filter(Boolean) as ConfigNavItem[],
+    },
     {
       title: "Time & attendance",
       items: [
@@ -207,6 +218,12 @@ export function ConfigSection() {
 
       {/* Content */}
       <div className="min-w-0 flex-1">
+      {canEditCompany && (
+        <TabsContent value="company">
+          <MyCompanySection />
+        </TabsContent>
+      )}
+
       {canViewSchedulePolicy && (
         <TabsContent value="schedule" className="space-y-4">
           <div>

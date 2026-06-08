@@ -27,6 +27,7 @@ import {
   UserShield01Icon,
   CheckmarkCircle01Icon,
   Loading03Icon,
+  Building04Icon,
 } from "@hugeicons/core-free-icons"
 import { useAuthStore } from "@/store/auth-store"
 import { useToastStore } from "@/store/toast-store"
@@ -84,6 +85,21 @@ export function Topbar() {
       <span className="flex-1 text-[15px] font-semibold text-foreground">
         {title}
       </span>
+
+      {/* My Company */}
+      <Link
+        href="/dashboard/my-company"
+        title="My Company"
+        aria-label="My Company"
+        className={cn(
+          "flex size-8 items-center justify-center rounded-lg transition-colors hover:bg-muted hover:text-foreground",
+          section === "my-company"
+            ? "bg-muted text-foreground"
+            : "text-muted-foreground"
+        )}
+      >
+        <HugeiconsIcon icon={Building04Icon} size={15} strokeWidth={1.8} />
+      </Link>
 
       {/* Dark mode toggle */}
       <button

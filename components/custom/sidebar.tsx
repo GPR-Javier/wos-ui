@@ -395,6 +395,19 @@ export function Sidebar() {
           </div>
           <div className="flex gap-1">
             <Link
+              href="/dashboard/my-company"
+              title="My Company"
+              aria-label="My Company"
+              className={cn(
+                "flex size-6 items-center justify-center rounded-md transition-colors hover:bg-muted hover:text-foreground",
+                section === "my-company"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground"
+              )}
+            >
+              <HugeiconsIcon icon={Building04Icon} size={13} strokeWidth={1.8} />
+            </Link>
+            <Link
               href="/dashboard/settings"
               className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
