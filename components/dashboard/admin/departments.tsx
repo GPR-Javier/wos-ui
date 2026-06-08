@@ -140,6 +140,7 @@ function DeptModal({
               placeholder="Optional short description…"
               value={form.description}
               onChange={(e) => setField("description", e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && onSubmit()}
             />
           </FieldWrap>
 

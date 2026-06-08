@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   CheckmarkCircle01Icon,
@@ -18,6 +18,13 @@ import {
   Search01Icon,
   Briefcase01Icon,
   EyeIcon,
+  Calendar03Icon,
+  Clock01Icon,
+  CalendarMinus01Icon,
+  Building03Icon,
+  MoneyBag02Icon,
+  HelpSquareIcon,
+  AiBrain01Icon,
 } from "@hugeicons/core-free-icons"
 import { SchedulePoliciesSection } from "@/components/dashboard/admin/schedule-policies"
 import { AttendanceConfigSection } from "@/components/dashboard/admin/attendance-config"
@@ -88,6 +95,8 @@ function PlaceholderSection({
 
 // ── ConfigSection ──────────────────────────────────────────────────────────
 
+type ConfigNavItem = { value: string; label: string; icon: typeof Briefcase01Icon }
+
 export function ConfigSection() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -119,25 +128,85 @@ export function ConfigSection() {
     router.replace(`/dashboard/config?tab=${tab}`)
   }
 
-  return (
-    <Tabs value={activeTab} onValueChange={handleTabChange} className="gap-6">
-      <TabsList variant="line" className="border-b border-border">
-        {canViewSchedulePolicy && (
-          <TabsTrigger value="schedule">Schedule policy</TabsTrigger>
-        )}
-        {canEditAttendance && (
-          <TabsTrigger value="attendance">Attendance</TabsTrigger>
-        )}
-        {canEditLeave && <TabsTrigger value="leave">Leave</TabsTrigger>}
-        <TabsTrigger value="departments">Departments</TabsTrigger>
-        <TabsTrigger value="positions">Job Positions</TabsTrigger>
-        <TabsTrigger value="payroll-setup">Payroll Setup</TabsTrigger>
-        {canManageQuestions && (
-          <TabsTrigger value="question-bank">Question Bank</TabsTrigger>
-        )}
-        {isAdmin && <TabsTrigger value="ai-provider">AI Provider</TabsTrigger>}
-      </TabsList>
+  // Categorized side-nav. Each group only renders when it has at least one permitted item.
+  const navGroups: { title: string; items: ConfigNavItem[] }[] = [
+    {
+      title: "Time & attendance",
+      items: [
+        canViewSchedulePolicy && { value: "schedule", label: "Schedule policy", icon: Calendar03Icon },
+        canEditAttendance && { value: "attendance", label: "Attendance", icon: Clock01Icon },
+        canEditLeave && { value: "leave", label: "Leave", icon: CalendarMinus01Icon },
+      ].filter(Boolean) as ConfigNavItem[],
+    },
+    {
+      title: "Organization",
+      items: [
+        { value: "departments", label: "Departments", icon: Building03Icon },
+        { value: "positions", label: "Job positions", icon: Briefcase01Icon },
+      ],
+    },
+    {
+      title: "Payroll",
+      items: [{ value: "payroll-setup", label: "Payroll setup", icon: MoneyBag02Icon }],
+    },
+    {
+      title: "Hiring & AI",
+      items: [
+        canManageQuestions && { value: "question-bank", label: "Question bank", icon: HelpSquareIcon },
+        isAdmin && { value: "ai-provider", label: "AI provider", icon: AiBrain01Icon },
+      ].filter(Boolean) as ConfigNavItem[],
+    },
+  ].filter((g) => g.items.length > 0)
 
+  return (
+    <Tabs
+      value={activeTab}
+      onValueChange={handleTabChange}
+      orientation="vertical"
+      className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8"
+    >
+      {/* Side nav */}
+      <aside className="shrink-0 lg:sticky lg:top-6 lg:w-56">
+        <nav className="flex flex-col gap-5">
+          {navGroups.map((group) => (
+            <div key={group.title}>
+              <p className="mb-1.5 px-3 text-[10.5px] font-bold tracking-wider text-muted-foreground/60 uppercase">
+                {group.title}
+              </p>
+              <div className="flex flex-col gap-0.5">
+                {group.items.map((item) => {
+                  const active = activeTab === item.value
+                  return (
+                    <button
+                      key={item.value}
+                      type="button"
+                      onClick={() => handleTabChange(item.value)}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] font-medium transition-colors",
+                        active
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <HugeiconsIcon
+                        icon={item.icon}
+                        size={16}
+                        strokeWidth={1.8}
+                        className={active ? "text-primary" : "text-muted-foreground/70"}
+                      />
+                      {item.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+      </aside>
+
+      {/* Content */}
+      <div className="min-w-0 flex-1">
       {canViewSchedulePolicy && (
         <TabsContent value="schedule" className="space-y-4">
           <div>
@@ -195,6 +264,7 @@ export function ConfigSection() {
           <AiProviderConfigSection />
         </TabsContent>
       )}
+      </div>
     </Tabs>
   )
 }
