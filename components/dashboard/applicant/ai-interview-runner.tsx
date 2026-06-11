@@ -34,6 +34,9 @@ interface SREvent {
   resultIndex: number
   results: { readonly length: number; readonly [i: number]: SRResult }
 }
+interface SRErrorEvent {
+  error: string
+}
 interface SpeechRec {
   lang: string
   continuous: boolean
@@ -42,7 +45,7 @@ interface SpeechRec {
   stop(): void
   onresult: ((e: SREvent) => void) | null
   onend: (() => void) | null
-  onerror: (() => void) | null
+  onerror: ((e: SRErrorEvent) => void) | null
 }
 type SRCtor = new () => SpeechRec
 
@@ -106,6 +109,10 @@ export function AIInterviewRunner({
   const [levels, setLevels] = useState<number[]>(ZERO_BARS)
   const recRef = useRef<SpeechRec | null>(null)
   const [srSupported] = useState(() => !!getSRCtor())
+  // Speech recognition can fail (mic blocked, network drop, browser hiccup). When it does we surface
+  // a message and let the candidate type instead, so a flaky mic never blocks the interview.
+  const [recError, setRecError] = useState<string | null>(null)
+  const [manualEntry, setManualEntry] = useState(false)
 
   // Follow-up flow state.
   const [thinking, setThinking] = useState(false)
@@ -242,6 +249,7 @@ export function AIInterviewRunner({
   // Read each question aloud when its text appears; cancel speech on unmount.
   useEffect(() => {
     if (questionText) speak(questionText)
+    setRecError(null)
     return () => stopSpeaking()
   }, [questionText]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -256,6 +264,7 @@ export function AIInterviewRunner({
     const Ctor = getSRCtor()
     if (!Ctor) return
     stopSpeaking()
+    setRecError(null)
     const key = index
     const rec = new Ctor()
     rec.lang = "en-US"
@@ -268,6 +277,7 @@ export function AIInterviewRunner({
         if (res.isFinal) finalChunk += (res[0]?.transcript ?? "") + " "
       }
       if (finalChunk) {
+        setRecError(null)
         setTranscripts((t) => ({
           ...t,
           [key]: `${(t[key] ?? "").trim()} ${finalChunk.trim()}`.trim(),
@@ -275,9 +285,40 @@ export function AIInterviewRunner({
       }
     }
     rec.onend = () => setRecording(false)
-    rec.onerror = () => setRecording(false)
+    rec.onerror = (e) => {
+      setRecording(false)
+      const code = e?.error ?? ""
+      if (code === "aborted") return // we stopped it on purpose
+      if (code === "no-speech") {
+        setRecError(
+          "I didn't catch that — click the mic and speak again, or type your answer below."
+        )
+        return
+      }
+      // Hard failures (mic blocked, no device, lost connection): offer the typed fallback so the
+      // candidate is never stuck behind a flaky mic.
+      setRecError(
+        code === "not-allowed" || code === "service-not-allowed"
+          ? "Microphone access is blocked. Allow it in your browser, or type your answer below."
+          : code === "audio-capture"
+            ? "No microphone was detected. Please type your answer below."
+            : code === "network"
+              ? "Speech recognition lost connection. Type your answer below, or try the mic again."
+              : "Couldn't record your answer. Please type it below, or try the mic again."
+      )
+      setManualEntry(true)
+    }
     recRef.current = rec
-    rec.start()
+    try {
+      rec.start()
+    } catch {
+      // start() throws (InvalidStateError) if a prior session didn't fully release — fall back to typing.
+      recRef.current = null
+      setRecording(false)
+      setRecError("Couldn't start recording — please type your answer below, or try again.")
+      setManualEntry(true)
+      return
+    }
     setRecording(true)
     startWave()
   }
@@ -483,11 +524,27 @@ export function AIInterviewRunner({
               </button>
             </div>
           )}
+          {/* Recording failed — tell the candidate why and steer them to the typed fallback. */}
+          {recError && !recording && (
+            <p className="max-w-xs text-center text-[12px] font-medium text-amber-600 dark:text-amber-400">
+              {recError}
+            </p>
+          )}
+          {/* Always offer a typed fallback so a flaky mic never blocks the interview. */}
+          {srSupported && !manualEntry && !recording && (
+            <button
+              type="button"
+              onClick={() => setManualEntry(true)}
+              className="text-[12px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              Prefer to type? Switch to typing
+            </button>
+          )}
         </div>
         )}
 
-        {/* Typed answer ONLY when speech recognition is unavailable (fallback). */}
-        {!srSupported && !reachedEnd && (
+        {/* Typed answer — when speech recognition is unavailable OR the candidate opted to type. */}
+        {(!srSupported || manualEntry) && !reachedEnd && (
           <div className="mt-4">
             <label className="text-[12px] text-muted-foreground">
               Your {noun}

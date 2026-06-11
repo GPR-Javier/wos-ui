@@ -1,6 +1,11 @@
 import { api } from "./api"
 import type { AssessmentPartType } from "./assessment-api"
 
+// Live AI-interview turns call out to the model (with server-side retries on a transient overload),
+// so they routinely take longer than the default 15s. Give them the same headroom as the other AI
+// calls — otherwise axios aborts mid-generation and the backend's real error never reaches the user.
+const AI_TIMEOUT = 120_000
+
 export interface PartOverview {
   type: AssessmentPartType
   orderIndex: number
@@ -130,7 +135,8 @@ export const assessmentRuntimeApi = {
     api
       .post<NextQuestionResponse>(
         `/ai/assessments/my/${applicationId}/parts/${partType}/next`,
-        { transcript }
+        { transcript },
+        { timeout: AI_TIMEOUT }
       )
       .then((r) => r.data),
 }

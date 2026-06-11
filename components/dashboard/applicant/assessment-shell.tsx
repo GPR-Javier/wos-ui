@@ -518,7 +518,15 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
         </div>
       )}
 
-      {overview.completed && overview.applicationStatus !== "OFFER" && overview.applicationStatus !== "HIRED" && (
+      {overview.applicationStatus === "REJECTED" && (
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-medium text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400">
+          <HugeiconsIcon icon={Cancel01Icon} size={16} strokeWidth={2} />
+          Thank you for your interest. After careful review, we&apos;ve decided
+          not to move forward with your application at this time.
+        </div>
+      )}
+
+      {overview.completed && overview.applicationStatus !== "OFFER" && overview.applicationStatus !== "HIRED" && overview.applicationStatus !== "REJECTED" && (
         <div className="mt-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-[13px] font-medium text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400">
           <HugeiconsIcon
             icon={CheckmarkCircle01Icon}
@@ -556,6 +564,10 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
             key={part.type}
             part={part}
             busy={startMut.isPending}
+            appClosed={
+              overview.applicationStatus === "REJECTED" ||
+              overview.applicationStatus === "WITHDRAWN"
+            }
             onStart={() => beginPart(part.type)}
           />
         ))}
@@ -772,10 +784,13 @@ function partCleared(p: PartOverview) {
 function PartCard({
   part,
   busy,
+  appClosed,
   onStart,
 }: {
   part: PartOverview
   busy: boolean
+  /** Application is terminally closed (rejected/withdrawn) — no part is still actionable. */
+  appClosed: boolean
   onStart: () => void
 }) {
   const passed = part.passed === true
@@ -794,6 +809,9 @@ function PartCard({
   const stageRejected = part.stageStatus === "REJECTED"
   // Human stage the reviewer has marked as held and now under review (HR set it to "Under review").
   const stageUnderReview = part.stageStatus === "UNDER_REVIEW"
+  // Application is closed and this part was never cleared — it's moot now, so show it as "Not
+  // selected" rather than leaving a stale "Under review"/"Coming soon" badge on it.
+  const closedOut = appClosed && !passed && !stagePassed && !stageSkipped
 
   return (
     <div
@@ -812,11 +830,18 @@ function PartCard({
               Passed{part.lastScore != null ? ` · ${part.lastScore}%` : ""}
             </StatusBadge>
           )}
-          {awaiting && <StatusBadge variant="amber">Under review</StatusBadge>}
-          {failed && isAi && (
+          {closedOut && (
             <StatusBadge variant="red">Not selected</StatusBadge>
           )}
-          {retake && <StatusBadge variant="red">Retake needed</StatusBadge>}
+          {awaiting && !closedOut && (
+            <StatusBadge variant="amber">Under review</StatusBadge>
+          )}
+          {failed && isAi && !closedOut && (
+            <StatusBadge variant="red">Not selected</StatusBadge>
+          )}
+          {retake && !closedOut && (
+            <StatusBadge variant="red">Retake needed</StatusBadge>
+          )}
           {isHuman && stagePassed && (
             <StatusBadge variant="green">Passed</StatusBadge>
           )}
@@ -828,7 +853,7 @@ function PartCard({
               Skipped
             </StatusBadge>
           )}
-          {isHuman && stageUnderReview && (
+          {isHuman && stageUnderReview && !closedOut && (
             <StatusBadge variant="amber">Under review</StatusBadge>
           )}
           {isHuman &&
@@ -836,12 +861,14 @@ function PartCard({
             !stagePassed &&
             !stageRejected &&
             !stageSkipped &&
-            !stageUnderReview && (
+            !stageUnderReview &&
+            !closedOut && (
               <StatusBadge variant="blue">Scheduled</StatusBadge>
             )}
           {!part.runnable &&
             !passed &&
             !awaiting &&
+            !closedOut &&
             !(
               isHuman &&
               (stagePassed ||
@@ -921,7 +948,11 @@ function PartCard({
       </div>
 
       <div className="shrink-0">
-        {locked ? (
+        {appClosed && !passed && !stagePassed && !stageSkipped ? (
+          <span className="text-[12px] font-medium text-muted-foreground">
+            Closed
+          </span>
+        ) : locked ? (
           <span className="text-[12px] text-muted-foreground">Locked</span>
         ) : awaiting ? (
           <span className="text-[12px] font-medium text-amber-600 dark:text-amber-400">

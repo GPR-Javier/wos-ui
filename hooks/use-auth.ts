@@ -189,7 +189,7 @@ function redirectAfterAuth(
   }
 }
 
-// ── Register (creates Applicant account) ─────────────────────────────────────
+// ── Register (creates a company-less Applicant account) ──────────────────────
 
 export function useRegister() {
   const qc = useQueryClient()
@@ -197,11 +197,18 @@ export function useRegister() {
   const { setFromAuth } = useAuthStore()
 
   return useMutation({
-    mutationFn: (payload: RegisterPayload) => authApi.register(payload),
+    mutationFn: async (payload: RegisterPayload) => {
+      // 1. Create the identity (gpr-auth sets the identity cookie; no company yet).
+      await authApi.register(payload)
+      // 2. WorkOS resolves the global Applicant role and mints the role-bearing token.
+      return sessionApi.establish()
+    },
     onSuccess: (data) => {
-      setFromAuth(data)
+      if (data.requiresRoleSelection) return // not expected for a fresh applicant
+      const res = data as AuthResponse
+      setFromAuth(res)
       qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
-      redirectAfterAuth(data, router)
+      redirectAfterAuth(res, router)
     },
   })
 }
