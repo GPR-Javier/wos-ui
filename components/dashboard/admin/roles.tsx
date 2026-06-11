@@ -33,6 +33,7 @@ import type {
   AssignedAccessRole,
   TemporaryAccessPayload,
 } from "@/lib/admin-roles-api"
+import { useEscapeKey } from "@/hooks/use-escape-key"
 
 // ── Checkbox ───────────────────────────────────────────────────────────────
 
@@ -80,7 +81,19 @@ function Checkbox({
 
 const DEFAULT_ROLE_COLOR = "#6366f1"
 
-function RoleFormInline({
+// Quick-pick swatches (mirror the seeded role colors) for one-click selection.
+const COLOR_PRESETS = [
+  "#6366f1", // indigo
+  "#8b5cf6", // violet
+  "#3b82f6", // blue
+  "#10b981", // emerald
+  "#f59e0b", // amber
+  "#ef4444", // red
+  "#ec4899", // pink
+  "#64748b", // slate
+]
+
+export function RoleFormModal({
   initial,
   onSave,
   onCancel,
@@ -105,98 +118,149 @@ function RoleFormInline({
   const [desc, setDesc] = useState(initial?.description ?? "")
   const [color, setColor] = useState(initial?.color ?? DEFAULT_ROLE_COLOR)
   const [isAdmin, setIsAdmin] = useState(initial?.roleType === "ADMIN")
+  const editing = !!initial
+  useEscapeKey(onCancel)
+
+  function submit() {
+    if (!name.trim()) return
+    onSave(name.trim(), desc.trim(), color, isAdmin ? "ADMIN" : "EMPLOYEE")
+  }
 
   return (
-    <div className="space-y-2 rounded-xl border border-border bg-card p-3 shadow-sm">
-      <div className="space-y-1">
-        <Label className="text-[11px]">Role name</Label>
-        <Input
-          autoFocus
-          placeholder="e.g. Payroll Clerk"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && name.trim())
-              onSave(
-                name.trim(),
-                desc.trim(),
-                color,
-                isAdmin ? "ADMIN" : "EMPLOYEE"
-              )
-            if (e.key === "Escape") onCancel()
-          }}
-          className="h-8 text-[12px]"
-        />
-      </div>
-      <div className="space-y-1">
-        <Label className="text-[11px]">Description</Label>
-        <Input
-          placeholder="Short description"
-          value={desc}
-          onChange={(e) => setDesc(e.target.value)}
-          className="h-8 text-[12px]"
-        />
-      </div>
-      <div className="space-y-1">
-        <Label className="text-[11px]">Badge color</Label>
-        <div className="flex items-center gap-2">
-          <label className="relative shrink-0 cursor-pointer">
-            <span
-              className="block size-7 rounded-full border-2 border-border shadow-sm"
-              style={{ backgroundColor: color }}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onCancel}
+      />
+
+      {/* Dialog */}
+      <div className="relative w-full max-w-md animate-in rounded-2xl border border-border bg-card p-6 shadow-xl duration-200 zoom-in-95 fade-in">
+        {/* Header */}
+        <div className="mb-5 flex items-center gap-2.5">
+          <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10">
+            <HugeiconsIcon
+              icon={UserShield01Icon}
+              size={18}
+              strokeWidth={1.8}
+              className="text-primary"
             />
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            />
-          </label>
-          <Input
-            value={color}
-            onChange={(e) => {
-              const v = e.target.value
-              setColor(v)
-            }}
-            className="h-8 w-28 font-mono text-[12px] uppercase"
-            maxLength={7}
-            placeholder="#6366f1"
-          />
+          </div>
+          <div>
+            <h2 className="text-[15px] font-semibold">
+              {editing ? "Edit role" : "New role"}
+            </h2>
+            <p className="text-[11.5px] text-muted-foreground">
+              {editing
+                ? "Update this role's name, description and badge"
+                : "Add a role to your company"}
+            </p>
+          </div>
+          <button
+            onClick={onCancel}
+            className="ml-auto flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
+          </button>
         </div>
-      </div>
-      <div>
-        <label className="flex cursor-pointer items-center gap-2">
-          <Checkbox checked={isAdmin} onChange={() => setIsAdmin((v) => !v)} />
-          <span className="text-[11px] font-medium text-foreground">
-            Admin role
-          </span>
-          <span className="text-[10px] text-muted-foreground">
-            — grants access to team management pages
-          </span>
-        </label>
-      </div>
-      <div className="flex gap-1.5 pt-1">
-        <Button
-          size="sm"
-          className="h-7 flex-1 text-[11px]"
-          disabled={!name.trim() || isPending}
-          onClick={() =>
-            onSave(
-              name.trim(),
-              desc.trim(),
-              color,
-              isAdmin ? "ADMIN" : "EMPLOYEE"
-            )
-          }
-        >
-          {isPending ? "Saving…" : initial ? "Update" : "Create"}
-        </Button>
-        <button
-          onClick={onCancel}
-          className="flex size-7 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted"
-        >
-          <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={2} />
-        </button>
+
+        {/* Fields */}
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-[12px]">Role name</Label>
+            <Input
+              autoFocus
+              placeholder="e.g. Payroll Clerk"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submit()
+                if (e.key === "Escape") onCancel()
+              }}
+              className="h-9 text-[13px]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-[12px]">Description</Label>
+            <textarea
+              rows={3}
+              placeholder="What is this role for? Who should hold it?"
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              className="w-full resize-none rounded-lg border border-input bg-transparent p-3 text-[13px] leading-relaxed text-foreground focus:ring-2 focus:ring-ring/40 focus:outline-none"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-[12px]">Badge color</Label>
+            <div className="flex items-center gap-2">
+              <label className="relative shrink-0 cursor-pointer">
+                <span
+                  className="block size-9 rounded-lg border-2 border-border shadow-sm"
+                  style={{ backgroundColor: color }}
+                />
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                />
+              </label>
+              <Input
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="h-9 w-28 font-mono text-[13px] uppercase"
+                maxLength={7}
+                placeholder="#6366f1"
+              />
+              <div className="flex flex-1 flex-wrap items-center justify-end gap-1.5">
+                {COLOR_PRESETS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setColor(c)}
+                    title={c}
+                    className={cn(
+                      "size-6 rounded-full border-2 shadow-sm transition-transform hover:scale-110",
+                      color.toLowerCase() === c
+                        ? "border-foreground"
+                        : "border-transparent"
+                    )}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-muted/30 p-3">
+            <Checkbox checked={isAdmin} onChange={() => setIsAdmin((v) => !v)} />
+            <span className="-mt-0.5">
+              <span className="block text-[12.5px] font-medium text-foreground">
+                Admin role
+              </span>
+              <span className="block text-[11px] text-muted-foreground">
+                Grants access to team management and admin control pages.
+              </span>
+            </span>
+          </label>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 flex justify-end gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onCancel}
+            disabled={isPending}
+          >
+            Cancel
+          </Button>
+          <Button size="sm" disabled={!name.trim() || isPending} onClick={submit}>
+            {isPending ? "Saving…" : editing ? "Update role" : "Create role"}
+          </Button>
+        </div>
       </div>
     </div>
   )
@@ -665,24 +729,7 @@ export function RolesSection() {
 
         {roles.map((r) => (
           <div key={r.id}>
-            {editingId === r.id ? (
-              <RoleFormInline
-                initial={{
-                  name: r.name,
-                  description: r.description,
-                  color: r.color,
-                  roleType: r.roleType,
-                }}
-                isPending={updateMutation.isPending}
-                onSave={(name, description, color, roleType) =>
-                  updateMutation.mutate(
-                    { id: r.id, name, description, color, roleType },
-                    { onSuccess: () => setEditingId(null) }
-                  )
-                }
-                onCancel={() => setEditingId(null)}
-              />
-            ) : (
+            {
               <div
                 role="button"
                 tabIndex={0}
@@ -798,28 +845,9 @@ export function RolesSection() {
                   </button>
                 </div>
               </div>
-            )}
+            }
           </div>
         ))}
-
-        {/* New role form */}
-        {creating && (
-          <RoleFormInline
-            isPending={createMutation.isPending}
-            onSave={(name, description, color, roleType) =>
-              createMutation.mutate(
-                { name, description, color, roleType },
-                {
-                  onSuccess: (created) => {
-                    setActiveId(created.id)
-                    setCreating(false)
-                  },
-                }
-              )
-            }
-            onCancel={() => setCreating(false)}
-          />
-        )}
 
         {/* Delete confirm */}
         {deleteId !== null && (
@@ -1491,6 +1519,54 @@ export function RolesSection() {
           </div>
         )}
       </div>
+
+      {/* Create / edit role modal */}
+      {(creating || editingId !== null) && (
+        <RoleFormModal
+          initial={
+            editingId !== null
+              ? (() => {
+                  const r = roles.find((x) => x.id === editingId)
+                  return r
+                    ? {
+                        name: r.name,
+                        description: r.description,
+                        color: r.color,
+                        roleType: r.roleType,
+                      }
+                    : undefined
+                })()
+              : undefined
+          }
+          isPending={
+            editingId !== null
+              ? updateMutation.isPending
+              : createMutation.isPending
+          }
+          onCancel={() => {
+            setCreating(false)
+            setEditingId(null)
+          }}
+          onSave={(name, description, color, roleType) => {
+            if (editingId !== null) {
+              updateMutation.mutate(
+                { id: editingId, name, description, color, roleType },
+                { onSuccess: () => setEditingId(null) }
+              )
+            } else {
+              createMutation.mutate(
+                { name, description, color, roleType },
+                {
+                  onSuccess: (created) => {
+                    setActiveId(created.id)
+                    setCreating(false)
+                  },
+                }
+              )
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

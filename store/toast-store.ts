@@ -1,44 +1,33 @@
 import { create } from "zustand"
+import { toast as sonnerToast } from "sonner"
 
 export type ToastType = "success" | "error" | "info"
 
-export interface ToastItem {
-  id: number
-  message: string
-  type: ToastType
-  /** Optional bold heading shown above the message (e.g. a backend error name). */
-  title?: string
-}
-
 interface ToastState {
-  toasts: ToastItem[]
+  /**
+   * Show a toast. Thin adapter over sonner (shadcn toast) so existing call sites keep the same API
+   * while rendering through the shared <Toaster />. When {@code title} is given it's the bold heading
+   * and {@code message} becomes the description; otherwise {@code message} is the toast text.
+   */
   push: (
     message: string,
     type?: ToastType,
     durationMs?: number,
     title?: string
   ) => void
-  remove: (id: number) => void
 }
 
-let nextToastId = 1
-
-export const useToastStore = create<ToastState>()((set) => ({
-  toasts: [],
-
+export const useToastStore = create<ToastState>()(() => ({
   push: (message, type = "info", durationMs = 4500, title) => {
-    const id = nextToastId++
-    set((state) => ({ toasts: [...state.toasts, { id, message, type, title }] }))
-
-    window.setTimeout(() => {
-      set((state) => ({
-        toasts: state.toasts.filter((toast) => toast.id !== id),
-      }))
-    }, durationMs)
+    const fn =
+      type === "success"
+        ? sonnerToast.success
+        : type === "error"
+          ? sonnerToast.error
+          : sonnerToast.info
+    fn(title ?? message, {
+      description: title ? message : undefined,
+      duration: durationMs,
+    })
   },
-
-  remove: (id) =>
-    set((state) => ({
-      toasts: state.toasts.filter((toast) => toast.id !== id),
-    })),
 }))

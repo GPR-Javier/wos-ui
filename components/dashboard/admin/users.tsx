@@ -51,6 +51,8 @@ import {
   useSetTempRoleAccess,
 } from "@/hooks/use-admin-users"
 import { useJobPositions } from "@/hooks/use-employee-profile"
+import { useEscapeKey } from "@/hooks/use-escape-key"
+import { useOrgGraph, useSetManager } from "@/hooks/use-org-chart"
 import type {
   AdminUser,
   CreateUserPayload,
@@ -110,6 +112,7 @@ function Backdrop({
   onClose: () => void
   children: React.ReactNode
 }) {
+  useEscapeKey(onClose)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
@@ -126,13 +129,16 @@ function Backdrop({
 interface CreateModalProps {
   onClose: () => void
 }
-function CreateUserModal({ onClose }: CreateModalProps) {
+export function CreateUserModal({ onClose }: CreateModalProps) {
   const createMutation = useCreateUser()
   const activeRolesQ = useActiveUserRoles()
   const { data: jobPositions = [] } = useJobPositions()
+  const { data: orgEmployees = [] } = useOrgGraph()
+  const setManagerMutation = useSetManager()
   const [roleSearch, setRoleSearch] = useState("")
   const [roleMenuOpen, setRoleMenuOpen] = useState(false)
   const [selectedPositionIds, setSelectedPositionIds] = useState<number[]>([])
+  const [managerId, setManagerId] = useState<number | null>(null)
   const [form, setForm] = useState<CreateUserPayload>({
     firstName: "",
     lastName: "",
@@ -167,7 +173,15 @@ function CreateUserModal({ onClose }: CreateModalProps) {
   function handleSubmit() {
     createMutation.mutate(
       { ...form, jobPositionIds: selectedPositionIds },
-      { onSuccess: onClose }
+      {
+        onSuccess: (created) => {
+          // Wire the new hire under their manager in the org tree (created.id is the identity userId).
+          if (managerId != null) {
+            setManagerMutation.mutate({ userId: created.id, managerId })
+          }
+          onClose()
+        },
+      }
     )
   }
 
@@ -427,6 +441,28 @@ function CreateUserModal({ onClose }: CreateModalProps) {
           )}
           <p className="text-[11px] text-muted-foreground">
             Combobox select supports multiple roles.
+          </p>
+        </div>
+        <div className="col-span-2 space-y-1.5">
+          <Label className="text-[12px]">
+            Reports to <span className="text-muted-foreground">(optional)</span>
+          </Label>
+          <select
+            value={managerId != null ? String(managerId) : ""}
+            onChange={(e) =>
+              setManagerId(e.target.value ? Number(e.target.value) : null)
+            }
+            className="h-9 w-full rounded-md border border-input bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring/40 focus:outline-none"
+          >
+            <option value="">— No manager (top level) —</option>
+            {orgEmployees.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-[11px] text-muted-foreground">
+            Who this person reports to in the org chart.
           </p>
         </div>
       </div>

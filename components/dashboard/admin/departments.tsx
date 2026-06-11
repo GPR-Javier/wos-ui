@@ -24,16 +24,7 @@ import {
   useDeleteDepartment,
 } from "@/hooks/use-employee-profile"
 import type { Department } from "@/lib/employee-profile-api"
-
-// ── Form types ────────────────────────────────────────────────────────────────
-
-type DeptForm = { name: string; description: string; active: boolean }
-type FormErrors = Partial<Record<keyof DeptForm, string>>
-const EMPTY_FORM: DeptForm = { name: "", description: "", active: true }
-
-function deptToForm(d: Department): DeptForm {
-  return { name: d.name, description: d.description ?? "", active: d.active }
-}
+import { useEscapeKey } from "@/hooks/use-escape-key"
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -77,23 +68,43 @@ function FieldWrap({
 
 // ── Department Form Modal ─────────────────────────────────────────────────────
 
-function DeptModal({
-  editingId,
-  form,
-  errors,
-  busy,
-  onClose,
+export interface DepartmentFormPayload {
+  name: string
+  description: string | null
+  active?: boolean
+}
+
+/** Self-contained create/edit department form — reused by the admin page and the org-chart quick menu. */
+export function DepartmentFormModal({
+  initial,
   onSubmit,
-  setField,
+  onClose,
+  isPending,
 }: {
-  editingId: number | null
-  form: DeptForm
-  errors: FormErrors
-  busy: boolean
+  initial?: Department
+  onSubmit: (payload: DepartmentFormPayload) => void
   onClose: () => void
-  onSubmit: () => void
-  setField: <K extends keyof DeptForm>(k: K, v: DeptForm[K]) => void
+  isPending: boolean
 }) {
+  const editing = !!initial
+  const [name, setName] = useState(initial?.name ?? "")
+  const [description, setDescription] = useState(initial?.description ?? "")
+  const [active, setActive] = useState(initial?.active ?? true)
+  const [error, setError] = useState<string | undefined>(undefined)
+  useEscapeKey(onClose)
+
+  function submit() {
+    if (!name.trim()) {
+      setError("Department name is required")
+      return
+    }
+    onSubmit({
+      name: name.trim(),
+      description: description.trim() || null,
+      ...(editing && { active }),
+    })
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -107,7 +118,7 @@ function DeptModal({
         {/* Header */}
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-[15px] font-semibold">
-            {editingId ? "Edit Department" : "New Department"}
+            {editing ? "Edit Department" : "New Department"}
           </h2>
           <button
             type="button"
@@ -120,17 +131,17 @@ function DeptModal({
 
         {/* Fields */}
         <div className="space-y-4">
-          <FieldWrap label="Department Name *" error={errors.name}>
+          <FieldWrap label="Department Name *" error={error}>
             <Input
               autoFocus
-              className={cn(
-                "h-9 text-[13px]",
-                errors.name && "border-destructive"
-              )}
+              className={cn("h-9 text-[13px]", error && "border-destructive")}
               placeholder="e.g. Engineering, Marketing, HR"
-              value={form.name}
-              onChange={(e) => setField("name", e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && onSubmit()}
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value)
+                setError(undefined)
+              }}
+              onKeyDown={(e) => e.key === "Enter" && submit()}
             />
           </FieldWrap>
 
@@ -138,19 +149,17 @@ function DeptModal({
             <Input
               className="h-9 text-[13px]"
               placeholder="Optional short description…"
-              value={form.description}
-              onChange={(e) => setField("description", e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && onSubmit()}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && submit()}
             />
           </FieldWrap>
 
-          {editingId && (
+          {editing && (
             <FieldWrap label="Status">
               <select
-                value={form.active ? "active" : "inactive"}
-                onChange={(e) =>
-                  setField("active", e.target.value === "active")
-                }
+                value={active ? "active" : "inactive"}
+                onChange={(e) => setActive(e.target.value === "active")}
                 className="h-9 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
               >
                 <option value="active">Active</option>
@@ -168,18 +177,18 @@ function DeptModal({
               variant="outline"
               size="sm"
               onClick={onClose}
-              disabled={busy}
+              disabled={isPending}
             >
               Cancel
             </Button>
-            <Button size="sm" onClick={onSubmit} disabled={busy}>
+            <Button size="sm" onClick={submit} disabled={isPending}>
               <HugeiconsIcon
                 icon={FloppyDiskIcon}
                 size={13}
                 strokeWidth={2}
                 className="mr-1.5"
               />
-              {busy ? "Saving…" : editingId ? "Update" : "Save"}
+              {isPending ? "Saving…" : editing ? "Update" : "Save"}
             </Button>
           </div>
         </div>
@@ -198,8 +207,6 @@ export function DepartmentsSection() {
 
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [form, setForm] = useState<DeptForm>(EMPTY_FORM)
-  const [errors, setErrors] = useState<FormErrors>({})
   const [toast, setToast] = useState<{
     msg: string
     type: "success" | "error"
@@ -234,50 +241,22 @@ export function DepartmentsSection() {
     setTimeout(() => setToast(null), 3500)
   }
 
-  function setField<K extends keyof DeptForm>(k: K, v: DeptForm[K]) {
-    setForm((f) => ({ ...f, [k]: v }))
-    setErrors((e) => ({ ...e, [k]: undefined }))
-  }
-
-  function validate(): boolean {
-    const errs: FormErrors = {}
-    if (!form.name.trim()) errs.name = "Department name is required"
-    setErrors(errs)
-    return Object.keys(errs).length === 0
-  }
-
-  function toPayload(f: DeptForm, isEdit: boolean) {
-    return {
-      name: f.name.trim(),
-      description: f.description.trim() || null,
-      ...(isEdit && { active: f.active }),
-    }
-  }
-
   function openCreate() {
     setEditingId(null)
-    setForm(EMPTY_FORM)
-    setErrors({})
     setShowForm(true)
   }
 
   function openEdit(d: Department) {
     setEditingId(d.id)
-    setForm(deptToForm(d))
-    setErrors({})
     setShowForm(true)
   }
 
   function closeForm() {
     setShowForm(false)
     setEditingId(null)
-    setForm(EMPTY_FORM)
-    setErrors({})
   }
 
-  function handleSubmit() {
-    if (!validate()) return
-    const payload = toPayload(form, !!editingId)
+  function handleSubmit(payload: DepartmentFormPayload) {
     if (editingId) {
       updateMut.mutate(
         { id: editingId, payload },
@@ -518,14 +497,15 @@ export function DepartmentsSection() {
 
       {/* Edit Modal */}
       {showForm && (
-        <DeptModal
-          editingId={editingId}
-          form={form}
-          errors={errors}
-          busy={busy}
+        <DepartmentFormModal
+          initial={
+            editingId != null
+              ? departments.find((d) => d.id === editingId)
+              : undefined
+          }
+          isPending={busy}
           onClose={closeForm}
           onSubmit={handleSubmit}
-          setField={setField}
         />
       )}
 

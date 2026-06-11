@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { cn } from "@/lib/utils"
 import { companyApi } from "@/lib/auth-api"
@@ -46,8 +47,20 @@ const toPayload = (f: Form): CompanyProfile =>
     Object.entries(f).map(([k, v]) => [k, v.trim() ? v.trim() : null])
   ) as unknown as CompanyProfile
 
+const TABS = ["basic", "structure"] as const
+type TabKey = (typeof TABS)[number]
+
 export function MyCompanySection() {
   const qc = useQueryClient()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  // Active tab lives in the URL (?tab=) so it survives a refresh and is linkable.
+  const tabParam = searchParams.get("tab")
+  const activeTab: TabKey = TABS.includes(tabParam as TabKey)
+    ? (tabParam as TabKey)
+    : "basic"
+  const setTab = (tab: string) =>
+    router.replace(`/dashboard/my-company?tab=${tab}`, { scroll: false })
   const { data: companies } = useQuery({
     queryKey: ["my-company", "companies"],
     queryFn: companyApi.list,
@@ -116,10 +129,10 @@ export function MyCompanySection() {
         </div>
       </div>
 
-      <Tabs defaultValue="basic" className="gap-6">
+      <Tabs value={activeTab} onValueChange={setTab} className="gap-6">
         <TabsList variant="line" className="border-b border-border">
           <TabsTrigger value="basic">Basic information</TabsTrigger>
-          <TabsTrigger value="org">Org tree</TabsTrigger>
+          <TabsTrigger value="structure">Structure</TabsTrigger>
         </TabsList>
 
         {/* ── Basic information ── */}
@@ -208,8 +221,8 @@ export function MyCompanySection() {
           </div>
         </TabsContent>
 
-        {/* ── Org tree ── */}
-        <TabsContent value="org">
+        {/* ── Structure ── */}
+        <TabsContent value="structure">
           <CompanyOrgChart />
         </TabsContent>
       </Tabs>
