@@ -47,6 +47,7 @@ import {
   type AssessmentPartType,
 } from "@/lib/assessment-api"
 import { cn } from "@/lib/utils"
+import { useSlugHref } from "@/lib/slug"
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -1183,6 +1184,7 @@ function JobModal({
 // ── Recruitment Section ───────────────────────────────────────────────────────
 
 export function RecruitmentSection() {
+  const slugHref = useSlugHref()
   const jobsQ = useJobs({ size: 100 })
   const createMut = useCreateJob()
   const updateMut = useUpdateJob()
@@ -1355,7 +1357,7 @@ export function RecruitmentSection() {
     <div className="space-y-4">
       {/* Career page link */}
       <Link
-        href="/careers"
+        href={slugHref("/careers")}
         target="_blank"
         rel="noopener noreferrer"
         className="group flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 transition-colors hover:border-primary/30 hover:bg-muted/40"

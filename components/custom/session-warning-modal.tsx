@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import { useInactivity } from "@/hooks/use-inactivity"
 import { useLogout } from "@/hooks/use-auth"
 import { authApi } from "@/lib/auth-api"
+import { useSlug } from "@/lib/slug"
 
 function fmtCountdown(secs: number) {
   const m = Math.floor(secs / 60)
@@ -21,6 +22,7 @@ function fmtCountdown(secs: number) {
 
 export function SessionWarningModal() {
   const { phase, countdown, dismiss } = useInactivity()
+  const slug = useSlug()
   const logoutMutation = useLogout()
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -171,7 +173,7 @@ export function SessionWarningModal() {
             <Button
               className="w-full gap-2"
               onClick={() => {
-                window.location.href = "/auth/login"
+                window.location.href = `/${slug}/login`
               }}
             >
               <HugeiconsIcon icon={ShieldUserIcon} size={14} strokeWidth={2} />

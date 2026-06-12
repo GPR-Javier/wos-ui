@@ -1,0 +1,26 @@
+
+> wos-ui@0.0.1 dev
+> next dev --turbopack
+
+[32m✔[0m [33mConsole Ninja[0m extension is connected to [33mNext.js[0m, see [36mhttps://tinyurl.com/2vt8jxzw[0m
+▲ Next.js 16.1.7 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.4:3000
+
+✓ Starting...
+⚠ Console Ninja Turbopack support is a PRO feature, [33mcurrently available to community users while in preview[0m
+✓ Ready in 1556ms
+○ Compiling / ...
+ GET / 307 in 3.9s (compile: 3.6s, render: 278ms)
+ GET / 307 in 56ms (compile: 5ms, render: 51ms)
+ GET /guest 200 in 1434ms (compile: 1322ms, render: 112ms)
+ GET /guest 200 in 51ms (compile: 8ms, render: 44ms)
+ GET /guest/login 200 in 1325ms (compile: 1235ms, render: 90ms)
+ GET /guest/login 200 in 32ms (compile: 5ms, render: 27ms)
+ GET /gpr/login 200 in 29ms (compile: 1908µs, render: 27ms)
+ GET /gpr/login 200 in 29ms (compile: 2ms, render: 27ms)
+ GET /guest/pricing 200 in 1025ms (compile: 857ms, render: 168ms)
+ GET /guest/pricing 200 in 65ms (compile: 6ms, render: 59ms)
+ GET /guest/dashboard 200 in 872ms (compile: 785ms, render: 88ms)
+ GET /guest/dashboard 200 in 46ms (compile: 5ms, render: 41ms)
+[?25h

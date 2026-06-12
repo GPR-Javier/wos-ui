@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { useSlugHref } from "@/lib/slug"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   CheckmarkBadge01Icon,
@@ -186,6 +187,7 @@ function PricingTable({
   cycle: Cycle
   cur: ReturnType<typeof useCurrency>
 }) {
+  const slugHref = useSlugHref()
   const [hovered, setHovered] = useState<string | null>(null)
   const bySlug = new Map(plans.map((p) => [p.slug, p]))
   const cols = comparison.plans.map((c) => ({ ...c, pricing: bySlug.get(c.slug) }))
@@ -260,8 +262,8 @@ function PricingTable({
                       c.pricing?.customPrice
                         ? "mailto:sales@gpr.com"
                         : c.pricing?.trialDays != null
-                          ? `/onboarding?plan=${c.slug}&cycle=${cycle}`
-                          : `/checkout?plan=${c.slug}&cycle=${cycle}`
+                          ? slugHref(`/onboarding?plan=${c.slug}&cycle=${cycle}`)
+                          : slugHref(`/checkout?plan=${c.slug}&cycle=${cycle}`)
                     }
                   >
                     {c.pricing?.ctaLabel ?? "Choose"}

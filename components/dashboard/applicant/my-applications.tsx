@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { useSlugHref } from "@/lib/slug"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -50,6 +51,7 @@ function cooldownUntil(app: JobApplication): Date | null {
 }
 
 export function MyApplicationsScreen() {
+  const slugHref = useSlugHref()
   const { data: applications = [], isLoading, isError } = useMyApplications()
   const withdrawMut = useWithdrawApplication()
 
@@ -137,7 +139,7 @@ export function MyApplicationsScreen() {
             Browse open positions and apply to start tracking your applications
             here.
           </p>
-          <Link href="/dashboard/careers" className="mt-5">
+          <Link href={slugHref("/dashboard/careers")} className="mt-5">
             <Button size="sm">
               Browse Careers
               <HugeiconsIcon

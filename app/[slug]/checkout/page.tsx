@@ -19,6 +19,7 @@ import {
 } from "@hugeicons/core-free-icons"
 import { pricingApi, type PricingPlan } from "@/lib/pricing-api"
 import { useCurrency } from "@/lib/use-currency"
+import { useSlugHref } from "@/lib/slug"
 
 // Seat pricing comes from the plan (DB); these are only last-resort defaults if a field is null.
 const DEFAULT_INCLUDED_SEATS = 5
@@ -39,6 +40,7 @@ export default function CheckoutPage() {
 }
 
 function Checkout() {
+  const slugHref = useSlugHref()
   const params = useSearchParams()
   const slug = params.get("plan") ?? "professional"
   const cycle = (params.get("cycle") as "monthly" | "annual") ?? "monthly"
@@ -76,7 +78,7 @@ function Checkout() {
 
   return (
     <div className="h-screen overflow-y-auto bg-background">
-      <PublicHeader right={<Button asChild size="sm" variant="ghost"><Link href="/pricing">Back to pricing</Link></Button>} />
+      <PublicHeader right={<Button asChild size="sm" variant="ghost"><Link href={slugHref("/pricing")}>Back to pricing</Link></Button>} />
 
       <main className="mx-auto max-w-4xl px-4 pb-24 pt-12">
         {!paid ? (
@@ -197,7 +199,7 @@ function Checkout() {
             </Card>
 
             <Button asChild className="mt-7 w-full gap-1.5">
-              <Link href={`/onboarding?plan=${plan.slug}&cycle=${cycle}&seats=${seats}`}>
+              <Link href={slugHref(`/onboarding?plan=${plan.slug}&cycle=${cycle}&seats=${seats}`)}>
                 Set up your company
                 <HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2} />
               </Link>

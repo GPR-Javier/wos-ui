@@ -20,6 +20,7 @@ import {
 } from "@hugeicons/core-free-icons"
 import { pricingApi, type FeatureRow } from "@/lib/pricing-api"
 import { FALLBACK_COMPARISON } from "@/lib/pricing-fallback"
+import { useSlugHref } from "@/lib/slug"
 
 const slugify = (s: string) =>
   s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
@@ -33,6 +34,7 @@ export default function OnboardingPage() {
 }
 
 function Onboarding() {
+  const slugHref = useSlugHref()
   const params = useSearchParams()
   const slug = params.get("plan") ?? "professional"
   const seats = params.get("seats")
@@ -75,7 +77,7 @@ function Onboarding() {
 
   return (
     <div className="h-screen overflow-y-auto bg-background">
-      <PublicHeader right={<Button asChild size="sm" variant="ghost"><Link href="/pricing">Pricing</Link></Button>} />
+      <PublicHeader right={<Button asChild size="sm" variant="ghost"><Link href={slugHref("/pricing")}>Pricing</Link></Button>} />
 
       <main className="mx-auto max-w-4xl px-4 pb-24 pt-12">
         {!created ? (
@@ -177,7 +179,7 @@ function Onboarding() {
               <Badge variant="secondary" className="font-mono">workos.app/{effectiveSlug || "acme"}</Badge>
             </div>
             <Button asChild className="mt-7 w-full gap-1.5">
-              <Link href="/auth/login">
+              <Link href={slugHref("/login")}>
                 Sign in to your workspace
                 <HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2} />
               </Link>
@@ -210,6 +212,7 @@ function PlanFeaturePanel({
   includedKeys: Set<string>
   includedCount: number
 }) {
+  const slugHref = useSlugHref()
   const lockedCount = features.length - includedCount
   return (
     <Card className="h-fit p-5">
@@ -248,7 +251,7 @@ function PlanFeaturePanel({
         <>
           <Separator className="my-4" />
           <Link
-            href="/pricing"
+            href={slugHref("/pricing")}
             className="flex items-center justify-center gap-1 text-[12px] font-medium text-primary hover:underline"
           >
             Unlock {lockedCount} more with a higher plan

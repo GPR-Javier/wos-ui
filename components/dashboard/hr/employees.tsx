@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useSlugHref } from "@/lib/slug"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,6 +21,7 @@ import { useHrEmployees } from "@/hooks/use-hr"
 
 export function EmployeesSection() {
   const router = useRouter()
+  const slugHref = useSlugHref()
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -158,7 +160,7 @@ export function EmployeesSection() {
                       size="xs"
                       variant="outline"
                       onClick={() =>
-                        router.push(`/dashboard/employees/${emp.id}`)
+                        router.push(slugHref(`/dashboard/employees/${emp.id}`))
                       }
                     >
                       <HugeiconsIcon icon={EyeIcon} size={12} strokeWidth={2} />

@@ -3,6 +3,7 @@
 import { Fragment, useState } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { useSlugHref } from "@/lib/slug"
 import { Button } from "@/components/ui/button"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -36,6 +37,7 @@ import { resetSessionPersona } from "@/lib/interview-voice"
 type Phase = "landing" | "preflight" | "intro" | "running" | "result"
 
 export function AssessmentShell({ applicationId }: { applicationId: number }) {
+  const slugHref = useSlugHref()
   const {
     data: overview,
     isLoading,
@@ -150,7 +152,7 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
           This job may not have an assessment configured, or the link is
           invalid.
         </p>
-        <Link href="/dashboard/my-applications" className="mt-4 inline-block">
+        <Link href={slugHref("/dashboard/my-applications")} className="mt-4 inline-block">
           <Button variant="outline" size="sm">
             Back to My Applications
           </Button>
@@ -477,7 +479,7 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
   return (
     <div className="mx-auto max-w-2xl px-6 py-8">
       <Link
-        href="/dashboard/my-applications"
+        href={slugHref("/dashboard/my-applications")}
         className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
       >
         <HugeiconsIcon icon={ArrowLeft01Icon} size={14} strokeWidth={2} />

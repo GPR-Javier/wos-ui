@@ -6,8 +6,10 @@ import { Logo } from "@/components/custom/logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useSlugHref } from "@/lib/slug"
 
 export default function ForgotPasswordPage() {
+  const slugHref = useSlugHref()
   const [sent, setSent] = useState(false)
   const [email, setEmail] = useState("")
 
@@ -19,7 +21,7 @@ export default function ForgotPasswordPage() {
         <div className="flex items-center justify-between px-8 pt-8">
           <Logo />
           <Link
-            href="/auth/login"
+            href={slugHref("/login")}
             className="flex items-center gap-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
           >
             <svg
@@ -105,7 +107,7 @@ export default function ForgotPasswordPage() {
                 <p className="mt-5 text-center text-[12px] text-muted-foreground">
                   Remember your password?{" "}
                   <Link
-                    href="/auth/login"
+                    href={slugHref("/login")}
                     className="text-primary hover:underline"
                   >
                     Sign in
@@ -150,7 +152,7 @@ export default function ForgotPasswordPage() {
                   </button>
                 </p>
                 <Link
-                  href="/auth/login"
+                  href={slugHref("/login")}
                   className="mt-6 flex h-11 w-full items-center justify-center rounded-lg border border-border bg-background text-[13px] font-medium text-foreground transition-colors hover:bg-muted"
                 >
                   Back to sign in

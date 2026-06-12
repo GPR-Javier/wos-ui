@@ -5,13 +5,30 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { cn } from "@/lib/utils"
 import { companyApi } from "@/lib/auth-api"
+import { useSlugHref } from "@/lib/slug"
 import { companyProfileApi, type CompanyProfile } from "@/lib/company-profile-api"
+import {
+  companyBrandingApi,
+  toDataUrl,
+  type CompanyBrandingDto,
+} from "@/lib/company-branding-api"
 import { useAuthStore } from "@/store/auth-store"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { CompanyOrgChart } from "@/components/dashboard/company-org-chart"
+import {
+  CompanyBranding,
+  EMPTY_BRANDING,
+  resolveAsset,
+  type Branding,
+} from "@/components/dashboard/company-branding"
+import {
+  CompanyTheme,
+  DEFAULT_THEME,
+  type BrandTheme,
+} from "@/components/dashboard/company-theme"
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import {
   Building04Icon,
@@ -47,12 +64,13 @@ const toPayload = (f: Form): CompanyProfile =>
     Object.entries(f).map(([k, v]) => [k, v.trim() ? v.trim() : null])
   ) as unknown as CompanyProfile
 
-const TABS = ["basic", "structure"] as const
+const TABS = ["basic", "branding", "structure"] as const
 type TabKey = (typeof TABS)[number]
 
 export function MyCompanySection() {
   const qc = useQueryClient()
   const router = useRouter()
+  const slugHref = useSlugHref()
   const searchParams = useSearchParams()
   // Active tab lives in the URL (?tab=) so it survives a refresh and is linkable.
   const tabParam = searchParams.get("tab")
@@ -60,7 +78,7 @@ export function MyCompanySection() {
     ? (tabParam as TabKey)
     : "basic"
   const setTab = (tab: string) =>
-    router.replace(`/dashboard/my-company?tab=${tab}`, { scroll: false })
+    router.replace(slugHref(`/dashboard/my-company?tab=${tab}`), { scroll: false })
   const { data: companies } = useQuery({
     queryKey: ["my-company", "companies"],
     queryFn: companyApi.list,
@@ -80,6 +98,66 @@ export function MyCompanySection() {
   const [form, setForm] = useState<Form>(EMPTY_FORM)
   const [editing, setEditing] = useState(false)
   const backup = useRef<Form>(EMPTY_FORM)
+
+  // Company branding: a single master image auto-generates the favicon, sidebar
+  // mark and app icon (see CompanyBranding); theme holds the accent + radius.
+  // Both are persisted to wos-hr (company_branding) on Save.
+  const [branding, setBranding] = useState<Branding>(EMPTY_BRANDING)
+  const [theme, setTheme] = useState<BrandTheme>(DEFAULT_THEME)
+  const logo = resolveAsset(branding, "logo")
+  const brandingLoaded = useRef(false)
+
+  const { data: brandingData } = useQuery({
+    queryKey: ["company-branding"],
+    queryFn: companyBrandingApi.getMine,
+    retry: false,
+  })
+
+  // Seed the editor from the saved branding once (subsequent edits stay local until Save).
+  useEffect(() => {
+    if (!brandingData || brandingLoaded.current) return
+    brandingLoaded.current = true
+    setBranding({
+      master: brandingData.masterImage ?? null,
+      // Stored assets load as the resolved ("Auto") set; overrides start empty.
+      generated: {
+        logo: brandingData.logo ?? undefined,
+        favicon: brandingData.favicon ?? undefined,
+        sidebarIcon: brandingData.sidebarIcon ?? undefined,
+        appIcon: brandingData.appIcon ?? undefined,
+      },
+      overrides: {},
+    })
+    setTheme({
+      accent: brandingData.accentColor ?? DEFAULT_THEME.accent,
+      radius: brandingData.radius ?? DEFAULT_THEME.radius,
+    })
+  }, [brandingData])
+
+  const brandingMutation = useMutation({
+    mutationFn: async (): Promise<CompanyBrandingDto> => {
+      // Resolve each asset (override ?? generated) and convert blob URLs → data-URLs.
+      const [masterImage, logoB, favicon, sidebarIcon, appIcon] = await Promise.all([
+        toDataUrl(branding.master),
+        toDataUrl(resolveAsset(branding, "logo")),
+        toDataUrl(resolveAsset(branding, "favicon")),
+        toDataUrl(resolveAsset(branding, "sidebarIcon")),
+        toDataUrl(resolveAsset(branding, "appIcon")),
+      ])
+      return companyBrandingApi.update({
+        masterImage,
+        logo: logoB,
+        favicon,
+        sidebarIcon,
+        appIcon,
+        accentColor: theme.accent,
+        radius: theme.radius,
+        name: null,
+        slug: null,
+      })
+    },
+    onSuccess: (saved) => qc.setQueryData(["company-branding"], saved),
+  })
 
   // Load fetched profile into the form (unless the user is mid-edit).
   useEffect(() => {
@@ -108,23 +186,34 @@ export function MyCompanySection() {
 
   return (
     <div className="space-y-6">
-      {/* Header (identity) */}
+      {/* Header (identity + branding) */}
       <div className="rounded-2xl border border-border bg-card p-6">
-        <div className="flex flex-wrap items-center gap-5">
-          <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-[20px] font-bold text-primary">
-            {initials}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="text-[20px] font-bold tracking-tight text-foreground">{displayName}</h1>
-              <StatusBadge variant="blue" dot={false}>
-                <span className="inline-flex items-center gap-1">
-                  <HugeiconsIcon icon={CheckmarkBadge01Icon} size={11} strokeWidth={2} />
-                  Active
-                </span>
-              </StatusBadge>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-5">
+            {/* Logo thumbnail (reflects the resolved branding logo) */}
+            {logo ? (
+              <img
+                src={logo}
+                alt={`${displayName} logo`}
+                className="size-16 shrink-0 rounded-2xl object-cover ring-1 ring-border"
+              />
+            ) : (
+              <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-[20px] font-bold text-primary">
+                {initials}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-[20px] font-bold tracking-tight text-foreground">{displayName}</h1>
+                <StatusBadge variant="blue" dot={false}>
+                  <span className="inline-flex items-center gap-1">
+                    <HugeiconsIcon icon={CheckmarkBadge01Icon} size={11} strokeWidth={2} />
+                    Active
+                  </span>
+                </StatusBadge>
+              </div>
+              <p className="mt-0.5 text-[12.5px] text-muted-foreground">@{slug}</p>
             </div>
-            <p className="mt-0.5 text-[12.5px] text-muted-foreground">@{slug}</p>
           </div>
         </div>
       </div>
@@ -132,6 +221,7 @@ export function MyCompanySection() {
       <Tabs value={activeTab} onValueChange={setTab} className="gap-6">
         <TabsList variant="line" className="border-b border-border">
           <TabsTrigger value="basic">Basic information</TabsTrigger>
+          <TabsTrigger value="branding">Branding</TabsTrigger>
           <TabsTrigger value="structure">Structure</TabsTrigger>
         </TabsList>
 
@@ -219,6 +309,54 @@ export function MyCompanySection() {
               </div>
             </Panel>
           </div>
+        </TabsContent>
+
+        {/* ── Branding ── */}
+        <TabsContent value="branding" className="space-y-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[13px] font-semibold text-foreground">Branding &amp; customization</p>
+              <p className="text-[12px] text-muted-foreground">
+                Tune your theme and upload brand assets — applied across the app for everyone in your company.
+              </p>
+            </div>
+            {canEdit ? (
+              <div className="flex items-center gap-3">
+                {brandingMutation.isSuccess && (
+                  <span className="text-[12px] font-medium text-green-600 dark:text-green-400">Branding saved.</span>
+                )}
+                {brandingMutation.isError && (
+                  <span className="text-[12px] font-medium text-destructive">Couldn’t save.</span>
+                )}
+                <Button
+                  size="sm"
+                  onClick={() => brandingMutation.mutate()}
+                  disabled={brandingMutation.isPending}
+                >
+                  <HugeiconsIcon icon={FloppyDiskIcon} size={13} strokeWidth={2} className="mr-1.5" />
+                  {brandingMutation.isPending ? "Saving…" : "Save branding"}
+                </Button>
+              </div>
+            ) : (
+              <span className="text-[11.5px] text-muted-foreground/70">Managed by an administrator</span>
+            )}
+          </div>
+
+          {/* Theme (colors + radius) */}
+          <section className="rounded-2xl border border-border bg-card p-5">
+            <p className="mb-4 text-[11px] font-bold tracking-wider text-muted-foreground/70 uppercase">
+              Theme
+            </p>
+            <CompanyTheme theme={theme} onChange={setTheme} canEdit={canEdit} />
+          </section>
+
+          {/* Brand assets (logo, favicon, icons) */}
+          <section className="rounded-2xl border border-border bg-card p-5">
+            <p className="mb-4 text-[11px] font-bold tracking-wider text-muted-foreground/70 uppercase">
+              Brand assets
+            </p>
+            <CompanyBranding branding={branding} onChange={setBranding} canEdit={canEdit} />
+          </section>
         </TabsContent>
 
         {/* ── Structure ── */}

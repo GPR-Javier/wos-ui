@@ -9,8 +9,11 @@ import { Label } from "@/components/ui/label"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Alert01Icon } from "@hugeicons/core-free-icons"
 import { useRegister } from "@/hooks/use-auth"
+import { useSlug, useSlugHref } from "@/lib/slug"
 
 export default function RegisterPage() {
+  const slug = useSlug()
+  const slugHref = useSlugHref()
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
@@ -32,13 +35,13 @@ export default function RegisterPage() {
       <div className="relative flex w-full flex-col lg:w-[55%]">
         {/* Top bar */}
         <div className="flex items-center justify-between px-8 pt-8">
-          <Link href="/">
+          <Link href={`/${slug}`}>
             <Logo />
           </Link>
           <p className="text-[13px] text-muted-foreground">
             Already have an account?{" "}
             <Link
-              href="/auth/login"
+              href={slugHref("/login")}
               className="font-medium text-primary hover:underline"
             >
               Sign in

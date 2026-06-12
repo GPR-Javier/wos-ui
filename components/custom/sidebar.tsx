@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { useSlugHref } from "@/lib/slug"
 import { navConfig, settingsNavConfig, roleLabels } from "@/lib/nav-config"
 import { Logo } from "./logo"
 import { StatusBadge } from "./status-badge"
@@ -113,14 +114,16 @@ function NavIcon({ section }: { section: string }) {
 
 export function Sidebar() {
   const pathname = usePathname()
+  const slugHref = useSlugHref()
   const logoutMutation = useLogout()
   useMe()
 
   const { user, apiRole, userRoleNames, authorities } = useAuthStore()
 
+  // Path shape is now /<slug>/dashboard/<section>/<sub>, so section/sub shift by +1.
   const segments = pathname.split("/")
-  const section = segments[2]
-  const subSection = segments[3]
+  const section = segments[3]
+  const subSection = segments[4]
   const isSettings = section === "settings"
 
   const role = apiRole?.toUpperCase() ?? "EMPLOYEE"
@@ -161,9 +164,9 @@ export function Sidebar() {
   }
 
   function href(itemSection: string) {
-    if (isSettings) return `/dashboard/settings/${itemSection}`
-    if (itemSection === "overview") return "/dashboard"
-    return `/dashboard/${itemSection}`
+    if (isSettings) return slugHref(`/dashboard/settings/${itemSection}`)
+    if (itemSection === "overview") return slugHref("/dashboard")
+    return slugHref(`/dashboard/${itemSection}`)
   }
 
   // Auto-expand groups that contain the active child
@@ -395,7 +398,7 @@ export function Sidebar() {
           </div>
           <div className="flex gap-1">
             <Link
-              href="/dashboard/my-company"
+              href={slugHref("/dashboard/my-company")}
               title="My Company"
               aria-label="My Company"
               className={cn(
@@ -408,7 +411,7 @@ export function Sidebar() {
               <HugeiconsIcon icon={Building04Icon} size={13} strokeWidth={1.8} />
             </Link>
             <Link
-              href="/dashboard/settings"
+              href={slugHref("/dashboard/settings")}
               className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <HugeiconsIcon

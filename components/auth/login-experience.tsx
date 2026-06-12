@@ -22,7 +22,10 @@ import {
 } from "@hugeicons/core-free-icons"
 import { useLogin, useSelectRole, useSelectCompany } from "@/hooks/use-auth"
 import { useAuthStore } from "@/store/auth-store"
+import { useSlugHref } from "@/lib/slug"
 import type { AvailableRole, CompanyInfo } from "@/lib/auth-api"
+import type { CompanyBrandingDto } from "@/lib/company-branding-api"
+import { themeVars, DEFAULT_THEME } from "@/components/dashboard/company-theme"
 
 type PunchType = "in" | "out"
 
@@ -37,9 +40,23 @@ function useClock() {
   return now
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────
+function setFavicon(href: string) {
+  let link = document.querySelector<HTMLLinkElement>("link[rel='icon']")
+  if (!link) {
+    link = document.createElement("link")
+    link.rel = "icon"
+    document.head.appendChild(link)
+  }
+  link.href = href
+}
 
-export default function LoginPage() {
+// ── Login experience ────────────────────────────────────────────────────────
+// Shared by the generic /auth/login and the branded /[slug]/login routes. When
+// `branding` is provided the same layout is re-themed (accent + radius), the
+// WorkOS mark is swapped for the company logo/name, and the favicon/title update.
+
+export function LoginExperience({ branding }: { branding?: CompanyBrandingDto | null }) {
+  const slugHref = useSlugHref()
   const [showPassword, setShowPassword] = useState(false)
   const [remember, setRemember] = useState(false)
   const [email, setEmail] = useState("")
@@ -64,6 +81,22 @@ export default function LoginPage() {
   const apiError =
     loginMutation.error || selectRoleMutation.error || selectCompanyMutation.error
 
+  // Branding (only when a company was resolved).
+  const companyName = branding?.name ?? null
+  const companyLogo = branding?.logo ?? null
+  const themeStyle = branding
+    ? themeVars({
+        accent: branding.accentColor ?? DEFAULT_THEME.accent,
+        radius: branding.radius ?? DEFAULT_THEME.radius,
+      })
+    : undefined
+
+  useEffect(() => {
+    if (!branding) return
+    if (branding.favicon) setFavicon(branding.favicon)
+    if (branding.name) document.title = `Sign in · ${branding.name}`
+  }, [branding])
+
   function handleLogin() {
     if (!email || !password) return
     loginMutation.mutate(
@@ -85,17 +118,20 @@ export default function LoginPage() {
     )
   }
 
-  function handleSelectCompany(companyId: number) {
-    selectCompanyMutation.mutate(companyId, {
-      onSuccess: (data) => {
-        setShowCompanyModal(false)
-        if (data.requiresRoleSelection) {
-          setAvailableRoles(data.availableRoles)
-          setShowRoleModal(true)
-        }
-        // otherwise useSelectCompany's onSuccess handles redirect
-      },
-    })
+  function handleSelectCompany(company: CompanyInfo) {
+    selectCompanyMutation.mutate(
+      { companyId: company.id, slug: company.slug },
+      {
+        onSuccess: (data) => {
+          setShowCompanyModal(false)
+          if (data.requiresRoleSelection) {
+            setAvailableRoles(data.availableRoles)
+            setShowRoleModal(true)
+          }
+          // otherwise useSelectCompany's onSuccess handles redirect
+        },
+      }
+    )
   }
 
   function handleRoleContinue() {
@@ -104,28 +140,42 @@ export default function LoginPage() {
       { userRoleId: selectedRoleId },
       {
         onSuccess: () => {
-          useAuthStore
-            .getState()
-            .setAvailableRoles(availableRoles, selectedRoleId!)
+          useAuthStore.getState().setAvailableRoles(availableRoles, selectedRoleId!)
         },
       }
     )
   }
 
   return (
-    <>
+    <div style={themeStyle}>
       <div className="flex min-h-screen">
         {/* ── Left panel ── */}
         <div className="relative flex w-full flex-col lg:w-[55%]">
           {/* Top bar */}
           <div className="flex items-center justify-between px-8 pt-8">
-            <Link href="/">
-              <Logo />
-            </Link>
+            {companyLogo ? (
+              <Link href="/" className="flex items-center gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={companyLogo}
+                  alt={companyName ?? "Company logo"}
+                  className="size-[30px] rounded-lg object-cover ring-1 ring-border"
+                />
+                {companyName && (
+                  <span className="text-[15px] font-bold tracking-tight text-foreground">
+                    {companyName}
+                  </span>
+                )}
+              </Link>
+            ) : (
+              <Link href="/">
+                <Logo />
+              </Link>
+            )}
             <p className="text-[13px] text-muted-foreground">
               Don&apos;t have an account?{" "}
               <Link
-                href="/auth/register"
+                href={slugHref("/register")}
                 className="font-medium text-primary hover:underline"
               >
                 Register
@@ -140,7 +190,7 @@ export default function LoginPage() {
                 Welcome back
               </h1>
               <p className="mt-1.5 text-[14px] text-muted-foreground">
-                Sign in to your WorkOS account to continue.
+                Sign in to {companyName ?? "your WorkOS account"} to continue.
               </p>
 
               <div className="mt-7 space-y-4">
@@ -241,7 +291,7 @@ export default function LoginPage() {
                     </span>
                   </label>
                   <Link
-                    href="/auth/forgot-password"
+                    href={slugHref("/forgot-password")}
                     className="text-[12px] text-primary hover:underline"
                   >
                     Forgot password?
@@ -313,19 +363,13 @@ export default function LoginPage() {
           {/* Footer */}
           <div className="flex items-center justify-between border-t border-border px-8 py-4">
             <p className="text-[11px] text-muted-foreground">
-              &copy; {new Date().getFullYear()} WorkOS. All rights reserved.
+              &copy; {new Date().getFullYear()} {companyName ?? "WorkOS"}. All rights reserved.
             </p>
             <div className="flex items-center gap-4">
-              <a
-                href="#"
-                className="text-[11px] text-muted-foreground hover:text-foreground"
-              >
+              <a href="#" className="text-[11px] text-muted-foreground hover:text-foreground">
                 Privacy
               </a>
-              <a
-                href="#"
-                className="text-[11px] text-muted-foreground hover:text-foreground"
-              >
+              <a href="#" className="text-[11px] text-muted-foreground hover:text-foreground">
                 Terms
               </a>
             </div>
@@ -334,16 +378,14 @@ export default function LoginPage() {
 
         {/* ── Right panel ── */}
         <div className="hidden lg:flex lg:w-[45%] lg:flex-col">
-          <AuthPanel />
+          <AuthPanel companyName={companyName} />
         </div>
       </div>
 
-      {/* ── Role modal (shown when API returns requiresRoleSelection: true) ── */}
+      {/* ── Company modal (multiple companies) ── */}
       {showCompanyModal && (
         <Modal onClose={() => setShowCompanyModal(false)}>
-          <h2 className="text-[16px] font-semibold text-foreground">
-            Select a company
-          </h2>
+          <h2 className="text-[16px] font-semibold text-foreground">Select a company</h2>
           <p className="mt-1 text-[13px] text-muted-foreground">
             You belong to multiple companies. Choose which one to sign in to.
           </p>
@@ -351,7 +393,7 @@ export default function LoginPage() {
             {availableCompanies.map((c) => (
               <button
                 key={c.id}
-                onClick={() => handleSelectCompany(c.id)}
+                onClick={() => handleSelectCompany(c)}
                 disabled={selectCompanyMutation.isPending}
                 className="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 text-left transition-colors hover:bg-muted disabled:opacity-60"
               >
@@ -365,12 +407,9 @@ export default function LoginPage() {
 
       {showRoleModal && (
         <Modal onClose={() => setShowRoleModal(false)}>
-          <h2 className="text-[16px] font-semibold text-foreground">
-            Select your role
-          </h2>
+          <h2 className="text-[16px] font-semibold text-foreground">Select your role</h2>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            Your account has multiple roles. Choose how you&apos;d like to
-            continue.
+            Your account has multiple roles. Choose how you&apos;d like to continue.
           </p>
 
           <div className="mt-5 grid grid-cols-2 gap-3">
@@ -393,15 +432,9 @@ export default function LoginPage() {
                       : "bg-muted text-muted-foreground"
                   )}
                 >
-                  <HugeiconsIcon
-                    icon={User03Icon}
-                    size={28}
-                    strokeWidth={1.5}
-                  />
+                  <HugeiconsIcon icon={User03Icon} size={28} strokeWidth={1.5} />
                 </div>
-                <p className="text-[13px] font-semibold text-foreground">
-                  {r.name}
-                </p>
+                <p className="text-[13px] font-semibold text-foreground">{r.name}</p>
                 {r.isTemporary && (
                   <Badge
                     variant="outline"
@@ -462,10 +495,8 @@ export default function LoginPage() {
       )}
 
       {/* ── Quick punch modal ── */}
-      {showQuickPunch && (
-        <QuickPunchModal onClose={() => setShowQuickPunch(false)} />
-      )}
-    </>
+      {showQuickPunch && <QuickPunchModal onClose={() => setShowQuickPunch(false)} />}
+    </div>
   )
 }
 
@@ -480,10 +511,7 @@ function Modal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md animate-in rounded-2xl border border-border bg-card p-6 shadow-xl duration-200 zoom-in-95 fade-in">
         {children}
       </div>
@@ -533,10 +561,7 @@ function QuickPunchModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
         className={cn(
           "relative animate-in overflow-hidden rounded-2xl border border-border bg-card shadow-xl duration-200 zoom-in-95 fade-in",
@@ -644,17 +669,14 @@ function QuickPunchModal({ onClose }: { onClose: () => void }) {
                 icon={CheckmarkBadge01Icon}
                 size={28}
                 strokeWidth={1.5}
-                className={
-                  punchType === "in" ? "text-green-500" : "text-red-500"
-                }
+                className={punchType === "in" ? "text-green-500" : "text-red-500"}
               />
             </div>
             <p className="text-[16px] font-bold text-foreground">
               Time {punchType === "in" ? "In" : "Out"} Recorded
             </p>
             <p className="mt-1 text-[13px] text-muted-foreground">
-              <span className="font-medium text-foreground">{employeeId}</span>{" "}
-              — {capturedAt}
+              <span className="font-medium text-foreground">{employeeId}</span> — {capturedAt}
             </p>
             <div className="mt-5 flex gap-2">
               <button
@@ -676,7 +698,7 @@ function QuickPunchModal({ onClose }: { onClose: () => void }) {
 
 // ── Right panel ────────────────────────────────────────────────────────────
 
-function AuthPanel() {
+function AuthPanel({ companyName }: { companyName: string | null }) {
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-primary p-10">
       <div
@@ -693,11 +715,13 @@ function AuthPanel() {
       <div className="relative flex flex-1 flex-col justify-between">
         <div className="mt-auto">
           <blockquote className="text-[22px] leading-snug font-semibold text-white">
-            &ldquo;Streamline your workforce operations with a single platform
-            built for modern teams.&rdquo;
+            &ldquo;Streamline your workforce operations with a single platform built for modern
+            teams.&rdquo;
           </blockquote>
           <p className="mt-4 text-[13px] text-white/60">
-            Attendance, payroll, leaves, and more — all in one place.
+            {companyName
+              ? `${companyName} runs on WorkOS — attendance, payroll, leaves, and more.`
+              : "Attendance, payroll, leaves, and more — all in one place."}
           </p>
         </div>
 

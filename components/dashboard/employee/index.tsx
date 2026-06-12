@@ -16,6 +16,7 @@ import {
   ArrowRight01Icon,
 } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
+import { useSlugHref } from "@/lib/slug"
 import { useAuthStore } from "@/store/auth-store"
 import {
   useEmployeeStats,
@@ -136,6 +137,7 @@ const REQUEST_TYPES = [
 
 export function OverviewSection() {
   const router = useRouter()
+  const slugHref = useSlugHref()
   const { user } = useAuthStore()
   const statsQ = useEmployeeStats()
   const attendanceQ = useAttendance({ size: 7 })
@@ -407,7 +409,7 @@ export function OverviewSection() {
           {REQUEST_TYPES.map(({ label, section, color }) => (
             <button
               key={section}
-              onClick={() => router.push(`/dashboard/${section}`)}
+              onClick={() => router.push(slugHref(`/dashboard/${section}`))}
               className="group rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-muted/30"
             >
               <div className="mb-3 flex items-center justify-between">

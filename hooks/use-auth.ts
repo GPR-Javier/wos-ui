@@ -53,6 +53,10 @@ export function useLogin() {
       if (company.requiresCompanySelection) {
         return { companySelect: company.companies } // caller shows the company picker
       }
+      // Record the active company's slug for slug-scoped redirects (company-less → "guest").
+      const active =
+        company.companies.find((c) => c.id === company.companyId) ?? company.companies[0]
+      useAuthStore.getState().setCompanySlug(active?.slug ?? "guest")
       // 2. Single company (token already scoped) → WorkOS resolves roles + mints the role token.
       return sessionApi.establish()
     },
@@ -75,8 +79,9 @@ export function useSelectCompany() {
   const { setFromAuth } = useAuthStore()
 
   return useMutation({
-    mutationFn: async (companyId: number) => {
+    mutationFn: async ({ companyId, slug }: { companyId: number; slug: string }) => {
       await companyApi.select(companyId) // re-mints the identity token with companyId
+      useAuthStore.getState().setCompanySlug(slug)
       return sessionApi.establish() // then resolve WorkOS roles within that company
     },
     onSuccess: (data) => {
@@ -151,13 +156,27 @@ export function useLogout() {
   const { clear } = useAuthStore()
 
   return useMutation({
-    mutationFn: () => authApi.logout(),
-    onSettled: () => {
+    mutationFn: async () => {
+      // Return to the active company's branded login. Prefer the stored slug; otherwise
+      // resolve it while still authed. Company-less users fall back to /guest/login.
+      let slug = useAuthStore.getState().companySlug
+      if (!slug) {
+        try {
+          const companies = await companyApi.list()
+          slug = companies[0]?.slug ?? null
+        } catch {
+          // no company or lookup failed — use the guest login
+        }
+      }
+      await authApi.logout()
+      return slug ?? "guest"
+    },
+    onSettled: (slug) => {
       clear()
       qc.clear()
       // Hard redirect: unloads the current page immediately so React never
       // re-renders the dashboard with cleared auth state (no flash).
-      window.location.replace("/auth/login")
+      window.location.replace(`/${slug ?? "guest"}/login`)
     },
   })
 }
@@ -168,8 +187,11 @@ function redirectAfterAuth(
   res: AuthResponse,
   router: ReturnType<typeof useRouter>
 ) {
+  // Every app page lives under the active company's slug (company-less → "guest").
+  const slug = useAuthStore.getState().companySlug ?? "guest"
+
   // Honour an explicit post-login destination (e.g. a job a guest tried to open
-  // before signing in): /auth/login?redirect=/dashboard/careers/12. Only same-origin
+  // before signing in): /<slug>/login?redirect=/<slug>/dashboard/careers/12. Only same-origin
   // absolute paths are allowed — never protocol-relative ("//host") or external URLs.
   if (typeof window !== "undefined") {
     const redirect = new URLSearchParams(window.location.search).get("redirect")
@@ -183,9 +205,9 @@ function redirectAfterAuth(
   // (authorities) grants — same sidebar-driven layout as employees. Everyone else
   // lands on the dashboard overview.
   if (res.role?.toUpperCase() === "APPLICANT") {
-    router.replace(resolveLandingPath(res.authorities ?? []))
+    router.replace(`/${slug}${resolveLandingPath(res.authorities ?? [])}`)
   } else {
-    router.replace("/dashboard")
+    router.replace(`/${slug}/dashboard`)
   }
 }
 

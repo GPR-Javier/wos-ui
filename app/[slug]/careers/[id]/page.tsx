@@ -7,16 +7,16 @@ import { JobDetails } from "@/components/careers/job-details"
 export const metadata: Metadata = { title: "Job Details" }
 
 interface Props {
-  params: Promise<{ id: string }>
+  params: Promise<{ slug: string; id: string }>
 }
 
 export default async function PublicJobDetailsPage({ params }: Props) {
-  const { id } = await params
+  const { slug, id } = await params
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <PublicHeader
         right={
-          <Link href="/auth/login">
+          <Link href={`/${slug}/login`}>
             <Button variant="outline" size="sm" className="text-[13px]">
               Employee login
             </Button>

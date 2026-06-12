@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { sectionTitles } from "@/lib/nav-config"
 import { cn } from "@/lib/utils"
+import { useSlugHref } from "@/lib/slug"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowLeft01Icon,
@@ -35,6 +36,7 @@ import { useLogout, useSwitchRole } from "@/hooks/use-auth"
 
 export function Topbar() {
   const pathname = usePathname()
+  const slugHref = useSlugHref()
   const { resolvedTheme, setTheme } = useTheme()
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
@@ -47,9 +49,10 @@ export function Topbar() {
   const { user, userRoleNames, availableRoles, activeUserRoleId } =
     useAuthStore()
 
+  // Path shape is /<slug>/dashboard/<section>/<sub>, so section/sub shift by +1.
   const segments = pathname.split("/")
-  const section = segments[2] // top-level: "dtr", "settings", undefined
-  const subSection = segments[3] // settings sub-page
+  const section = segments[3] // top-level: "dtr", "settings", undefined
+  const subSection = segments[4] // settings sub-page
 
   const isSettings = section === "settings"
 
@@ -88,7 +91,7 @@ export function Topbar() {
 
       {/* My Company */}
       <Link
-        href="/dashboard/my-company"
+        href={slugHref("/dashboard/my-company")}
         title="My Company"
         aria-label="My Company"
         className={cn(
@@ -212,7 +215,7 @@ export function Topbar() {
           )}
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link href="/dashboard/settings">
+            <Link href={slugHref("/dashboard/settings")}>
               <HugeiconsIcon
                 icon={Setting06Icon}
                 size={13}

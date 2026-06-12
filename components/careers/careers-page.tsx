@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { useSlugHref } from "@/lib/slug"
 import { Logo } from "@/components/custom/logo"
 import { PublicHeader } from "@/components/custom/public-header"
 import { StatusBadge } from "@/components/custom/status-badge"
@@ -69,6 +70,7 @@ export function ApplyModal({
   job: JobPosting
   onClose: () => void
 }) {
+  const slugHref = useSlugHref()
   const user = useAuthStore((s) => s.user)
   const apiRole = useAuthStore((s) => s.apiRole)
   const isApplicant = apiRole?.toUpperCase() === "APPLICANT"
@@ -167,7 +169,7 @@ export function ApplyModal({
             {applicationId && isApplicant ? (
               <div className="mt-7 flex w-full flex-col gap-2">
                 <Link
-                  href={`/dashboard/assessment/${applicationId}`}
+                  href={slugHref(`/dashboard/assessment/${applicationId}`)}
                   className="w-full"
                 >
                   <Button className="w-full">
@@ -454,6 +456,7 @@ function JobCard({
   application?: JobApplication | null
   embedded?: boolean
 }) {
+  const slugHref = useSlugHref()
   // An application is "active" unless it's closed (withdrawn/rejected) — those can reapply.
   const isActive =
     !!application &&
@@ -592,7 +595,7 @@ function JobCard({
         </Button>
         {isActive ? (
           canAssess && application ? (
-            <Link href={`/dashboard/assessment/${application.id}`}>
+            <Link href={slugHref(`/dashboard/assessment/${application.id}`)}>
               <Button size="sm">
                 {application.status === "ASSESSMENT" ||
                 application.status === "UNDER_REVIEW"
@@ -660,8 +663,9 @@ function SignUpPromptModal({
   onClose: () => void
   onQuickApply: () => void
 }) {
+  const slugHref = useSlugHref()
   // After signing in, drop the applicant straight onto this job's details page.
-  const redirect = encodeURIComponent(`/dashboard/careers/${job.id}`)
+  const redirect = encodeURIComponent(slugHref(`/dashboard/careers/${job.id}`))
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
@@ -693,7 +697,7 @@ function SignUpPromptModal({
         </p>
 
         <div className="mt-5 space-y-2">
-          <Link href={`/auth/register?redirect=${redirect}`} className="block">
+          <Link href={`${slugHref("/register")}?redirect=${redirect}`} className="block">
             <Button className="w-full" size="sm">
               Create an account
               <HugeiconsIcon
@@ -704,7 +708,7 @@ function SignUpPromptModal({
               />
             </Button>
           </Link>
-          <Link href={`/auth/login?redirect=${redirect}`} className="block">
+          <Link href={`${slugHref("/login")}?redirect=${redirect}`} className="block">
             <Button variant="outline" className="w-full" size="sm">
               Sign in to existing account
             </Button>
@@ -729,6 +733,7 @@ function SignUpPromptModal({
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const slugHref = useSlugHref()
   const { data, isLoading, isError } = usePublicJobs({ size: 100 })
   const allJobs = data?.content ?? []
   const openJobs = allJobs.filter((j) => j.status !== "closed")
@@ -738,7 +743,7 @@ export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const detailsHref = (job: JobPosting) =>
-    embedded ? `/dashboard/careers/${job.id}` : `/careers/${job.id}`
+    slugHref(embedded ? `/dashboard/careers/${job.id}` : `/careers/${job.id}`)
 
   // Logged-in applicants: cross-reference their applications so already-applied jobs
   // show their status instead of an Apply button. Never runs for guests (would 401).
@@ -1030,7 +1035,7 @@ export function CareersPage({ embedded = false }: { embedded?: boolean } = {}) {
             </div>
             <div className="flex items-center gap-5">
               <Link
-                href="/auth/login"
+                href={slugHref("/login")}
                 className="transition-colors hover:text-foreground"
               >
                 Employee login

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useSlugHref } from "@/lib/slug"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -78,6 +79,7 @@ export function JobDetails({
   jobId: number
   embedded?: boolean
 }) {
+  const slugHref = useSlugHref()
   const { data, isLoading, isError } = usePublicJobs({ size: 100 })
   const job = data?.content.find((j) => j.id === jobId)
   const apiRole = useAuthStore((s) => s.apiRole)
@@ -104,9 +106,9 @@ export function JobDetails({
       ? new Date(latestApplication.reapplyAvailableAt)
       : null
 
-  const backHref = embedded ? "/dashboard/careers" : "/careers"
+  const backHref = slugHref(embedded ? "/dashboard/careers" : "/careers")
   // Where a guest is sent after signing in — straight back to this job in the dashboard.
-  const loginRedirect = `/auth/login?redirect=${encodeURIComponent(`/dashboard/careers/${jobId}`)}`
+  const loginRedirect = `${slugHref("/login")}?redirect=${encodeURIComponent(slugHref(`/dashboard/careers/${jobId}`))}`
 
   if (isLoading) {
     return (
@@ -240,7 +242,7 @@ export function JobDetails({
                 Applied · {APPLICATION_STATUS_LABEL[latestApplication.status]}
               </Button>
               <Link
-                href="/dashboard/my-applications"
+                href={slugHref("/dashboard/my-applications")}
                 className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
               >
                 Track your application →

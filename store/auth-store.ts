@@ -21,6 +21,7 @@ interface AuthState {
   authorities: string[] // e.g. ["DTR:VIEW"]
   availableRoles: AvailableRole[] // all roles the user can switch to
   activeUserRoleId: number | null // currently active role id
+  companySlug: string | null // active company's URL slug (null → "guest")
 
   // Onboarding (per active role)
   onboarded: boolean // master "skip all" / fully done for the active role
@@ -31,6 +32,7 @@ interface AuthState {
   setUser: (user: MeResponse) => void
   setAvailableRoles: (roles: AvailableRole[], activeId: number) => void
   setActiveUserRoleId: (id: number) => void
+  setCompanySlug: (slug: string | null) => void
   setOnboarding: (onboarded: boolean, onboardingDone: string[]) => void
   clear: () => void
 }
@@ -45,6 +47,7 @@ export const useAuthStore = create<AuthState>()(
       authorities: [],
       availableRoles: [],
       activeUserRoleId: null,
+      companySlug: null,
       onboarded: true,
       onboardingDone: [],
 
@@ -74,6 +77,8 @@ export const useAuthStore = create<AuthState>()(
 
       setActiveUserRoleId: (id) => set({ activeUserRoleId: id }),
 
+      setCompanySlug: (slug) => set({ companySlug: slug }),
+
       setOnboarding: (onboarded, onboardingDone) =>
         set({ onboarded, onboardingDone }),
 
@@ -86,6 +91,7 @@ export const useAuthStore = create<AuthState>()(
           authorities: [],
           availableRoles: [],
           activeUserRoleId: null,
+          companySlug: null,
           onboarded: true,
           onboardingDone: [],
         }),
@@ -102,6 +108,7 @@ export const useAuthStore = create<AuthState>()(
         user: s.user,
         availableRoles: s.availableRoles,
         activeUserRoleId: s.activeUserRoleId,
+        companySlug: s.companySlug,
         onboarded: s.onboarded,
         onboardingDone: s.onboardingDone,
       }),
