@@ -27,10 +27,7 @@ import {
   useDeleteJob,
 } from "@/hooks/use-hr"
 import { RichTextEditor } from "@/components/custom/rich-text-editor"
-import {
-  useDepartments,
-  useJobPositions,
-} from "@/hooks/use-employee-profile"
+import { useDepartments, useJobPositions } from "@/hooks/use-employee-profile"
 import { useUserRoles } from "@/hooks/use-admin-roles"
 import type {
   JobPosting,
@@ -138,7 +135,12 @@ interface StageConfig {
 type InterviewConfigs = Record<AiInterviewStage, StageConfig>
 
 function emptyStageConfig(): StageConfig {
-  return { useCustom: false, questionIds: [], aiFollowUp: false, maxQuestions: 6 }
+  return {
+    useCustom: false,
+    questionIds: [],
+    aiFollowUp: false,
+    maxQuestions: 6,
+  }
 }
 function emptyInterviewConfigs(): InterviewConfigs {
   return {
@@ -846,59 +848,78 @@ function JobModal({
             <div className="space-y-2">
               {/* Fixed / Range toggle */}
               <div className="flex items-center gap-1.5">
-                  {(["fixed", "range"] as SalaryInputType[]).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() =>
-                        setForm({ ...form, salaryInputType: t, salaryTo: "" })
-                      }
-                      className={cn(
-                        "rounded-full border px-2.5 py-0.5 text-[11px] font-medium capitalize transition-all",
-                        form.salaryInputType === t
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                      )}
-                    >
-                      {t === "fixed" ? "Fixed amount" : "Range"}
-                    </button>
-                  ))}
+                {(["fixed", "range"] as SalaryInputType[]).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() =>
+                      setForm({ ...form, salaryInputType: t, salaryTo: "" })
+                    }
+                    className={cn(
+                      "rounded-full border px-2.5 py-0.5 text-[11px] font-medium capitalize transition-all",
+                      form.salaryInputType === t
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    )}
+                  >
+                    {t === "fixed" ? "Fixed amount" : "Range"}
+                  </button>
+                ))}
+              </div>
+
+              {/* Inputs */}
+              <div
+                className={cn(
+                  "grid items-end gap-2",
+                  form.salaryInputType === "range"
+                    ? "grid-cols-[110px_1fr_1fr]"
+                    : "grid-cols-[110px_1fr]"
+                )}
+              >
+                {/* Currency */}
+                <div className="space-y-1">
+                  <p className="text-[11px] text-muted-foreground">Currency</p>
+                  <select
+                    value={form.salaryCurrency}
+                    onChange={(e) =>
+                      setForm({ ...form, salaryCurrency: e.target.value })
+                    }
+                    className="h-9 w-full rounded-lg border border-input bg-background px-2 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+                  >
+                    {CURRENCY_OPTIONS.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.symbol} {c.code}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                {/* Inputs */}
-                <div
-                  className={cn(
-                    "grid items-end gap-2",
-                    form.salaryInputType === "range"
-                      ? "grid-cols-[110px_1fr_1fr]"
-                      : "grid-cols-[110px_1fr]"
-                  )}
-                >
-                  {/* Currency */}
-                  <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">
-                      Currency
-                    </p>
-                    <select
-                      value={form.salaryCurrency}
+                {/* From / Amount */}
+                <div className="space-y-1">
+                  <p className="text-[11px] text-muted-foreground">
+                    {form.salaryInputType === "range" ? "From" : "Amount"}
+                  </p>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[12px] text-muted-foreground">
+                      {currencySymbol(form.salaryCurrency)}
+                    </span>
+                    <Input
+                      type="number"
+                      min={0}
+                      className="h-9 pl-6 text-[13px]"
+                      placeholder="0"
+                      value={form.salaryFrom}
                       onChange={(e) =>
-                        setForm({ ...form, salaryCurrency: e.target.value })
+                        setForm({ ...form, salaryFrom: e.target.value })
                       }
-                      className="h-9 w-full rounded-lg border border-input bg-background px-2 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
-                    >
-                      {CURRENCY_OPTIONS.map((c) => (
-                        <option key={c.code} value={c.code}>
-                          {c.symbol} {c.code}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
+                </div>
 
-                  {/* From / Amount */}
+                {/* To — only for range */}
+                {form.salaryInputType === "range" && (
                   <div className="space-y-1">
-                    <p className="text-[11px] text-muted-foreground">
-                      {form.salaryInputType === "range" ? "From" : "Amount"}
-                    </p>
+                    <p className="text-[11px] text-muted-foreground">To</p>
                     <div className="relative">
                       <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[12px] text-muted-foreground">
                         {currencySymbol(form.salaryCurrency)}
@@ -908,38 +929,17 @@ function JobModal({
                         min={0}
                         className="h-9 pl-6 text-[13px]"
                         placeholder="0"
-                        value={form.salaryFrom}
+                        value={form.salaryTo}
                         onChange={(e) =>
-                          setForm({ ...form, salaryFrom: e.target.value })
+                          setForm({ ...form, salaryTo: e.target.value })
                         }
                       />
                     </div>
                   </div>
-
-                  {/* To — only for range */}
-                  {form.salaryInputType === "range" && (
-                    <div className="space-y-1">
-                      <p className="text-[11px] text-muted-foreground">To</p>
-                      <div className="relative">
-                        <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[12px] text-muted-foreground">
-                          {currencySymbol(form.salaryCurrency)}
-                        </span>
-                        <Input
-                          type="number"
-                          min={0}
-                          className="h-9 pl-6 text-[13px]"
-                          placeholder="0"
-                          value={form.salaryTo}
-                          onChange={(e) =>
-                            setForm({ ...form, salaryTo: e.target.value })
-                          }
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             </div>
+          </div>
 
           {/* Status */}
           <div className="space-y-1.5">
@@ -1430,7 +1430,7 @@ export function RecruitmentSection() {
 
       {/* Toast — fixed/floating above the form modal (z-50) so it's always visible */}
       {toast && (
-        <div className="fixed right-4 bottom-4 z-60 animate-in slide-in-from-bottom-2 fade-in">
+        <div className="fixed right-4 bottom-4 z-60 animate-in fade-in slide-in-from-bottom-2">
           <div
             className={cn(
               "flex items-center gap-2 rounded-lg px-4 py-2.5 text-[13px] font-medium shadow-lg",

@@ -350,12 +350,13 @@ export function ContractTab({ employeeId }: Props) {
                 />
               </div>
             </div>
-
           </div>
 
           {/* Leave entitlement */}
           <div className="mt-4 rounded-lg border bg-background p-4">
-            <Label className="text-[13px] font-semibold">Leave entitlement</Label>
+            <Label className="text-[13px] font-semibold">
+              Leave entitlement
+            </Label>
             <p className="mt-0.5 mb-3 text-[11px] text-muted-foreground">
               Annual paid-leave credits for this contract.
             </p>

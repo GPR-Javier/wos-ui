@@ -912,8 +912,7 @@ export function PayrollSetupSection() {
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
     return setups.filter((s) => {
-      const matchSearch =
-        !q || s.jobPositionTitle.toLowerCase().includes(q)
+      const matchSearch = !q || s.jobPositionTitle.toLowerCase().includes(q)
       const matchStatus =
         filterStatus === "all" ||
         (filterStatus === "active" ? s.active : !s.active)

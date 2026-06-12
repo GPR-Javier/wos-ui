@@ -697,7 +697,10 @@ function SignUpPromptModal({
         </p>
 
         <div className="mt-5 space-y-2">
-          <Link href={`${slugHref("/register")}?redirect=${redirect}`} className="block">
+          <Link
+            href={`${slugHref("/register")}?redirect=${redirect}`}
+            className="block"
+          >
             <Button className="w-full" size="sm">
               Create an account
               <HugeiconsIcon
@@ -708,7 +711,10 @@ function SignUpPromptModal({
               />
             </Button>
           </Link>
-          <Link href={`${slugHref("/login")}?redirect=${redirect}`} className="block">
+          <Link
+            href={`${slugHref("/login")}?redirect=${redirect}`}
+            className="block"
+          >
             <Button variant="outline" className="w-full" size="sm">
               Sign in to existing account
             </Button>

@@ -65,7 +65,10 @@ const FILTERS: { label: string; value: ApplicationStatus | "" }[] = [
 
 /** True when rich-text HTML has no real content (e.g. "" or "<p></p>"). */
 function htmlIsEmpty(html: string) {
-  return !html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim()
+  return !html
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .trim()
 }
 
 function traitLabel(t: string) {
@@ -403,7 +406,11 @@ function ReviewDetailModal({
       )
     } else if (isHumanStage) {
       upsertMut.mutate(
-        { id, stageType: activeTab as AssessmentPartType, payload: { status: "PASSED" } },
+        {
+          id,
+          stageType: activeTab as AssessmentPartType,
+          payload: { status: "PASSED" },
+        },
         { onSuccess: advanceTab }
       )
     }
@@ -411,7 +418,11 @@ function ReviewDetailModal({
   // "Skip": optional human stages can be bypassed; mark SKIPPED and move on.
   function skipStage() {
     upsertMut.mutate(
-      { id, stageType: activeTab as AssessmentPartType, payload: { status: "SKIPPED" } },
+      {
+        id,
+        stageType: activeTab as AssessmentPartType,
+        payload: { status: "SKIPPED" },
+      },
       { onSuccess: advanceTab }
     )
   }
@@ -503,344 +514,349 @@ function ReviewDetailModal({
           <>
             {/* Pinned header: identity + meta + tab bar */}
             <div className="shrink-0 border-b border-border px-6 pt-6 pb-4">
-            {/* Header */}
-            <div className="flex items-center gap-3">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-[14px] font-bold text-primary">
-                {(detail.applicantName ?? detail.applicantEmail)
-                  .slice(0, 2)
-                  .toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-[16px] font-semibold">
-                    {detail.applicantName ?? detail.applicantEmail}
-                  </h2>
-                  <StatusBadge
-                    variant={APPLICATION_STATUS_VARIANT[detail.status]}
-                  >
-                    {APPLICATION_STATUS_LABEL[detail.status]}
-                  </StatusBadge>
+              {/* Header */}
+              <div className="flex items-center gap-3">
+                <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-[14px] font-bold text-primary">
+                  {(detail.applicantName ?? detail.applicantEmail)
+                    .slice(0, 2)
+                    .toUpperCase()}
                 </div>
-                <p className="text-[12px] text-muted-foreground">
-                  {detail.applicantEmail}
-                </p>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-[16px] font-semibold">
+                      {detail.applicantName ?? detail.applicantEmail}
+                    </h2>
+                    <StatusBadge
+                      variant={APPLICATION_STATUS_VARIANT[detail.status]}
+                    >
+                      {APPLICATION_STATUS_LABEL[detail.status]}
+                    </StatusBadge>
+                  </div>
+                  <p className="text-[12px] text-muted-foreground">
+                    {detail.applicantEmail}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            {/* Meta */}
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12px] text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <HugeiconsIcon
-                  icon={Briefcase01Icon}
-                  size={13}
-                  strokeWidth={1.8}
-                />
-                {detail.jobTitle ?? "—"}
-                {detail.department ? ` · ${detail.department}` : ""}
-              </span>
-              {detail.applicantPhone && <span>{detail.applicantPhone}</span>}
-              {detail.resumeFileName && (
+              {/* Meta */}
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12px] text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <HugeiconsIcon
-                    icon={File01Icon}
+                    icon={Briefcase01Icon}
                     size={13}
                     strokeWidth={1.8}
                   />
-                  {detail.resumeFileName}
+                  {detail.jobTitle ?? "—"}
+                  {detail.department ? ` · ${detail.department}` : ""}
                 </span>
-              )}
-            </div>
+                {detail.applicantPhone && <span>{detail.applicantPhone}</span>}
+                {detail.resumeFileName && (
+                  <span className="flex items-center gap-1.5">
+                    <HugeiconsIcon
+                      icon={File01Icon}
+                      size={13}
+                      strokeWidth={1.8}
+                    />
+                    {detail.resumeFileName}
+                  </span>
+                )}
+              </div>
 
-            {/* Tab / step bar */}
-            <div className="mt-4 rounded-xl border border-border bg-muted/20 px-4 py-3">
-              <ReviewTabBar
-                tabs={tabs}
-                active={activeTab}
-                onSelect={setActiveTab}
-                tailStatus={detail?.status ?? null}
-              />
-            </div>
+              {/* Tab / step bar */}
+              <div className="mt-4 rounded-xl border border-border bg-muted/20 px-4 py-3">
+                <ReviewTabBar
+                  tabs={tabs}
+                  active={activeTab}
+                  onSelect={setActiveTab}
+                  tailStatus={detail?.status ?? null}
+                />
+              </div>
             </div>
 
             {/* Scrollable tab content (min-h-0 lets the flex child shrink so it actually scrolls) */}
             <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-            {activeTab === "BASIC" && (
-              <>
-                {detail.status === "REJECTED" && detail.rejectionReason && (
-              <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
-                <p className="text-[11px] font-semibold tracking-wider text-destructive uppercase">
-                  Rejection email
-                </p>
-                <div
-                  className="rte-content mt-1.5 text-[13px] text-foreground"
-                  dangerouslySetInnerHTML={{ __html: detail.rejectionReason }}
-                />
-              </div>
-            )}
-
-            {detail.message && (
-              <div className="mt-4 rounded-xl border border-border p-4">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                    Cover Letter
-                  </p>
-                  <div className="flex items-center gap-2">
-                    {detail.coverLetterScore != null && (
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                        AI score {detail.coverLetterScore}%
-                      </span>
-                    )}
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      onClick={handleReviewCover}
-                      disabled={coverMut.isPending}
-                    >
-                      {coverMut.isPending
-                        ? "Reviewing…"
-                        : detail.coverLetterFeedback
-                          ? "Re-review"
-                          : "AI review"}
-                    </Button>
-                  </div>
-                </div>
-                {coverError && (
-                  <p className="mb-2 text-[11px] font-medium text-destructive">
-                    {coverError}
-                  </p>
-                )}
-                <p className="max-h-40 overflow-y-auto text-[12px] whitespace-pre-line text-muted-foreground">
-                  {detail.message}
-                </p>
-                {(detail.coverLetterFeedback ||
-                  detail.coverLetterImprovements) && (
-                  <div className="mt-2 space-y-1.5">
-                    {detail.coverLetterFeedback && (
-                      <FeedbackNote
-                        tone="pos"
-                        label="Strengths"
-                        text={detail.coverLetterFeedback}
+              {activeTab === "BASIC" && (
+                <>
+                  {detail.status === "REJECTED" && detail.rejectionReason && (
+                    <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+                      <p className="text-[11px] font-semibold tracking-wider text-destructive uppercase">
+                        Rejection email
+                      </p>
+                      <div
+                        className="rte-content mt-1.5 text-[13px] text-foreground"
+                        dangerouslySetInnerHTML={{
+                          __html: detail.rejectionReason,
+                        }}
                       />
-                    )}
-                    {detail.coverLetterImprovements && (
-                      <FeedbackNote
-                        tone="neg"
-                        label="To improve"
-                        text={detail.coverLetterImprovements}
-                      />
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Resume */}
-            {detail.resumeFileName && (
-              <div className="mt-4 rounded-xl border border-border p-4">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                    Résumé
-                  </p>
-                  <div className="flex items-center gap-2">
-                    {detail.resumeScore != null && (
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                        AI score {detail.resumeScore}%
-                      </span>
-                    )}
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      onClick={handleReviewResume}
-                      disabled={resumeMut.isPending || !detail.hasResumeText}
-                      title={
-                        detail.hasResumeText
-                          ? undefined
-                          : "No readable resume text — applicant must re-apply"
-                      }
-                    >
-                      {resumeMut.isPending
-                        ? "Reviewing…"
-                        : detail.resumeFeedback
-                          ? "Re-review"
-                          : "AI review"}
-                    </Button>
-                  </div>
-                </div>
-                <p className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
-                  <HugeiconsIcon
-                    icon={File01Icon}
-                    size={13}
-                    strokeWidth={1.8}
-                  />
-                  {detail.resumeFileName}
-                </p>
-                {!detail.hasResumeText && !showResumeEditor && (
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    No readable text in this PDF (image/design export) — paste
-                    the résumé text to enable AI review.
-                  </p>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setShowResumeEditor((v) => !v)}
-                  className="mt-1 text-[11px] font-medium text-primary hover:underline"
-                >
-                  {showResumeEditor
-                    ? "Hide text"
-                    : detail.hasResumeText
-                      ? "Edit extracted text"
-                      : "Paste résumé text"}
-                </button>
-                {showResumeEditor && (
-                  <div className="mt-2 space-y-2">
-                    <textarea
-                      key={detail.id}
-                      ref={resumeRef}
-                      rows={6}
-                      defaultValue={detail.resumeText ?? ""}
-                      placeholder="Paste the résumé text here…"
-                      className="w-full resize-y rounded-lg border border-input bg-background px-3 py-2 text-[12px] focus:ring-2 focus:ring-ring focus:outline-none"
-                    />
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      onClick={handleSaveResumeText}
-                      disabled={saveResumeMut.isPending}
-                    >
-                      {saveResumeMut.isPending ? "Saving…" : "Save text"}
-                    </Button>
-                  </div>
-                )}
-                {resumeError && (
-                  <p className="mt-2 text-[11px] font-medium text-destructive">
-                    {resumeError}
-                  </p>
-                )}
-                {(detail.resumeFeedback || detail.resumeImprovements) && (
-                  <div className="mt-2 space-y-1.5">
-                    {detail.resumeFeedback && (
-                      <FeedbackNote
-                        tone="pos"
-                        label="Strengths"
-                        text={detail.resumeFeedback}
-                      />
-                    )}
-                    {detail.resumeImprovements && (
-                      <FeedbackNote
-                        tone="neg"
-                        label="To improve"
-                        text={detail.resumeImprovements}
-                      />
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Results */}
-            {detail.hasAssessment ? (
-              <div className="mt-5 space-y-4">
-                {detail.basicScore != null && (
-                  <ResultCard title="Basic Q&A">
-                    <span className="text-[13px]">
-                      Score{" "}
-                      <span className="font-semibold">
-                        {detail.basicScore}%
-                      </span>
-                      {detail.basicPassed != null && (
-                        <span
-                          className={cn(
-                            "ml-2 font-medium",
-                            detail.basicPassed
-                              ? "text-green-600 dark:text-green-400"
-                              : "text-destructive"
-                          )}
-                        >
-                          {detail.basicPassed ? "Passed" : "Failed"}
-                        </span>
-                      )}
-                    </span>
-                  </ResultCard>
-                )}
-
-                {detail.traitScores &&
-                  Object.keys(detail.traitScores).length > 0 && (
-                    <ResultCard title="Personality (Big Five)">
-                      <div className="space-y-2">
-                        {Object.entries(detail.traitScores).map(
-                          ([trait, value]) => (
-                            <div key={trait}>
-                              <div className="mb-1 flex items-center justify-between text-[12px]">
-                                <span>{traitLabel(trait)}</span>
-                                <span className="text-muted-foreground">
-                                  {value}%
-                                </span>
-                              </div>
-                              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                                <div
-                                  className="h-full rounded-full bg-primary"
-                                  style={{ width: `${value}%` }}
-                                />
-                              </div>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </ResultCard>
+                    </div>
                   )}
 
-              </div>
-            ) : (
-              <div className="mt-5 rounded-xl border border-dashed py-8 text-center text-[13px] text-muted-foreground">
-                This applicant hasn&apos;t taken the assessment yet.
-              </div>
-            )}
-              </>
-            )}
-
-            {/* AI interview stage tab */}
-            {(activeTab === "AI_INTERVIEW" ||
-              activeTab === "AI_TECHNICAL_INTERVIEW") &&
-              (() => {
-                const block = detail.interviews?.find(
-                  (b) => b.partType === activeTab
-                )
-                return (
-                  <div className="mt-4">
-                    {block ? (
-                      <InterviewReviewBlock applicationId={id} block={block} />
-                    ) : (
-                      <div className="rounded-xl border border-dashed py-8 text-center text-[13px] text-muted-foreground">
-                        The candidate hasn&apos;t taken this interview yet.
+                  {detail.message && (
+                    <div className="mt-4 rounded-xl border border-border p-4">
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                          Cover Letter
+                        </p>
+                        <div className="flex items-center gap-2">
+                          {detail.coverLetterScore != null && (
+                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                              AI score {detail.coverLetterScore}%
+                            </span>
+                          )}
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            onClick={handleReviewCover}
+                            disabled={coverMut.isPending}
+                          >
+                            {coverMut.isPending
+                              ? "Reviewing…"
+                              : detail.coverLetterFeedback
+                                ? "Re-review"
+                                : "AI review"}
+                          </Button>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                )
-              })()}
+                      {coverError && (
+                        <p className="mb-2 text-[11px] font-medium text-destructive">
+                          {coverError}
+                        </p>
+                      )}
+                      <p className="max-h-40 overflow-y-auto text-[12px] whitespace-pre-line text-muted-foreground">
+                        {detail.message}
+                      </p>
+                      {(detail.coverLetterFeedback ||
+                        detail.coverLetterImprovements) && (
+                        <div className="mt-2 space-y-1.5">
+                          {detail.coverLetterFeedback && (
+                            <FeedbackNote
+                              tone="pos"
+                              label="Strengths"
+                              text={detail.coverLetterFeedback}
+                            />
+                          )}
+                          {detail.coverLetterImprovements && (
+                            <FeedbackNote
+                              tone="neg"
+                              label="To improve"
+                              text={detail.coverLetterImprovements}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-            {/* Human interview stage tab */}
-            {(activeTab === "HR_INTERVIEW" ||
-              activeTab === "FINAL_INTERVIEW") && (
-              <div className="mt-4">
-                <HumanStagePanel
-                  applicationId={id}
-                  stageType={activeTab as AssessmentPartType}
-                  stage={
-                    detail.humanStages?.find(
-                      (s) => s.stageType === activeTab
-                    ) ?? null
-                  }
-                />
-              </div>
-            )}
+                  {/* Resume */}
+                  {detail.resumeFileName && (
+                    <div className="mt-4 rounded-xl border border-border p-4">
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                          Résumé
+                        </p>
+                        <div className="flex items-center gap-2">
+                          {detail.resumeScore != null && (
+                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                              AI score {detail.resumeScore}%
+                            </span>
+                          )}
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            onClick={handleReviewResume}
+                            disabled={
+                              resumeMut.isPending || !detail.hasResumeText
+                            }
+                            title={
+                              detail.hasResumeText
+                                ? undefined
+                                : "No readable resume text — applicant must re-apply"
+                            }
+                          >
+                            {resumeMut.isPending
+                              ? "Reviewing…"
+                              : detail.resumeFeedback
+                                ? "Re-review"
+                                : "AI review"}
+                          </Button>
+                        </div>
+                      </div>
+                      <p className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                        <HugeiconsIcon
+                          icon={File01Icon}
+                          size={13}
+                          strokeWidth={1.8}
+                        />
+                        {detail.resumeFileName}
+                      </p>
+                      {!detail.hasResumeText && !showResumeEditor && (
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          No readable text in this PDF (image/design export) —
+                          paste the résumé text to enable AI review.
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowResumeEditor((v) => !v)}
+                        className="mt-1 text-[11px] font-medium text-primary hover:underline"
+                      >
+                        {showResumeEditor
+                          ? "Hide text"
+                          : detail.hasResumeText
+                            ? "Edit extracted text"
+                            : "Paste résumé text"}
+                      </button>
+                      {showResumeEditor && (
+                        <div className="mt-2 space-y-2">
+                          <textarea
+                            key={detail.id}
+                            ref={resumeRef}
+                            rows={6}
+                            defaultValue={detail.resumeText ?? ""}
+                            placeholder="Paste the résumé text here…"
+                            className="w-full resize-y rounded-lg border border-input bg-background px-3 py-2 text-[12px] focus:ring-2 focus:ring-ring focus:outline-none"
+                          />
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            onClick={handleSaveResumeText}
+                            disabled={saveResumeMut.isPending}
+                          >
+                            {saveResumeMut.isPending ? "Saving…" : "Save text"}
+                          </Button>
+                        </div>
+                      )}
+                      {resumeError && (
+                        <p className="mt-2 text-[11px] font-medium text-destructive">
+                          {resumeError}
+                        </p>
+                      )}
+                      {(detail.resumeFeedback || detail.resumeImprovements) && (
+                        <div className="mt-2 space-y-1.5">
+                          {detail.resumeFeedback && (
+                            <FeedbackNote
+                              tone="pos"
+                              label="Strengths"
+                              text={detail.resumeFeedback}
+                            />
+                          )}
+                          {detail.resumeImprovements && (
+                            <FeedbackNote
+                              tone="neg"
+                              label="To improve"
+                              text={detail.resumeImprovements}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-            {/* Offer tab */}
-            {isOfferTab && (
-              <div className="mt-4">
-                <OfferSummaryPanel detail={detail} />
-              </div>
-            )}
+                  {/* Results */}
+                  {detail.hasAssessment ? (
+                    <div className="mt-5 space-y-4">
+                      {detail.basicScore != null && (
+                        <ResultCard title="Basic Q&A">
+                          <span className="text-[13px]">
+                            Score{" "}
+                            <span className="font-semibold">
+                              {detail.basicScore}%
+                            </span>
+                            {detail.basicPassed != null && (
+                              <span
+                                className={cn(
+                                  "ml-2 font-medium",
+                                  detail.basicPassed
+                                    ? "text-green-600 dark:text-green-400"
+                                    : "text-destructive"
+                                )}
+                              >
+                                {detail.basicPassed ? "Passed" : "Failed"}
+                              </span>
+                            )}
+                          </span>
+                        </ResultCard>
+                      )}
 
+                      {detail.traitScores &&
+                        Object.keys(detail.traitScores).length > 0 && (
+                          <ResultCard title="Personality (Big Five)">
+                            <div className="space-y-2">
+                              {Object.entries(detail.traitScores).map(
+                                ([trait, value]) => (
+                                  <div key={trait}>
+                                    <div className="mb-1 flex items-center justify-between text-[12px]">
+                                      <span>{traitLabel(trait)}</span>
+                                      <span className="text-muted-foreground">
+                                        {value}%
+                                      </span>
+                                    </div>
+                                    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                                      <div
+                                        className="h-full rounded-full bg-primary"
+                                        style={{ width: `${value}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </ResultCard>
+                        )}
+                    </div>
+                  ) : (
+                    <div className="mt-5 rounded-xl border border-dashed py-8 text-center text-[13px] text-muted-foreground">
+                      This applicant hasn&apos;t taken the assessment yet.
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* AI interview stage tab */}
+              {(activeTab === "AI_INTERVIEW" ||
+                activeTab === "AI_TECHNICAL_INTERVIEW") &&
+                (() => {
+                  const block = detail.interviews?.find(
+                    (b) => b.partType === activeTab
+                  )
+                  return (
+                    <div className="mt-4">
+                      {block ? (
+                        <InterviewReviewBlock
+                          applicationId={id}
+                          block={block}
+                        />
+                      ) : (
+                        <div className="rounded-xl border border-dashed py-8 text-center text-[13px] text-muted-foreground">
+                          The candidate hasn&apos;t taken this interview yet.
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
+
+              {/* Human interview stage tab */}
+              {(activeTab === "HR_INTERVIEW" ||
+                activeTab === "FINAL_INTERVIEW") && (
+                <div className="mt-4">
+                  <HumanStagePanel
+                    applicationId={id}
+                    stageType={activeTab as AssessmentPartType}
+                    stage={
+                      detail.humanStages?.find(
+                        (s) => s.stageType === activeTab
+                      ) ?? null
+                    }
+                  />
+                </div>
+              )}
+
+              {/* Offer tab */}
+              {isOfferTab && (
+                <div className="mt-4">
+                  <OfferSummaryPanel detail={detail} />
+                </div>
+              )}
             </div>
 
             {/* Pinned footer: status actions */}
@@ -852,7 +868,9 @@ function ReviewDetailModal({
                     <Button
                       variant="destructive"
                       size="sm"
-                      disabled={statusMut.isPending || detail.status === "HIRED"}
+                      disabled={
+                        statusMut.isPending || detail.status === "HIRED"
+                      }
                       onClick={openReject}
                     >
                       Reject
@@ -860,7 +878,9 @@ function ReviewDetailModal({
                     <Button
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
-                      disabled={statusMut.isPending || detail.status === "HIRED"}
+                      disabled={
+                        statusMut.isPending || detail.status === "HIRED"
+                      }
                       onClick={() => setShowOffer(true)}
                     >
                       {detail.status === "OFFER"
@@ -920,7 +940,9 @@ function ReviewDetailModal({
                     <Button
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
-                      disabled={detail.status === "HIRED" || statusMut.isPending}
+                      disabled={
+                        detail.status === "HIRED" || statusMut.isPending
+                      }
                       onClick={() => setShowOffer(true)}
                     >
                       {detail.status === "OFFER"
@@ -1067,7 +1089,9 @@ function ReviewDetailModal({
                     <Button
                       variant="destructive"
                       size="sm"
-                      disabled={statusMut.isPending || suggestRejectionMut.isPending}
+                      disabled={
+                        statusMut.isPending || suggestRejectionMut.isPending
+                      }
                       onClick={handleReject}
                     >
                       {statusMut.isPending ? "Rejecting…" : "Confirm rejection"}
@@ -1157,7 +1181,13 @@ function ReviewTabBar({
       current: tailStatus === "OFFER",
       rejected: tailStatus === "OFFER_DECLINED",
     },
-    { key: "HIRED", label: "Hired", done: rank >= 3, current: false, rejected: false },
+    {
+      key: "HIRED",
+      label: "Hired",
+      done: rank >= 3,
+      current: false,
+      rejected: false,
+    },
   ]
   return (
     // p-2 gives the selected node's ring room so overflow-x-auto doesn't clip it.
@@ -1193,7 +1223,8 @@ function ReviewTabBar({
                             : selected
                               ? "border-primary bg-primary text-primary-foreground"
                               : "border-border bg-card text-muted-foreground",
-                    selected && "ring-2 ring-primary ring-offset-1 ring-offset-card"
+                    selected &&
+                      "ring-2 ring-primary ring-offset-1 ring-offset-card"
                   )}
                 >
                   {done ? (
@@ -1242,63 +1273,68 @@ function ReviewTabBar({
           const selectable = t.key === "OFFER"
           const selected = active === t.key
           return (
-          <Fragment key={t.key}>
-            <div className="mt-3.5 h-0.5 w-5 shrink-0 bg-border sm:w-8" />
-            <button
-              type="button"
-              onClick={() => selectable && onSelect(t.key)}
-              className={cn(
-                "flex w-16 shrink-0 flex-col items-center gap-1 sm:w-20",
-                selectable ? "cursor-pointer" : "cursor-default"
-              )}
-            >
-              <div
+            <Fragment key={t.key}>
+              <div className="mt-3.5 h-0.5 w-5 shrink-0 bg-border sm:w-8" />
+              <button
+                type="button"
+                onClick={() => selectable && onSelect(t.key)}
                 className={cn(
-                  "flex size-7 items-center justify-center rounded-full border-2 text-[11px] font-semibold",
-                  t.done
-                    ? "border-green-500 bg-green-500 text-white"
-                    : t.rejected
-                      ? "border-red-500 bg-red-500 text-white"
-                      : t.current
-                        ? "border-amber-500 bg-amber-500 text-white"
-                        : "border-border bg-card text-muted-foreground",
-                  selected && "ring-2 ring-primary ring-offset-1 ring-offset-card"
+                  "flex w-16 shrink-0 flex-col items-center gap-1 sm:w-20",
+                  selectable ? "cursor-pointer" : "cursor-default"
                 )}
               >
-                {t.done ? (
-                  <HugeiconsIcon
-                    icon={CheckmarkCircle01Icon}
-                    size={13}
-                    strokeWidth={2.5}
-                  />
-                ) : t.rejected ? (
-                  <HugeiconsIcon icon={Cancel01Icon} size={13} strokeWidth={2.5} />
-                ) : (
-                  ""
-                )}
-              </div>
-              <span
-                className={cn(
-                  "text-center text-[9px] leading-tight font-medium",
-                  t.done || t.current || t.rejected
-                    ? "text-foreground"
-                    : "text-muted-foreground"
-                )}
-              >
-                {t.label}
-              </span>
-              {t.current && (
-                <span className="text-[8px] font-medium text-amber-600 dark:text-amber-400">
-                  Current
+                <div
+                  className={cn(
+                    "flex size-7 items-center justify-center rounded-full border-2 text-[11px] font-semibold",
+                    t.done
+                      ? "border-green-500 bg-green-500 text-white"
+                      : t.rejected
+                        ? "border-red-500 bg-red-500 text-white"
+                        : t.current
+                          ? "border-amber-500 bg-amber-500 text-white"
+                          : "border-border bg-card text-muted-foreground",
+                    selected &&
+                      "ring-2 ring-primary ring-offset-1 ring-offset-card"
+                  )}
+                >
+                  {t.done ? (
+                    <HugeiconsIcon
+                      icon={CheckmarkCircle01Icon}
+                      size={13}
+                      strokeWidth={2.5}
+                    />
+                  ) : t.rejected ? (
+                    <HugeiconsIcon
+                      icon={Cancel01Icon}
+                      size={13}
+                      strokeWidth={2.5}
+                    />
+                  ) : (
+                    ""
+                  )}
+                </div>
+                <span
+                  className={cn(
+                    "text-center text-[9px] leading-tight font-medium",
+                    t.done || t.current || t.rejected
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {t.label}
                 </span>
-              )}
-              {t.rejected && (
-                <span className="text-[8px] font-medium text-destructive">
-                  Declined
-                </span>
-              )}
-            </button>
-          </Fragment>
+                {t.current && (
+                  <span className="text-[8px] font-medium text-amber-600 dark:text-amber-400">
+                    Current
+                  </span>
+                )}
+                {t.rejected && (
+                  <span className="text-[8px] font-medium text-destructive">
+                    Declined
+                  </span>
+                )}
+              </button>
+            </Fragment>
           )
         })}
       </div>
@@ -1379,7 +1415,10 @@ function OfferSummaryPanel({ detail }: { detail: ReviewDetail }) {
         })}
         <OfferRow label="Start date" value={fmt(offer.startDate)} />
         {offer.probationEndDate && (
-          <OfferRow label="Probation until" value={fmt(offer.probationEndDate)} />
+          <OfferRow
+            label="Probation until"
+            value={fmt(offer.probationEndDate)}
+          />
         )}
       </dl>
 
@@ -1411,13 +1450,7 @@ function OfferSummaryPanel({ detail }: { detail: ReviewDetail }) {
   )
 }
 
-function OfferRow({
-  label,
-  value,
-}: {
-  label: string
-  value?: string | null
-}) {
+function OfferRow({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="flex items-center justify-between gap-3 px-3 py-2">
       <dt className="text-muted-foreground">{label}</dt>
@@ -1674,9 +1707,7 @@ function InterviewReviewBlock({
       </div>
 
       {!block.submitted ? (
-        <p className="text-[12px] text-muted-foreground">
-          Not submitted yet.
-        </p>
+        <p className="text-[12px] text-muted-foreground">Not submitted yet.</p>
       ) : (
         <>
           {gradeError && (
@@ -1927,7 +1958,11 @@ function InterviewReviewBlock({
   )
 }
 
-function DecisionBadge({ decision }: { decision: "PENDING" | "PASSED" | "REJECTED" }) {
+function DecisionBadge({
+  decision,
+}: {
+  decision: "PENDING" | "PASSED" | "REJECTED"
+}) {
   if (decision === "PASSED") {
     return (
       <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[11px] font-semibold text-green-600 dark:text-green-400">
@@ -2040,7 +2075,12 @@ function HumanStagePanel({
               }`
             : ""}
         </span>
-        <Button size="xs" variant="outline" onClick={save} disabled={mut.isPending}>
+        <Button
+          size="xs"
+          variant="outline"
+          onClick={save}
+          disabled={mut.isPending}
+        >
           {mut.isPending ? "Saving…" : "Save stage"}
         </Button>
       </div>

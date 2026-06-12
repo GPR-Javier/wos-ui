@@ -234,9 +234,7 @@ export function AIInterviewRunner({
   const questionText = questionTexts[index] ?? ""
   // In follow-up mode the server drives the ending (after the closing candidate-Q&A), so we only
   // show "Finish" once it signals done — never just because the question cap was hit.
-  const isLast = aiFollowUp
-    ? reachedEnd
-    : index === run.questions.length - 1
+  const isLast = aiFollowUp ? reachedEnd : index === run.questions.length - 1
   const answeredCount = Object.values(transcripts).filter((t) =>
     (t ?? "").trim()
   ).length
@@ -315,7 +313,9 @@ export function AIInterviewRunner({
       // start() throws (InvalidStateError) if a prior session didn't fully release — fall back to typing.
       recRef.current = null
       setRecording(false)
-      setRecError("Couldn't start recording — please type your answer below, or try again.")
+      setRecError(
+        "Couldn't start recording — please type your answer below, or try again."
+      )
       setManualEntry(true)
       return
     }
@@ -400,7 +400,11 @@ export function AIInterviewRunner({
         <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10">
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt={botName} className="size-full object-cover" />
+            <img
+              src={avatarUrl}
+              alt={botName}
+              className="size-full object-cover"
+            />
           ) : (
             <HugeiconsIcon
               icon={AiBrain01Icon}
@@ -411,7 +415,7 @@ export function AIInterviewRunner({
           )}
         </div>
         <div className="text-left">
-          <p className="text-[13px] font-semibold leading-tight">{botName}</p>
+          <p className="text-[13px] leading-tight font-semibold">{botName}</p>
           <p className="text-[11px] text-muted-foreground">Your interviewer</p>
         </div>
       </div>
@@ -462,85 +466,87 @@ export function AIInterviewRunner({
 
         {/* Record control — hidden once the interview has ended (the closing remark needs no reply). */}
         {!reachedEnd && (
-        <div className="mt-5 flex flex-col items-center gap-3">
-          {srSupported && (
-            <button
-              type="button"
-              onClick={recording ? stopRecording : startRecording}
-              className={cn(
-                "flex size-16 items-center justify-center rounded-full transition-all",
-                recording
-                  ? "animate-pulse bg-red-500 text-white"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90"
-              )}
-            >
-              <MicIcon recording={recording} />
-            </button>
-          )}
-          <p className="text-[12px] text-muted-foreground">
-            {!srSupported
-              ? `Voice ${noun}s need Chrome or Edge — type your ${noun} below.`
-              : recording
-                ? "Listening… click the button to stop."
-                : answered
-                  ? `${noun === "question" ? "Question" : "Answer"} captured. You can re-record if needed.`
-                  : `Click the mic and speak your ${noun}.`}
-          </p>
-          {recording && (
-            <div className="flex flex-col items-center gap-1.5">
-              <div className="flex h-9 items-center justify-center gap-0.75">
-                {levels.map((v, i) => (
-                  <span
-                    key={i}
-                    className="w-1 rounded-full bg-red-500"
-                    style={{ height: `${Math.max(12, Math.round(v * 100))}%` }}
-                  />
-                ))}
-              </div>
-              <span className="flex items-center gap-1.5 text-[11px] font-medium text-red-500">
-                <span className="size-1.5 animate-pulse rounded-full bg-red-500" />
-                Recording…
-              </span>
-            </div>
-          )}
-          {/* Confirmation only — the transcript itself is never shown or editable. */}
-          {srSupported && !recording && answered && (
-            <div className="flex items-center gap-3 text-[12px]">
-              <span className="flex items-center gap-1 font-medium text-green-600 dark:text-green-400">
-                <HugeiconsIcon
-                  icon={CheckmarkCircle01Icon}
-                  size={14}
-                  strokeWidth={2}
-                />
-                {noun === "question" ? "Question" : "Answer"} recorded ·{" "}
-                {wordCount} word{wordCount !== 1 ? "s" : ""}
-              </span>
+          <div className="mt-5 flex flex-col items-center gap-3">
+            {srSupported && (
               <button
                 type="button"
-                onClick={() => setTranscripts((t) => ({ ...t, [index]: "" }))}
-                className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                onClick={recording ? stopRecording : startRecording}
+                className={cn(
+                  "flex size-16 items-center justify-center rounded-full transition-all",
+                  recording
+                    ? "animate-pulse bg-red-500 text-white"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90"
+                )}
               >
-                Re-record
+                <MicIcon recording={recording} />
               </button>
-            </div>
-          )}
-          {/* Recording failed — tell the candidate why and steer them to the typed fallback. */}
-          {recError && !recording && (
-            <p className="max-w-xs text-center text-[12px] font-medium text-amber-600 dark:text-amber-400">
-              {recError}
+            )}
+            <p className="text-[12px] text-muted-foreground">
+              {!srSupported
+                ? `Voice ${noun}s need Chrome or Edge — type your ${noun} below.`
+                : recording
+                  ? "Listening… click the button to stop."
+                  : answered
+                    ? `${noun === "question" ? "Question" : "Answer"} captured. You can re-record if needed.`
+                    : `Click the mic and speak your ${noun}.`}
             </p>
-          )}
-          {/* Always offer a typed fallback so a flaky mic never blocks the interview. */}
-          {srSupported && !manualEntry && !recording && (
-            <button
-              type="button"
-              onClick={() => setManualEntry(true)}
-              className="text-[12px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-            >
-              Prefer to type? Switch to typing
-            </button>
-          )}
-        </div>
+            {recording && (
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="flex h-9 items-center justify-center gap-0.75">
+                  {levels.map((v, i) => (
+                    <span
+                      key={i}
+                      className="w-1 rounded-full bg-red-500"
+                      style={{
+                        height: `${Math.max(12, Math.round(v * 100))}%`,
+                      }}
+                    />
+                  ))}
+                </div>
+                <span className="flex items-center gap-1.5 text-[11px] font-medium text-red-500">
+                  <span className="size-1.5 animate-pulse rounded-full bg-red-500" />
+                  Recording…
+                </span>
+              </div>
+            )}
+            {/* Confirmation only — the transcript itself is never shown or editable. */}
+            {srSupported && !recording && answered && (
+              <div className="flex items-center gap-3 text-[12px]">
+                <span className="flex items-center gap-1 font-medium text-green-600 dark:text-green-400">
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle01Icon}
+                    size={14}
+                    strokeWidth={2}
+                  />
+                  {noun === "question" ? "Question" : "Answer"} recorded ·{" "}
+                  {wordCount} word{wordCount !== 1 ? "s" : ""}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setTranscripts((t) => ({ ...t, [index]: "" }))}
+                  className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                >
+                  Re-record
+                </button>
+              </div>
+            )}
+            {/* Recording failed — tell the candidate why and steer them to the typed fallback. */}
+            {recError && !recording && (
+              <p className="max-w-xs text-center text-[12px] font-medium text-amber-600 dark:text-amber-400">
+                {recError}
+              </p>
+            )}
+            {/* Always offer a typed fallback so a flaky mic never blocks the interview. */}
+            {srSupported && !manualEntry && !recording && (
+              <button
+                type="button"
+                onClick={() => setManualEntry(true)}
+                className="text-[12px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Prefer to type? Switch to typing
+              </button>
+            )}
+          </div>
         )}
 
         {/* Typed answer — when speech recognition is unavailable OR the candidate opted to type. */}
@@ -582,7 +588,8 @@ export function AIInterviewRunner({
               )}
             </div>
             <p className="flex items-center text-[13px] font-medium">
-              {botName} is {qaPhase ? "considering your question" : "evaluating your answer"}
+              {botName} is{" "}
+              {qaPhase ? "considering your question" : "evaluating your answer"}
               <span className="ml-0.5 inline-flex">
                 <Dot delay="0ms" />
                 <Dot delay="150ms" />

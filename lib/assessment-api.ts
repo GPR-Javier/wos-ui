@@ -247,7 +247,10 @@ export const assessmentApi = {
     api.delete(`/hr/assessments/jobs/${jobId}`),
 
   // Per-job AI interview question override, per stage (AI_INTERVIEW or AI_TECHNICAL_INTERVIEW)
-  getJobInterview: (jobId: number, partType: AssessmentPartType = "AI_INTERVIEW") =>
+  getJobInterview: (
+    jobId: number,
+    partType: AssessmentPartType = "AI_INTERVIEW"
+  ) =>
     api
       .get<JobInterviewConfig>(
         `/hr/assessments/jobs/${jobId}/interview/${partType}`

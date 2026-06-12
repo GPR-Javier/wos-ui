@@ -23,8 +23,13 @@ export function useOrgLayout() {
 export function useSetManager() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ userId, managerId }: { userId: number; managerId: number | null }) =>
-      orgChartApi.setManager(userId, managerId),
+    mutationFn: ({
+      userId,
+      managerId,
+    }: {
+      userId: number
+      managerId: number | null
+    }) => orgChartApi.setManager(userId, managerId),
     onSuccess: () => qc.invalidateQueries({ queryKey: GRAPH_KEY }),
   })
 }
@@ -32,8 +37,13 @@ export function useSetManager() {
 export function useSetDepartment() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ userId, departmentId }: { userId: number; departmentId: number | null }) =>
-      orgChartApi.setDepartment(userId, departmentId),
+    mutationFn: ({
+      userId,
+      departmentId,
+    }: {
+      userId: number
+      departmentId: number | null
+    }) => orgChartApi.setDepartment(userId, departmentId),
     onSuccess: () => qc.invalidateQueries({ queryKey: GRAPH_KEY }),
   })
 }

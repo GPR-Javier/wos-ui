@@ -235,7 +235,10 @@ export function RoleFormModal({
           </div>
 
           <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-muted/30 p-3">
-            <Checkbox checked={isAdmin} onChange={() => setIsAdmin((v) => !v)} />
+            <Checkbox
+              checked={isAdmin}
+              onChange={() => setIsAdmin((v) => !v)}
+            />
             <span className="-mt-0.5">
               <span className="block text-[12.5px] font-medium text-foreground">
                 Admin role
@@ -257,7 +260,11 @@ export function RoleFormModal({
           >
             Cancel
           </Button>
-          <Button size="sm" disabled={!name.trim() || isPending} onClick={submit}>
+          <Button
+            size="sm"
+            disabled={!name.trim() || isPending}
+            onClick={submit}
+          >
             {isPending ? "Saving…" : editing ? "Update role" : "Create role"}
           </Button>
         </div>

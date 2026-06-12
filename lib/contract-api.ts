@@ -58,7 +58,9 @@ export function leaveCreditLabel(
   const v = lc?.[key]
   if (v == null) return null
   const base = `${v} day${v === 1 ? "" : "s"} / yr`
-  const suffix = lc?.accrueMonthly ? ` · accrues ~${fmtRate(v / 12)}/mo` : " · upfront"
+  const suffix = lc?.accrueMonthly
+    ? ` · accrues ~${fmtRate(v / 12)}/mo`
+    : " · upfront"
   return `${base}${suffix}`
 }
 

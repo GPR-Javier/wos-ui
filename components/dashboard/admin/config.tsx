@@ -97,7 +97,11 @@ function PlaceholderSection({
 
 // ── ConfigSection ──────────────────────────────────────────────────────────
 
-type ConfigNavItem = { value: string; label: string; icon: typeof Briefcase01Icon }
+type ConfigNavItem = {
+  value: string
+  label: string
+  icon: typeof Briefcase01Icon
+}
 
 export function ConfigSection() {
   const router = useRouter()
@@ -138,15 +142,31 @@ export function ConfigSection() {
     {
       title: "Company",
       items: [
-        canEditCompany && { value: "company", label: "Company details", icon: Building04Icon },
+        canEditCompany && {
+          value: "company",
+          label: "Company details",
+          icon: Building04Icon,
+        },
       ].filter(Boolean) as ConfigNavItem[],
     },
     {
       title: "Time & attendance",
       items: [
-        canViewSchedulePolicy && { value: "schedule", label: "Schedule policy", icon: Calendar03Icon },
-        canEditAttendance && { value: "attendance", label: "Attendance", icon: Clock01Icon },
-        canEditLeave && { value: "leave", label: "Leave", icon: CalendarMinus01Icon },
+        canViewSchedulePolicy && {
+          value: "schedule",
+          label: "Schedule policy",
+          icon: Calendar03Icon,
+        },
+        canEditAttendance && {
+          value: "attendance",
+          label: "Attendance",
+          icon: Clock01Icon,
+        },
+        canEditLeave && {
+          value: "leave",
+          label: "Leave",
+          icon: CalendarMinus01Icon,
+        },
       ].filter(Boolean) as ConfigNavItem[],
     },
     {
@@ -158,13 +178,27 @@ export function ConfigSection() {
     },
     {
       title: "Payroll",
-      items: [{ value: "payroll-setup", label: "Payroll setup", icon: MoneyBag02Icon }],
+      items: [
+        {
+          value: "payroll-setup",
+          label: "Payroll setup",
+          icon: MoneyBag02Icon,
+        },
+      ],
     },
     {
       title: "Hiring & AI",
       items: [
-        canManageQuestions && { value: "question-bank", label: "Question bank", icon: HelpSquareIcon },
-        isAdmin && { value: "ai-provider", label: "AI provider", icon: AiBrain01Icon },
+        canManageQuestions && {
+          value: "question-bank",
+          label: "Question bank",
+          icon: HelpSquareIcon,
+        },
+        isAdmin && {
+          value: "ai-provider",
+          label: "AI provider",
+          icon: AiBrain01Icon,
+        },
       ].filter(Boolean) as ConfigNavItem[],
     },
   ].filter((g) => g.items.length > 0)
@@ -204,7 +238,9 @@ export function ConfigSection() {
                         icon={item.icon}
                         size={16}
                         strokeWidth={1.8}
-                        className={active ? "text-primary" : "text-muted-foreground/70"}
+                        className={
+                          active ? "text-primary" : "text-muted-foreground/70"
+                        }
                       />
                       {item.label}
                     </button>
@@ -218,69 +254,69 @@ export function ConfigSection() {
 
       {/* Content */}
       <div className="min-w-0 flex-1">
-      {canEditCompany && (
-        <TabsContent value="company">
-          <MyCompanySection />
+        {canEditCompany && (
+          <TabsContent value="company">
+            <MyCompanySection />
+          </TabsContent>
+        )}
+
+        {canViewSchedulePolicy && (
+          <TabsContent value="schedule" className="space-y-4">
+            <div>
+              <p className="text-[13px] font-semibold">Schedule policy</p>
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
+                Set the clock-in window, late grace, required hours, and
+                workdays. Saves create a new immutable version — past attendance
+                keeps its original snapshot.
+              </p>
+            </div>
+            <SchedulePoliciesSection />
+          </TabsContent>
+        )}
+
+        {canEditAttendance && (
+          <TabsContent value="attendance">
+            <AttendanceConfigSection />
+          </TabsContent>
+        )}
+
+        {canEditLeave && (
+          <TabsContent value="leave">
+            <PlaceholderSection
+              title="Leave settings"
+              description="Coming soon."
+              items={[
+                { label: "Vacation leave accrual", value: "1.25 days/month" },
+                { label: "Sick leave accrual", value: "1.25 days/month" },
+                { label: "Leave carry-over", value: "10 days max" },
+              ]}
+            />
+          </TabsContent>
+        )}
+
+        <TabsContent value="departments">
+          <DepartmentsSection />
         </TabsContent>
-      )}
 
-      {canViewSchedulePolicy && (
-        <TabsContent value="schedule" className="space-y-4">
-          <div>
-            <p className="text-[13px] font-semibold">Schedule policy</p>
-            <p className="mt-0.5 text-[12px] text-muted-foreground">
-              Set the clock-in window, late grace, required hours, and workdays.
-              Saves create a new immutable version — past attendance keeps its
-              original snapshot.
-            </p>
-          </div>
-          <SchedulePoliciesSection />
+        <TabsContent value="positions">
+          <PositionsSection />
         </TabsContent>
-      )}
 
-      {canEditAttendance && (
-        <TabsContent value="attendance">
-          <AttendanceConfigSection />
+        <TabsContent value="payroll-setup">
+          <PayrollSetupSection />
         </TabsContent>
-      )}
 
-      {canEditLeave && (
-        <TabsContent value="leave">
-          <PlaceholderSection
-            title="Leave settings"
-            description="Coming soon."
-            items={[
-              { label: "Vacation leave accrual", value: "1.25 days/month" },
-              { label: "Sick leave accrual", value: "1.25 days/month" },
-              { label: "Leave carry-over", value: "10 days max" },
-            ]}
-          />
-        </TabsContent>
-      )}
+        {canManageQuestions && (
+          <TabsContent value="question-bank">
+            <QuestionBankSection />
+          </TabsContent>
+        )}
 
-      <TabsContent value="departments">
-        <DepartmentsSection />
-      </TabsContent>
-
-      <TabsContent value="positions">
-        <PositionsSection />
-      </TabsContent>
-
-      <TabsContent value="payroll-setup">
-        <PayrollSetupSection />
-      </TabsContent>
-
-      {canManageQuestions && (
-        <TabsContent value="question-bank">
-          <QuestionBankSection />
-        </TabsContent>
-      )}
-
-      {isAdmin && (
-        <TabsContent value="ai-provider">
-          <AiProviderConfigSection />
-        </TabsContent>
-      )}
+        {isAdmin && (
+          <TabsContent value="ai-provider">
+            <AiProviderConfigSection />
+          </TabsContent>
+        )}
       </div>
     </Tabs>
   )
@@ -494,8 +530,7 @@ function PositionsSection() {
     null
   )
 
-  const busy =
-    createMut.isPending || updateMut.isPending || deleteMut.isPending
+  const busy = createMut.isPending || updateMut.isPending || deleteMut.isPending
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
@@ -791,9 +826,7 @@ function PositionsSection() {
                     <div className="min-w-0 flex-1">
                       <p className="text-[13px] font-medium">{p.title}</p>
                       <p className="text-[11px] text-muted-foreground">
-                        {p.level || (
-                          <span className="italic">No level</span>
-                        )}
+                        {p.level || <span className="italic">No level</span>}
                       </p>
                     </div>
 

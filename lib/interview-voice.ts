@@ -20,9 +20,26 @@ function isFemaleVoice(name: string): boolean {
   if (n.includes("google us english")) return true
   if (n.includes("google uk english female")) return true
   return [
-    "zira", "aria", "jenny", "samantha", "victoria", "karen", "moira", "tessa",
-    "fiona", "susan", "linda", "catherine", "serena", "sonia", "libby", "michelle",
-    "eva", "hazel", "female", "woman",
+    "zira",
+    "aria",
+    "jenny",
+    "samantha",
+    "victoria",
+    "karen",
+    "moira",
+    "tessa",
+    "fiona",
+    "susan",
+    "linda",
+    "catherine",
+    "serena",
+    "sonia",
+    "libby",
+    "michelle",
+    "eva",
+    "hazel",
+    "female",
+    "woman",
   ].some((h) => n.includes(h))
 }
 
@@ -30,8 +47,18 @@ function isMaleVoice(name: string): boolean {
   const n = name.toLowerCase()
   if (n.includes("google uk english male")) return true
   return [
-    "guy", "david", "mark", "daniel", "fred", "george", "james",
-    "oliver", "arthur", "ryan", "male", "man",
+    "guy",
+    "david",
+    "mark",
+    "daniel",
+    "fred",
+    "george",
+    "james",
+    "oliver",
+    "arthur",
+    "ryan",
+    "male",
+    "man",
   ].some((h) => n.includes(h))
 }
 
@@ -41,7 +68,8 @@ function naturalness(v: SpeechSynthesisVoice): number {
   let s = 0
   if (n.includes("natural") || n.includes("online")) s += 4
   if (n.includes("google")) s += 3
-  if (n.includes("aria") || n.includes("jenny") || n.includes("samantha")) s += 2
+  if (n.includes("aria") || n.includes("jenny") || n.includes("samantha"))
+    s += 2
   if (n.includes("zira")) s -= 1 // robotic — last resort
   if (v.default) s += 1
   return s

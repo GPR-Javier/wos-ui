@@ -16,13 +16,18 @@ export interface CompanyBrandingDto {
 
 export const companyBrandingApi = {
   // Authenticated — the editor on the My Company › Branding tab.
-  getMine: () => api.get<CompanyBrandingDto>("/hr/company/branding").then((r) => r.data),
+  getMine: () =>
+    api.get<CompanyBrandingDto>("/hr/company/branding").then((r) => r.data),
   update: (payload: CompanyBrandingDto) =>
-    api.put<CompanyBrandingDto>("/hr/company/branding", payload).then((r) => r.data),
+    api
+      .put<CompanyBrandingDto>("/hr/company/branding", payload)
+      .then((r) => r.data),
   // Public — branding for a company's login page, before anyone signs in.
   getBySlug: (slug: string) =>
     publicApi
-      .get<CompanyBrandingDto>(`/hr/companies/${slug}/branding`, { skipErrorToast: true })
+      .get<CompanyBrandingDto>(`/hr/companies/${slug}/branding`, {
+        skipErrorToast: true,
+      })
       .then((r) => r.data),
 }
 

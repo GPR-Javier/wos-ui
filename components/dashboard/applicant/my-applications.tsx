@@ -31,7 +31,11 @@ const TERMINAL: ApplicationStatus[] = ["WITHDRAWN", "HIRED", "REJECTED"]
 // Show the assessment CTA only before/while taking it — not once it's submitted for review.
 // UNDER_REVIEW included: after a reviewer passes an interview stage the candidate must re-enter to
 // take the newly-unlocked next stage.
-const CAN_ASSESS: ApplicationStatus[] = ["SUBMITTED", "ASSESSMENT", "UNDER_REVIEW"]
+const CAN_ASSESS: ApplicationStatus[] = [
+  "SUBMITTED",
+  "ASSESSMENT",
+  "UNDER_REVIEW",
+]
 // Closed applications the candidate can submit again.
 const CAN_REAPPLY: ApplicationStatus[] = ["WITHDRAWN", "REJECTED"]
 
@@ -155,21 +159,21 @@ export function MyApplicationsScreen() {
         <div className="space-y-3">
           {applications.map((app) => {
             const canWithdraw = !TERMINAL.includes(app.status)
-            const isLatestForJob = latestIdByJob.get(app.jobPostingId) === app.id
+            const isLatestForJob =
+              latestIdByJob.get(app.jobPostingId) === app.id
             // Only the current application for a job offers reapply / shows its cooldown;
             // older superseded rows are history.
             const coolingDown = isLatestForJob ? cooldownUntil(app) : null
             // Withdrawn can always reapply; rejected only once the cooldown has elapsed.
             const canReapply =
-              isLatestForJob &&
-              CAN_REAPPLY.includes(app.status) &&
-              !coolingDown
+              isLatestForJob && CAN_REAPPLY.includes(app.status) && !coolingDown
             return (
               <div
                 key={app.id}
                 className={cn(
                   "flex flex-col gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/30 sm:flex-row sm:items-center sm:justify-between",
-                  (app.status === "WITHDRAWN" || !isLatestForJob) && "opacity-60"
+                  (app.status === "WITHDRAWN" || !isLatestForJob) &&
+                    "opacity-60"
                 )}
               >
                 <div className="min-w-0 flex-1">
@@ -226,11 +230,12 @@ export function MyApplicationsScreen() {
                       </p>
                       <div
                         className="rte-content"
-                        dangerouslySetInnerHTML={{ __html: app.rejectionReason }}
+                        dangerouslySetInnerHTML={{
+                          __html: app.rejectionReason,
+                        }}
                       />
                     </div>
                   )}
-
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2">

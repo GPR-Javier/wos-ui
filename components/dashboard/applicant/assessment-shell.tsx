@@ -152,7 +152,10 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
           This job may not have an assessment configured, or the link is
           invalid.
         </p>
-        <Link href={slugHref("/dashboard/my-applications")} className="mt-4 inline-block">
+        <Link
+          href={slugHref("/dashboard/my-applications")}
+          className="mt-4 inline-block"
+        >
           <Button variant="outline" size="sm">
             Back to My Applications
           </Button>
@@ -170,7 +173,11 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
     return (
       <div>
         <div className="mx-auto max-w-2xl px-6 pt-6">
-          <StepBar parts={overview.parts} activeType={pendingPart} applicationStatus={overview.applicationStatus} />
+          <StepBar
+            parts={overview.parts}
+            activeType={pendingPart}
+            applicationStatus={overview.applicationStatus}
+          />
         </div>
         <InterviewPreflight
           busy={startMut.isPending}
@@ -216,7 +223,11 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
       run.partType === "AI_TECHNICAL_INTERVIEW"
     const inner = (
       <div className="mx-auto max-w-2xl px-6 py-8">
-        <StepBar parts={overview.parts} activeType={run.partType} applicationStatus={overview.applicationStatus} />
+        <StepBar
+          parts={overview.parts}
+          activeType={run.partType}
+          applicationStatus={overview.applicationStatus}
+        />
         <div className={cn("mt-4 mb-5", isAiInterview && "text-center")}>
           <h1 className="text-lg font-semibold">
             {PART_TYPE_LABEL[run.partType]}
@@ -376,7 +387,11 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
     const isPendingReview = result.pendingReview
     return (
       <div className="mx-auto max-w-md px-6 py-10 text-center">
-        <StepBar parts={overview.parts} activeType={run.partType} applicationStatus={overview.applicationStatus} />
+        <StepBar
+          parts={overview.parts}
+          activeType={run.partType}
+          applicationStatus={overview.applicationStatus}
+        />
         <div
           className={cn(
             "mx-auto mt-6 mb-4 flex size-16 items-center justify-center rounded-full",
@@ -495,7 +510,11 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
       </div>
 
       <div className="mt-5">
-        <StepBar parts={overview.parts} activeType={landingActiveType} applicationStatus={overview.applicationStatus} />
+        <StepBar
+          parts={overview.parts}
+          activeType={landingActiveType}
+          applicationStatus={overview.applicationStatus}
+        />
       </div>
 
       {/* Offer call-to-action — the candidate reviews and signs their contract here. */}
@@ -503,7 +522,11 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
         overview.applicationStatus === "HIRED") && (
         <div className="mt-4 flex flex-col gap-3 rounded-xl border border-green-300 bg-green-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-green-900/40 dark:bg-green-900/20">
           <div className="flex items-center gap-2 text-[13px] font-medium text-green-700 dark:text-green-400">
-            <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} strokeWidth={2} />
+            <HugeiconsIcon
+              icon={CheckmarkCircle01Icon}
+              size={16}
+              strokeWidth={2}
+            />
             {overview.applicationStatus === "OFFER"
               ? "You have an employment offer! Review the contract and sign to accept."
               : "You're hired — view your signed contract anytime."}
@@ -528,17 +551,20 @@ export function AssessmentShell({ applicationId }: { applicationId: number }) {
         </div>
       )}
 
-      {overview.completed && overview.applicationStatus !== "OFFER" && overview.applicationStatus !== "HIRED" && overview.applicationStatus !== "REJECTED" && (
-        <div className="mt-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-[13px] font-medium text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400">
-          <HugeiconsIcon
-            icon={CheckmarkCircle01Icon}
-            size={16}
-            strokeWidth={2}
-          />
-          You&apos;ve completed all required parts. We&apos;ll be in touch with
-          next steps.
-        </div>
-      )}
+      {overview.completed &&
+        overview.applicationStatus !== "OFFER" &&
+        overview.applicationStatus !== "HIRED" &&
+        overview.applicationStatus !== "REJECTED" && (
+          <div className="mt-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-[13px] font-medium text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400">
+            <HugeiconsIcon
+              icon={CheckmarkCircle01Icon}
+              size={16}
+              strokeWidth={2}
+            />
+            You&apos;ve completed all required parts. We&apos;ll be in touch
+            with next steps.
+          </div>
+        )}
 
       {/* Instructions */}
       <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4 text-[12px] text-muted-foreground">
@@ -618,9 +644,16 @@ function StepBar({
       current: applicationStatus === "OFFER",
       rejected: applicationStatus === "OFFER_DECLINED",
     },
-    { key: "HIRED", label: "Hired", done: rank >= 3, current: false, rejected: false },
+    {
+      key: "HIRED",
+      label: "Hired",
+      done: rank >= 3,
+      current: false,
+      rejected: false,
+    },
   ]
-  const lastPartCleared = parts.length > 0 && partCleared(parts[parts.length - 1])
+  const lastPartCleared =
+    parts.length > 0 && partCleared(parts[parts.length - 1])
   return (
     <div className="overflow-x-auto py-2">
       <div className="flex w-full items-start">
@@ -633,9 +666,7 @@ function StepBar({
           // Current = the part being taken, or the first stage that isn't cleared yet.
           const current =
             p.type === activeType ||
-            (!done &&
-              !skipped &&
-              i === parts.findIndex((x) => !partCleared(x)))
+            (!done && !skipped && i === parts.findIndex((x) => !partCleared(x)))
           const connectorActive = i > 0 && partCleared(parts[i - 1])
           return (
             <Fragment key={p.type}>
@@ -832,9 +863,7 @@ function PartCard({
               Passed{part.lastScore != null ? ` · ${part.lastScore}%` : ""}
             </StatusBadge>
           )}
-          {closedOut && (
-            <StatusBadge variant="red">Not selected</StatusBadge>
-          )}
+          {closedOut && <StatusBadge variant="red">Not selected</StatusBadge>}
           {awaiting && !closedOut && (
             <StatusBadge variant="amber">Under review</StatusBadge>
           )}
@@ -864,9 +893,7 @@ function PartCard({
             !stageRejected &&
             !stageSkipped &&
             !stageUnderReview &&
-            !closedOut && (
-              <StatusBadge variant="blue">Scheduled</StatusBadge>
-            )}
+            !closedOut && <StatusBadge variant="blue">Scheduled</StatusBadge>}
           {!part.runnable &&
             !passed &&
             !awaiting &&

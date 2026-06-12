@@ -62,7 +62,10 @@ import {
 import { useQueryClient } from "@tanstack/react-query"
 import { useAuthStore } from "@/store/auth-store"
 import { useToastStore } from "@/store/toast-store"
-import { useDepartments, useCreateDepartment } from "@/hooks/use-employee-profile"
+import {
+  useDepartments,
+  useCreateDepartment,
+} from "@/hooks/use-employee-profile"
 import { useCreateUserRole } from "@/hooks/use-admin-roles"
 import { RoleFormModal } from "@/components/dashboard/admin/roles"
 import { DepartmentFormModal } from "@/components/dashboard/admin/departments"
@@ -96,24 +99,59 @@ type DeptInfo = { id: number; name: string }
 
 // Deterministic colour per department id (Tailwind needs static class strings, so a fixed palette).
 const PALETTE = [
-  { chip: "bg-rose-500/15 text-rose-600 ring-rose-500/30 dark:text-rose-400", rgb: "244 63 94" },
-  { chip: "bg-violet-500/15 text-violet-600 ring-violet-500/30 dark:text-violet-400", rgb: "139 92 246" },
-  { chip: "bg-blue-500/15 text-blue-600 ring-blue-500/30 dark:text-blue-400", rgb: "59 130 246" },
-  { chip: "bg-amber-500/15 text-amber-600 ring-amber-500/30 dark:text-amber-400", rgb: "245 158 11" },
-  { chip: "bg-emerald-500/15 text-emerald-600 ring-emerald-500/30 dark:text-emerald-400", rgb: "16 185 129" },
-  { chip: "bg-cyan-500/15 text-cyan-600 ring-cyan-500/30 dark:text-cyan-400", rgb: "6 182 212" },
-  { chip: "bg-fuchsia-500/15 text-fuchsia-600 ring-fuchsia-500/30 dark:text-fuchsia-400", rgb: "217 70 239" },
-  { chip: "bg-indigo-500/15 text-indigo-600 ring-indigo-500/30 dark:text-indigo-400", rgb: "99 102 241" },
+  {
+    chip: "bg-rose-500/15 text-rose-600 ring-rose-500/30 dark:text-rose-400",
+    rgb: "244 63 94",
+  },
+  {
+    chip: "bg-violet-500/15 text-violet-600 ring-violet-500/30 dark:text-violet-400",
+    rgb: "139 92 246",
+  },
+  {
+    chip: "bg-blue-500/15 text-blue-600 ring-blue-500/30 dark:text-blue-400",
+    rgb: "59 130 246",
+  },
+  {
+    chip: "bg-amber-500/15 text-amber-600 ring-amber-500/30 dark:text-amber-400",
+    rgb: "245 158 11",
+  },
+  {
+    chip: "bg-emerald-500/15 text-emerald-600 ring-emerald-500/30 dark:text-emerald-400",
+    rgb: "16 185 129",
+  },
+  {
+    chip: "bg-cyan-500/15 text-cyan-600 ring-cyan-500/30 dark:text-cyan-400",
+    rgb: "6 182 212",
+  },
+  {
+    chip: "bg-fuchsia-500/15 text-fuchsia-600 ring-fuchsia-500/30 dark:text-fuchsia-400",
+    rgb: "217 70 239",
+  },
+  {
+    chip: "bg-indigo-500/15 text-indigo-600 ring-indigo-500/30 dark:text-indigo-400",
+    rgb: "99 102 241",
+  },
 ]
-const NEUTRAL = { chip: "bg-muted text-muted-foreground ring-border", rgb: "127 127 140" }
+const NEUTRAL = {
+  chip: "bg-muted text-muted-foreground ring-border",
+  rgb: "127 127 140",
+}
 const colorFor = (id: number | null | undefined) =>
-  id == null ? NEUTRAL : PALETTE[((id % PALETTE.length) + PALETTE.length) % PALETTE.length]
+  id == null
+    ? NEUTRAL
+    : PALETTE[((id % PALETTE.length) + PALETTE.length) % PALETTE.length]
 
 const NODE_W = 190
 const NODE_H = 108
 const PAD = 26
 
-const initials = (n: string) => n.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()
+const initials = (n: string) =>
+  n
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase()
 
 function descendantsOf(people: Person[], id: string): Set<string> {
   const out = new Set<string>()
@@ -129,8 +167,13 @@ function descendantsOf(people: Person[], id: string): Set<string> {
 }
 
 /** Sets reportId's manager to managerId, unless it would create a cycle. */
-function reparentPeople(people: Person[], managerId: string, reportId: string): Person[] {
-  if (managerId === reportId || descendantsOf(people, reportId).has(managerId)) return people
+function reparentPeople(
+  people: Person[],
+  managerId: string,
+  reportId: string
+): Person[] {
+  if (managerId === reportId || descendantsOf(people, reportId).has(managerId))
+    return people
   return people.map((p) => (p.id === reportId ? { ...p, managerId } : p))
 }
 
@@ -140,7 +183,12 @@ function nodeContains(n: Node, cx: number, cy: number): boolean {
   const styleH = typeof n.style?.height === "number" ? n.style.height : NODE_H
   const w = n.measured?.width ?? styleW
   const h = n.measured?.height ?? styleH
-  return cx >= n.position.x && cx <= n.position.x + w && cy >= n.position.y && cy <= n.position.y + h
+  return (
+    cx >= n.position.x &&
+    cx <= n.position.x + w &&
+    cy >= n.position.y &&
+    cy <= n.position.y + h
+  )
 }
 
 type DropTarget =
@@ -148,21 +196,42 @@ type DropTarget =
   | { mode: "dept"; departmentId: number; label: string }
   | null
 
-function resolveTarget(people: Person[], nodes: Node[], draggedId: string, pos: { x: number; y: number }): DropTarget {
+function resolveTarget(
+  people: Person[],
+  nodes: Node[],
+  draggedId: string,
+  pos: { x: number; y: number }
+): DropTarget {
   const me = people.find((p) => p.id === draggedId)
   if (!me) return null
   const cx = pos.x + NODE_W / 2
   const cy = pos.y + NODE_H / 2
 
-  const personHit = nodes.find((n) => n.type === "person" && n.id !== draggedId && nodeContains(n, cx, cy))
-  if (personHit && me.managerId !== personHit.id && !descendantsOf(people, draggedId).has(personHit.id)) {
-    return { mode: "report", id: personHit.id, label: people.find((p) => p.id === personHit.id)?.name ?? "" }
+  const personHit = nodes.find(
+    (n) => n.type === "person" && n.id !== draggedId && nodeContains(n, cx, cy)
+  )
+  if (
+    personHit &&
+    me.managerId !== personHit.id &&
+    !descendantsOf(people, draggedId).has(personHit.id)
+  ) {
+    return {
+      mode: "report",
+      id: personHit.id,
+      label: people.find((p) => p.id === personHit.id)?.name ?? "",
+    }
   }
-  const boxHit = nodes.find((n) => n.type === "deptbox" && nodeContains(n, cx, cy))
+  const boxHit = nodes.find(
+    (n) => n.type === "deptbox" && nodeContains(n, cx, cy)
+  )
   if (boxHit) {
     const departmentId = Number(String(boxHit.id).slice(4))
     if (departmentId !== me.departmentId) {
-      return { mode: "dept", departmentId, label: (boxHit.data as BoxData).label }
+      return {
+        mode: "dept",
+        departmentId,
+        label: (boxHit.data as BoxData).label,
+      }
     }
   }
   return null
@@ -171,7 +240,14 @@ function resolveTarget(people: Person[], nodes: Node[], draggedId: string, pos: 
 // ── Layout (dagre top-down) + department bounding boxes ─────────────────────────
 
 type PersonData = { person: Person; chip: string; isTarget?: boolean }
-type BoxData = { departmentId: number; label: string; rgb: string; chip: string; onOpen: (id: number) => void; isTarget?: boolean }
+type BoxData = {
+  departmentId: number
+  label: string
+  rgb: string
+  chip: string
+  onOpen: (id: number) => void
+  isTarget?: boolean
+}
 type Rect = { x: number; y: number; w: number; h: number }
 
 type SavedPos = Map<string, { x: number; y: number }>
@@ -183,15 +259,30 @@ type Snapshot = { people: Person[]; nodes: Node[]; grouped: boolean }
 const edgesFromPeople = (people: Person[]): Edge[] =>
   people
     .filter((p) => p.managerId)
-    .map((p) => ({ id: `e-${p.managerId}-${p.id}`, source: p.managerId!, target: p.id, type: "smoothstep" }))
+    .map((p) => ({
+      id: `e-${p.managerId}-${p.id}`,
+      source: p.managerId!,
+      target: p.id,
+      type: "smoothstep",
+    }))
 
-function makeBoxNode(dept: DeptInfo, r: Rect, onDeptOpen: (id: number) => void): Node {
+function makeBoxNode(
+  dept: DeptInfo,
+  r: Rect,
+  onDeptOpen: (id: number) => void
+): Node {
   const c = colorFor(dept.id)
   return {
     id: `box:${dept.id}`,
     type: "deptbox",
     position: { x: r.x, y: r.y },
-    data: { departmentId: dept.id, label: dept.name, rgb: c.rgb, chip: c.chip, onOpen: onDeptOpen } satisfies BoxData,
+    data: {
+      departmentId: dept.id,
+      label: dept.name,
+      rgb: c.rgb,
+      chip: c.chip,
+      onOpen: onDeptOpen,
+    } satisfies BoxData,
     draggable: true,
     selectable: true,
     zIndex: 0,
@@ -200,22 +291,45 @@ function makeBoxNode(dept: DeptInfo, r: Rect, onDeptOpen: (id: number) => void):
 }
 
 /** A department box that wraps the given member rectangles (in current/free positions), with padding. */
-function boxAround(dept: DeptInfo, rects: Rect[], onDeptOpen: (id: number) => void, saved?: Rect): Node[] {
+function boxAround(
+  dept: DeptInfo,
+  rects: Rect[],
+  onDeptOpen: (id: number) => void,
+  saved?: Rect
+): Node[] {
   if (saved) return [makeBoxNode(dept, saved, onDeptOpen)]
   if (!rects.length) return []
   const minX = Math.min(...rects.map((r) => r.x)) - PAD
   const maxX = Math.max(...rects.map((r) => r.x + r.w)) + PAD
   const minY = Math.min(...rects.map((r) => r.y)) - PAD
   const maxY = Math.max(...rects.map((r) => r.y + r.h)) + PAD
-  return [makeBoxNode(dept, { x: minX, y: minY, w: maxX - minX, h: maxY - minY }, onDeptOpen)]
+  return [
+    makeBoxNode(
+      dept,
+      { x: minX, y: minY, w: maxX - minX, h: maxY - minY },
+      onDeptOpen
+    ),
+  ]
 }
 
 /** Department boxes computed from the live (free-dragged) person-node positions — no re-layout. */
-function deptBoxesFromNodes(persons: Node[], people: Person[], depts: DeptInfo[], onDeptOpen: (id: number) => void): Node[] {
+function deptBoxesFromNodes(
+  persons: Node[],
+  people: Person[],
+  depts: DeptInfo[],
+  onDeptOpen: (id: number) => void
+): Node[] {
   return depts.flatMap((dept) => {
     const rects = persons
-      .filter((n) => people.find((p) => p.id === n.id)?.departmentId === dept.id)
-      .map((n) => ({ x: n.position.x, y: n.position.y, w: n.measured?.width ?? NODE_W, h: n.measured?.height ?? NODE_H }))
+      .filter(
+        (n) => people.find((p) => p.id === n.id)?.departmentId === dept.id
+      )
+      .map((n) => ({
+        x: n.position.x,
+        y: n.position.y,
+        w: n.measured?.width ?? NODE_W,
+        h: n.measured?.height ?? NODE_H,
+      }))
     return boxAround(dept, rects, onDeptOpen)
   })
 }
@@ -230,7 +344,13 @@ function buildFlow(
   savedBox?: SavedBox
 ): { nodes: Node[]; edges: Edge[] } {
   const g = new dagre.graphlib.Graph()
-  g.setGraph({ rankdir: "TB", nodesep: 55, ranksep: 90, marginx: 30, marginy: 30 })
+  g.setGraph({
+    rankdir: "TB",
+    nodesep: 55,
+    ranksep: 90,
+    marginx: 30,
+    marginy: 30,
+  })
   g.setDefaultEdgeLabel(() => ({}))
   people.forEach((p) => g.setNode(p.id, { width: NODE_W, height: NODE_H }))
   people.forEach((p) => p.managerId && g.setEdge(p.managerId, p.id))
@@ -248,7 +368,10 @@ function buildFlow(
     id: p.id,
     type: "person",
     position: at(p.id),
-    data: { person: p, chip: colorFor(p.departmentId).chip } satisfies PersonData,
+    data: {
+      person: p,
+      chip: colorFor(p.departmentId).chip,
+    } satisfies PersonData,
     zIndex: 1,
   }))
 
@@ -256,14 +379,19 @@ function buildFlow(
     ? depts.flatMap((dept) =>
         boxAround(
           dept,
-          people.filter((p) => p.departmentId === dept.id).map((p) => ({ ...at(p.id), w: NODE_W, h: NODE_H })),
+          people
+            .filter((p) => p.departmentId === dept.id)
+            .map((p) => ({ ...at(p.id), w: NODE_W, h: NODE_H })),
           onDeptOpen,
           savedBox?.get(dept.id)
         )
       )
     : []
 
-  return { nodes: [...boxNodes, ...personNodes], edges: edgesFromPeople(people) }
+  return {
+    nodes: [...boxNodes, ...personNodes],
+    edges: edgesFromPeople(people),
+  }
 }
 
 // ── Nodes ───────────────────────────────────────────────────────────────────────
@@ -273,20 +401,43 @@ function PersonNode({ data }: NodeProps) {
   return (
     <div
       className={cn(
-        "group w-47.5 cursor-grab rounded-xl border border-border bg-card px-3 py-2.5 text-center shadow-sm transition active:cursor-grabbing hover:border-primary/40 hover:shadow-md hover:ring-2 hover:ring-primary/25",
-        isTarget && "border-primary shadow-lg ring-2 ring-primary ring-offset-2 ring-offset-background"
+        "group w-47.5 cursor-grab rounded-xl border border-border bg-card px-3 py-2.5 text-center shadow-sm transition hover:border-primary/40 hover:shadow-md hover:ring-2 hover:ring-primary/25 active:cursor-grabbing",
+        isTarget &&
+          "border-primary shadow-lg ring-2 ring-primary ring-offset-2 ring-offset-background"
       )}
     >
-      <Handle type="target" position={Position.Top} className="size-1.5! border-0! bg-muted-foreground/40!" />
-      <span className={cn("mx-auto flex size-10 items-center justify-center rounded-full text-[13px] font-bold ring-2", chip)}>
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="size-1.5! border-0! bg-muted-foreground/40!"
+      />
+      <span
+        className={cn(
+          "mx-auto flex size-10 items-center justify-center rounded-full text-[13px] font-bold ring-2",
+          chip
+        )}
+      >
         {initials(person.name)}
       </span>
-      <p className="mt-1.5 truncate text-[13px] font-semibold text-foreground">{person.name}</p>
-      <p className="truncate text-[11px] text-muted-foreground">{person.title || "—"}</p>
-      <span className={cn("mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1", chip)}>
+      <p className="mt-1.5 truncate text-[13px] font-semibold text-foreground">
+        {person.name}
+      </p>
+      <p className="truncate text-[11px] text-muted-foreground">
+        {person.title || "—"}
+      </p>
+      <span
+        className={cn(
+          "mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1",
+          chip
+        )}
+      >
         {person.deptName || "Unassigned"}
       </span>
-      <Handle type="source" position={Position.Bottom} className="size-1.5! border-0! bg-muted-foreground/40!" />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="size-1.5! border-0! bg-muted-foreground/40!"
+      />
     </div>
   )
 }
@@ -296,7 +447,10 @@ function DeptBoxNode({ data, selected }: NodeProps) {
   const active = isTarget || selected
   return (
     <div
-      className={cn("relative size-full cursor-move rounded-2xl border-[1.5px]", active ? "border-solid" : "border-dashed")}
+      className={cn(
+        "relative size-full cursor-move rounded-2xl border-[1.5px]",
+        active ? "border-solid" : "border-dashed"
+      )}
       style={{
         borderColor: `rgb(${rgb} / ${active ? 0.95 : 0.5})`,
         background: `rgb(${rgb} / ${isTarget ? 0.14 : 0.05})`,
@@ -360,15 +514,35 @@ function Flow({
   const deptsRef = useRef<DeptInfo[]>(depts)
   deptsRef.current = depts
 
-  const savedPos = useRef<SavedPos>(new Map(initialLayout.nodes.map((p) => [String(p.userId), { x: p.x, y: p.y }])))
-  const savedBox = useRef<SavedBox>(new Map(initialLayout.boxes.map((b) => [b.departmentId, { x: b.x, y: b.y, w: b.w, h: b.h }])))
+  const savedPos = useRef<SavedPos>(
+    new Map(
+      initialLayout.nodes.map((p) => [String(p.userId), { x: p.x, y: p.y }])
+    )
+  )
+  const savedBox = useRef<SavedBox>(
+    new Map(
+      initialLayout.boxes.map((b) => [
+        b.departmentId,
+        { x: b.x, y: b.y, w: b.w, h: b.h },
+      ])
+    )
+  )
 
   const [personModal, setPersonModal] = useState<string | null>(null)
   const [deptModal, setDeptModal] = useState<number | null>(null)
-  const [removeConfirm, setRemoveConfirm] = useState<{ id: string; name: string; dept: string } | null>(null)
-  const [moveConfirm, setMoveConfirm] = useState<
-    { id: string; userId: number; name: string; departmentId: number; toName: string; fromName: string } | null
-  >(null)
+  const [removeConfirm, setRemoveConfirm] = useState<{
+    id: string
+    name: string
+    dept: string
+  } | null>(null)
+  const [moveConfirm, setMoveConfirm] = useState<{
+    id: string
+    userId: number
+    name: string
+    departmentId: number
+    toName: string
+    fromName: string
+  } | null>(null)
   const [hint, setHint] = useState<DropTarget>(null)
   const [grouped, setGrouped] = useState(initialLayout.grouped)
   // Tracks unsaved layout changes — both Save and Reset only appear when there's something to act on.
@@ -406,9 +580,19 @@ function Flow({
           .filter((n) => n.type === "person")
           .map((n) => {
             const p = people.find((x) => x.id === n.id)
-            return p ? { ...n, data: { person: p, chip: colorFor(p.departmentId).chip } satisfies PersonData } : n
+            return p
+              ? {
+                  ...n,
+                  data: {
+                    person: p,
+                    chip: colorFor(p.departmentId).chip,
+                  } satisfies PersonData,
+                }
+              : n
           })
-        const boxes = groupedRef.current ? prev.filter((n) => n.type === "deptbox") : []
+        const boxes = groupedRef.current
+          ? prev.filter((n) => n.type === "deptbox")
+          : []
         return [...boxes, ...persons]
       })
       setEdges(edgesFromPeople(people))
@@ -437,8 +621,10 @@ function Flow({
     prev.people.forEach((p) => {
       const c = cur.find((x) => x.id === p.id)
       if (!c) return
-      if (c.managerId !== p.managerId) onSetManager(p.userId, p.managerId ? Number(p.managerId) : null)
-      if (c.departmentId !== p.departmentId) onSetDepartment(p.userId, p.departmentId)
+      if (c.managerId !== p.managerId)
+        onSetManager(p.userId, p.managerId ? Number(p.managerId) : null)
+      if (c.departmentId !== p.departmentId)
+        onSetDepartment(p.userId, p.departmentId)
     })
     peopleRef.current = prev.people
     groupedRef.current = prev.grouped
@@ -452,10 +638,22 @@ function Flow({
   useEffect(() => {
     if (!editable) return
     const onKey = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.key.toLowerCase() !== "z") return
+      if (
+        !(e.ctrlKey || e.metaKey) ||
+        e.shiftKey ||
+        e.key.toLowerCase() !== "z"
+      )
+        return
       const t = e.target as HTMLElement | null
       // Don't hijack undo while typing in a field.
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.tagName === "SELECT" ||
+          t.isContentEditable)
+      )
+        return
       e.preventDefault()
       undo()
     }
@@ -471,7 +669,17 @@ function Flow({
     setDirty(true)
     setNodes((prev) => {
       const persons = prev.filter((n) => n.type === "person")
-      return next ? [...deptBoxesFromNodes(persons, peopleRef.current, deptsRef.current, onDeptOpen), ...persons] : persons
+      return next
+        ? [
+            ...deptBoxesFromNodes(
+              persons,
+              peopleRef.current,
+              deptsRef.current,
+              onDeptOpen
+            ),
+            ...persons,
+          ]
+        : persons
     })
   }, [onDeptOpen, setNodes, pushHistory])
 
@@ -490,8 +698,10 @@ function Flow({
     const boxes = all
       .filter((n) => n.type === "deptbox")
       .map((n) => {
-        const styleW = typeof n.style?.width === "number" ? n.style.width : NODE_W
-        const styleH = typeof n.style?.height === "number" ? n.style.height : NODE_H
+        const styleW =
+          typeof n.style?.width === "number" ? n.style.width : NODE_W
+        const styleH =
+          typeof n.style?.height === "number" ? n.style.height : NODE_H
         return {
           departmentId: Number(String(n.id).slice(4)),
           x: n.position.x,
@@ -505,8 +715,15 @@ function Flow({
 
   const handleSave = useCallback(() => {
     const layout = collectLayout()
-    savedPos.current = new Map(layout.nodes.map((p) => [String(p.userId), { x: p.x, y: p.y }]))
-    savedBox.current = new Map(layout.boxes.map((b) => [b.departmentId, { x: b.x, y: b.y, w: b.w, h: b.h }]))
+    savedPos.current = new Map(
+      layout.nodes.map((p) => [String(p.userId), { x: p.x, y: p.y }])
+    )
+    savedBox.current = new Map(
+      layout.boxes.map((b) => [
+        b.departmentId,
+        { x: b.x, y: b.y, w: b.w, h: b.h },
+      ])
+    )
     onSaveLayout(layout)
     setDirty(false)
   }, [collectLayout, onSaveLayout])
@@ -535,7 +752,9 @@ function Flow({
   )
 
   // Carry a department box's members when it's dragged.
-  const boxDrag = useRef<{ id: string | null; last: { x: number; y: number } }>({ id: null, last: { x: 0, y: 0 } })
+  const boxDrag = useRef<{ id: string | null; last: { x: number; y: number } }>(
+    { id: null, last: { x: 0, y: 0 } }
+  )
 
   const onNodeDrag: OnNodeDrag = useCallback(
     (_, node) => {
@@ -543,7 +762,10 @@ function Flow({
         const departmentId = Number(node.id.slice(4))
         const ref = boxDrag.current
         if (ref.id !== node.id) {
-          boxDrag.current = { id: node.id, last: { x: node.position.x, y: node.position.y } }
+          boxDrag.current = {
+            id: node.id,
+            last: { x: node.position.x, y: node.position.y },
+          }
           return
         }
         const dx = node.position.x - ref.last.x
@@ -552,8 +774,12 @@ function Flow({
         if (dx || dy) {
           setNodes((prev) =>
             prev.map((n) =>
-              n.type === "person" && (n.data as PersonData).person.departmentId === departmentId
-                ? { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } }
+              n.type === "person" &&
+              (n.data as PersonData).person.departmentId === departmentId
+                ? {
+                    ...n,
+                    position: { x: n.position.x + dx, y: n.position.y + dy },
+                  }
                 : n
             )
           )
@@ -561,11 +787,21 @@ function Flow({
         return
       }
       if (node.type !== "person") return
-      const target = resolveTarget(peopleRef.current, getNodes(), node.id, node.position)
+      const target = resolveTarget(
+        peopleRef.current,
+        getNodes(),
+        node.id,
+        node.position
+      )
       const tid = target?.mode === "report" ? target.id : null
       if (tid !== lastTargetId.current) {
         lastTargetId.current = tid
-        setNodes((prev) => prev.map((n) => ({ ...n, data: { ...n.data, isTarget: n.id === tid } })))
+        setNodes((prev) =>
+          prev.map((n) => ({
+            ...n,
+            data: { ...n.data, isTarget: n.id === tid },
+          }))
+        )
       }
       setHint(target)
     },
@@ -575,7 +811,11 @@ function Flow({
   const clearHint = useCallback(() => {
     lastTargetId.current = null
     setHint(null)
-    setNodes((prev) => prev.map((n) => (n.data?.isTarget ? { ...n, data: { ...n.data, isTarget: false } } : n)))
+    setNodes((prev) =>
+      prev.map((n) =>
+        n.data?.isTarget ? { ...n, data: { ...n.data, isTarget: false } } : n
+      )
+    )
   }, [setNodes])
 
   // Capture state at the start of any node drag, so Ctrl/⌘-Z can revert the whole gesture.
@@ -602,7 +842,11 @@ function Flow({
   const onReconnectEnd = useCallback(
     (_: unknown, edge: Edge) => {
       if (!reconnectOk.current) {
-        commit(peopleRef.current.map((p) => (p.id === edge.target ? { ...p, managerId: null } : p)))
+        commit(
+          peopleRef.current.map((p) =>
+            p.id === edge.target ? { ...p, managerId: null } : p
+          )
+        )
         onSetManager(Number(edge.target), null)
       }
       reconnectOk.current = true
@@ -625,7 +869,11 @@ function Flow({
       if (!editable || !(event.ctrlKey || event.metaKey)) return
       event.stopPropagation()
       pushHistory()
-      commit(peopleRef.current.map((p) => (p.id === edge.target ? { ...p, managerId: null } : p)))
+      commit(
+        peopleRef.current.map((p) =>
+          p.id === edge.target ? { ...p, managerId: null } : p
+        )
+      )
       onSetManager(Number(edge.target), null)
     },
     [commit, onSetManager, editable, pushHistory]
@@ -644,7 +892,11 @@ function Flow({
       if (!me) return
       const target = resolveTarget(people, getNodes(), node.id, node.position)
       if (target?.mode === "report") {
-        commit(people.map((p) => (p.id === node.id ? { ...p, managerId: target.id } : p)))
+        commit(
+          people.map((p) =>
+            p.id === node.id ? { ...p, managerId: target.id } : p
+          )
+        )
         onSetManager(me.userId, Number(target.id))
         return
       }
@@ -664,7 +916,9 @@ function Flow({
       if (groupedRef.current && me.departmentId != null) {
         const cx = node.position.x + NODE_W / 2
         const cy = node.position.y + NODE_H / 2
-        const insideAnyBox = getNodes().some((n) => n.type === "deptbox" && nodeContains(n, cx, cy))
+        const insideAnyBox = getNodes().some(
+          (n) => n.type === "deptbox" && nodeContains(n, cx, cy)
+        )
         if (!insideAnyBox) {
           setRemoveConfirm({ id: me.id, name: me.name, dept: me.deptName })
           return
@@ -684,7 +938,9 @@ function Flow({
         onNodeDragStart={editable ? onNodeDragStart : undefined}
         onNodeDrag={editable ? onNodeDrag : undefined}
         onNodeDragStop={editable ? onNodeDragStop : undefined}
-        onNodeClick={(_, node) => node.type === "person" && setPersonModal(node.id)}
+        onNodeClick={(_, node) =>
+          node.type === "person" && setPersonModal(node.id)
+        }
         onConnect={editable ? onConnect : undefined}
         onEdgeClick={onEdgeClick}
         onReconnectStart={editable ? onReconnectStart : undefined}
@@ -732,7 +988,12 @@ function Flow({
           </Button>
           {editable && (dirty || saving) && (
             <>
-              <Button size="sm" variant="outline" onClick={handleReset} disabled={saving}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleReset}
+                disabled={saving}
+              >
                 Reset
               </Button>
               <Button size="sm" onClick={handleSave} disabled={saving}>
@@ -751,7 +1012,9 @@ function Flow({
                   : colorFor(hint.departmentId).chip
               )}
             >
-              {hint.mode === "report" ? `↳ Reports to ${hint.label}` : `⊕ Move to ${hint.label}`}
+              {hint.mode === "report"
+                ? `↳ Reports to ${hint.label}`
+                : `⊕ Move to ${hint.label}`}
             </div>
           </Panel>
         )}
@@ -768,16 +1031,23 @@ function Flow({
             const me = peopleRef.current.find((p) => p.id === personModal)!
             const prevManager = me.managerId ? Number(me.managerId) : null
             const prevDept = me.departmentId
-            if (managerId !== prevManager || departmentId !== prevDept) pushHistory()
+            if (managerId !== prevManager || departmentId !== prevDept)
+              pushHistory()
             commit(
               peopleRef.current.map((p) =>
                 p.id === personModal
-                  ? { ...p, managerId: managerId != null ? String(managerId) : null, departmentId, deptName }
+                  ? {
+                      ...p,
+                      managerId: managerId != null ? String(managerId) : null,
+                      departmentId,
+                      deptName,
+                    }
                   : p
               )
             )
             if (managerId !== prevManager) onSetManager(me.userId, managerId)
-            if (departmentId !== prevDept) onSetDepartment(me.userId, departmentId)
+            if (departmentId !== prevDept)
+              onSetDepartment(me.userId, departmentId)
             setPersonModal(null)
           }}
           onClose={() => setPersonModal(null)}
@@ -807,9 +1077,15 @@ function Flow({
               <DialogTitle>Remove from department?</DialogTitle>
             </DialogHeader>
             <p className="text-[13px] text-muted-foreground">
-              Remove <span className="font-medium text-foreground">{removeConfirm.name}</span> from{" "}
-              <span className="font-medium text-foreground">{removeConfirm.dept}</span>? They&apos;ll be left
-              unassigned (no department).
+              Remove{" "}
+              <span className="font-medium text-foreground">
+                {removeConfirm.name}
+              </span>{" "}
+              from{" "}
+              <span className="font-medium text-foreground">
+                {removeConfirm.dept}
+              </span>
+              ? They&apos;ll be left unassigned (no department).
             </p>
             <DialogFooter>
               <Button
@@ -828,7 +1104,13 @@ function Flow({
                 onClick={() => {
                   const r = removeConfirm
                   const me = peopleRef.current.find((p) => p.id === r.id)
-                  commit(peopleRef.current.map((p) => (p.id === r.id ? { ...p, departmentId: null, deptName: "" } : p)))
+                  commit(
+                    peopleRef.current.map((p) =>
+                      p.id === r.id
+                        ? { ...p, departmentId: null, deptName: "" }
+                        : p
+                    )
+                  )
                   if (me) onSetDepartment(me.userId, null)
                   setRemoveConfirm(null)
                 }}
@@ -854,15 +1136,25 @@ function Flow({
               <DialogTitle>Move to department?</DialogTitle>
             </DialogHeader>
             <p className="text-[13px] text-muted-foreground">
-              Move <span className="font-medium text-foreground">{moveConfirm.name}</span>{" "}
+              Move{" "}
+              <span className="font-medium text-foreground">
+                {moveConfirm.name}
+              </span>{" "}
               {moveConfirm.fromName ? (
                 <>
-                  from <span className="font-medium text-foreground">{moveConfirm.fromName}</span>{" "}
+                  from{" "}
+                  <span className="font-medium text-foreground">
+                    {moveConfirm.fromName}
+                  </span>{" "}
                 </>
               ) : (
                 <>(currently unassigned) </>
               )}
-              to <span className="font-medium text-foreground">{moveConfirm.toName}</span>?
+              to{" "}
+              <span className="font-medium text-foreground">
+                {moveConfirm.toName}
+              </span>
+              ?
             </p>
             <DialogFooter>
               <Button
@@ -881,7 +1173,13 @@ function Flow({
                   const m = moveConfirm
                   commit(
                     peopleRef.current.map((p) =>
-                      p.id === m.id ? { ...p, departmentId: m.departmentId, deptName: m.toName } : p
+                      p.id === m.id
+                        ? {
+                            ...p,
+                            departmentId: m.departmentId,
+                            deptName: m.toName,
+                          }
+                        : p
                     )
                   )
                   onSetDepartment(m.userId, m.departmentId)
@@ -912,15 +1210,23 @@ function PersonModal({
   people: Person[]
   depts: DeptInfo[]
   editable: boolean
-  onSave: (managerId: number | null, departmentId: number | null, deptName: string) => void
+  onSave: (
+    managerId: number | null,
+    departmentId: number | null,
+    deptName: string
+  ) => void
   onClose: () => void
 }) {
   const person = people.find((p) => p.id === personId)!
-  const [departmentId, setDepartmentId] = useState<number | null>(person.departmentId)
+  const [departmentId, setDepartmentId] = useState<number | null>(
+    person.departmentId
+  )
   const [managerId, setManagerId] = useState<string | null>(person.managerId)
 
   const blocked = descendantsOf(people, personId)
-  const managerOptions = people.filter((p) => p.id !== personId && !blocked.has(p.id))
+  const managerOptions = people.filter(
+    (p) => p.id !== personId && !blocked.has(p.id)
+  )
 
   function save() {
     const deptName = depts.find((d) => d.id === departmentId)?.name ?? ""
@@ -935,8 +1241,12 @@ function PersonModal({
         </DialogHeader>
         <div className="space-y-4">
           <div className="rounded-lg border border-border bg-muted/30 p-3">
-            <p className="text-[13px] font-medium text-foreground">{person.name}</p>
-            <p className="text-[12px] text-muted-foreground">{person.title || "No title"}</p>
+            <p className="text-[13px] font-medium text-foreground">
+              {person.name}
+            </p>
+            <p className="text-[12px] text-muted-foreground">
+              {person.title || "No title"}
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Department">
@@ -947,23 +1257,37 @@ function PersonModal({
               >
                 <option value="">Unassigned</option>
                 {depts.map((d) => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
                 ))}
               </NativeSelect>
             </Field>
             <Field label="Reports to">
-              <NativeSelect value={managerId ?? ""} onChange={(v) => setManagerId(v || null)} disabled={!editable}>
+              <NativeSelect
+                value={managerId ?? ""}
+                onChange={(v) => setManagerId(v || null)}
+                disabled={!editable}
+              >
                 <option value="">— None (top level) —</option>
                 {managerOptions.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
                 ))}
               </NativeSelect>
             </Field>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={onClose}>{editable ? "Cancel" : "Close"}</Button>
-          {editable && <Button size="sm" onClick={save}>Save</Button>}
+          <Button variant="outline" size="sm" onClick={onClose}>
+            {editable ? "Cancel" : "Close"}
+          </Button>
+          {editable && (
+            <Button size="sm" onClick={save}>
+              Save
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -989,22 +1313,38 @@ function DeptModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="size-2.5 rounded-full" style={{ background: `rgb(${c.rgb})` }} />
+            <span
+              className="size-2.5 rounded-full"
+              style={{ background: `rgb(${c.rgb})` }}
+            />
             {dept?.name ?? "Department"}
           </DialogTitle>
         </DialogHeader>
         <p className="text-[12px] text-muted-foreground">
-          {members.length} {members.length === 1 ? "person" : "people"} in this department.
+          {members.length} {members.length === 1 ? "person" : "people"} in this
+          department.
         </p>
         <div className="mt-2 max-h-72 space-y-2 overflow-y-auto">
           {members.map((m) => (
-            <div key={m.id} className="flex items-center gap-3 rounded-lg border border-border p-2.5">
-              <span className={cn("flex size-8 items-center justify-center rounded-full text-[11px] font-bold ring-2", c.chip)}>
+            <div
+              key={m.id}
+              className="flex items-center gap-3 rounded-lg border border-border p-2.5"
+            >
+              <span
+                className={cn(
+                  "flex size-8 items-center justify-center rounded-full text-[11px] font-bold ring-2",
+                  c.chip
+                )}
+              >
                 {initials(m.name)}
               </span>
               <div className="min-w-0">
-                <p className="truncate text-[13px] font-medium text-foreground">{m.name}</p>
-                <p className="truncate text-[11px] text-muted-foreground">{m.title || "—"}</p>
+                <p className="truncate text-[13px] font-medium text-foreground">
+                  {m.name}
+                </p>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  {m.title || "—"}
+                </p>
               </div>
             </div>
           ))}
@@ -1015,14 +1355,22 @@ function DeptModal({
           )}
         </div>
         <DialogFooter>
-          <Button size="sm" variant="outline" onClick={onClose}>Close</Button>
+          <Button size="sm" variant="outline" onClick={onClose}>
+            Close
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
   return (
     <div className="space-y-1.5">
       <Label className="text-[12.5px]">{label}</Label>
@@ -1074,7 +1422,10 @@ function QuickRoleCreate({ onClose }: { onClose: () => void }) {
       isPending={createRole.isPending}
       onCancel={onClose}
       onSave={(name, description, color, roleType) =>
-        createRole.mutate({ name, description, color, roleType }, { onSuccess: onClose })
+        createRole.mutate(
+          { name, description, color, roleType },
+          { onSuccess: onClose }
+        )
       }
     />
   )
@@ -1120,10 +1471,15 @@ export function CompanyOrgChart() {
   const saveLayout = useSaveLayout()
   const qc = useQueryClient()
 
-  const [quickCreate, setQuickCreate] = useState<"role" | "department" | "user" | null>(null)
+  const [quickCreate, setQuickCreate] = useState<
+    "role" | "department" | "user" | null
+  >(null)
 
   const depts: DeptInfo[] = useMemo(
-    () => (departments ?? []).filter((d: Department) => d.active).map((d: Department) => ({ id: d.id, name: d.name })),
+    () =>
+      (departments ?? [])
+        .filter((d: Department) => d.active)
+        .map((d: Department) => ({ id: d.id, name: d.name })),
     [departments]
   )
   const people = useMemo(() => (graph ? toPeople(graph) : []), [graph])
@@ -1139,16 +1495,34 @@ export function CompanyOrgChart() {
           <div className="flex items-center gap-1.5">
             {canEdit ? (
               <>
-                <Hint icon={DragDropIcon} label="Drag a card onto another to re-parent" />
+                <Hint
+                  icon={DragDropIcon}
+                  label="Drag a card onto another to re-parent"
+                />
                 <Hint icon={PencilEdit01Icon} label="Click a card to edit" />
-                <Hint icon={Cancel01Icon} label="Ctrl / ⌘-click a line to detach" />
-                <Hint icon={CursorMove01Icon} label="Middle-mouse drag to pan · scroll to zoom" />
-                <Hint icon={Add01Icon} label="Right-click the canvas to create" />
-                <Hint icon={FloppyDiskIcon} label="Save layout to keep your arrangement" />
+                <Hint
+                  icon={Cancel01Icon}
+                  label="Ctrl / ⌘-click a line to detach"
+                />
+                <Hint
+                  icon={CursorMove01Icon}
+                  label="Middle-mouse drag to pan · scroll to zoom"
+                />
+                <Hint
+                  icon={Add01Icon}
+                  label="Right-click the canvas to create"
+                />
+                <Hint
+                  icon={FloppyDiskIcon}
+                  label="Save layout to keep your arrangement"
+                />
               </>
             ) : (
               <>
-                <Hint icon={CursorMove01Icon} label="Middle-mouse drag to pan · scroll to zoom" />
+                <Hint
+                  icon={CursorMove01Icon}
+                  label="Middle-mouse drag to pan · scroll to zoom"
+                />
                 <span className="text-[11px] text-muted-foreground">
                   Read-only — managed by an administrator
                 </span>
@@ -1162,7 +1536,9 @@ export function CompanyOrgChart() {
           <div className="h-150 w-full overflow-hidden rounded-xl border border-border bg-muted/10">
             {!ready ? (
               <div className="flex h-full items-center justify-center text-[13px] text-muted-foreground">
-                {graphLoading || layoutLoading ? "Loading org chart…" : "No employees to display yet."}
+                {graphLoading || layoutLoading
+                  ? "Loading org chart…"
+                  : "No employees to display yet."}
               </div>
             ) : people.length === 0 ? (
               <div className="flex h-full items-center justify-center text-[13px] text-muted-foreground">
@@ -1176,8 +1552,12 @@ export function CompanyOrgChart() {
                   depts={depts}
                   initialLayout={layout!}
                   editable={canEdit}
-                  onSetManager={(userId, managerId) => setManager.mutate({ userId, managerId })}
-                  onSetDepartment={(userId, departmentId) => setDepartment.mutate({ userId, departmentId })}
+                  onSetManager={(userId, managerId) =>
+                    setManager.mutate({ userId, managerId })
+                  }
+                  onSetDepartment={(userId, departmentId) =>
+                    setDepartment.mutate({ userId, departmentId })
+                  }
                   onSaveLayout={(l) =>
                     saveLayout.mutate(l, {
                       onSuccess: () => pushToast("Layout saved.", "success"),
@@ -1200,7 +1580,11 @@ export function CompanyOrgChart() {
             New department
           </ContextMenuItem>
           <ContextMenuItem onSelect={() => setQuickCreate("role")}>
-            <HugeiconsIcon icon={UserShield01Icon} size={15} strokeWidth={1.8} />
+            <HugeiconsIcon
+              icon={UserShield01Icon}
+              size={15}
+              strokeWidth={1.8}
+            />
             New role
           </ContextMenuItem>
           <ContextMenuSeparator />
@@ -1222,7 +1606,9 @@ export function CompanyOrgChart() {
       {quickCreate === "department" && (
         <QuickDepartmentCreate onClose={() => setQuickCreate(null)} />
       )}
-      {quickCreate === "role" && <QuickRoleCreate onClose={() => setQuickCreate(null)} />}
+      {quickCreate === "role" && (
+        <QuickRoleCreate onClose={() => setQuickCreate(null)} />
+      )}
     </div>
   )
 }

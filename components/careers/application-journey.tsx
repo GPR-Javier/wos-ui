@@ -67,11 +67,7 @@ export function ApplicationJourney({
                   )}
                 />
               )}
-              <StageNode
-                stage={s}
-                index={i}
-                current={i === currentIndex}
-              />
+              <StageNode stage={s} index={i} current={i === currentIndex} />
             </Fragment>
           ))}
         </div>
@@ -95,7 +91,9 @@ export function ApplicationJourney({
             className="shrink-0 bg-green-600 hover:bg-green-700"
             onClick={() => setShowOffer(true)}
           >
-            {application.status === "OFFER" ? "Review & sign offer" : "View offer"}
+            {application.status === "OFFER"
+              ? "Review & sign offer"
+              : "View offer"}
             <HugeiconsIcon
               icon={ArrowRight01Icon}
               size={13}

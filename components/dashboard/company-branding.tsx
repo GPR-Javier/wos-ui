@@ -25,7 +25,11 @@ export interface Branding {
   overrides: Partial<Record<BrandKey, string>> // manually replaced assets
 }
 
-export const EMPTY_BRANDING: Branding = { master: null, generated: {}, overrides: {} }
+export const EMPTY_BRANDING: Branding = {
+  master: null,
+  generated: {},
+  overrides: {},
+}
 
 // The asset actually used = a manual override, else the auto-generated version.
 export const resolveAsset = (b: Branding, k: BrandKey): string | null =>
@@ -34,7 +38,12 @@ export const resolveAsset = (b: Branding, k: BrandKey): string | null =>
 const ASSETS: { key: BrandKey; label: string; hint: string; size: number }[] = [
   { key: "logo", label: "Company logo", hint: "Header & profile", size: 256 },
   { key: "favicon", label: "Favicon", hint: "Browser tab icon", size: 32 },
-  { key: "sidebarIcon", label: "Sidebar mark", hint: "Collapsed sidebar", size: 64 },
+  {
+    key: "sidebarIcon",
+    label: "Sidebar mark",
+    hint: "Collapsed sidebar",
+    size: 64,
+  },
   { key: "appIcon", label: "App icon", hint: "Mobile / PWA", size: 512 },
 ]
 
@@ -52,7 +61,9 @@ function resizeTo(src: string, size: number): Promise<string> {
       ctx.drawImage(img, 0, 0, size, size)
       canvas.toBlob(
         (blob) =>
-          blob ? resolve(URL.createObjectURL(blob)) : reject(new Error("toBlob failed")),
+          blob
+            ? resolve(URL.createObjectURL(blob))
+            : reject(new Error("toBlob failed")),
         "image/png"
       )
     }
@@ -61,7 +72,9 @@ function resizeTo(src: string, size: number): Promise<string> {
   })
 }
 
-async function generateAll(master: string): Promise<Partial<Record<BrandKey, string>>> {
+async function generateAll(
+  master: string
+): Promise<Partial<Record<BrandKey, string>>> {
   const entries = await Promise.all(
     ASSETS.map(async (a) => [a.key, await resizeTo(master, a.size)] as const)
   )
@@ -136,19 +149,36 @@ export function CompanyBranding({ branding, onChange, canEdit }: Props) {
         <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted ring-1 ring-border">
           {branding.master ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={branding.master} alt="Brand image" className="size-full object-cover" />
+            <img
+              src={branding.master}
+              alt="Brand image"
+              className="size-full object-cover"
+            />
           ) : (
-            <HugeiconsIcon icon={Image01Icon} size={20} strokeWidth={1.8} className="text-muted-foreground/50" />
+            <HugeiconsIcon
+              icon={Image01Icon}
+              size={20}
+              strokeWidth={1.8}
+              className="text-muted-foreground/50"
+            />
           )}
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <HugeiconsIcon icon={MagicWand01Icon} size={13} strokeWidth={2} className="text-primary" />
-            <p className="text-[13px] font-semibold text-foreground">Brand image</p>
+            <HugeiconsIcon
+              icon={MagicWand01Icon}
+              size={13}
+              strokeWidth={2}
+              className="text-primary"
+            />
+            <p className="text-[13px] font-semibold text-foreground">
+              Brand image
+            </p>
           </div>
           <p className="text-[11.5px] text-muted-foreground">
-            Upload once — your favicon, sidebar mark and app icon are generated automatically.
+            Upload once — your favicon, sidebar mark and app icon are generated
+            automatically.
           </p>
 
           {canEdit && (
@@ -164,8 +194,17 @@ export function CompanyBranding({ branding, onChange, canEdit }: Props) {
                   e.target.value = ""
                 }}
               />
-              <Button size="sm" className="h-7 text-[12px]" onClick={() => masterInputRef.current?.click()}>
-                <HugeiconsIcon icon={Upload03Icon} size={13} strokeWidth={2} className="mr-1" />
+              <Button
+                size="sm"
+                className="h-7 text-[12px]"
+                onClick={() => masterInputRef.current?.click()}
+              >
+                <HugeiconsIcon
+                  icon={Upload03Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="mr-1"
+                />
                 {branding.master ? "Replace image" : "Upload image"}
               </Button>
               {branding.master && (
@@ -177,7 +216,12 @@ export function CompanyBranding({ branding, onChange, canEdit }: Props) {
                     onClick={regenerate}
                     disabled={busy}
                   >
-                    <HugeiconsIcon icon={ReloadIcon} size={13} strokeWidth={2} className="mr-1" />
+                    <HugeiconsIcon
+                      icon={ReloadIcon}
+                      size={13}
+                      strokeWidth={2}
+                      className="mr-1"
+                    />
                     {busy ? "Generating…" : "Regenerate"}
                   </Button>
                   <Button
@@ -186,7 +230,12 @@ export function CompanyBranding({ branding, onChange, canEdit }: Props) {
                     className="h-7 text-[12px] text-muted-foreground hover:text-destructive"
                     onClick={removeMaster}
                   >
-                    <HugeiconsIcon icon={Delete02Icon} size={13} strokeWidth={2} className="mr-1" />
+                    <HugeiconsIcon
+                      icon={Delete02Icon}
+                      size={13}
+                      strokeWidth={2}
+                      className="mr-1"
+                    />
                     Clear all
                   </Button>
                 </>
@@ -241,13 +290,20 @@ function AssetSlot({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={value} alt={label} className="size-full object-cover" />
         ) : (
-          <HugeiconsIcon icon={Image01Icon} size={16} strokeWidth={1.8} className="text-muted-foreground/50" />
+          <HugeiconsIcon
+            icon={Image01Icon}
+            size={16}
+            strokeWidth={1.8}
+            className="text-muted-foreground/50"
+          />
         )}
       </div>
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="truncate text-[13px] font-medium text-foreground">{label}</p>
+          <p className="truncate text-[13px] font-medium text-foreground">
+            {label}
+          </p>
           {value && (
             <span
               className={

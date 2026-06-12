@@ -135,7 +135,12 @@ export function CompanyTheme({ theme, onChange, canEdit }: Props) {
                   style={{ backgroundColor: a.value }}
                 >
                   {active && (
-                    <HugeiconsIcon icon={Tick02Icon} size={15} strokeWidth={2.5} className="text-white" />
+                    <HugeiconsIcon
+                      icon={Tick02Icon}
+                      size={15}
+                      strokeWidth={2.5}
+                      className="text-white"
+                    />
                   )}
                 </button>
               )
@@ -150,7 +155,9 @@ export function CompanyTheme({ theme, onChange, canEdit }: Props) {
                 isCustom && "ring-2 ring-foreground",
                 !canEdit && "opacity-60"
               )}
-              style={{ backgroundColor: isCustom ? theme.accent : "transparent" }}
+              style={{
+                backgroundColor: isCustom ? theme.accent : "transparent",
+              }}
             >
               <input
                 type="color"
@@ -160,7 +167,9 @@ export function CompanyTheme({ theme, onChange, canEdit }: Props) {
                 className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
               />
               {!isCustom && (
-                <span className="text-[15px] leading-none text-muted-foreground">+</span>
+                <span className="text-[15px] leading-none text-muted-foreground">
+                  +
+                </span>
               )}
             </label>
             <Input
@@ -209,7 +218,12 @@ export function CompanyTheme({ theme, onChange, canEdit }: Props) {
             className="h-7 text-[12px] text-muted-foreground"
             onClick={() => onChange(DEFAULT_THEME)}
           >
-            <HugeiconsIcon icon={ReloadIcon} size={13} strokeWidth={2} className="mr-1.5" />
+            <HugeiconsIcon
+              icon={ReloadIcon}
+              size={13}
+              strokeWidth={2}
+              className="mr-1.5"
+            />
             Reset to default
           </Button>
         )}
@@ -260,7 +274,7 @@ function DevicePreview({ theme }: { theme: BrandTheme }) {
     >
       {/* Laptop */}
       <figure className="flex flex-col items-center gap-2">
-        <div className="w-[420px] max-w-full">
+        <div className="w-105 max-w-full">
           <div className="rounded-t-[14px] border-[6px] border-b-0 border-neutral-800 bg-neutral-800 shadow-raised dark:border-neutral-700 dark:bg-neutral-700">
             <div className="overflow-hidden rounded-t-[8px] bg-background">
               <DashboardMock />
@@ -270,29 +284,35 @@ function DevicePreview({ theme }: { theme: BrandTheme }) {
             <div className="absolute top-0 left-1/2 h-1 w-14 -translate-x-1/2 rounded-b-[5px] bg-neutral-700 dark:bg-neutral-600" />
           </div>
         </div>
-        <figcaption className="text-[10px] text-muted-foreground">Desktop</figcaption>
+        <figcaption className="text-[10px] text-muted-foreground">
+          Desktop
+        </figcaption>
       </figure>
 
       {/* Tablet */}
       <figure className="flex flex-col items-center gap-2">
         <div className="rounded-[20px] border-[5px] border-neutral-800 bg-neutral-800 shadow-raised dark:border-neutral-700 dark:bg-neutral-700">
-          <div className="relative w-[164px] overflow-hidden rounded-[8px] bg-background">
+          <div className="relative w-41 overflow-hidden rounded-[8px] bg-background">
             <span className="absolute top-1 left-1/2 z-10 size-1 -translate-x-1/2 rounded-full bg-neutral-600" />
             <TabletMock />
           </div>
         </div>
-        <figcaption className="text-[10px] text-muted-foreground">Tablet</figcaption>
+        <figcaption className="text-[10px] text-muted-foreground">
+          Tablet
+        </figcaption>
       </figure>
 
       {/* Phone */}
       <figure className="flex flex-col items-center gap-2">
-        <div className="rounded-[1.4rem] border-[4px] border-neutral-800 bg-neutral-800 shadow-raised dark:border-neutral-700 dark:bg-neutral-700">
-          <div className="relative w-[84px] overflow-hidden rounded-[12px] bg-background">
+        <div className="rounded-[1.4rem] border-4 border-neutral-800 bg-neutral-800 shadow-raised dark:border-neutral-700 dark:bg-neutral-700">
+          <div className="relative w-21 overflow-hidden rounded-[12px] bg-background">
             <span className="absolute top-1 left-1/2 z-10 h-1 w-7 -translate-x-1/2 rounded-full bg-neutral-800/70" />
             <PhoneMock />
           </div>
         </div>
-        <figcaption className="text-[10px] text-muted-foreground">Mobile</figcaption>
+        <figcaption className="text-[10px] text-muted-foreground">
+          Mobile
+        </figcaption>
       </figure>
     </div>
   )
@@ -319,16 +339,21 @@ function MiniBars({ count = 6, h = 9 }: { count?: number; h?: number }) {
 
 function TabletMock() {
   return (
-    <div className="flex h-[196px] flex-col gap-1.5 bg-background p-2 text-[6px] leading-tight">
+    <div className="flex h-49 flex-col gap-1.5 bg-background p-2 text-[6px] leading-tight">
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="h-1.5 w-12 rounded bg-foreground/70" />
-        <span className="rounded-md bg-primary px-1.5 py-0.5 text-primary-foreground">+ New</span>
+        <span className="rounded-md bg-primary px-1.5 py-0.5 text-primary-foreground">
+          + New
+        </span>
       </div>
       {/* Stat cards 2×2 */}
       <div className="grid grid-cols-2 gap-1.5">
         {["bg-primary", "bg-amber", "bg-blue", "bg-green"].map((dot, i) => (
-          <div key={i} className="rounded-lg border border-border bg-card p-1.5">
+          <div
+            key={i}
+            className="rounded-lg border border-border bg-card p-1.5"
+          >
             <div className="flex items-center justify-between">
               <span className="h-1 w-5 rounded bg-muted-foreground/40" />
               <span className={cn("size-1.5 rounded-full", dot)} />
@@ -350,7 +375,7 @@ function TabletMock() {
 
 function PhoneMock() {
   return (
-    <div className="flex h-[168px] flex-col gap-1.5 bg-background p-1.5 pt-3 text-[5px] leading-tight">
+    <div className="flex h-42 flex-col gap-1.5 bg-background p-1.5 pt-3 text-[5px] leading-tight">
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="h-1 w-8 rounded bg-foreground/70" />
@@ -377,7 +402,7 @@ function PhoneMock() {
 
 function DashboardMock() {
   return (
-    <div className="flex h-[230px] text-[7px] leading-tight">
+    <div className="flex h-57.5 text-[7px] leading-tight">
       {/* Sidebar */}
       <aside className="flex w-1/5 flex-col gap-2 border-r border-border bg-card p-2">
         <div className="flex items-center gap-1">
@@ -392,7 +417,10 @@ function DashboardMock() {
           {[10, 8, 9, 7].map((w, i) => (
             <div key={i} className="flex items-center gap-1 px-1 py-1">
               <span className="size-1.5 rounded-full bg-muted-foreground/40" />
-              <span className="h-1 rounded bg-muted-foreground/30" style={{ width: w }} />
+              <span
+                className="h-1 rounded bg-muted-foreground/30"
+                style={{ width: w }}
+              />
             </div>
           ))}
         </div>
@@ -406,13 +434,18 @@ function DashboardMock() {
             <span className="block h-1.5 w-20 rounded bg-foreground/80" />
             <span className="block h-1 w-14 rounded bg-muted-foreground/40" />
           </div>
-          <span className="rounded-lg bg-primary px-2 py-1 text-primary-foreground">+ New</span>
+          <span className="rounded-lg bg-primary px-2 py-1 text-primary-foreground">
+            + New
+          </span>
         </div>
 
         {/* Stat cards */}
         <div className="grid grid-cols-4 gap-1.5">
           {["bg-primary", "bg-amber", "bg-blue", "bg-green"].map((dot, i) => (
-            <div key={i} className="rounded-lg border border-border bg-card p-1.5">
+            <div
+              key={i}
+              className="rounded-lg border border-border bg-card p-1.5"
+            >
               <div className="flex items-center justify-between">
                 <span className="h-1 w-4 rounded bg-muted-foreground/40" />
                 <span className={cn("size-1.5 rounded-full", dot)} />
@@ -431,7 +464,11 @@ function DashboardMock() {
                 <div
                   key={i}
                   className="flex-1 rounded-t-xs"
-                  style={{ height: `${h}%`, backgroundColor: "var(--chart-1)", opacity: 0.5 + i * 0.07 }}
+                  style={{
+                    height: `${h}%`,
+                    backgroundColor: "var(--chart-1)",
+                    opacity: 0.5 + i * 0.07,
+                  }}
                 />
               ))}
             </div>
@@ -442,7 +479,10 @@ function DashboardMock() {
               <div key={i} className="space-y-0.5">
                 <span className="block h-1 w-6 rounded bg-muted-foreground/30" />
                 <div className="h-1 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${w}%` }} />
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${w}%` }}
+                  />
                 </div>
               </div>
             ))}
@@ -462,10 +502,20 @@ function toHex(color: string): string {
 // ── Detailed component gallery — HR / DTR domain ────────────────────────────────
 
 const STATS: { label: string; value: string; hint: string; dot: string }[] = [
-  { label: "Present today", value: "128", hint: "Workforce active", dot: "bg-green" },
+  {
+    label: "Present today",
+    value: "128",
+    hint: "Workforce active",
+    dot: "bg-green",
+  },
   { label: "Late", value: "6", hint: "Attendance issues", dot: "bg-amber" },
   { label: "On leave", value: "9", hint: "Leave visibility", dot: "bg-blue" },
-  { label: "OT hours", value: "23.5", hint: "Overtime today", dot: "bg-primary" },
+  {
+    label: "OT hours",
+    value: "23.5",
+    hint: "Overtime today",
+    dot: "bg-primary",
+  },
 ]
 
 const ATT: {
@@ -478,10 +528,46 @@ const ATT: {
   status: string
   variant: "green" | "amber" | "blue" | "gray"
 }[] = [
-  { date: "Jun 11", day: "Wed", in: "9:01 AM", out: "6:04 PM", hrs: "8h 03m", ot: "—", status: "Present", variant: "green" },
-  { date: "Jun 10", day: "Tue", in: "9:18 AM", out: "7:12 PM", hrs: "8h 54m", ot: "0.9", status: "Late", variant: "amber" },
-  { date: "Jun 9", day: "Mon", in: "—", out: "—", hrs: "—", ot: "—", status: "On leave", variant: "blue" },
-  { date: "Jun 8", day: "Sun", in: "—", out: "—", hrs: "—", ot: "—", status: "Rest day", variant: "gray" },
+  {
+    date: "Jun 11",
+    day: "Wed",
+    in: "9:01 AM",
+    out: "6:04 PM",
+    hrs: "8h 03m",
+    ot: "—",
+    status: "Present",
+    variant: "green",
+  },
+  {
+    date: "Jun 10",
+    day: "Tue",
+    in: "9:18 AM",
+    out: "7:12 PM",
+    hrs: "8h 54m",
+    ot: "0.9",
+    status: "Late",
+    variant: "amber",
+  },
+  {
+    date: "Jun 9",
+    day: "Mon",
+    in: "—",
+    out: "—",
+    hrs: "—",
+    ot: "—",
+    status: "On leave",
+    variant: "blue",
+  },
+  {
+    date: "Jun 8",
+    day: "Sun",
+    in: "—",
+    out: "—",
+    hrs: "—",
+    ot: "—",
+    status: "Rest day",
+    variant: "gray",
+  },
 ]
 
 // Mirrors the "Quick attendance punch" widget on the login screen.
@@ -495,7 +581,7 @@ function QuickPunchCard() {
           <p className="text-[10px] font-medium tracking-widest text-white/60 uppercase">
             Friday, June 12, 2026
           </p>
-          <p className="mt-0.5 text-[24px] leading-none font-bold tabular-nums text-white">
+          <p className="mt-0.5 text-[24px] leading-none font-bold text-white tabular-nums">
             09:13:59 PM
           </p>
         </div>
@@ -505,7 +591,9 @@ function QuickPunchCard() {
       </div>
 
       <div className="p-5">
-        <p className="mb-4 text-[14px] font-semibold text-foreground">Quick attendance punch</p>
+        <p className="mb-4 text-[14px] font-semibold text-foreground">
+          Quick attendance punch
+        </p>
 
         {/* Punch type toggle */}
         <div className="mb-4 flex gap-2">
@@ -522,7 +610,11 @@ function QuickPunchCard() {
                   : "border-border bg-background text-muted-foreground hover:bg-muted"
               )}
             >
-              <HugeiconsIcon icon={t === "in" ? Login01Icon : Logout01Icon} size={15} strokeWidth={2} />
+              <HugeiconsIcon
+                icon={t === "in" ? Login01Icon : Logout01Icon}
+                size={15}
+                strokeWidth={2}
+              />
               Time {t === "in" ? "In" : "Out"}
             </button>
           ))}
@@ -530,7 +622,11 @@ function QuickPunchCard() {
 
         <div className="space-y-1.5">
           <Label htmlFor="emp-id-preview">Employee ID</Label>
-          <Input id="emp-id-preview" placeholder="e.g. EMP-0042" className="h-11" />
+          <Input
+            id="emp-id-preview"
+            placeholder="e.g. EMP-0042"
+            className="h-11"
+          />
         </div>
 
         <Button
@@ -553,14 +649,19 @@ function ThemeShowcase({ theme }: { theme: BrandTheme }) {
       {/* Overview stat cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {STATS.map((s) => (
-          <div key={s.label} className="rounded-xl border border-border bg-card p-3">
+          <div
+            key={s.label}
+            className="rounded-xl border border-border bg-card p-3"
+          >
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                 {s.label}
               </span>
               <span className={cn("size-1.5 rounded-full", s.dot)} />
             </div>
-            <p className="mt-1.5 text-xl font-bold tabular-nums text-foreground">{s.value}</p>
+            <p className="mt-1.5 text-xl font-bold text-foreground tabular-nums">
+              {s.value}
+            </p>
             <p className="text-[11px] text-muted-foreground">{s.hint}</p>
           </div>
         ))}
@@ -584,9 +685,15 @@ function ThemeShowcase({ theme }: { theme: BrandTheme }) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="day">Day shift · 9:00 AM – 6:00 PM</SelectItem>
-                  <SelectItem value="mid">Mid shift · 2:00 PM – 11:00 PM</SelectItem>
-                  <SelectItem value="grave">Graveyard · 10:00 PM – 7:00 AM</SelectItem>
+                  <SelectItem value="day">
+                    Day shift · 9:00 AM – 6:00 PM
+                  </SelectItem>
+                  <SelectItem value="mid">
+                    Mid shift · 2:00 PM – 11:00 PM
+                  </SelectItem>
+                  <SelectItem value="grave">
+                    Graveyard · 10:00 PM – 7:00 AM
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -605,7 +712,9 @@ function ThemeShowcase({ theme }: { theme: BrandTheme }) {
               <Switch defaultChecked />
             </div>
             <div className="flex justify-end gap-2 pt-1">
-              <Button size="sm" variant="outline">Cancel</Button>
+              <Button size="sm" variant="outline">
+                Cancel
+              </Button>
               <Button size="sm">Submit appeal</Button>
             </div>
           </CardContent>
@@ -616,7 +725,9 @@ function ThemeShowcase({ theme }: { theme: BrandTheme }) {
       <Card>
         <CardHeader>
           <CardTitle>Attendance log</CardTitle>
-          <CardDescription>June 2026 · 22 days worked · 1 late · 1 on leave</CardDescription>
+          <CardDescription>
+            June 2026 · 22 days worked · 1 late · 1 on leave
+          </CardDescription>
           <CardAction>
             <Badge variant="outline">Export</Badge>
           </CardAction>
@@ -625,8 +736,21 @@ function ThemeShowcase({ theme }: { theme: BrandTheme }) {
           <Table>
             <TableHeader>
               <TableRow>
-                {["Date", "Day", "Time in", "Time out", "Hours", "OT", "Status"].map((h) => (
-                  <TableHead key={h} className={h === "Hours" || h === "OT" ? "text-right" : undefined}>
+                {[
+                  "Date",
+                  "Day",
+                  "Time in",
+                  "Time out",
+                  "Hours",
+                  "OT",
+                  "Status",
+                ].map((h) => (
+                  <TableHead
+                    key={h}
+                    className={
+                      h === "Hours" || h === "OT" ? "text-right" : undefined
+                    }
+                  >
                     {h}
                   </TableHead>
                 ))}
@@ -636,10 +760,14 @@ function ThemeShowcase({ theme }: { theme: BrandTheme }) {
               {ATT.map((r) => (
                 <TableRow key={r.date}>
                   <TableCell className="font-medium">{r.date}</TableCell>
-                  <TableCell className="text-muted-foreground">{r.day}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {r.day}
+                  </TableCell>
                   <TableCell className="tabular-nums">{r.in}</TableCell>
                   <TableCell className="tabular-nums">{r.out}</TableCell>
-                  <TableCell className="text-right tabular-nums">{r.hrs}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {r.hrs}
+                  </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {r.ot !== "—" ? (
                       <span className="font-medium text-primary">+{r.ot}h</span>

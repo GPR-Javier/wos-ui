@@ -16,11 +16,7 @@ import {
   useTestGemini,
 } from "@/hooks/use-ai-settings"
 import { aiSettingsApi, type AiProvider } from "@/lib/ai-settings-api"
-import {
-  AVATAR_STYLES,
-  dicebearUrl,
-  randomSeed,
-} from "@/lib/ai-persona-api"
+import { AVATAR_STYLES, dicebearUrl, randomSeed } from "@/lib/ai-persona-api"
 
 const PROVIDERS: {
   key: AiProvider
@@ -30,7 +26,8 @@ const PROVIDERS: {
   {
     key: "ollama",
     name: "Ollama (local)",
-    blurb: "Runs a model on your own server. Private, no API cost, no key needed.",
+    blurb:
+      "Runs a model on your own server. Private, no API cost, no key needed.",
   },
   {
     key: "gemini",
@@ -77,7 +74,9 @@ export function AiProviderConfigSection() {
       // If no model is chosen yet, default to a "latest" alias (or the first) so the dropdown's
       // displayed value actually matches state — otherwise it *looks* selected but isn't.
       setGeminiModel((cur) =>
-        cur ? cur : (models.find((m) => m.includes("latest")) ?? models[0] ?? "")
+        cur
+          ? cur
+          : (models.find((m) => m.includes("latest")) ?? models[0] ?? "")
       )
     } catch {
       setGeminiModels([])
@@ -176,8 +175,8 @@ export function AiProviderConfigSection() {
         },
         onError: (e) => {
           const msg =
-            (e as { response?: { data?: { message?: string } } })?.response?.data
-              ?.message ?? "Failed to save settings."
+            (e as { response?: { data?: { message?: string } } })?.response
+              ?.data?.message ?? "Failed to save settings."
           showToast(msg, "error")
         },
       }
@@ -200,9 +199,9 @@ export function AiProviderConfigSection() {
       <div>
         <p className="text-[14px] font-semibold">AI Provider</p>
         <p className="mt-0.5 text-[12px] text-muted-foreground">
-          Choose which AI model powers every AI feature — interview grading, question
-          generation, resume/cover-letter review, and rejection drafts. The switch applies
-          instantly to the whole system; no restart needed.
+          Choose which AI model powers every AI feature — interview grading,
+          question generation, resume/cover-letter review, and rejection drafts.
+          The switch applies instantly to the whole system; no restart needed.
         </p>
       </div>
 
@@ -256,7 +255,9 @@ export function AiProviderConfigSection() {
                   />
                 )}
               </div>
-              <span className="text-[11px] text-muted-foreground">{p.blurb}</span>
+              <span className="text-[11px] text-muted-foreground">
+                {p.blurb}
+              </span>
               {p.key === "gemini" && data?.geminiConfigured === false && (
                 <span className="mt-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                   API key not configured
@@ -272,38 +273,42 @@ export function AiProviderConfigSection() {
         {provider === "ollama" ? (
           <div className="space-y-4">
             <div className="space-y-1.5">
-            <label className="text-[12px] text-muted-foreground">Ollama model</label>
-            {ollamaModels.length > 0 ? (
-              <select
-                value={ollamaModel}
-                onChange={(e) => setOllamaModel(e.target.value)}
-                className="h-9 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
-              >
-                {/* Keep the saved value selectable even if it's not currently pulled. */}
-                {ollamaModel && !ollamaModels.includes(ollamaModel) && (
-                  <option value={ollamaModel}>{ollamaModel} (not installed)</option>
-                )}
-                {ollamaModels.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <Input
-                className="h-9 text-[13px]"
-                placeholder="e.g. qwen2.5:7b"
-                value={ollamaModel}
-                onChange={(e) => setOllamaModel(e.target.value)}
-              />
-            )}
-            <p className="text-[11px] text-muted-foreground">
-              {ollamaModels.length > 0
-                ? "Installed models on your Ollama server. Pull more with " +
-                  "`ollama pull <name>`."
-                : "Must be a model pulled on the Ollama server (e.g. qwen2.5:7b). " +
-                  "Start Ollama to load the installed list."}
-            </p>
+              <label className="text-[12px] text-muted-foreground">
+                Ollama model
+              </label>
+              {ollamaModels.length > 0 ? (
+                <select
+                  value={ollamaModel}
+                  onChange={(e) => setOllamaModel(e.target.value)}
+                  className="h-9 w-full rounded-lg border bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+                >
+                  {/* Keep the saved value selectable even if it's not currently pulled. */}
+                  {ollamaModel && !ollamaModels.includes(ollamaModel) && (
+                    <option value={ollamaModel}>
+                      {ollamaModel} (not installed)
+                    </option>
+                  )}
+                  {ollamaModels.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <Input
+                  className="h-9 text-[13px]"
+                  placeholder="e.g. qwen2.5:7b"
+                  value={ollamaModel}
+                  onChange={(e) => setOllamaModel(e.target.value)}
+                />
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                {ollamaModels.length > 0
+                  ? "Installed models on your Ollama server. Pull more with " +
+                    "`ollama pull <name>`."
+                  : "Must be a model pulled on the Ollama server (e.g. qwen2.5:7b). " +
+                    "Start Ollama to load the installed list."}
+              </p>
             </div>
             <PersonaFields
               name={ollamaPersonaName}
@@ -316,7 +321,9 @@ export function AiProviderConfigSection() {
           <div className="space-y-4">
             {/* API key — at the top; hidden by default when one is already saved. */}
             <div className="space-y-1.5">
-              <label className="text-[12px] text-muted-foreground">API key</label>
+              <label className="text-[12px] text-muted-foreground">
+                API key
+              </label>
               {showKeyInput || !data?.geminiConfigured ? (
                 <>
                   <div className="flex gap-2">
@@ -357,7 +364,9 @@ export function AiProviderConfigSection() {
                       )}
                     >
                       <HugeiconsIcon
-                        icon={keyTest.valid ? CheckmarkCircle01Icon : Cancel01Icon}
+                        icon={
+                          keyTest.valid ? CheckmarkCircle01Icon : Cancel01Icon
+                        }
                         size={13}
                         strokeWidth={2}
                       />
@@ -401,7 +410,10 @@ export function AiProviderConfigSection() {
               ) : (
                 <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
                   <span className="text-[12px] text-muted-foreground">
-                    Saved <code className="text-foreground">{data?.geminiKeyHint}</code>
+                    Saved{" "}
+                    <code className="text-foreground">
+                      {data?.geminiKeyHint}
+                    </code>
                   </span>
                   <Button
                     variant="outline"
@@ -416,7 +428,9 @@ export function AiProviderConfigSection() {
 
             {/* Model — dropdown populated from the key's available models */}
             <div className="space-y-1.5">
-              <label className="text-[12px] text-muted-foreground">Gemini model</label>
+              <label className="text-[12px] text-muted-foreground">
+                Gemini model
+              </label>
               {geminiModels.length > 0 ? (
                 <select
                   value={geminiModel}
@@ -508,7 +522,9 @@ function PersonaFields({
 }) {
   // Seed the style/seed controls from the current avatar URL (if it's a DiceBear one).
   const parsed = (() => {
-    const styleMatch = AVATAR_STYLES.find((s) => avatarUrl.includes(`/9.x/${s}/`))
+    const styleMatch = AVATAR_STYLES.find((s) =>
+      avatarUrl.includes(`/9.x/${s}/`)
+    )
     let seed = ""
     try {
       seed = new URL(avatarUrl).searchParams.get("seed") ?? ""
@@ -528,12 +544,18 @@ function PersonaFields({
 
   return (
     <div className="space-y-1.5">
-      <label className="text-[12px] text-muted-foreground">Interviewer persona</label>
+      <label className="text-[12px] text-muted-foreground">
+        Interviewer persona
+      </label>
       <div className="flex items-center gap-3">
         <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted">
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="Interviewer avatar" className="size-full object-cover" />
+            <img
+              src={avatarUrl}
+              alt="Interviewer avatar"
+              className="size-full object-cover"
+            />
           ) : (
             <span className="text-[10px] text-muted-foreground">No avatar</span>
           )}
@@ -548,7 +570,9 @@ function PersonaFields({
           <div className="flex gap-2">
             <select
               value={style}
-              onChange={(e) => gen(e.target.value, seed || name || randomSeed())}
+              onChange={(e) =>
+                gen(e.target.value, seed || name || randomSeed())
+              }
               className="h-8 flex-1 rounded-lg border bg-background px-2 text-[12px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
             >
               {AVATAR_STYLES.map((s) => (
@@ -574,8 +598,8 @@ function PersonaFields({
         </div>
       </div>
       <p className="text-[11px] text-muted-foreground">
-        Shown as the interviewer’s name and avatar during interviews. Generate one above, or fully
-        customize at{" "}
+        Shown as the interviewer’s name and avatar during interviews. Generate
+        one above, or fully customize at{" "}
         <a
           href="https://www.dicebear.com/playground"
           target="_blank"

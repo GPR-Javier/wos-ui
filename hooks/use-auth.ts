@@ -55,7 +55,8 @@ export function useLogin() {
       }
       // Record the active company's slug for slug-scoped redirects (company-less → "guest").
       const active =
-        company.companies.find((c) => c.id === company.companyId) ?? company.companies[0]
+        company.companies.find((c) => c.id === company.companyId) ??
+        company.companies[0]
       useAuthStore.getState().setCompanySlug(active?.slug ?? "guest")
       // 2. Single company (token already scoped) → WorkOS resolves roles + mints the role token.
       return sessionApi.establish()
@@ -79,7 +80,13 @@ export function useSelectCompany() {
   const { setFromAuth } = useAuthStore()
 
   return useMutation({
-    mutationFn: async ({ companyId, slug }: { companyId: number; slug: string }) => {
+    mutationFn: async ({
+      companyId,
+      slug,
+    }: {
+      companyId: number
+      slug: string
+    }) => {
       await companyApi.select(companyId) // re-mints the identity token with companyId
       useAuthStore.getState().setCompanySlug(slug)
       return sessionApi.establish() // then resolve WorkOS roles within that company

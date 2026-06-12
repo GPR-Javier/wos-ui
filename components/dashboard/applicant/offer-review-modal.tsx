@@ -9,7 +9,11 @@ import {
   CheckmarkCircle01Icon,
 } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
-import { useMyOffer, useAcceptOffer, useDeclineOffer } from "@/hooks/use-applications"
+import {
+  useMyOffer,
+  useAcceptOffer,
+  useDeclineOffer,
+} from "@/hooks/use-applications"
 import { useLogout } from "@/hooks/use-auth"
 import {
   EMPLOYMENT_TYPE_LABELS,
@@ -33,12 +37,20 @@ function fmtMoney(o: OfferView) {
   if (o.salaryAmount == null) return "—"
   const sym = currencySymbol(o.salaryCurrency)
   const amount = `${sym}${o.salaryAmount.toLocaleString("en-PH")}`
-  const period = o.salaryPeriod ? ` ${PERIOD_LABEL[o.salaryPeriod] ?? o.salaryPeriod}` : ""
+  const period = o.salaryPeriod
+    ? ` ${PERIOD_LABEL[o.salaryPeriod] ?? o.salaryPeriod}`
+    : ""
   return `${amount}${period}`
 }
 
 function fmtDate(d: string | null) {
-  return d ? new Date(d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "—"
+  return d
+    ? new Date(d).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "—"
 }
 
 /** [label, value] rows for each active leave pool that has a value set. */
@@ -57,8 +69,17 @@ function printOffer(o: OfferView, signature: string | null) {
     ["Role", o.roleName ?? "—"],
     ["Position", o.jobPositionTitle ?? "—"],
     ["Department", o.department ?? "—"],
-    ["Employment type", o.employmentType ? (EMPLOYMENT_TYPE_LABELS[o.employmentType as EmploymentType] ?? o.employmentType) : "—"],
-    ["Work arrangement", o.workType ? o.workType[0].toUpperCase() + o.workType.slice(1) : "—"],
+    [
+      "Employment type",
+      o.employmentType
+        ? (EMPLOYMENT_TYPE_LABELS[o.employmentType as EmploymentType] ??
+          o.employmentType)
+        : "—",
+    ],
+    [
+      "Work arrangement",
+      o.workType ? o.workType[0].toUpperCase() + o.workType.slice(1) : "—",
+    ],
     ["Compensation", fmtMoney(o)],
     ...leaveRows(o),
     ["Start date", fmtDate(o.startDate)],
@@ -73,7 +94,8 @@ function printOffer(o: OfferView, signature: string | null) {
   const sig = signature || o.signature
   const win = window.open("", "_blank", "width=820,height=900")
   if (!win) return
-  win.document.write(`<!doctype html><html><head><title>${o.contractNumber ?? "Employment Offer"}</title>
+  win.document
+    .write(`<!doctype html><html><head><title>${o.contractNumber ?? "Employment Offer"}</title>
     <style>body{font-family:ui-sans-serif,system-ui,Arial;color:#0f172a;padding:48px;max-width:720px;margin:0 auto}
     h1{font-size:20px;margin:0 0 4px} .muted{color:#64748b;font-size:13px}
     table{border-collapse:collapse;width:100%;margin:24px 0;font-size:14px;border:1px solid #e2e8f0;border-radius:8px}
@@ -116,7 +138,8 @@ export function OfferReviewModal({
       { id: applicationId, signature },
       {
         onSuccess: () => setAccepted(true),
-        onError: () => setError("Couldn't submit your acceptance. Please try again."),
+        onError: () =>
+          setError("Couldn't submit your acceptance. Please try again."),
       }
     )
   }
@@ -132,7 +155,10 @@ export function OfferReviewModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={accepted ? undefined : onClose} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={accepted ? undefined : onClose}
+      />
       <div className="relative w-full max-w-2xl animate-in rounded-2xl border border-border bg-card shadow-xl duration-200 zoom-in-95 fade-in">
         {accepted ? (
           <CongratsRelogin
@@ -144,7 +170,9 @@ export function OfferReviewModal({
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border px-6 py-4">
               <div>
-                <h2 className="text-[15px] font-semibold">Your employment offer</h2>
+                <h2 className="text-[15px] font-semibold">
+                  Your employment offer
+                </h2>
                 <p className="text-[12px] text-muted-foreground">
                   Review the terms below, then sign to accept.
                 </p>
@@ -156,7 +184,12 @@ export function OfferReviewModal({
                     size="sm"
                     onClick={() => printOffer(offer, signature)}
                   >
-                    <HugeiconsIcon icon={Download01Icon} size={13} strokeWidth={2} className="mr-1.5" />
+                    <HugeiconsIcon
+                      icon={Download01Icon}
+                      size={13}
+                      strokeWidth={2}
+                      className="mr-1.5"
+                    />
                     Download
                   </Button>
                 )}
@@ -165,7 +198,11 @@ export function OfferReviewModal({
                   onClick={onClose}
                   className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
-                  <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
+                  <HugeiconsIcon
+                    icon={Cancel01Icon}
+                    size={14}
+                    strokeWidth={2}
+                  />
                 </button>
               </div>
             </div>
@@ -195,9 +232,9 @@ export function OfferReviewModal({
                         label="Employment type"
                         value={
                           offer.employmentType
-                            ? EMPLOYMENT_TYPE_LABELS[
+                            ? (EMPLOYMENT_TYPE_LABELS[
                                 offer.employmentType as EmploymentType
-                              ] ?? offer.employmentType
+                              ] ?? offer.employmentType)
                             : null
                         }
                       />
@@ -214,7 +251,10 @@ export function OfferReviewModal({
                       {leaveRows(offer).map(([label, value]) => (
                         <Row key={label} label={label} value={value} />
                       ))}
-                      <Row label="Start date" value={fmtDate(offer.startDate)} />
+                      <Row
+                        label="Start date"
+                        value={fmtDate(offer.startDate)}
+                      />
                       {offer.probationEndDate && (
                         <Row
                           label="Probation until"

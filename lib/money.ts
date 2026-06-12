@@ -15,17 +15,25 @@ function nf(currency: string, withDecimals: boolean) {
 }
 
 /** "₱1,800" (or "₱1,800.00" with decimals). */
-export function formatMoney(amount: number, currency = DEFAULT_CURRENCY, withDecimals = false): string {
+export function formatMoney(
+  amount: number,
+  currency = DEFAULT_CURRENCY,
+  withDecimals = false
+): string {
   return nf(currency, withDecimals).format(amount)
 }
 
 /** The currency symbol alone, e.g. "₱". For layouts that style the symbol separately from the number. */
 export function currencySymbol(currency = DEFAULT_CURRENCY): string {
-  const part = nf(currency, false).formatToParts(0).find((p) => p.type === "currency")
+  const part = nf(currency, false)
+    .formatToParts(0)
+    .find((p) => p.type === "currency")
   return part?.value ?? currency
 }
 
 /** Grouped number without a symbol, e.g. "1,800". */
 export function formatAmount(amount: number): string {
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(amount)
+  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(
+    amount
+  )
 }

@@ -93,7 +93,9 @@ export function JobDetails({
   })
   // The candidate's latest application to this job (the list is newest-first). With reapplies
   // there can be several rows; the most recent one decides the current state.
-  const latestApplication = myApplications?.find((a) => a.jobPostingId === jobId)
+  const latestApplication = myApplications?.find(
+    (a) => a.jobPostingId === jobId
+  )
   const hasApplied =
     latestApplication != null &&
     latestApplication.status !== "WITHDRAWN" &&
@@ -318,11 +320,7 @@ export function JobDetails({
               </h2>
               {cooldownUntil && (
                 <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-at bg-abg px-2.5 py-1 text-[11px] font-medium text-amber">
-                  <HugeiconsIcon
-                    icon={Clock01Icon}
-                    size={11}
-                    strokeWidth={2}
-                  />
+                  <HugeiconsIcon icon={Clock01Icon} size={11} strokeWidth={2} />
                   Reapply on{" "}
                   {cooldownUntil.toLocaleDateString("en-US", {
                     month: "short",

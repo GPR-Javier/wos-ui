@@ -57,11 +57,9 @@ export const aiSettingsApi = {
   /** Chat-capable models available to the given key (or the saved one) — for the model dropdown. */
   geminiModels: (apiKey?: string) =>
     api
-      .post<string[]>(
-        "/ai/admin/settings/ai-provider/gemini-models",
-        { apiKey },
-        { skipErrorToast: true }
-      )
+      .post<
+        string[]
+      >("/ai/admin/settings/ai-provider/gemini-models", { apiKey }, { skipErrorToast: true })
       .then((r) => r.data),
   /** Models installed on the Ollama server (GET /api/tags) — for the Ollama model dropdown. */
   ollamaModels: () =>

@@ -124,7 +124,8 @@ export function EmploymentOfferModal({
   const selectedPosition = activePositions.find(
     (p) => String(p.id) === jobPositionId
   )
-  const department = selectedPosition?.department ?? detail.hireDepartment ?? "—"
+  const department =
+    selectedPosition?.department ?? detail.hireDepartment ?? "—"
 
   function submit() {
     setError(null)
@@ -157,8 +158,8 @@ export function EmploymentOfferModal({
         onSuccess: onClose,
         onError: (e: unknown) => {
           const msg =
-            (e as { response?: { data?: { message?: string } } })?.response?.data
-              ?.message ?? "Couldn't extend the offer. Please try again."
+            (e as { response?: { data?: { message?: string } } })?.response
+              ?.data?.message ?? "Couldn't extend the offer. Please try again."
           setError(msg)
         },
       }
@@ -175,7 +176,9 @@ export function EmploymentOfferModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div>
-            <h2 className="text-[15px] font-semibold">Extend employment offer</h2>
+            <h2 className="text-[15px] font-semibold">
+              Extend employment offer
+            </h2>
             <p className="text-[12px] text-muted-foreground">
               {detail.applicantName ?? detail.applicantEmail} ·{" "}
               {detail.jobTitle ?? "Position"}
@@ -263,13 +266,13 @@ export function EmploymentOfferModal({
                 }
                 className="h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] focus:ring-2 focus:ring-ring focus:outline-none"
               >
-                {(
-                  Object.keys(EMPLOYMENT_TYPE_LABELS) as EmploymentType[]
-                ).map((t) => (
-                  <option key={t} value={t}>
-                    {EMPLOYMENT_TYPE_LABELS[t]}
-                  </option>
-                ))}
+                {(Object.keys(EMPLOYMENT_TYPE_LABELS) as EmploymentType[]).map(
+                  (t) => (
+                    <option key={t} value={t}>
+                      {EMPLOYMENT_TYPE_LABELS[t]}
+                    </option>
+                  )
+                )}
               </select>
             </div>
             <div className="space-y-1.5">
@@ -293,7 +296,9 @@ export function EmploymentOfferModal({
           {/* Salary + period */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-[12px] text-muted-foreground">Salary</Label>
+              <Label className="text-[12px] text-muted-foreground">
+                Salary
+              </Label>
               <div className="flex gap-2">
                 <select
                   value={currency}
@@ -362,7 +367,9 @@ export function EmploymentOfferModal({
 
           {/* Leave entitlement */}
           <div className="rounded-lg border border-border p-3">
-            <Label className="text-[13px] font-semibold">Leave entitlement</Label>
+            <Label className="text-[13px] font-semibold">
+              Leave entitlement
+            </Label>
             <p className="mt-0.5 mb-3 text-[11px] text-muted-foreground">
               Annual paid-leave credits for this hire.
             </p>

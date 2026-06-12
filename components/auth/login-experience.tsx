@@ -55,7 +55,11 @@ function setFavicon(href: string) {
 // `branding` is provided the same layout is re-themed (accent + radius), the
 // WorkOS mark is swapped for the company logo/name, and the favicon/title update.
 
-export function LoginExperience({ branding }: { branding?: CompanyBrandingDto | null }) {
+export function LoginExperience({
+  branding,
+}: {
+  branding?: CompanyBrandingDto | null
+}) {
   const slugHref = useSlugHref()
   const [showPassword, setShowPassword] = useState(false)
   const [remember, setRemember] = useState(false)
@@ -69,7 +73,9 @@ export function LoginExperience({ branding }: { branding?: CompanyBrandingDto | 
   const [showRoleModal, setShowRoleModal] = useState(false)
 
   // Company-selection state (when the user belongs to multiple companies)
-  const [availableCompanies, setAvailableCompanies] = useState<CompanyInfo[]>([])
+  const [availableCompanies, setAvailableCompanies] = useState<CompanyInfo[]>(
+    []
+  )
   const [showCompanyModal, setShowCompanyModal] = useState(false)
 
   const loginMutation = useLogin()
@@ -77,9 +83,13 @@ export function LoginExperience({ branding }: { branding?: CompanyBrandingDto | 
   const selectCompanyMutation = useSelectCompany()
 
   const isPending =
-    loginMutation.isPending || selectRoleMutation.isPending || selectCompanyMutation.isPending
+    loginMutation.isPending ||
+    selectRoleMutation.isPending ||
+    selectCompanyMutation.isPending
   const apiError =
-    loginMutation.error || selectRoleMutation.error || selectCompanyMutation.error
+    loginMutation.error ||
+    selectRoleMutation.error ||
+    selectCompanyMutation.error
 
   // Branding (only when a company was resolved).
   const companyName = branding?.name ?? null
@@ -140,7 +150,9 @@ export function LoginExperience({ branding }: { branding?: CompanyBrandingDto | 
       { userRoleId: selectedRoleId },
       {
         onSuccess: () => {
-          useAuthStore.getState().setAvailableRoles(availableRoles, selectedRoleId!)
+          useAuthStore
+            .getState()
+            .setAvailableRoles(availableRoles, selectedRoleId!)
         },
       }
     )
@@ -159,7 +171,7 @@ export function LoginExperience({ branding }: { branding?: CompanyBrandingDto | 
                 <img
                   src={companyLogo}
                   alt={companyName ?? "Company logo"}
-                  className="size-[30px] rounded-lg object-cover ring-1 ring-border"
+                  className="size-7.5 rounded-lg object-cover ring-1 ring-border"
                 />
                 {companyName && (
                   <span className="text-[15px] font-bold tracking-tight text-foreground">
@@ -363,13 +375,20 @@ export function LoginExperience({ branding }: { branding?: CompanyBrandingDto | 
           {/* Footer */}
           <div className="flex items-center justify-between border-t border-border px-8 py-4">
             <p className="text-[11px] text-muted-foreground">
-              &copy; {new Date().getFullYear()} {companyName ?? "WorkOS"}. All rights reserved.
+              &copy; {new Date().getFullYear()} {companyName ?? "WorkOS"}. All
+              rights reserved.
             </p>
             <div className="flex items-center gap-4">
-              <a href="#" className="text-[11px] text-muted-foreground hover:text-foreground">
+              <a
+                href="#"
+                className="text-[11px] text-muted-foreground hover:text-foreground"
+              >
                 Privacy
               </a>
-              <a href="#" className="text-[11px] text-muted-foreground hover:text-foreground">
+              <a
+                href="#"
+                className="text-[11px] text-muted-foreground hover:text-foreground"
+              >
                 Terms
               </a>
             </div>
@@ -385,7 +404,9 @@ export function LoginExperience({ branding }: { branding?: CompanyBrandingDto | 
       {/* ── Company modal (multiple companies) ── */}
       {showCompanyModal && (
         <Modal onClose={() => setShowCompanyModal(false)}>
-          <h2 className="text-[16px] font-semibold text-foreground">Select a company</h2>
+          <h2 className="text-[16px] font-semibold text-foreground">
+            Select a company
+          </h2>
           <p className="mt-1 text-[13px] text-muted-foreground">
             You belong to multiple companies. Choose which one to sign in to.
           </p>
@@ -397,8 +418,12 @@ export function LoginExperience({ branding }: { branding?: CompanyBrandingDto | 
                 disabled={selectCompanyMutation.isPending}
                 className="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 text-left transition-colors hover:bg-muted disabled:opacity-60"
               >
-                <span className="text-[14px] font-medium text-foreground">{c.name}</span>
-                <span className="text-[12px] text-muted-foreground">{c.slug}</span>
+                <span className="text-[14px] font-medium text-foreground">
+                  {c.name}
+                </span>
+                <span className="text-[12px] text-muted-foreground">
+                  {c.slug}
+                </span>
               </button>
             ))}
           </div>
@@ -407,9 +432,12 @@ export function LoginExperience({ branding }: { branding?: CompanyBrandingDto | 
 
       {showRoleModal && (
         <Modal onClose={() => setShowRoleModal(false)}>
-          <h2 className="text-[16px] font-semibold text-foreground">Select your role</h2>
+          <h2 className="text-[16px] font-semibold text-foreground">
+            Select your role
+          </h2>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            Your account has multiple roles. Choose how you&apos;d like to continue.
+            Your account has multiple roles. Choose how you&apos;d like to
+            continue.
           </p>
 
           <div className="mt-5 grid grid-cols-2 gap-3">
@@ -432,9 +460,15 @@ export function LoginExperience({ branding }: { branding?: CompanyBrandingDto | 
                       : "bg-muted text-muted-foreground"
                   )}
                 >
-                  <HugeiconsIcon icon={User03Icon} size={28} strokeWidth={1.5} />
+                  <HugeiconsIcon
+                    icon={User03Icon}
+                    size={28}
+                    strokeWidth={1.5}
+                  />
                 </div>
-                <p className="text-[13px] font-semibold text-foreground">{r.name}</p>
+                <p className="text-[13px] font-semibold text-foreground">
+                  {r.name}
+                </p>
                 {r.isTemporary && (
                   <Badge
                     variant="outline"
@@ -495,7 +529,9 @@ export function LoginExperience({ branding }: { branding?: CompanyBrandingDto | 
       )}
 
       {/* ── Quick punch modal ── */}
-      {showQuickPunch && <QuickPunchModal onClose={() => setShowQuickPunch(false)} />}
+      {showQuickPunch && (
+        <QuickPunchModal onClose={() => setShowQuickPunch(false)} />
+      )}
     </div>
   )
 }
@@ -511,7 +547,10 @@ function Modal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div className="relative w-full max-w-md animate-in rounded-2xl border border-border bg-card p-6 shadow-xl duration-200 zoom-in-95 fade-in">
         {children}
       </div>
@@ -561,7 +600,10 @@ function QuickPunchModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div
         className={cn(
           "relative animate-in overflow-hidden rounded-2xl border border-border bg-card shadow-xl duration-200 zoom-in-95 fade-in",
@@ -669,14 +711,17 @@ function QuickPunchModal({ onClose }: { onClose: () => void }) {
                 icon={CheckmarkBadge01Icon}
                 size={28}
                 strokeWidth={1.5}
-                className={punchType === "in" ? "text-green-500" : "text-red-500"}
+                className={
+                  punchType === "in" ? "text-green-500" : "text-red-500"
+                }
               />
             </div>
             <p className="text-[16px] font-bold text-foreground">
               Time {punchType === "in" ? "In" : "Out"} Recorded
             </p>
             <p className="mt-1 text-[13px] text-muted-foreground">
-              <span className="font-medium text-foreground">{employeeId}</span> — {capturedAt}
+              <span className="font-medium text-foreground">{employeeId}</span>{" "}
+              — {capturedAt}
             </p>
             <div className="mt-5 flex gap-2">
               <button
@@ -715,8 +760,8 @@ function AuthPanel({ companyName }: { companyName: string | null }) {
       <div className="relative flex flex-1 flex-col justify-between">
         <div className="mt-auto">
           <blockquote className="text-[22px] leading-snug font-semibold text-white">
-            &ldquo;Streamline your workforce operations with a single platform built for modern
-            teams.&rdquo;
+            &ldquo;Streamline your workforce operations with a single platform
+            built for modern teams.&rdquo;
           </blockquote>
           <p className="mt-4 text-[13px] text-white/60">
             {companyName

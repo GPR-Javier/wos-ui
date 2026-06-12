@@ -8,7 +8,11 @@ import { companyBrandingApi } from "@/lib/company-branding-api"
 // Applies the company's branding (accent + radius + favicon) to everything under its slug — login,
 // dashboard, and public pages alike — by overriding the design-system CSS variables on <html>.
 // Branding is fetched publicly by slug, so it works pre-auth; "guest"/unknown slugs 404 → default theme.
-export default function SlugLayout({ children }: { children: React.ReactNode }) {
+export default function SlugLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const slug = useSlug()
 
   const { data } = useQuery({
@@ -21,7 +25,16 @@ export default function SlugLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const el = document.documentElement
     // Reset any previously-applied overrides so switching slugs doesn't leak branding.
-    for (const v of ["--primary", "--ring", "--sidebar-primary", "--chart-1", "--r", "--rl", "--rxl", "--radius"]) {
+    for (const v of [
+      "--primary",
+      "--ring",
+      "--sidebar-primary",
+      "--chart-1",
+      "--r",
+      "--rl",
+      "--rxl",
+      "--radius",
+    ]) {
       el.style.removeProperty(v)
     }
     if (!data) return

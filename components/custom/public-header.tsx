@@ -21,7 +21,8 @@ export function PublicHeader({ right }: { right?: React.ReactNode }) {
   const slug = useSlug()
   // Home is "/<slug>"; section tails become "/<slug>/<tail>".
   const hrefFor = (tail: string) => (tail ? withSlug(slug, tail) : `/${slug}`)
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`)
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">

@@ -80,14 +80,20 @@ export default function AccountSettingsPage() {
   const info = useMutation({
     mutationFn: accountApi.updateInfo,
     onSuccess: () => {
-      push("Canonical info updated (default for apps you haven't customized).", "success", 5000, "Saved")
+      push(
+        "Canonical info updated (default for apps you haven't customized).",
+        "success",
+        5000,
+        "Saved"
+      )
       qc.invalidateQueries({ queryKey: ["account", "me"] })
     },
   })
 
   const profile = useMutation({
     mutationFn: profileApi.updateProfile,
-    onSuccess: () => push("Profile updated for this app only.", "success", 4000, "Saved"),
+    onSuccess: () =>
+      push("Profile updated for this app only.", "success", 4000, "Saved"),
   })
 
   function saveCredentials() {
@@ -128,28 +134,46 @@ export default function AccountSettingsPage() {
   }
 
   if (isLoading) {
-    return <div className="p-6 text-sm text-muted-foreground">Loading account…</div>
+    return (
+      <div className="p-6 text-sm text-muted-foreground">Loading account…</div>
+    )
   }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-6">
       <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-[13px] text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
-        ⚠️ Credentials and canonical info below belong to your <strong>shared identity</strong> —
-        editing them affects every app you sign in to. The per-app profile at the bottom is local to
-        this app only.
+        ⚠️ Credentials and canonical info below belong to your{" "}
+        <strong>shared identity</strong> — editing them affects every app you
+        sign in to. The per-app profile at the bottom is local to this app only.
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Login credentials</CardTitle>
-          <CardDescription>Email, username, and phone can each be used to sign in. Shared across all apps.</CardDescription>
+          <CardDescription>
+            Email, username, and phone can each be used to sign in. Shared
+            across all apps.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Field label="Email"><Input value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
-          <Field label="Username"><Input value={username} onChange={(e) => setUsername(e.target.value)} /></Field>
-          <Field label="Phone"><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></Field>
+          <Field label="Email">
+            <Input value={email} onChange={(e) => setEmail(e.target.value)} />
+          </Field>
+          <Field label="Username">
+            <Input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </Field>
+          <Field label="Phone">
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </Field>
           <Field label="New password (leave blank to keep)">
-            <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            <Input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
           </Field>
           <Button onClick={saveCredentials} disabled={credentials.isPending}>
             {credentials.isPending ? "Saving…" : "Save credentials"}
@@ -160,15 +184,46 @@ export default function AccountSettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Canonical personal info</CardTitle>
-          <CardDescription>The default copied into each app when you join. Editing affects apps you haven&apos;t customized.</CardDescription>
+          <CardDescription>
+            The default copied into each app when you join. Editing affects apps
+            you haven&apos;t customized.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Field label="First name"><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} /></Field>
-          <Field label="Last name"><Input value={lastName} onChange={(e) => setLastName(e.target.value)} /></Field>
-          <Field label="Middle name"><Input value={middleName} onChange={(e) => setMiddleName(e.target.value)} /></Field>
-          <Field label="Birthday"><Input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} /></Field>
-          <Field label="Gender"><Input value={gender} onChange={(e) => setGender(e.target.value)} /></Field>
-          <Field label="Address"><Textarea value={address} onChange={(e) => setAddress(e.target.value)} /></Field>
+          <Field label="First name">
+            <Input
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+            />
+          </Field>
+          <Field label="Last name">
+            <Input
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+            />
+          </Field>
+          <Field label="Middle name">
+            <Input
+              value={middleName}
+              onChange={(e) => setMiddleName(e.target.value)}
+            />
+          </Field>
+          <Field label="Birthday">
+            <Input
+              type="date"
+              value={birthday}
+              onChange={(e) => setBirthday(e.target.value)}
+            />
+          </Field>
+          <Field label="Gender">
+            <Input value={gender} onChange={(e) => setGender(e.target.value)} />
+          </Field>
+          <Field label="Address">
+            <Textarea
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+          </Field>
           <Button onClick={saveInfo} disabled={info.isPending}>
             {info.isPending ? "Saving…" : "Save canonical info"}
           </Button>
@@ -178,13 +233,37 @@ export default function AccountSettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>This app&apos;s profile</CardTitle>
-          <CardDescription>A local copy — editing here never affects your shared identity or other apps.</CardDescription>
+          <CardDescription>
+            A local copy — editing here never affects your shared identity or
+            other apps.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Field label="First name"><Input value={pFirstName} onChange={(e) => setPFirstName(e.target.value)} /></Field>
-          <Field label="Last name"><Input value={pLastName} onChange={(e) => setPLastName(e.target.value)} /></Field>
-          <Field label="Birthday"><Input type="date" value={pBirthday} onChange={(e) => setPBirthday(e.target.value)} /></Field>
-          <Field label="Address"><Textarea value={pAddress} onChange={(e) => setPAddress(e.target.value)} /></Field>
+          <Field label="First name">
+            <Input
+              value={pFirstName}
+              onChange={(e) => setPFirstName(e.target.value)}
+            />
+          </Field>
+          <Field label="Last name">
+            <Input
+              value={pLastName}
+              onChange={(e) => setPLastName(e.target.value)}
+            />
+          </Field>
+          <Field label="Birthday">
+            <Input
+              type="date"
+              value={pBirthday}
+              onChange={(e) => setPBirthday(e.target.value)}
+            />
+          </Field>
+          <Field label="Address">
+            <Textarea
+              value={pAddress}
+              onChange={(e) => setPAddress(e.target.value)}
+            />
+          </Field>
           <Button onClick={saveProfile} disabled={profile.isPending}>
             {profile.isPending ? "Saving…" : "Save app profile"}
           </Button>
@@ -194,7 +273,13 @@ export default function AccountSettingsPage() {
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
   return (
     <div className="space-y-1.5">
       <Label>{label}</Label>

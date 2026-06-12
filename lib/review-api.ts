@@ -207,7 +207,11 @@ export const reviewApi = {
       )
       .then(() => {}),
   /** Save the reviewer's per-question comments for one AI interview stage. */
-  saveReview: (id: number, partType: AssessmentPartType, payload: ReviewPayload) =>
+  saveReview: (
+    id: number,
+    partType: AssessmentPartType,
+    payload: ReviewPayload
+  ) =>
     api
       .post<ReviewDetail>(
         `/hr/review/applications/${id}/interviews/${partType}/review`,
@@ -269,20 +273,16 @@ export const reviewApi = {
   /** AI-review the cover letter (wos-ai persists; refetch detail after). */
   reviewCoverLetter: (id: number) =>
     api
-      .post(
-        `/ai/review/applications/${id}/cover-letter-review`,
-        undefined,
-        { timeout: AI_TIMEOUT }
-      )
+      .post(`/ai/review/applications/${id}/cover-letter-review`, undefined, {
+        timeout: AI_TIMEOUT,
+      })
       .then(() => {}),
   /** AI-review the resume (wos-ai persists; refetch detail after). */
   reviewResume: (id: number) =>
     api
-      .post(
-        `/ai/review/applications/${id}/resume-review`,
-        undefined,
-        { timeout: AI_TIMEOUT }
-      )
+      .post(`/ai/review/applications/${id}/resume-review`, undefined, {
+        timeout: AI_TIMEOUT,
+      })
       .then(() => {}),
   saveResumeText: (id: number, text: string) =>
     api

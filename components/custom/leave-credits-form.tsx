@@ -35,7 +35,13 @@ export function LeaveCreditsForm({ value, onChange }: Props) {
   const setUseFlexi = (on: boolean) =>
     onChange(
       on
-        ? { ...value, useFlexi: true, sick: null, vacation: null, emergency: null }
+        ? {
+            ...value,
+            useFlexi: true,
+            sick: null,
+            vacation: null,
+            emergency: null,
+          }
         : { ...value, useFlexi: false, flexi: null }
     )
 
@@ -48,7 +54,9 @@ export function LeaveCreditsForm({ value, onChange }: Props) {
       {/* Flexi toggle */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <Label className="text-[12px] font-medium">Use Flexi Leave (single pool)</Label>
+          <Label className="text-[12px] font-medium">
+            Use Flexi Leave (single pool)
+          </Label>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             {value.useFlexi
               ? "One flexible pool covers all leave kinds."

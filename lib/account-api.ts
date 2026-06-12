@@ -45,7 +45,9 @@ export interface UpdateProfilePayload {
 export const accountApi = {
   get: () => api.get<AccountSummary>("/auth/me").then((r) => r.data),
   updateCredentials: (payload: UpdateCredentialsPayload) =>
-    api.put<AccountSummary>("/auth/me/credentials", payload).then((r) => r.data),
+    api
+      .put<AccountSummary>("/auth/me/credentials", payload)
+      .then((r) => r.data),
   updateInfo: (payload: UpdateInfoPayload) =>
     api.put<AccountSummary>("/auth/me/info", payload).then((r) => r.data),
 }

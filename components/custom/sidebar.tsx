@@ -408,7 +408,11 @@ export function Sidebar() {
                   : "text-muted-foreground"
               )}
             >
-              <HugeiconsIcon icon={Building04Icon} size={13} strokeWidth={1.8} />
+              <HugeiconsIcon
+                icon={Building04Icon}
+                size={13}
+                strokeWidth={1.8}
+              />
             </Link>
             <Link
               href={slugHref("/dashboard/settings")}

@@ -31,7 +31,8 @@ export function useCurrency() {
 
   const rates = data?.rates ?? { USD: 1 }
   const auto = data?.currency ?? "USD"
-  const currency = override && rates[override] ? override : rates[auto] ? auto : "USD"
+  const currency =
+    override && rates[override] ? override : rates[auto] ? auto : "USD"
   const rate = rates[currency] ?? 1
   const converted = currency !== "USD"
 

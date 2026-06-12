@@ -43,7 +43,8 @@ export const orgChartApi = {
   setDepartment: (userId: number, departmentId: number | null) =>
     api.patch(`/hr/org-chart/${userId}/department`, { departmentId }),
 
-  getLayout: () => api.get<OrgLayout>("/hr/org-chart/layout").then((r) => r.data),
+  getLayout: () =>
+    api.get<OrgLayout>("/hr/org-chart/layout").then((r) => r.data),
 
   saveLayout: (layout: OrgLayout) =>
     api.put<OrgLayout>("/hr/org-chart/layout", layout).then((r) => r.data),

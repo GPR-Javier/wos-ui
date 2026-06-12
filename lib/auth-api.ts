@@ -89,9 +89,13 @@ export interface CompanyLoginResponse {
 export const companyApi = {
   list: () => api.get<CompanyInfo[]>("/auth/companies").then((r) => r.data),
   select: (companyId: number) =>
-    api.post<CompanyLoginResponse>("/auth/select-company", { companyId }).then((r) => r.data),
+    api
+      .post<CompanyLoginResponse>("/auth/select-company", { companyId })
+      .then((r) => r.data),
   switch: (companyId: number) =>
-    api.post<CompanyLoginResponse>("/auth/switch-company", { companyId }).then((r) => r.data),
+    api
+      .post<CompanyLoginResponse>("/auth/switch-company", { companyId })
+      .then((r) => r.data),
 }
 
 export const authApi = {
@@ -122,9 +126,12 @@ export interface SessionRolePayload {
 
 export const sessionApi = {
   /** Mint a WorkOS session from the identity token — returns role info or a role-selection prompt. */
-  establish: () => api.post<LoginResponse>("/hr/auth/session").then((r) => r.data),
+  establish: () =>
+    api.post<LoginResponse>("/hr/auth/session").then((r) => r.data),
   selectRole: (payload: SessionRolePayload) =>
-    api.post<AuthResponse>("/hr/auth/session/select-role", payload).then((r) => r.data),
+    api
+      .post<AuthResponse>("/hr/auth/session/select-role", payload)
+      .then((r) => r.data),
   switchRole: (payload: SessionRolePayload) =>
     api.post<AuthResponse>("/hr/auth/switch-role", payload).then((r) => r.data),
 }
