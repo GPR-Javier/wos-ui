@@ -29,6 +29,11 @@ export const metadata: Metadata = {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
   },
+  // Tell Google Translate (and similar) not to rewrite the DOM. In-page translation
+  // wraps text nodes in <font> tags; when React later updates/removes those nodes it
+  // can't resolve the host parent and throws "Cannot read properties of null (reading
+  // 'removeChild')". Opting out prevents that whole class of crash at the source.
+  other: { google: "notranslate" },
   openGraph: {
     type: "website",
     siteName: "WorkOS",
@@ -61,8 +66,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      translate="no"
       suppressHydrationWarning
       className={cn(
+        "notranslate",
         "antialiased",
         fontMono.variable,
         "font-sans",

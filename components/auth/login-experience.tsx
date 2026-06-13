@@ -40,16 +40,6 @@ function useClock() {
   return now
 }
 
-function setFavicon(href: string) {
-  let link = document.querySelector<HTMLLinkElement>("link[rel='icon']")
-  if (!link) {
-    link = document.createElement("link")
-    link.rel = "icon"
-    document.head.appendChild(link)
-  }
-  link.href = href
-}
-
 // ── Login experience ────────────────────────────────────────────────────────
 // Shared by the generic /auth/login and the branded /[slug]/login routes. When
 // `branding` is provided the same layout is re-themed (accent + radius), the
@@ -102,9 +92,9 @@ export function LoginExperience({
     : undefined
 
   useEffect(() => {
-    if (!branding) return
-    if (branding.favicon) setFavicon(branding.favicon)
-    if (branding.name) document.title = `Sign in · ${branding.name}`
+    // Favicon is applied app-wide by SlugLayout (with logo fallback); here we only
+    // set the page title.
+    if (branding?.name) document.title = `Sign in · ${branding.name}`
   }, [branding])
 
   function handleLogin() {

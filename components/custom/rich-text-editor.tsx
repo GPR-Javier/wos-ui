@@ -71,7 +71,7 @@ export function RichTextEditor({
     if (!editor) return
     const current = editor.getHTML()
     if (current !== value) {
-      editor.commands.setContent(value ?? "", false)
+      editor.commands.setContent(value ?? "", { emitUpdate: false })
     }
   }, [value]) // eslint-disable-line react-hooks/exhaustive-deps
 

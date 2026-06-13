@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
@@ -130,6 +130,14 @@ export function Sidebar() {
     staleTime: 60_000,
   })
 
+  // Branding is client-only data (no SSR fetch), so the server renders the default
+  // mark while the client has the company logo cached. Gate it behind a mount flag
+  // so the first client render matches the server HTML and hydration stays clean —
+  // the real branding swaps in on the next paint.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const brand = mounted ? branding : undefined
+
   const { user, apiRole, userRoleNames, authorities } = useAuthStore()
 
   // Path shape is now /<slug>/dashboard/<section>/<sub>, so section/sub shift by +1.
@@ -247,8 +255,8 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex h-15 shrink-0 items-center gap-2 border-b border-border px-5">
         <Logo
-          iconSrc={branding?.sidebarIcon ?? branding?.logo ?? null}
-          name={branding?.name}
+          iconSrc={brand?.sidebarIcon ?? brand?.logo ?? null}
+          name={brand?.name}
         />
         <StatusBadge
           variant={badgeVariant}

@@ -50,7 +50,11 @@ export default function SlugLayout({
       el.style.setProperty("--rxl", `${data.radius * 2}px`)
       el.style.setProperty("--radius", `${data.radius}px`)
     }
-    setFavicon(data.favicon ?? "/favicon.svg")
+    // Most companies upload a logo but not a separate favicon — fall back to the app
+    // icon / logo so the brand still shows in the tab, only defaulting when there's none.
+    setFavicon(
+      data.favicon ?? data.appIcon ?? data.logo ?? "/favicon.svg"
+    )
   }, [data])
 
   return <>{children}</>

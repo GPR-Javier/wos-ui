@@ -647,10 +647,16 @@ export function OrManagement() {
       </div>
 
       {totalPages > 1 && (
+        // Server-paged (0-based) adapted to TablePagination's 1-based API; page size
+        // is fixed at 20 by the query, so the size selector is a no-op single option.
         <TablePagination
-          page={page}
+          page={page + 1}
           totalPages={totalPages}
-          onPageChange={setPage}
+          total={totalElements}
+          pageSize={20}
+          setPage={(p) => setPage(p - 1)}
+          setPageSize={() => {}}
+          pageSizeOptions={[20]}
         />
       )}
 

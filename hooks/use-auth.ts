@@ -2,7 +2,6 @@
 
 import { useEffect } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useRouter } from "next/navigation"
 import {
   authApi,
   sessionApi,
@@ -43,7 +42,6 @@ export function useMe() {
 
 export function useLogin() {
   const qc = useQueryClient()
-  const router = useRouter()
   const { setFromAuth } = useAuthStore()
 
   return useMutation({
@@ -67,7 +65,7 @@ export function useLogin() {
       const res = data as AuthResponse
       setFromAuth(res) // cookies set by server automatically
       qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
-      redirectAfterAuth(res, router)
+      redirectAfterAuth(res)
     },
   })
 }
@@ -76,7 +74,6 @@ export function useLogin() {
 
 export function useSelectCompany() {
   const qc = useQueryClient()
-  const router = useRouter()
   const { setFromAuth } = useAuthStore()
 
   return useMutation({
@@ -96,7 +93,7 @@ export function useSelectCompany() {
       const res = data as AuthResponse
       setFromAuth(res)
       qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
-      redirectAfterAuth(res, router)
+      redirectAfterAuth(res)
     },
   })
 }
@@ -105,7 +102,6 @@ export function useSelectCompany() {
 
 export function useSwitchCompany() {
   const qc = useQueryClient()
-  const router = useRouter()
   const { setFromAuth } = useAuthStore()
 
   return useMutation({
@@ -118,7 +114,7 @@ export function useSwitchCompany() {
       const res = data as AuthResponse
       setFromAuth(res)
       qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
-      redirectAfterAuth(res, router)
+      redirectAfterAuth(res)
     },
   })
 }
@@ -127,7 +123,6 @@ export function useSwitchCompany() {
 
 export function useSelectRole() {
   const qc = useQueryClient()
-  const router = useRouter()
   const { setFromAuth } = useAuthStore()
 
   return useMutation({
@@ -135,7 +130,7 @@ export function useSelectRole() {
     onSuccess: (res) => {
       setFromAuth(res) // cookies set by server automatically
       qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
-      redirectAfterAuth(res, router)
+      redirectAfterAuth(res)
     },
   })
 }
@@ -190,12 +185,17 @@ export function useLogout() {
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
-function redirectAfterAuth(
-  res: AuthResponse,
-  router: ReturnType<typeof useRouter>
-) {
+function redirectAfterAuth(res: AuthResponse) {
   // Every app page lives under the active company's slug (company-less → "guest").
   const slug = useAuthStore.getState().companySlug ?? "guest"
+
+  // Hard navigation (not router.replace): a full document load unloads the login
+  // tree instead of React unmounting it in place. Login forms are a magnet for
+  // browser extensions (password managers) that inject nodes around the password
+  // field; unmounting that mutated subtree makes React's cleanup hit removeChild
+  // on a now-detached parent ("Cannot read properties of null (reading
+  // 'removeChild')"). This mirrors how useLogout already redirects.
+  const go = (path: string) => window.location.replace(path)
 
   // Honour an explicit post-login destination (e.g. a job a guest tried to open
   // before signing in): /<slug>/login?redirect=/<slug>/dashboard/careers/12. Only same-origin
@@ -203,7 +203,7 @@ function redirectAfterAuth(
   if (typeof window !== "undefined") {
     const redirect = new URLSearchParams(window.location.search).get("redirect")
     if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
-      router.replace(redirect)
+      go(redirect)
       return
     }
   }
@@ -212,9 +212,9 @@ function redirectAfterAuth(
   // (authorities) grants — same sidebar-driven layout as employees. Everyone else
   // lands on the dashboard overview.
   if (res.role?.toUpperCase() === "APPLICANT") {
-    router.replace(`/${slug}${resolveLandingPath(res.authorities ?? [])}`)
+    go(`/${slug}${resolveLandingPath(res.authorities ?? [])}`)
   } else {
-    router.replace(`/${slug}/dashboard`)
+    go(`/${slug}/dashboard`)
   }
 }
 
@@ -222,7 +222,6 @@ function redirectAfterAuth(
 
 export function useRegister() {
   const qc = useQueryClient()
-  const router = useRouter()
   const { setFromAuth } = useAuthStore()
 
   return useMutation({
@@ -237,7 +236,7 @@ export function useRegister() {
       const res = data as AuthResponse
       setFromAuth(res)
       qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
-      redirectAfterAuth(res, router)
+      redirectAfterAuth(res)
     },
   })
 }
