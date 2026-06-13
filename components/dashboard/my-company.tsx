@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { cn } from "@/lib/utils"
 import { companyApi } from "@/lib/auth-api"
-import { useSlugHref } from "@/lib/slug"
+import { useSlug, useSlugHref } from "@/lib/slug"
 import {
   companyProfileApi,
   type CompanyProfile,
@@ -104,6 +104,8 @@ export function MyCompanySection({
   const qc = useQueryClient()
   const router = useRouter()
   const slugHref = useSlugHref()
+  // The slug the app is themed under — must match SlugLayout's ["public-branding", slug] key.
+  const brandingSlug = useSlug()
   const searchParams = useSearchParams()
   // Active tab lives in the URL so it survives a refresh and is linkable.
   const tabParam = searchParams.get(tabParamKey)
@@ -195,7 +197,18 @@ export function MyCompanySection({
         slug: null,
       })
     },
-    onSuccess: (saved) => qc.setQueryData(["company-branding"], saved),
+    onSuccess: (saved) => {
+      qc.setQueryData(["company-branding"], saved)
+      // Live-apply branding: SlugLayout themes the app from ["public-branding", slug].
+      // Update that cache (preserving the public-only name/slug) and invalidate it so
+      // the new accent/radius/favicon show immediately — no logout/reload needed.
+      qc.setQueryData(
+        ["public-branding", brandingSlug],
+        (prev: CompanyBrandingDto | undefined) =>
+          prev ? { ...prev, ...saved, name: prev.name, slug: prev.slug } : saved
+      )
+      qc.invalidateQueries({ queryKey: ["public-branding", brandingSlug] })
+    },
   })
 
   // Load fetched profile into the form (unless the user is mid-edit).

@@ -50,18 +50,24 @@ export default function SlugLayout({
       el.style.setProperty("--rxl", `${data.radius * 2}px`)
       el.style.setProperty("--radius", `${data.radius}px`)
     }
-    if (data.favicon) setFavicon(data.favicon)
+    setFavicon(data.favicon ?? "/favicon.svg")
   }, [data])
 
   return <>{children}</>
 }
 
 function setFavicon(href: string) {
-  let link = document.querySelector<HTMLLinkElement>("link[rel='icon']")
-  if (!link) {
-    link = document.createElement("link")
-    link.rel = "icon"
-    document.head.appendChild(link)
-  }
+  // Next injects several icon links (favicon.ico + the metadata /favicon.svg as
+  // both `icon` and `shortcut icon`). Updating just one leaves the browser free to
+  // prefer a static one, so remove them all and add a single fresh link.
+  document
+    .querySelectorAll<HTMLLinkElement>("link[rel~='icon']")
+    .forEach((el) => el.remove())
+  const link = document.createElement("link")
+  link.rel = "icon"
+  // Derive the type from a data-URL so the browser doesn't mis-sniff it.
+  const m = /^data:([^;,]+)[;,]/.exec(href)
+  if (m) link.type = m[1]
   link.href = href
+  document.head.appendChild(link)
 }

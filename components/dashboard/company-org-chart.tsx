@@ -1803,8 +1803,7 @@ export function CompanyOrgChart({
               {
                 onSuccess: () =>
                   pushToast("Member added to department.", "success"),
-                onError: () =>
-                  pushToast("Couldn’t add member.", "error"),
+                onError: () => pushToast("Couldn’t add member.", "error"),
               }
             )
           }

@@ -3,8 +3,10 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
 import { cn } from "@/lib/utils"
-import { useSlugHref } from "@/lib/slug"
+import { useSlug, useSlugHref } from "@/lib/slug"
+import { companyBrandingApi } from "@/lib/company-branding-api"
 import { navConfig, settingsNavConfig, roleLabels } from "@/lib/nav-config"
 import { Logo } from "./logo"
 import { StatusBadge } from "./status-badge"
@@ -115,8 +117,18 @@ function NavIcon({ section }: { section: string }) {
 export function Sidebar() {
   const pathname = usePathname()
   const slugHref = useSlugHref()
+  const slug = useSlug()
   const logoutMutation = useLogout()
   useMe()
+
+  // Company branding for the sidebar mark. Shares SlugLayout's cache key, so a
+  // branding save (which updates ["public-branding", slug]) re-renders this live.
+  const { data: branding } = useQuery({
+    queryKey: ["public-branding", slug],
+    queryFn: () => companyBrandingApi.getBySlug(slug),
+    retry: false,
+    staleTime: 60_000,
+  })
 
   const { user, apiRole, userRoleNames, authorities } = useAuthStore()
 
@@ -234,7 +246,10 @@ export function Sidebar() {
     <aside className="flex w-64 shrink-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       {/* Logo */}
       <div className="flex h-15 shrink-0 items-center gap-2 border-b border-border px-5">
-        <Logo />
+        <Logo
+          iconSrc={branding?.sidebarIcon ?? branding?.logo ?? null}
+          name={branding?.name}
+        />
         <StatusBadge
           variant={badgeVariant}
           dot={false}
