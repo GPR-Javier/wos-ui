@@ -14,23 +14,83 @@ import type {
 export function createBlock(type: BlockType): EmailBlock {
   switch (type) {
     case "heading":
-      return { id: newId(), type, content: { text: "New heading" }, style: { align: "left", fontSize: 22, bold: true, color: "#0f172a", paddingY: 8 } }
+      return {
+        id: newId(),
+        type,
+        content: { text: "New heading" },
+        style: {
+          align: "left",
+          fontSize: 22,
+          bold: true,
+          color: "#0f172a",
+          paddingY: 8,
+        },
+      }
     case "text":
-      return { id: newId(), type, content: { text: "Write something here. Use {{variables}} to personalize." }, style: { align: "left", fontSize: 14, color: "#334155", paddingY: 8 } }
+      return {
+        id: newId(),
+        type,
+        content: {
+          text: "Write something here. Use {{variables}} to personalize.",
+        },
+        style: { align: "left", fontSize: 14, color: "#334155", paddingY: 8 },
+      }
     case "button":
-      return { id: newId(), type, content: { text: "Click here", href: "https://" }, style: { align: "left", background: "#4f46e5", color: "#ffffff", radius: 8, paddingY: 12, paddingX: 20 } }
+      return {
+        id: newId(),
+        type,
+        content: { text: "Click here", href: "https://" },
+        style: {
+          align: "left",
+          background: "#4f46e5",
+          color: "#ffffff",
+          radius: 8,
+          paddingY: 12,
+          paddingX: 20,
+        },
+      }
     case "image":
-      return { id: newId(), type, content: { src: "", alt: "Image" }, style: { align: "center", width: 100, radius: 8, paddingY: 8 } }
+      return {
+        id: newId(),
+        type,
+        content: { src: "", alt: "Image" },
+        style: { align: "center", width: 100, radius: 8, paddingY: 8 },
+      }
     case "divider":
-      return { id: newId(), type, content: {}, style: { color: "#e2e8f0", paddingY: 8 } }
+      return {
+        id: newId(),
+        type,
+        content: {},
+        style: { color: "#e2e8f0", paddingY: 8 },
+      }
     case "spacer":
       return { id: newId(), type, content: {}, style: { height: 24 } }
     case "social":
-      return { id: newId(), type, content: { socials: [{ network: "twitter", href: "https://" }, { network: "linkedin", href: "https://" }] }, style: { align: "center", paddingY: 8 } }
+      return {
+        id: newId(),
+        type,
+        content: {
+          socials: [
+            { network: "twitter", href: "https://" },
+            { network: "linkedin", href: "https://" },
+          ],
+        },
+        style: { align: "center", paddingY: 8 },
+      }
     case "footer":
-      return { id: newId(), type, content: { text: "© {{companyName}} • Unsubscribe" }, style: { align: "center", fontSize: 12, color: "#94a3b8", paddingY: 8 } }
+      return {
+        id: newId(),
+        type,
+        content: { text: "© {{companyName}} • Unsubscribe" },
+        style: { align: "center", fontSize: 12, color: "#94a3b8", paddingY: 8 },
+      }
     case "columns":
-      return { id: newId(), type, content: { columns: [[], []] }, style: { paddingY: 8 } }
+      return {
+        id: newId(),
+        type,
+        content: { columns: [[], []] },
+        style: { paddingY: 8 },
+      }
   }
 }
 
@@ -47,7 +107,11 @@ interface EditorState {
   select: (id: string | null) => void
   setPreview: (preview: boolean) => void
   setSubject: (subject: string) => void
-  setDoc: (patch: Partial<Pick<EmailLayout, "background" | "contentBackground" | "width">>) => void
+  setDoc: (
+    patch: Partial<
+      Pick<EmailLayout, "background" | "contentBackground" | "width">
+    >
+  ) => void
 
   addBlock: (type: BlockType, atIndex?: number) => void
   insertExisting: (block: EmailBlock, atIndex: number) => void
@@ -94,7 +158,9 @@ export const useEditorStore = create<EditorState>((set) => ({
   setSubject: (subject) => set({ subject, dirty: true }),
 
   setDoc: (patch) =>
-    set((s) => (s.layout ? { layout: { ...s.layout, ...patch }, dirty: true } : s)),
+    set((s) =>
+      s.layout ? { layout: { ...s.layout, ...patch }, dirty: true } : s
+    ),
 
   addBlock: (type, atIndex) =>
     set((s) => {
@@ -103,7 +169,11 @@ export const useEditorStore = create<EditorState>((set) => ({
       const blocks = [...s.layout.blocks]
       const at = atIndex ?? blocks.length
       blocks.splice(at, 0, block)
-      return { layout: { ...s.layout, blocks }, selectedId: block.id, dirty: true }
+      return {
+        layout: { ...s.layout, blocks },
+        selectedId: block.id,
+        dirty: true,
+      }
     }),
 
   insertExisting: (block, atIndex) =>
@@ -111,7 +181,11 @@ export const useEditorStore = create<EditorState>((set) => ({
       if (!s.layout) return s
       const blocks = [...s.layout.blocks]
       blocks.splice(atIndex, 0, block)
-      return { layout: { ...s.layout, blocks }, selectedId: block.id, dirty: true }
+      return {
+        layout: { ...s.layout, blocks },
+        selectedId: block.id,
+        dirty: true,
+      }
     }),
 
   moveBlock: (fromIndex, toIndex) =>
@@ -149,7 +223,11 @@ export const useEditorStore = create<EditorState>((set) => ({
       const copy = { ...structuredClone(s.layout.blocks[i]), id: newId() }
       const blocks = [...s.layout.blocks]
       blocks.splice(i + 1, 0, copy)
-      return { layout: { ...s.layout, blocks }, selectedId: copy.id, dirty: true }
+      return {
+        layout: { ...s.layout, blocks },
+        selectedId: copy.id,
+        dirty: true,
+      }
     }),
 
   removeBlock: (id) =>

@@ -206,9 +206,7 @@ export function ConfigSection() {
     },
     {
       title: "Communications",
-      items: [
-        { value: "email", label: "Email templates", icon: Mail01Icon },
-      ],
+      items: [{ value: "email", label: "Email templates", icon: Mail01Icon }],
     },
   ].filter((g) => g.items.length > 0)
 

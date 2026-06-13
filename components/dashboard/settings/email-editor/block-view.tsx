@@ -29,7 +29,8 @@ function renderText(text: string, vars: TemplateVariable[], preview: boolean) {
   let m: RegExpExecArray | null
   VAR_RE.lastIndex = 0
   while ((m = VAR_RE.exec(text))) {
-    if (m.index > last) out.push(<Fragment key={last}>{text.slice(last, m.index)}</Fragment>)
+    if (m.index > last)
+      out.push(<Fragment key={last}>{text.slice(last, m.index)}</Fragment>)
     const known = map.has(m[1])
     out.push(
       <span
@@ -47,7 +48,8 @@ function renderText(text: string, vars: TemplateVariable[], preview: boolean) {
     )
     last = m.index + m[0].length
   }
-  if (last < text.length) out.push(<Fragment key={last}>{text.slice(last)}</Fragment>)
+  if (last < text.length)
+    out.push(<Fragment key={last}>{text.slice(last)}</Fragment>)
   return out
 }
 
@@ -68,14 +70,25 @@ export function BlockView({
   preview: boolean
 }) {
   const s = block.style
-  const pad = { paddingTop: s.paddingY, paddingBottom: s.paddingY, paddingLeft: s.paddingX, paddingRight: s.paddingX }
+  const pad = {
+    paddingTop: s.paddingY,
+    paddingBottom: s.paddingY,
+    paddingLeft: s.paddingX,
+    paddingRight: s.paddingX,
+  }
   const align = (s.align ?? "left") as React.CSSProperties["textAlign"]
 
   switch (block.type) {
     case "heading":
       return (
         <div style={{ ...pad, textAlign: align }}>
-          <span style={{ fontSize: s.fontSize, fontWeight: s.bold ? 700 : 500, color: s.color }}>
+          <span
+            style={{
+              fontSize: s.fontSize,
+              fontWeight: s.bold ? 700 : 500,
+              color: s.color,
+            }}
+          >
             {renderText(block.content.text ?? "", vars, preview)}
           </span>
         </div>
@@ -84,7 +97,9 @@ export function BlockView({
     case "footer":
       return (
         <div style={{ ...pad, textAlign: align }}>
-          <span style={{ fontSize: s.fontSize, color: s.color, lineHeight: 1.6 }}>
+          <span
+            style={{ fontSize: s.fontSize, color: s.color, lineHeight: 1.6 }}
+          >
             {renderText(block.content.text ?? "", vars, preview)}
           </span>
         </div>
@@ -114,7 +129,11 @@ export function BlockView({
             <img
               src={block.content.src}
               alt={block.content.alt ?? ""}
-              style={{ width: `${s.width ?? 100}%`, borderRadius: s.radius, display: "inline-block" }}
+              style={{
+                width: `${s.width ?? 100}%`,
+                borderRadius: s.radius,
+                display: "inline-block",
+              }}
             />
           ) : (
             <div
@@ -129,20 +148,32 @@ export function BlockView({
     case "divider":
       return (
         <div style={pad}>
-          <hr style={{ border: 0, borderTop: `1px solid ${s.color ?? "#e2e8f0"}` }} />
+          <hr
+            style={{
+              border: 0,
+              borderTop: `1px solid ${s.color ?? "#e2e8f0"}`,
+            }}
+          />
         </div>
       )
     case "spacer":
       return <div style={{ height: s.height ?? 24 }} />
     case "social":
       return (
-        <div style={{ ...pad, textAlign: align }} className="flex justify-center gap-3">
+        <div
+          style={{ ...pad, textAlign: align }}
+          className="flex justify-center gap-3"
+        >
           {(block.content.socials ?? []).map((soc, i) => (
             <span
               key={i}
               className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground"
             >
-              <HugeiconsIcon icon={SOCIAL_ICON[soc.network] ?? NewTwitterIcon} size={16} strokeWidth={1.8} />
+              <HugeiconsIcon
+                icon={SOCIAL_ICON[soc.network] ?? NewTwitterIcon}
+                size={16}
+                strokeWidth={1.8}
+              />
             </span>
           ))}
         </div>
@@ -151,11 +182,23 @@ export function BlockView({
       return (
         <div style={pad} className="flex gap-3">
           {(block.content.columns ?? [[], []]).map((col, ci) => (
-            <div key={ci} className="flex-1 rounded-lg border border-dashed border-border p-3">
+            <div
+              key={ci}
+              className="flex-1 rounded-lg border border-dashed border-border p-3"
+            >
               {col.length === 0 ? (
-                <p className="text-center text-[11px] text-muted-foreground">Column {ci + 1}</p>
+                <p className="text-center text-[11px] text-muted-foreground">
+                  Column {ci + 1}
+                </p>
               ) : (
-                col.map((b) => <BlockView key={b.id} block={b} vars={vars} preview={preview} />)
+                col.map((b) => (
+                  <BlockView
+                    key={b.id}
+                    block={b}
+                    vars={vars}
+                    preview={preview}
+                  />
+                ))
               )}
             </div>
           ))}

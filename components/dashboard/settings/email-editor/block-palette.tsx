@@ -67,7 +67,9 @@ export function BlockPalette() {
     <div className="flex w-56 shrink-0 flex-col border-r border-border bg-background">
       <div className="border-b border-border px-4 py-3">
         <p className="text-[12px] font-semibold">Blocks</p>
-        <p className="text-[11px] text-muted-foreground">Click or drag to add</p>
+        <p className="text-[11px] text-muted-foreground">
+          Click or drag to add
+        </p>
       </div>
       <div className="grid grid-cols-2 gap-2 overflow-y-auto p-3">
         {PALETTE.map((p) => (

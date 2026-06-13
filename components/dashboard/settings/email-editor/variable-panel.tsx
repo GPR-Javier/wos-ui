@@ -2,9 +2,17 @@
 
 import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { CpuIcon, UserIcon, AddCircleIcon, Copy01Icon } from "@hugeicons/core-free-icons"
+import {
+  CpuIcon,
+  UserIcon,
+  AddCircleIcon,
+  Copy01Icon,
+} from "@hugeicons/core-free-icons"
 import { Badge } from "@/components/ui/badge"
-import type { TemplateVariable, VariableSource } from "@/lib/email-template-types"
+import type {
+  TemplateVariable,
+  VariableSource,
+} from "@/lib/email-template-types"
 import { useEditorStore } from "./editor-store"
 
 const TEXTY = new Set(["heading", "text", "button", "footer"])
@@ -21,7 +29,9 @@ export function VariablePanel({ vars }: { vars: TemplateVariable[] }) {
     const token = `{{${v.key}}}`
     if (canInsert && selected) {
       const current = selected.content.text ?? ""
-      updateContent(selected.id, { text: `${current}${current ? " " : ""}${token}` })
+      updateContent(selected.id, {
+        text: `${current}${current ? " " : ""}${token}`,
+      })
       toast.success(`Inserted ${token}`)
     } else {
       await navigator.clipboard.writeText(token)
@@ -31,7 +41,8 @@ export function VariablePanel({ vars }: { vars: TemplateVariable[] }) {
     }
   }
 
-  const group = (source: VariableSource) => vars.filter((v) => v.source === source)
+  const group = (source: VariableSource) =>
+    vars.filter((v) => v.source === source)
 
   return (
     <div className="flex flex-col gap-4">
@@ -50,8 +61,14 @@ export function VariablePanel({ vars }: { vars: TemplateVariable[] }) {
         return (
           <div key={source} className="space-y-2">
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-              <HugeiconsIcon icon={source === "SYSTEM" ? CpuIcon : UserIcon} size={12} strokeWidth={1.8} />
-              {source === "SYSTEM" ? "System (auto-filled)" : "Recipient / merge fields"}
+              <HugeiconsIcon
+                icon={source === "SYSTEM" ? CpuIcon : UserIcon}
+                size={12}
+                strokeWidth={1.8}
+              />
+              {source === "SYSTEM"
+                ? "System (auto-filled)"
+                : "Recipient / merge fields"}
             </div>
             <div className="space-y-1">
               {list.map((v) => (
@@ -66,7 +83,10 @@ export function VariablePanel({ vars }: { vars: TemplateVariable[] }) {
                         {`{{${v.key}}}`}
                       </code>
                       {v.required && (
-                        <Badge variant="outline" className="h-4 px-1 text-[9px]">
+                        <Badge
+                          variant="outline"
+                          className="h-4 px-1 text-[9px]"
+                        >
                           required
                         </Badge>
                       )}

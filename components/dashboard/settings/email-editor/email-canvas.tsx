@@ -1,6 +1,10 @@
 "use client"
 
-import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -27,17 +31,20 @@ function SortableBlock({
 }) {
   const duplicateBlock = useEditorStore((s) => s.duplicateBlock)
   const removeBlock = useEditorStore((s) => s.removeBlock)
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: block.id })
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: block.id })
 
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn(
-        "group/block relative",
-        isDragging && "opacity-30"
-      )}
+      className={cn("group/block relative", isDragging && "opacity-30")}
       onClick={(e) => {
         e.stopPropagation()
         onSelect()
@@ -46,9 +53,7 @@ function SortableBlock({
       <div
         className={cn(
           "rounded-md ring-1 ring-transparent transition-shadow",
-          selected
-            ? "ring-2 ring-primary"
-            : "group-hover/block:ring-border"
+          selected ? "ring-2 ring-primary" : "group-hover/block:ring-border"
         )}
       >
         <BlockView block={block} vars={vars} preview={false} />
@@ -58,7 +63,9 @@ function SortableBlock({
       <div
         className={cn(
           "absolute -top-3 right-2 flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5 shadow-sm transition-opacity",
-          selected ? "opacity-100" : "pointer-events-none opacity-0 group-hover/block:pointer-events-auto group-hover/block:opacity-100"
+          selected
+            ? "opacity-100"
+            : "pointer-events-none opacity-0 group-hover/block:pointer-events-auto group-hover/block:opacity-100"
         )}
       >
         <button
@@ -68,7 +75,11 @@ function SortableBlock({
           title="Drag to reorder"
           onClick={(e) => e.stopPropagation()}
         >
-          <HugeiconsIcon icon={DragDropVerticalIcon} size={14} strokeWidth={1.8} />
+          <HugeiconsIcon
+            icon={DragDropVerticalIcon}
+            size={14}
+            strokeWidth={1.8}
+          />
         </button>
         <button
           className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"

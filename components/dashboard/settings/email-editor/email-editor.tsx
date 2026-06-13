@@ -67,7 +67,9 @@ export function EmailEditor({ templateKey }: { templateKey: string }) {
     // Adding a new block dragged from the palette.
     if (activeKey.startsWith("palette:")) {
       const type = active.data.current?.blockType as BlockType
-      const overIndex = over ? layout.blocks.findIndex((b) => b.id === over.id) : -1
+      const overIndex = over
+        ? layout.blocks.findIndex((b) => b.id === over.id)
+        : -1
       addBlock(type, overIndex >= 0 ? overIndex : undefined)
       return
     }
@@ -86,12 +88,15 @@ export function EmailEditor({ templateKey }: { templateKey: string }) {
     await emailTemplateApi.saveConfig(slug, {
       templateKey,
       enabled: state.resolved.config.enabled,
-      subject: subject === state.resolved.template.defaultSubject ? null : subject,
+      subject:
+        subject === state.resolved.template.defaultSubject ? null : subject,
       layout: structuredClone(state.layout),
       updatedAt: null,
     })
     markSaved()
-    toast.success("Template saved", { description: "Your customization is live for this company." })
+    toast.success("Template saved", {
+      description: "Your customization is live for this company.",
+    })
   }
 
   const onReset = async () => {
@@ -103,7 +108,8 @@ export function EmailEditor({ templateKey }: { templateKey: string }) {
 
   const onSendTest = () => {
     toast.success("Test email queued (mock)", {
-      description: "When wos-notification is wired up, this sends a live preview to you.",
+      description:
+        "When wos-notification is wired up, this sends a live preview to you.",
     })
   }
 
@@ -111,7 +117,10 @@ export function EmailEditor({ templateKey }: { templateKey: string }) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
         <p className="text-[14px]">Template “{templateKey}” not found.</p>
-        <Link href={slugHref("/dashboard/config?tab=email")} className="text-[13px] text-primary hover:underline">
+        <Link
+          href={slugHref("/dashboard/config?tab=email")}
+          className="text-[13px] text-primary hover:underline"
+        >
           Back to templates
         </Link>
       </div>
@@ -119,7 +128,11 @@ export function EmailEditor({ templateKey }: { templateKey: string }) {
   }
 
   if (!ready) {
-    return <div className="flex h-full items-center justify-center text-[13px] text-muted-foreground">Loading…</div>
+    return (
+      <div className="flex h-full items-center justify-center text-[13px] text-muted-foreground">
+        Loading…
+      </div>
+    )
   }
 
   const vars = resolved.template.variables
@@ -136,8 +149,12 @@ export function EmailEditor({ templateKey }: { templateKey: string }) {
           <HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.8} />
         </Link>
         <div className="min-w-0">
-          <p className="truncate text-[13px] font-semibold">{resolved.template.name}</p>
-          <p className="truncate text-[11px] text-muted-foreground">{resolved.template.key}</p>
+          <p className="truncate text-[13px] font-semibold">
+            {resolved.template.name}
+          </p>
+          <p className="truncate text-[11px] text-muted-foreground">
+            {resolved.template.key}
+          </p>
         </div>
 
         <div className="ml-auto flex items-center gap-2">
@@ -152,7 +169,9 @@ export function EmailEditor({ templateKey }: { templateKey: string }) {
                 onClick={() => setPreview(o.v)}
                 className={cn(
                   "flex items-center gap-1.5 rounded px-2.5 py-1 text-[12px] font-medium",
-                  preview === o.v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                  preview === o.v
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
                 )}
               >
                 <HugeiconsIcon icon={o.icon} size={13} strokeWidth={1.8} />
@@ -188,7 +207,9 @@ export function EmailEditor({ templateKey }: { templateKey: string }) {
 
       {/* Subject line */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2">
-        <span className="text-[11px] font-medium text-muted-foreground">Subject</span>
+        <span className="text-[11px] font-medium text-muted-foreground">
+          Subject
+        </span>
         <input
           value={subject}
           onChange={(e) => setSubject(e.target.value)}

@@ -52,9 +52,7 @@ export default function SlugLayout({
     }
     // Most companies upload a logo but not a separate favicon — fall back to the app
     // icon / logo so the brand still shows in the tab, only defaulting when there's none.
-    setFavicon(
-      data.favicon ?? data.appIcon ?? data.logo ?? "/favicon.svg"
-    )
+    setFavicon(data.favicon ?? data.appIcon ?? data.logo ?? "/favicon.svg")
   }, [data])
 
   return <>{children}</>

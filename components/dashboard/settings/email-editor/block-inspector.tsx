@@ -8,12 +8,22 @@ import {
   PaintBoardIcon,
 } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
-import type { BlockStyle, EmailBlock, TextAlign } from "@/lib/email-template-types"
+import type {
+  BlockStyle,
+  EmailBlock,
+  TextAlign,
+} from "@/lib/email-template-types"
 import { useEditorStore } from "./editor-store"
 
 // ── Compact field primitives ─────────────────────────────────────────────────
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
   return (
     <label className="flex items-center justify-between gap-3">
       <span className="text-[11px] text-muted-foreground">{label}</span>
@@ -64,12 +74,20 @@ function NumberField({
         onChange={(e) => onChange(Number(e.target.value))}
         className="h-7 w-14 rounded-md border border-border bg-background px-2 text-[12px] outline-none focus:border-primary/50"
       />
-      {suffix && <span className="text-[10px] text-muted-foreground">{suffix}</span>}
+      {suffix && (
+        <span className="text-[10px] text-muted-foreground">{suffix}</span>
+      )}
     </div>
   )
 }
 
-function ColorField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function ColorField({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (v: string) => void
+}) {
   return (
     <div className="flex items-center gap-1.5">
       <input
@@ -93,7 +111,13 @@ const ALIGN_OPTS: { value: TextAlign; icon: IconSvgElement }[] = [
   { value: "right", icon: TextAlignRightIcon },
 ]
 
-function AlignField({ value, onChange }: { value: TextAlign; onChange: (v: TextAlign) => void }) {
+function AlignField({
+  value,
+  onChange,
+}: {
+  value: TextAlign
+  onChange: (v: TextAlign) => void
+}) {
   return (
     <div className="flex rounded-md border border-border p-0.5">
       {ALIGN_OPTS.map((o) => (
@@ -102,7 +126,9 @@ function AlignField({ value, onChange }: { value: TextAlign; onChange: (v: TextA
           onClick={() => onChange(o.value)}
           className={cn(
             "flex size-6 items-center justify-center rounded",
-            value === o.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+            value === o.value
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-muted"
           )}
         >
           <HugeiconsIcon icon={o.icon} size={13} strokeWidth={1.8} />
@@ -112,7 +138,13 @@ function AlignField({ value, onChange }: { value: TextAlign; onChange: (v: TextA
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
   return (
     <div className="space-y-2.5">
       <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
@@ -132,13 +164,25 @@ function DocSettings() {
   return (
     <Section title="Email settings">
       <Field label="Body background">
-        <ColorField value={layout.background} onChange={(v) => setDoc({ background: v })} />
+        <ColorField
+          value={layout.background}
+          onChange={(v) => setDoc({ background: v })}
+        />
       </Field>
       <Field label="Content background">
-        <ColorField value={layout.contentBackground} onChange={(v) => setDoc({ contentBackground: v })} />
+        <ColorField
+          value={layout.contentBackground}
+          onChange={(v) => setDoc({ contentBackground: v })}
+        />
       </Field>
       <Field label="Content width">
-        <NumberField value={layout.width} min={320} max={800} suffix="px" onChange={(v) => setDoc({ width: v })} />
+        <NumberField
+          value={layout.width}
+          min={320}
+          max={800}
+          suffix="px"
+          onChange={(v) => setDoc({ width: v })}
+        />
       </Field>
     </Section>
   )
@@ -154,51 +198,99 @@ function StyleControls({ block }: { block: EmailBlock }) {
     <Section title="Style">
       {block.type !== "divider" && block.type !== "spacer" && (
         <Field label="Align">
-          <AlignField value={(s.align ?? "left") as TextAlign} onChange={(v) => set({ align: v })} />
+          <AlignField
+            value={(s.align ?? "left") as TextAlign}
+            onChange={(v) => set({ align: v })}
+          />
         </Field>
       )}
       {hasText && (
         <>
           <Field label="Font size">
-            <NumberField value={s.fontSize ?? 14} min={10} max={48} suffix="px" onChange={(v) => set({ fontSize: v })} />
+            <NumberField
+              value={s.fontSize ?? 14}
+              min={10}
+              max={48}
+              suffix="px"
+              onChange={(v) => set({ fontSize: v })}
+            />
           </Field>
           <Field label="Text color">
-            <ColorField value={s.color ?? "#334155"} onChange={(v) => set({ color: v })} />
+            <ColorField
+              value={s.color ?? "#334155"}
+              onChange={(v) => set({ color: v })}
+            />
           </Field>
         </>
       )}
       {block.type === "button" && (
         <>
           <Field label="Background">
-            <ColorField value={s.background ?? "#4f46e5"} onChange={(v) => set({ background: v })} />
+            <ColorField
+              value={s.background ?? "#4f46e5"}
+              onChange={(v) => set({ background: v })}
+            />
           </Field>
           <Field label="Corner radius">
-            <NumberField value={s.radius ?? 8} min={0} max={40} suffix="px" onChange={(v) => set({ radius: v })} />
+            <NumberField
+              value={s.radius ?? 8}
+              min={0}
+              max={40}
+              suffix="px"
+              onChange={(v) => set({ radius: v })}
+            />
           </Field>
         </>
       )}
       {block.type === "image" && (
         <>
           <Field label="Width">
-            <NumberField value={s.width ?? 100} min={10} max={100} suffix="%" onChange={(v) => set({ width: v })} />
+            <NumberField
+              value={s.width ?? 100}
+              min={10}
+              max={100}
+              suffix="%"
+              onChange={(v) => set({ width: v })}
+            />
           </Field>
           <Field label="Corner radius">
-            <NumberField value={s.radius ?? 0} min={0} max={40} suffix="px" onChange={(v) => set({ radius: v })} />
+            <NumberField
+              value={s.radius ?? 0}
+              min={0}
+              max={40}
+              suffix="px"
+              onChange={(v) => set({ radius: v })}
+            />
           </Field>
         </>
       )}
       {block.type === "divider" && (
         <Field label="Line color">
-          <ColorField value={s.color ?? "#e2e8f0"} onChange={(v) => set({ color: v })} />
+          <ColorField
+            value={s.color ?? "#e2e8f0"}
+            onChange={(v) => set({ color: v })}
+          />
         </Field>
       )}
       {block.type === "spacer" ? (
         <Field label="Height">
-          <NumberField value={s.height ?? 24} min={4} max={120} suffix="px" onChange={(v) => set({ height: v })} />
+          <NumberField
+            value={s.height ?? 24}
+            min={4}
+            max={120}
+            suffix="px"
+            onChange={(v) => set({ height: v })}
+          />
         </Field>
       ) : (
         <Field label="Vertical padding">
-          <NumberField value={s.paddingY ?? 8} min={0} max={60} suffix="px" onChange={(v) => set({ paddingY: v })} />
+          <NumberField
+            value={s.paddingY ?? 8}
+            min={0}
+            max={60}
+            suffix="px"
+            onChange={(v) => set({ paddingY: v })}
+          />
         </Field>
       )}
     </Section>
@@ -207,7 +299,8 @@ function StyleControls({ block }: { block: EmailBlock }) {
 
 function ContentControls({ block }: { block: EmailBlock }) {
   const updateContent = useEditorStore((s) => s.updateContent)
-  const set = (patch: Partial<EmailBlock["content"]>) => updateContent(block.id, patch)
+  const set = (patch: Partial<EmailBlock["content"]>) =>
+    updateContent(block.id, patch)
 
   if (["heading", "text", "footer"].includes(block.type)) {
     return (
@@ -226,10 +319,17 @@ function ContentControls({ block }: { block: EmailBlock }) {
     return (
       <Section title="Content">
         <Field label="Label">
-          <TextInput value={block.content.text ?? ""} onChange={(v) => set({ text: v })} />
+          <TextInput
+            value={block.content.text ?? ""}
+            onChange={(v) => set({ text: v })}
+          />
         </Field>
         <Field label="Link">
-          <TextInput value={block.content.href ?? ""} placeholder="https://" onChange={(v) => set({ href: v })} />
+          <TextInput
+            value={block.content.href ?? ""}
+            placeholder="https://"
+            onChange={(v) => set({ href: v })}
+          />
         </Field>
       </Section>
     )
@@ -238,10 +338,17 @@ function ContentControls({ block }: { block: EmailBlock }) {
     return (
       <Section title="Content">
         <Field label="Image URL">
-          <TextInput value={block.content.src ?? ""} placeholder="https://" onChange={(v) => set({ src: v })} />
+          <TextInput
+            value={block.content.src ?? ""}
+            placeholder="https://"
+            onChange={(v) => set({ src: v })}
+          />
         </Field>
         <Field label="Alt text">
-          <TextInput value={block.content.alt ?? ""} onChange={(v) => set({ alt: v })} />
+          <TextInput
+            value={block.content.alt ?? ""}
+            onChange={(v) => set({ alt: v })}
+          />
         </Field>
       </Section>
     )
