@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import dynamic from "next/dynamic"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Add01Icon,
@@ -25,6 +26,24 @@ import {
 } from "@/hooks/use-employee-profile"
 import type { Department } from "@/lib/employee-profile-api"
 import { useEscapeKey } from "@/hooks/use-escape-key"
+
+// Lazy-loaded: keeps the heavy react-flow bundle out of the departments view until
+// the "Dept tree" tab is opened, and sidesteps the circular import with this file
+// (company-org-chart imports DepartmentFormModal from here).
+const CompanyOrgChart = dynamic(
+  () =>
+    import("@/components/dashboard/company-org-chart").then(
+      (m) => m.CompanyOrgChart
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-100 items-center justify-center text-[13px] text-muted-foreground">
+        Loading tree…
+      </div>
+    ),
+  }
+)
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -216,6 +235,12 @@ export function DepartmentsSection() {
     "active" | "inactive" | "all"
   >("active")
   const [viewingItem, setViewingItem] = useState<Department | null>(null)
+  const [viewTab, setViewTab] = useState<"details" | "tree">("details")
+
+  function openView(d: Department) {
+    setViewTab("details")
+    setViewingItem(d)
+  }
 
   const busy = createMut.isPending || updateMut.isPending || deleteMut.isPending
 
@@ -453,7 +478,7 @@ export function DepartmentsSection() {
                   <button
                     type="button"
                     title="View"
-                    onClick={() => setViewingItem(d)}
+                    onClick={() => openView(d)}
                     className="flex size-7 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   >
                     <HugeiconsIcon icon={EyeIcon} size={12} strokeWidth={2} />
@@ -516,9 +541,14 @@ export function DepartmentsSection() {
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setViewingItem(null)}
           />
-          <div className="relative w-full max-w-sm animate-in rounded-2xl border border-border bg-card p-6 shadow-xl duration-200 zoom-in-95 fade-in">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-[15px] font-semibold">Department Details</h2>
+          <div
+            className={cn(
+              "relative w-full animate-in overflow-y-auto rounded-2xl border border-border bg-card p-6 shadow-xl duration-200 zoom-in-95 fade-in",
+              viewTab === "tree" ? "max-h-[90vh] max-w-3xl" : "max-w-sm"
+            )}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-[15px] font-semibold">{viewingItem.name}</h2>
               <button
                 type="button"
                 onClick={() => setViewingItem(null)}
@@ -527,31 +557,57 @@ export function DepartmentsSection() {
                 <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
               </button>
             </div>
-            <div className="space-y-3 text-[13px]">
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-muted-foreground">Name</span>
-                <span className="font-medium">{viewingItem.name}</span>
-              </div>
-              {viewingItem.description && (
-                <div className="flex flex-col gap-1 border-b pb-2">
-                  <span className="text-muted-foreground">Description</span>
-                  <span className="font-medium">{viewingItem.description}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Status</span>
-                <span
+
+            {/* Tab nav */}
+            <div className="mb-4 flex gap-1 border-b border-border">
+              {(["details", "tree"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setViewTab(t)}
                   className={cn(
-                    "rounded-full px-2.5 py-0.5 text-[10px] font-semibold",
-                    viewingItem.active
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-muted text-muted-foreground"
+                    "relative -mb-px border-b-2 px-3 py-2 text-[13px] font-medium transition-colors",
+                    viewTab === t
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {viewingItem.active ? "Active" : "Inactive"}
-                </span>
-              </div>
+                  {t === "details" ? "Details" : "Dept tree"}
+                </button>
+              ))}
             </div>
+
+            {viewTab === "details" ? (
+              <div className="space-y-3 text-[13px]">
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-muted-foreground">Name</span>
+                  <span className="font-medium">{viewingItem.name}</span>
+                </div>
+                {viewingItem.description && (
+                  <div className="flex flex-col gap-1 border-b pb-2">
+                    <span className="text-muted-foreground">Description</span>
+                    <span className="font-medium">
+                      {viewingItem.description}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Status</span>
+                  <span
+                    className={cn(
+                      "rounded-full px-2.5 py-0.5 text-[10px] font-semibold",
+                      viewingItem.active
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {viewingItem.active ? "Active" : "Inactive"}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <CompanyOrgChart departmentId={viewingItem.id} />
+            )}
           </div>
         </div>
       )}

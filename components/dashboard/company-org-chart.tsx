@@ -26,6 +26,7 @@ import dagre from "dagre"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
@@ -1415,6 +1416,102 @@ function QuickDepartmentCreate({ onClose }: { onClose: () => void }) {
   )
 }
 
+/**
+ * Picker for the scoped dept tree: move an existing member from another department
+ * (or unassigned) into this one. Stays open so several can be added in a row; the
+ * list refetches as each is moved, so people who join drop off the candidate list.
+ */
+function AddExistingMemberModal({
+  candidates,
+  departmentName,
+  isPending,
+  onAdd,
+  onClose,
+}: {
+  candidates: Person[]
+  departmentName: string
+  isPending: boolean
+  onAdd: (userId: number) => void
+  onClose: () => void
+}) {
+  const [q, setQ] = useState("")
+  const query = q.trim().toLowerCase()
+  const filtered = query
+    ? candidates.filter(
+        (c) =>
+          c.name.toLowerCase().includes(query) ||
+          (c.deptName ?? "").toLowerCase().includes(query)
+      )
+    : candidates
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add existing member to {departmentName}</DialogTitle>
+        </DialogHeader>
+        <p className="text-[12px] text-muted-foreground">
+          Move a member from another department (or unassigned) into this one.
+          Their reporting line is kept.
+        </p>
+        <Input
+          autoFocus
+          placeholder="Search people…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          className="h-9 text-[13px]"
+        />
+        <div className="mt-1 max-h-72 space-y-1.5 overflow-y-auto">
+          {filtered.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              disabled={isPending}
+              onClick={() => onAdd(c.userId)}
+              className="flex w-full items-center gap-3 rounded-lg border border-border p-2.5 text-left transition-colors hover:bg-muted/40 disabled:opacity-50"
+            >
+              <span
+                className={cn(
+                  "flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ring-2",
+                  colorFor(c.departmentId).chip
+                )}
+              >
+                {initials(c.name)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-medium text-foreground">
+                  {c.name}
+                </p>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  {(c.title || "—") + " · " + (c.deptName || "Unassigned")}
+                </p>
+              </div>
+              <HugeiconsIcon
+                icon={UserAdd01Icon}
+                size={15}
+                strokeWidth={1.8}
+                className="shrink-0 text-muted-foreground"
+              />
+            </button>
+          ))}
+          {filtered.length === 0 && (
+            <p className="rounded-lg border border-dashed border-border py-6 text-center text-[12px] text-muted-foreground">
+              {candidates.length === 0
+                ? "Everyone already belongs to this department."
+                : "No matches."}
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button size="sm" variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function QuickRoleCreate({ onClose }: { onClose: () => void }) {
   const createRole = useCreateUserRole()
   return (
@@ -1447,6 +1544,24 @@ function Hint({ icon, label }: { icon: IconSvgElement; label: string }) {
   )
 }
 
+/**
+ * Merge a scoped (single-department) layout into the full saved layout: the backend
+ * PUT replaces all positions, so a partial save would wipe other departments. We
+ * overlay the department's node positions and its box onto the global layout by id,
+ * keeping everyone else untouched, and preserve the company-wide `grouped` flag.
+ */
+function mergeLayout(global: OrgLayout, partial: OrgLayout): OrgLayout {
+  const nodes = new Map(global.nodes.map((n) => [n.userId, n]))
+  for (const n of partial.nodes) nodes.set(n.userId, n)
+  const boxes = new Map(global.boxes.map((b) => [b.departmentId, b]))
+  for (const b of partial.boxes) boxes.set(b.departmentId, b)
+  return {
+    grouped: global.grouped,
+    nodes: [...nodes.values()],
+    boxes: [...boxes.values()],
+  }
+}
+
 function toPeople(graph: OrgNode[]): Person[] {
   return graph.map((n) => ({
     id: String(n.id),
@@ -1459,7 +1574,22 @@ function toPeople(graph: OrgNode[]): Person[] {
   }))
 }
 
-export function CompanyOrgChart() {
+/**
+ * Org chart. With no props it renders the whole company (editable for admins).
+ * Pass `departmentId` to scope it to a single department's members — used by the
+ * department "Dept tree" tab. The scoped view is read-only so it can't overwrite
+ * the global saved layout (which is keyed by userId across all departments).
+ */
+export function CompanyOrgChart({
+  departmentId,
+}: {
+  departmentId?: number
+} = {}) {
+  const scoped = departmentId != null
+  // Admins can edit structure (re-parent, move, remove, add) and save layout in
+  // both the full and the scoped department view. A scoped save is merged into the
+  // global layout (see mergeLayout) so it also shows in the company tree without
+  // clobbering other departments' saved positions.
   const canEdit = useAuthStore((s) => s.authorities.includes(EDIT_AUTHORITY))
   const pushToast = useToastStore((s) => s.push)
   const { data: graph, isLoading: graphLoading } = useOrgGraph()
@@ -1474,19 +1604,46 @@ export function CompanyOrgChart() {
   const [quickCreate, setQuickCreate] = useState<
     "role" | "department" | "user" | null
   >(null)
+  // Scoped-only: the "add existing member from another department" picker.
+  const [addExisting, setAddExisting] = useState(false)
 
-  const depts: DeptInfo[] = useMemo(
+  const depts: DeptInfo[] = useMemo(() => {
+    const active = (departments ?? [])
+      .filter((d: Department) => d.active)
+      .map((d: Department) => ({ id: d.id, name: d.name }))
+    return departmentId == null
+      ? active
+      : active.filter((d) => d.id === departmentId)
+  }, [departments, departmentId])
+
+  const allPeople = useMemo(() => (graph ? toPeople(graph) : []), [graph])
+
+  const people = useMemo(() => {
+    if (departmentId == null) return allPeople
+    const inDept = allPeople.filter((p) => p.departmentId === departmentId)
+    const ids = new Set(inDept.map((p) => p.id))
+    // A member whose manager sits outside this department becomes a local root,
+    // so the subtree shown is exactly "everyone under this department".
+    return inDept.map((p) =>
+      p.managerId && ids.has(p.managerId) ? p : { ...p, managerId: null }
+    )
+  }, [allPeople, departmentId])
+
+  // Candidates for "add existing member": everyone not already in this department.
+  const addCandidates = useMemo(
     () =>
-      (departments ?? [])
-        .filter((d: Department) => d.active)
-        .map((d: Department) => ({ id: d.id, name: d.name })),
-    [departments]
+      scoped ? allPeople.filter((p) => p.departmentId !== departmentId) : [],
+    [allPeople, departmentId, scoped]
   )
-  const people = useMemo(() => (graph ? toPeople(graph) : []), [graph])
+  const scopedDeptName = scoped
+    ? (depts.find((d) => d.id === departmentId)?.name ?? "this department")
+    : ""
 
   const ready = !graphLoading && !layoutLoading && graph && layout
   // Re-mount Flow when the source data identity changes so it re-initialises cleanly.
-  const flowKey = ready ? `${graph!.length}:${depts.length}` : "loading"
+  const flowKey = ready
+    ? `${departmentId ?? "all"}:${people.length}:${depts.length}`
+    : "loading"
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
@@ -1512,9 +1669,19 @@ export function CompanyOrgChart() {
                   icon={Add01Icon}
                   label="Right-click the canvas to create"
                 />
+                {scoped && (
+                  <Hint
+                    icon={UserAdd01Icon}
+                    label="Right-click to add an existing member"
+                  />
+                )}
                 <Hint
                   icon={FloppyDiskIcon}
-                  label="Save layout to keep your arrangement"
+                  label={
+                    scoped
+                      ? "Save layout — also updates the company tree"
+                      : "Save layout to keep your arrangement"
+                  }
                 />
               </>
             ) : (
@@ -1542,7 +1709,9 @@ export function CompanyOrgChart() {
               </div>
             ) : people.length === 0 ? (
               <div className="flex h-full items-center justify-center text-[13px] text-muted-foreground">
-                No employees to display yet.
+                {scoped
+                  ? "No one in this department yet."
+                  : "No employees to display yet."}
               </div>
             ) : (
               <ReactFlowProvider>
@@ -1559,7 +1728,7 @@ export function CompanyOrgChart() {
                     setDepartment.mutate({ userId, departmentId })
                   }
                   onSaveLayout={(l) =>
-                    saveLayout.mutate(l, {
+                    saveLayout.mutate(scoped ? mergeLayout(layout!, l) : l, {
                       onSuccess: () => pushToast("Layout saved.", "success"),
                     })
                   }
@@ -1570,6 +1739,20 @@ export function CompanyOrgChart() {
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
+          {scoped && (
+            <>
+              <ContextMenuLabel>{scopedDeptName}</ContextMenuLabel>
+              <ContextMenuItem onSelect={() => setAddExisting(true)}>
+                <HugeiconsIcon
+                  icon={UserAdd01Icon}
+                  size={15}
+                  strokeWidth={1.8}
+                />
+                Add existing member
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+            </>
+          )}
           <ContextMenuLabel>Quick create</ContextMenuLabel>
           <ContextMenuItem onSelect={() => setQuickCreate("user")}>
             <HugeiconsIcon icon={UserAdd01Icon} size={15} strokeWidth={1.8} />
@@ -1608,6 +1791,25 @@ export function CompanyOrgChart() {
       )}
       {quickCreate === "role" && (
         <QuickRoleCreate onClose={() => setQuickCreate(null)} />
+      )}
+      {addExisting && departmentId != null && (
+        <AddExistingMemberModal
+          candidates={addCandidates}
+          departmentName={scopedDeptName}
+          isPending={setDepartment.isPending}
+          onAdd={(userId) =>
+            setDepartment.mutate(
+              { userId, departmentId },
+              {
+                onSuccess: () =>
+                  pushToast("Member added to department.", "success"),
+                onError: () =>
+                  pushToast("Couldn’t add member.", "error"),
+              }
+            )
+          }
+          onClose={() => setAddExisting(false)}
+        />
       )}
     </div>
   )

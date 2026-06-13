@@ -85,20 +85,38 @@ const toPayload = (f: Form): CompanyProfile =>
 const TABS = ["basic", "branding", "structure"] as const
 type TabKey = (typeof TABS)[number]
 
-export function MyCompanySection() {
+/**
+ * Standalone (`/dashboard/my-company`): tabs drive `?tab=` on that route.
+ * Embedded in Configuration: pass `basePath="/dashboard/config"`, a distinct
+ * `tabParam` (e.g. "sub") so it doesn't collide with config's own `?tab=`, and
+ * `extraQuery` to preserve the parent nav state — so its tabs act as sub-tabs and
+ * stay on the config page instead of redirecting here.
+ */
+export function MyCompanySection({
+  basePath = "/dashboard/my-company",
+  tabParam: tabParamKey = "tab",
+  extraQuery,
+}: {
+  basePath?: string
+  tabParam?: string
+  extraQuery?: Record<string, string>
+} = {}) {
   const qc = useQueryClient()
   const router = useRouter()
   const slugHref = useSlugHref()
   const searchParams = useSearchParams()
-  // Active tab lives in the URL (?tab=) so it survives a refresh and is linkable.
-  const tabParam = searchParams.get("tab")
+  // Active tab lives in the URL so it survives a refresh and is linkable.
+  const tabParam = searchParams.get(tabParamKey)
   const activeTab: TabKey = TABS.includes(tabParam as TabKey)
     ? (tabParam as TabKey)
     : "basic"
-  const setTab = (tab: string) =>
-    router.replace(slugHref(`/dashboard/my-company?tab=${tab}`), {
+  const setTab = (tab: string) => {
+    const params = new URLSearchParams(extraQuery)
+    params.set(tabParamKey, tab)
+    router.replace(slugHref(`${basePath}?${params.toString()}`), {
       scroll: false,
     })
+  }
   const { data: companies } = useQuery({
     queryKey: ["my-company", "companies"],
     queryFn: companyApi.list,

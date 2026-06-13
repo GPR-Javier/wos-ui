@@ -3,10 +3,10 @@
 import { useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { useSlugHref } from "@/lib/slug"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   CheckmarkCircle01Icon,
@@ -105,6 +105,7 @@ type ConfigNavItem = {
 
 export function ConfigSection() {
   const router = useRouter()
+  const slugHref = useSlugHref()
   const searchParams = useSearchParams()
 
   const canViewSchedulePolicy = useAuthStore((s) =>
@@ -134,7 +135,7 @@ export function ConfigSection() {
   const activeTab = searchParams.get("tab") ?? defaultTab
 
   function handleTabChange(tab: string) {
-    router.replace(`/dashboard/config?tab=${tab}`)
+    router.replace(slugHref(`/dashboard/config?tab=${tab}`))
   }
 
   // Categorized side-nav. Each group only renders when it has at least one permitted item.
@@ -204,12 +205,7 @@ export function ConfigSection() {
   ].filter((g) => g.items.length > 0)
 
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={handleTabChange}
-      orientation="vertical"
-      className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8"
-    >
+    <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
       {/* Side nav */}
       <aside className="shrink-0 lg:sticky lg:top-6 lg:w-56">
         <nav className="flex flex-col gap-5">
@@ -254,14 +250,18 @@ export function ConfigSection() {
 
       {/* Content */}
       <div className="min-w-0 flex-1">
-        {canEditCompany && (
-          <TabsContent value="company">
-            <MyCompanySection />
-          </TabsContent>
+        {canEditCompany && activeTab === "company" && (
+          // Embedded: inner tabs use `?sub=` and keep `?tab=company`, so they
+          // act as sub-tabs and stay on the config page.
+          <MyCompanySection
+            basePath="/dashboard/config"
+            tabParam="sub"
+            extraQuery={{ tab: "company" }}
+          />
         )}
 
-        {canViewSchedulePolicy && (
-          <TabsContent value="schedule" className="space-y-4">
+        {canViewSchedulePolicy && activeTab === "schedule" && (
+          <div className="space-y-4">
             <div>
               <p className="text-[13px] font-semibold">Schedule policy</p>
               <p className="mt-0.5 text-[12px] text-muted-foreground">
@@ -271,54 +271,38 @@ export function ConfigSection() {
               </p>
             </div>
             <SchedulePoliciesSection />
-          </TabsContent>
+          </div>
         )}
 
-        {canEditAttendance && (
-          <TabsContent value="attendance">
-            <AttendanceConfigSection />
-          </TabsContent>
+        {canEditAttendance && activeTab === "attendance" && (
+          <AttendanceConfigSection />
         )}
 
-        {canEditLeave && (
-          <TabsContent value="leave">
-            <PlaceholderSection
-              title="Leave settings"
-              description="Coming soon."
-              items={[
-                { label: "Vacation leave accrual", value: "1.25 days/month" },
-                { label: "Sick leave accrual", value: "1.25 days/month" },
-                { label: "Leave carry-over", value: "10 days max" },
-              ]}
-            />
-          </TabsContent>
+        {canEditLeave && activeTab === "leave" && (
+          <PlaceholderSection
+            title="Leave settings"
+            description="Coming soon."
+            items={[
+              { label: "Vacation leave accrual", value: "1.25 days/month" },
+              { label: "Sick leave accrual", value: "1.25 days/month" },
+              { label: "Leave carry-over", value: "10 days max" },
+            ]}
+          />
         )}
 
-        <TabsContent value="departments">
-          <DepartmentsSection />
-        </TabsContent>
+        {activeTab === "departments" && <DepartmentsSection />}
 
-        <TabsContent value="positions">
-          <PositionsSection />
-        </TabsContent>
+        {activeTab === "positions" && <PositionsSection />}
 
-        <TabsContent value="payroll-setup">
-          <PayrollSetupSection />
-        </TabsContent>
+        {activeTab === "payroll-setup" && <PayrollSetupSection />}
 
-        {canManageQuestions && (
-          <TabsContent value="question-bank">
-            <QuestionBankSection />
-          </TabsContent>
+        {canManageQuestions && activeTab === "question-bank" && (
+          <QuestionBankSection />
         )}
 
-        {isAdmin && (
-          <TabsContent value="ai-provider">
-            <AiProviderConfigSection />
-          </TabsContent>
-        )}
+        {isAdmin && activeTab === "ai-provider" && <AiProviderConfigSection />}
       </div>
-    </Tabs>
+    </div>
   )
 }
 
