@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query"
 import { cn } from "@/lib/utils"
 import { useSlug, useSlugHref } from "@/lib/slug"
 import { companyBrandingApi } from "@/lib/company-branding-api"
-import { navConfig, settingsNavConfig, roleLabels } from "@/lib/nav-config"
+import { navConfig, roleLabels } from "@/lib/nav-config"
 import { Logo } from "./logo"
 import { StatusBadge } from "./status-badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -48,6 +48,7 @@ import {
   Invoice01Icon,
 } from "@hugeicons/core-free-icons"
 import { useAuthStore } from "@/store/auth-store"
+import { useIdentityMe } from "@/hooks/use-identity-profile"
 import { useLogout, useMe } from "@/hooks/use-auth"
 
 const roleVariant: Record<string, "blue" | "purple" | "amber" | "gray"> = {
@@ -139,12 +140,12 @@ export function Sidebar() {
   const brand = mounted ? branding : undefined
 
   const { user, apiRole, userRoleNames, authorities } = useAuthStore()
+  const { data: me } = useIdentityMe()
+  const avatarSrc = me?.profilePhoto ?? user?.profilePhoto ?? undefined
 
   // Path shape is now /<slug>/dashboard/<section>/<sub>, so section/sub shift by +1.
   const segments = pathname.split("/")
   const section = segments[3]
-  const subSection = segments[4]
-  const isSettings = section === "settings"
 
   const role = apiRole?.toUpperCase() ?? "EMPLOYEE"
   const roleLabel = userRoleNames[0] ?? roleLabels[role] ?? "Employee"
@@ -171,10 +172,10 @@ export function Sidebar() {
   const displayName = user ? `${user.firstName} ${user.lastName}` : "—"
   const employeeId = user?.employeeId ?? ""
 
-  const items = isSettings ? settingsNavConfig : navConfig.filter(isVisible)
+  // Sidebar always shows the main dashboard nav; settings has its own top tabs.
+  const items = navConfig.filter(isVisible)
 
   function isActive(itemSection: string) {
-    if (isSettings) return (subSection ?? "general") === itemSection
     if (itemSection === "overview") return !section || section === "overview"
     return section === itemSection
   }
@@ -184,7 +185,6 @@ export function Sidebar() {
   }
 
   function href(itemSection: string) {
-    if (isSettings) return slugHref(`/dashboard/settings/${itemSection}`)
     if (itemSection === "overview") return slugHref("/dashboard")
     return slugHref(`/dashboard/${itemSection}`)
   }
@@ -403,10 +403,7 @@ export function Sidebar() {
       <div className="shrink-0 border-t border-border p-3">
         <div className="flex items-center gap-2.5 rounded-lg px-2 py-2">
           <Avatar className="size-7 shrink-0">
-            <AvatarImage
-              src={user?.profilePhoto ?? undefined}
-              alt={displayName}
-            />
+            <AvatarImage src={avatarSrc} alt={displayName} />
             <AvatarFallback className="bg-primary/10 text-[10px] font-semibold text-primary">
               {initials}
             </AvatarFallback>

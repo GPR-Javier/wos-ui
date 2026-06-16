@@ -34,6 +34,7 @@ export interface AdminUser {
   firstName: string
   lastName: string
   email: string
+  profilePhoto: string | null
   role: string
   userRoles: UserRoleAssignment[]
   active: boolean

@@ -83,6 +83,21 @@ export interface LeaveBalance {
   remaining: number
 }
 
+export interface EmployeeEvaluation {
+  period: string
+  reviewer: string
+  date: string
+  rating: number | null
+  completed: boolean
+}
+
+export interface EmployeeDocument {
+  id: number
+  name: string
+  category: string | null
+  uploadedAt: string
+}
+
 export const employeeApi = {
   attendance: (params: { page?: number; size?: number } = {}) =>
     api
@@ -122,4 +137,12 @@ export const employeeApi = {
 
   leaveBalances: () =>
     api.get<LeaveBalance[]>("/hr/employee/leave-balances").then((r) => r.data),
+
+  evaluations: () =>
+    api
+      .get<EmployeeEvaluation[]>("/hr/employee/evaluations")
+      .then((r) => r.data),
+
+  documents: () =>
+    api.get<EmployeeDocument[]>("/hr/employee/documents").then((r) => r.data),
 }

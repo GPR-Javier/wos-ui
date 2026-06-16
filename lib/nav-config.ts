@@ -307,14 +307,6 @@ export function resolveLandingPath(authorities: string[]): string {
   return "/dashboard"
 }
 
-// Settings nav (always shown on /dashboard/settings/*)
-export const settingsNavConfig: NavItem[] = [
-  { label: "Profile", section: "general", authority: null },
-  { label: "Security", section: "security", authority: null },
-  { label: "Notifications", section: "notifications", authority: null },
-  { label: "Appearance", section: "appearance", authority: null },
-]
-
 export const roleLabels: Record<string, string> = {
   EMPLOYEE: "Employee",
   HR: "HR Manager",

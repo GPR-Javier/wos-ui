@@ -42,6 +42,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { useSlugHref } from "@/lib/slug"
 import {
   useAdminUsers,
   useActiveUserRoles,
@@ -969,6 +970,7 @@ function TempRoleModal({ user, onClose }: TempRoleModalProps) {
 
 export function UsersSection() {
   const router = useRouter()
+  const slugHref = useSlugHref()
   const [roleFilter, setRoleFilter] = useState<string | undefined>(undefined)
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState("")
@@ -1104,10 +1106,19 @@ export function UsersSection() {
                   <TableRow key={u.id}>
                     <TableCell>
                       <div className="flex items-center gap-2.5">
-                        <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
-                          {u.firstName[0]}
-                          {u.lastName[0]}
-                        </div>
+                        {u.profilePhoto &&
+                        /^(data:image\/|https?:\/\/)/.test(u.profilePhoto) ? (
+                          <img
+                            src={u.profilePhoto}
+                            alt=""
+                            className="size-7 shrink-0 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
+                            {u.firstName?.[0]}
+                            {u.lastName?.[0]}
+                          </div>
+                        )}
                         <div>
                           <p className="text-[13px] font-medium">
                             {u.firstName} {u.lastName}
@@ -1178,7 +1189,9 @@ export function UsersSection() {
                               size="icon-xs"
                               variant="outline"
                               onClick={() =>
-                                router.push(`/dashboard/employees/${u.id}`)
+                                router.push(
+                                  slugHref(`/dashboard/employees/${u.id}`)
+                                )
                               }
                             >
                               <HugeiconsIcon

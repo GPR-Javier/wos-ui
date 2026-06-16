@@ -31,6 +31,7 @@ import {
   Building04Icon,
 } from "@hugeicons/core-free-icons"
 import { useAuthStore } from "@/store/auth-store"
+import { useIdentityMe } from "@/hooks/use-identity-profile"
 import { useToastStore } from "@/store/toast-store"
 import { useLogout, useSwitchRole } from "@/hooks/use-auth"
 
@@ -48,6 +49,8 @@ export function Topbar() {
   const pushToast = useToastStore((s) => s.push)
   const { user, userRoleNames, availableRoles, activeUserRoleId } =
     useAuthStore()
+  const { data: me } = useIdentityMe()
+  const avatarSrc = me?.profilePhoto ?? user?.profilePhoto ?? undefined
 
   // Path shape is /<slug>/dashboard/<section>/<sub>, so section/sub shift by +1.
   const segments = pathname.split("/")
@@ -56,9 +59,9 @@ export function Topbar() {
 
   const isSettings = section === "settings"
 
-  // Show a Back button on settings pages and on any detail route (one with a sub-segment,
-  // e.g. /dashboard/assessment/123, /dashboard/careers/12).
-  const showBack = isSettings || Boolean(subSection)
+  // Show a Back button only on detail routes (a sub-segment, e.g. /dashboard/assessment/123).
+  // Settings has its own top tabs + the sidebar, so no Back there.
+  const showBack = !isSettings && Boolean(subSection)
 
   // For settings pages, title comes from the sub-section; otherwise from the top-level section
   const titleKey = isSettings
@@ -123,10 +126,7 @@ export function Topbar() {
         <DropdownMenuTrigger asChild>
           <button className="outline-none" aria-label="User menu">
             <Avatar className="size-8 cursor-pointer ring-2 ring-transparent transition-all hover:ring-primary/30">
-              <AvatarImage
-                src={user?.profilePhoto ?? undefined}
-                alt={displayName}
-              />
+              <AvatarImage src={avatarSrc} alt={displayName} />
               <AvatarFallback className="bg-primary/10 text-[11px] font-semibold text-primary">
                 {initials}
               </AvatarFallback>

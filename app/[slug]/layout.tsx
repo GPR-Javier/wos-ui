@@ -59,17 +59,22 @@ export default function SlugLayout({
 }
 
 function setFavicon(href: string) {
-  // Next injects several icon links (favicon.ico + the metadata /favicon.svg as
-  // both `icon` and `shortcut icon`). Updating just one leaves the browser free to
-  // prefer a static one, so remove them all and add a single fresh link.
-  document
-    .querySelectorAll<HTMLLinkElement>("link[rel~='icon']")
-    .forEach((el) => el.remove())
-  const link = document.createElement("link")
-  link.rel = "icon"
+  // Manage ONE app-owned <link> (tagged data-app-favicon) and never touch the icon
+  // links Next injects from metadata. Removing those React-managed nodes (the old
+  // approach) desynced React's <head> fiber tree from the DOM, so a later navigation
+  // tried to delete an already-removed node and crashed with "Cannot read properties
+  // of null (reading 'removeChild')". Appending ours last lets the browser prefer it.
+  let link = document.head.querySelector<HTMLLinkElement>(
+    "link[data-app-favicon]"
+  )
+  if (!link) {
+    link = document.createElement("link")
+    link.rel = "icon"
+    link.setAttribute("data-app-favicon", "")
+    document.head.appendChild(link)
+  }
   // Derive the type from a data-URL so the browser doesn't mis-sniff it.
   const m = /^data:([^;,]+)[;,]/.exec(href)
-  if (m) link.type = m[1]
+  link.type = m ? m[1] : ""
   link.href = href
-  document.head.appendChild(link)
 }

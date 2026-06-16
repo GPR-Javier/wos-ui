@@ -25,17 +25,13 @@ async function cropImageToUrl(src: string, pixelCrop: Area): Promise<string> {
       canvas.height = size
       const ctx = canvas.getContext("2d")!
       ctx.drawImage(img, pixelCrop.x, pixelCrop.y, size, size, 0, 0, size, size)
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) {
-            reject(new Error("Canvas toBlob failed"))
-            return
-          }
-          resolve(URL.createObjectURL(blob))
-        },
-        "image/jpeg",
-        0.92
-      )
+      // Emit a base64 data URL (not a blob: object URL) so the result can be
+      // persisted to the backend and survives a reload.
+      try {
+        resolve(canvas.toDataURL("image/jpeg", 0.92))
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error("Canvas export failed"))
+      }
     }
     img.onerror = reject
     img.src = src

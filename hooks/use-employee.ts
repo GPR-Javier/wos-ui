@@ -80,3 +80,17 @@ export function useLeaveBalances() {
     queryFn: employeeApi.leaveBalances,
   })
 }
+
+export function useEmployeeEvaluations() {
+  return useQuery({
+    queryKey: ["employee", "evaluations"],
+    queryFn: employeeApi.evaluations,
+  })
+}
+
+export function useEmployeeDocuments() {
+  return useQuery({
+    queryKey: ["employee", "documents"],
+    queryFn: employeeApi.documents,
+  })
+}
