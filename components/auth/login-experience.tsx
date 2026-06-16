@@ -25,6 +25,11 @@ import { useAuthStore } from "@/store/auth-store"
 import { useSlugHref } from "@/lib/slug"
 import type { AvailableRole, CompanyInfo } from "@/lib/auth-api"
 import type { CompanyBrandingDto } from "@/lib/company-branding-api"
+import {
+  oauthProviderApi,
+  type PublicOAuthProvider,
+} from "@/lib/oauth-provider-api"
+import { ProviderIcon } from "@/components/custom/provider-icon"
 import { themeVars, DEFAULT_THEME } from "@/components/dashboard/company-theme"
 
 type PunchType = "in" | "out"
@@ -56,6 +61,7 @@ export function LoginExperience({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showQuickPunch, setShowQuickPunch] = useState(false)
+  const [ssoProviders, setSsoProviders] = useState<PublicOAuthProvider[]>([])
 
   // Role-selection state (when API returns requiresRoleSelection: true)
   const [availableRoles, setAvailableRoles] = useState<AvailableRole[]>([])
@@ -96,6 +102,35 @@ export function LoginExperience({
     // set the page title.
     if (branding?.name) document.title = `Sign in · ${branding.name}`
   }, [branding])
+
+  // Load this company's enabled OAuth providers to render dynamic sign-in buttons.
+  useEffect(() => {
+    const slug = branding?.slug
+    if (!slug) {
+      setSsoProviders([])
+      return
+    }
+    let active = true
+    oauthProviderApi
+      .listPublic(slug)
+      .then((list) => {
+        if (active) setSsoProviders(list)
+      })
+      .catch(() => {
+        if (active) setSsoProviders([])
+      })
+    return () => {
+      active = false
+    }
+  }, [branding?.slug])
+
+  const startOAuth = (provider: string) => {
+    const slug = branding?.slug
+    // Phase 2: gpr-auth implements this authorize endpoint to begin the OAuth redirect.
+    window.location.href = `/api/auth/oauth/${provider}/authorize${
+      slug ? `?company=${encodeURIComponent(slug)}` : ""
+    }`
+  }
 
   function handleLogin() {
     if (!email || !password) return
@@ -345,6 +380,27 @@ export function LoginExperience({
                 <span className="text-[11px] text-muted-foreground">or</span>
                 <div className="h-px flex-1 bg-border" />
               </div>
+
+              {/* Dynamic SSO buttons — one per enabled OAuth provider for this company */}
+              {ssoProviders.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {ssoProviders.map((p) => (
+                    <button
+                      key={p.provider}
+                      type="button"
+                      onClick={() => startOAuth(p.provider)}
+                      className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-background text-[13px] font-medium text-foreground transition-colors hover:bg-muted"
+                    >
+                      <ProviderIcon
+                        provider={p.provider}
+                        displayName={p.displayName}
+                        iconUrl={p.iconUrl}
+                      />
+                      Continue with {p.displayName}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Quick Time In button */}
               <button

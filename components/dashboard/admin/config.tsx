@@ -27,6 +27,7 @@ import {
   HelpSquareIcon,
   AiBrain01Icon,
   Mail01Icon,
+  ShieldUserIcon,
 } from "@hugeicons/core-free-icons"
 import { MyCompanySection } from "@/components/dashboard/my-company"
 import { SchedulePoliciesSection } from "@/components/dashboard/admin/schedule-policies"
@@ -35,6 +36,7 @@ import { PayrollSetupSection } from "@/components/dashboard/admin/payroll-setup"
 import { DepartmentsSection } from "@/components/dashboard/admin/departments"
 import { QuestionBankSection } from "@/components/dashboard/admin/question-bank"
 import { AiProviderConfigSection } from "@/components/dashboard/admin/ai-provider-config"
+import { OAuthProvidersSection } from "@/components/dashboard/admin/oauth-providers-config"
 import { EmailConfigPanel } from "@/components/dashboard/settings/email-config-panel"
 import { useAuthStore } from "@/store/auth-store"
 import {
@@ -208,6 +210,16 @@ export function ConfigSection() {
       title: "Communications",
       items: [{ value: "email", label: "Email templates", icon: Mail01Icon }],
     },
+    {
+      title: "Authentication",
+      items: [
+        isAdmin && {
+          value: "oauth",
+          label: "OAuth providers",
+          icon: ShieldUserIcon,
+        },
+      ].filter(Boolean) as ConfigNavItem[],
+    },
   ].filter((g) => g.items.length > 0)
 
   return (
@@ -307,6 +319,8 @@ export function ConfigSection() {
         )}
 
         {isAdmin && activeTab === "ai-provider" && <AiProviderConfigSection />}
+
+        {isAdmin && activeTab === "oauth" && <OAuthProvidersSection />}
 
         {activeTab === "email" && <EmailConfigPanel />}
       </div>
