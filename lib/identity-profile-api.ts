@@ -92,6 +92,12 @@ export interface UpdateInfoPayload {
   profilePhoto?: string | null
 }
 
+export interface LoginMethods {
+  email: string
+  hasPassword: boolean
+  providers: string[] // connected OAuth provider keys, e.g. ["google"]
+}
+
 export interface UpdateCredentialsPayload {
   email?: string
   username?: string
@@ -108,6 +114,22 @@ export const identityProfileApi = {
     api
       .put<IdentitySummary>("/auth/me/credentials", payload)
       .then((r) => r.data),
+
+  /** Permanently delete the signed-in identity. `confirm` must equal the account email/username. */
+  deleteAccount: (confirm: string) =>
+    api.delete("/auth/me", { data: { confirm } }).then((r) => r.data),
+
+  /** The signed-in identity's login methods (password + linked OAuth providers). */
+  loginMethods: () =>
+    api.get<LoginMethods>("/auth/me/login-methods").then((r) => r.data),
+
+  /** Disconnect a linked OAuth provider. */
+  removeLoginMethod: (provider: string) =>
+    api.delete(`/auth/me/login-methods/${provider}`),
+
+  /** Set (first time) or change the password. Omit currentPassword when setting one initially. */
+  changePassword: (payload: { currentPassword?: string; newPassword: string }) =>
+    api.put("/auth/me/password", payload).then((r) => r.data),
 
   // Education
   listEducation: () =>

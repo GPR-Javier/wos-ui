@@ -106,6 +106,11 @@ export function MyCompanySection({
   const slugHref = useSlugHref()
   // The slug the app is themed under — must match SlugLayout's ["public-branding", slug] key.
   const brandingSlug = useSlug()
+  // Applicants/guests have no company — bounce them out of this page (and never fetch its data).
+  const isApplicant = useAuthStore((s) => s.dashboardRole) === "applicant"
+  useEffect(() => {
+    if (isApplicant) router.replace(slugHref("/dashboard"))
+  }, [isApplicant, router, slugHref])
   const searchParams = useSearchParams()
   // Active tab lives in the URL so it survives a refresh and is linkable.
   const tabParam = searchParams.get(tabParamKey)
@@ -123,11 +128,13 @@ export function MyCompanySection({
     queryKey: ["my-company", "companies"],
     queryFn: companyApi.list,
     retry: false,
+    enabled: !isApplicant,
   })
   const { data: profile } = useQuery({
     queryKey: ["company-profile"],
     queryFn: companyProfileApi.get,
     retry: false,
+    enabled: !isApplicant,
   })
   const company = companies?.[0]
   const slug = company?.slug ?? "your-company"
@@ -151,6 +158,7 @@ export function MyCompanySection({
     queryKey: ["company-branding"],
     queryFn: companyBrandingApi.getMine,
     retry: false,
+    enabled: !isApplicant,
   })
 
   // Seed the editor from the saved branding once (subsequent edits stay local until Save).
@@ -236,6 +244,9 @@ export function MyCompanySection({
     setForm(backup.current)
     setEditing(false)
   }
+
+  // Don't render the company UI for applicants — the redirect above is in flight.
+  if (isApplicant) return null
 
   return (
     <div className="space-y-6">

@@ -12,6 +12,7 @@ const BACKENDS: Record<string, string> = {
   payroll: process.env.PAYROLL_API_URL ?? "http://localhost:8082",
   analytics: process.env.ANALYTICS_API_URL ?? "http://localhost:8084",
   ai: process.env.AI_API_URL ?? "http://localhost:8085",
+  notification: process.env.NOTIFICATION_API_URL ?? "http://localhost:8086",
 }
 
 function resolveBackend(path: string[]): string {

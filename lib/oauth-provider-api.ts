@@ -53,6 +53,19 @@ export const oauthProviderApi = {
       .get<PublicOAuthProvider[]>(`/hr/companies/${slug}/oauth-providers`)
       .then((r) => r.data),
 
+  /** Confirm + link an OAuth sign-in to an existing account (unverified/untrusted path). */
+  confirmLink: (payload: {
+    token: string
+    identifier: string
+    password: string
+  }) =>
+    api
+      .post<{ requiresCompanySelection: boolean; companyId: number | null }>(
+        "/auth/oauth/link/confirm",
+        payload
+      )
+      .then((r) => r.data),
+
   create: (payload: OAuthProviderPayload) =>
     api
       .post<OAuthProvider>("/hr/admin/oauth-providers", payload)

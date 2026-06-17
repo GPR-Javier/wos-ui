@@ -18,6 +18,9 @@ export default function SlugLayout({
   const { data } = useQuery({
     queryKey: ["public-branding", slug],
     queryFn: () => companyBrandingApi.getBySlug(slug),
+    // "guest"/unknown slugs have no branding — skip the request (it would only 404) and use the
+    // default theme. Real company slugs still fetch normally.
+    enabled: !!slug && slug !== "guest",
     retry: false,
     staleTime: 60_000,
   })

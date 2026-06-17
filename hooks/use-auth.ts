@@ -70,6 +70,27 @@ export function useLogin() {
   })
 }
 
+// ── Complete OAuth sign-in ───────────────────────────────────────────────────
+// The gpr-auth callback already set the identity cookie; we still need to establish the
+// WorkOS session (mint the role token + resolve apiRole) exactly like password login does,
+// otherwise the UI has no role and defaults to "Employee".
+
+export function useCompleteOAuth() {
+  const qc = useQueryClient()
+  const { setFromAuth } = useAuthStore()
+
+  return useMutation({
+    mutationFn: async () => sessionApi.establish(),
+    onSuccess: (data) => {
+      if (data.requiresRoleSelection) return // caller renders the role picker
+      const res = data as AuthResponse
+      setFromAuth(res)
+      qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
+      redirectAfterAuth(res)
+    },
+  })
+}
+
 // ── Select company (when requiresCompanySelection: true) ─────────────────────────
 
 export function useSelectCompany() {

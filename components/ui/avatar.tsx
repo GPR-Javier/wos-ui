@@ -32,6 +32,9 @@ function AvatarImage({
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
+      // Google (lh3.googleusercontent.com) and some CDNs 403 avatar requests that carry a
+      // referrer, which would silently drop to the initials fallback. Override per-use if needed.
+      referrerPolicy="no-referrer"
       className={cn(
         "aspect-square size-full rounded-full object-cover",
         className

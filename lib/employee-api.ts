@@ -132,8 +132,12 @@ export const employeeApi = {
 
   stats: () => api.get<EmployeeStats>("/hr/employee/stats").then((r) => r.data),
 
+  // A missing employee profile is expected for applicants/guests (no WorkOS employment record),
+  // so it degrades gracefully instead of surfacing the global error toast.
   profile: () =>
-    api.get<EmployeeProfile>("/hr/employee/profile").then((r) => r.data),
+    api
+      .get<EmployeeProfile>("/hr/employee/profile", { skipErrorToast: true })
+      .then((r) => r.data),
 
   leaveBalances: () =>
     api.get<LeaveBalance[]>("/hr/employee/leave-balances").then((r) => r.data),

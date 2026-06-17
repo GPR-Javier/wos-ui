@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { NotificationBell } from "@/components/custom/notification-bell"
 import { Badge } from "@/components/ui/badge"
 import { sectionTitles } from "@/lib/nav-config"
 import { cn } from "@/lib/utils"
@@ -47,8 +48,10 @@ export function Topbar() {
   const logoutMutation = useLogout()
   const switchRoleMutation = useSwitchRole()
   const pushToast = useToastStore((s) => s.push)
-  const { user, userRoleNames, availableRoles, activeUserRoleId } =
+  const { user, userRoleNames, availableRoles, activeUserRoleId, dashboardRole } =
     useAuthStore()
+  // Applicants/guests aren't tied to a company — the "My Company" entry doesn't apply to them.
+  const isApplicant = dashboardRole === "applicant"
   const { data: me } = useIdentityMe()
   const avatarSrc = me?.profilePhoto ?? user?.profilePhoto ?? undefined
 
@@ -92,20 +95,25 @@ export function Topbar() {
         {title}
       </span>
 
-      {/* My Company */}
-      <Link
-        href={slugHref("/dashboard/my-company")}
-        title="My Company"
-        aria-label="My Company"
-        className={cn(
-          "flex size-8 items-center justify-center rounded-lg transition-colors hover:bg-muted hover:text-foreground",
-          section === "my-company"
-            ? "bg-muted text-foreground"
-            : "text-muted-foreground"
-        )}
-      >
-        <HugeiconsIcon icon={Building04Icon} size={15} strokeWidth={1.8} />
-      </Link>
+      {/* My Company — hidden for applicants/guests (no company affiliation) */}
+      {!isApplicant && (
+        <Link
+          href={slugHref("/dashboard/my-company")}
+          title="My Company"
+          aria-label="My Company"
+          className={cn(
+            "flex size-8 items-center justify-center rounded-lg transition-colors hover:bg-muted hover:text-foreground",
+            section === "my-company"
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground"
+          )}
+        >
+          <HugeiconsIcon icon={Building04Icon} size={15} strokeWidth={1.8} />
+        </Link>
+      )}
+
+      {/* Notifications (realtime SSE bell) — hidden for applicants/guests via the hook */}
+      <NotificationBell />
 
       {/* Dark mode toggle */}
       <button

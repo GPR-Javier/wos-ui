@@ -67,10 +67,15 @@ export function useEmployeeStats() {
   })
 }
 
-export function useEmployeeProfile() {
+// `enabled` lets callers skip the request entirely for principals with no employment context
+// (applicants/guests), so no 404 is ever issued.
+export function useEmployeeProfile(enabled = true) {
   return useQuery({
     queryKey: ["employee", "profile"],
     queryFn: employeeApi.profile,
+    enabled,
+    // Applicants/guests have no employment record — a 404 is a valid "no profile", not a fault.
+    retry: false,
   })
 }
 
@@ -81,16 +86,18 @@ export function useLeaveBalances() {
   })
 }
 
-export function useEmployeeEvaluations() {
+export function useEmployeeEvaluations(enabled = true) {
   return useQuery({
     queryKey: ["employee", "evaluations"],
     queryFn: employeeApi.evaluations,
+    enabled,
   })
 }
 
-export function useEmployeeDocuments() {
+export function useEmployeeDocuments(enabled = true) {
   return useQuery({
     queryKey: ["employee", "documents"],
     queryFn: employeeApi.documents,
+    enabled,
   })
 }

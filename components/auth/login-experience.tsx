@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { useToastStore } from "@/store/toast-store"
 import { Logo } from "@/components/custom/logo"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -126,11 +128,27 @@ export function LoginExperience({
 
   const startOAuth = (provider: string) => {
     const slug = branding?.slug
-    // Phase 2: gpr-auth implements this authorize endpoint to begin the OAuth redirect.
+    // Begins the OAuth redirect; gpr-auth handles authorize → provider → callback.
     window.location.href = `/api/auth/oauth/${provider}/authorize${
       slug ? `?company=${encodeURIComponent(slug)}` : ""
     }`
   }
+
+  // Surface OAuth callback failures (?error=…) redirected back to the login page.
+  const searchParams = useSearchParams()
+  const pushToast = useToastStore((s) => s.push)
+  useEffect(() => {
+    const err = searchParams.get("error")
+    if (!err) return
+    const messages: Record<string, string> = {
+      exchange_failed: "Couldn't complete sign-in with the provider.",
+      invalid_state: "Your sign-in attempt expired — please try again.",
+      unknown_company: "Unknown company for this sign-in.",
+      access_denied: "Sign-in was cancelled.",
+      no_code: "Sign-in didn't complete.",
+    }
+    pushToast(messages[err] ?? "Sign-in failed. Please try again.", "error")
+  }, [searchParams, pushToast])
 
   function handleLogin() {
     if (!email || !password) return

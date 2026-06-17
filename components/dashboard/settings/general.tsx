@@ -226,11 +226,16 @@ export function GeneralSection() {
 
   const { user } = useAuthStore()
   // Employment info (company-level, wos-hr) — Phase 1B; may be empty until built.
-  const profileQ = useEmployeeProfile()
+  // Applicants/guests have no WorkOS employment record. Don't even fetch the company-level
+  // endpoints for them (avoids a guaranteed 404) and hide the employment UI — keep only the
+  // identity-level sections (account, personal, education, work, certs).
+  const isApplicant = useAuthStore((s) => s.dashboardRole) === "applicant"
+  const profileQ = useEmployeeProfile(!isApplicant)
   const profile = profileQ.data
+  const hasEmployment = !isApplicant && !profileQ.isError
   // Company-level lists (wos-hr) — backend returns empty for now (Phase 2).
-  const { data: evaluations = [] } = useEmployeeEvaluations()
-  const { data: documents = [] } = useEmployeeDocuments()
+  const { data: evaluations = [] } = useEmployeeEvaluations(!isApplicant)
+  const { data: documents = [] } = useEmployeeDocuments(!isApplicant)
 
   // Identity-level account + canonical info (gpr-auth /auth/me).
   const { data: me } = useIdentityMe()
@@ -819,19 +824,21 @@ export function GeneralSection() {
 
         <Separator />
 
-        {/* ── Employment record ── */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="text-[13px] font-semibold">Employment record</h4>
-            <p className="text-[12px] text-muted-foreground">
-              Managed by HR · contact your manager to request changes
-            </p>
-          </div>
-          <StatusBadge variant="green">Active</StatusBadge>
-        </div>
+        {/* ── Employment record (company-level; only for actual employees) ── */}
+        {hasEmployment && (
+          <>
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-[13px] font-semibold">Employment record</h4>
+                <p className="text-[12px] text-muted-foreground">
+                  Managed by HR · contact your manager to request changes
+                </p>
+              </div>
+              <StatusBadge variant="green">Active</StatusBadge>
+            </div>
 
-        {/* Employment stage pipeline — read-only (admin-managed) */}
-        <div className="rounded-xl border border-border bg-card p-5">
+            {/* Employment stage pipeline — read-only (admin-managed) */}
+            <div className="rounded-xl border border-border bg-card p-5">
           <p className="mb-4 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
             Employment status
           </p>
@@ -907,9 +914,11 @@ export function GeneralSection() {
               })}
             </div>
           )}
-        </div>
+            </div>
+          </>
+        )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className={cn("grid gap-4", hasEmployment ? "grid-cols-2" : "grid-cols-1")}>
           {/* Personal information — employee-editable (toggle) */}
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="mb-3 flex items-center justify-between">
@@ -990,6 +999,7 @@ export function GeneralSection() {
           </div>
 
           {/* Employment information — admin-managed, read-only (no edit button) */}
+          {hasEmployment && (
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="mb-3 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
               Employment information
@@ -1008,6 +1018,7 @@ export function GeneralSection() {
               ))}
             </div>
           </div>
+          )}
         </div>
 
         {/* Education background */}
@@ -1429,7 +1440,9 @@ export function GeneralSection() {
           )}
         </div>
 
-        {/* Evaluations */}
+        {/* Evaluations & documents — company-level, only for actual employees */}
+        {hasEmployment && (
+          <>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="mb-3 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
             Evaluations
@@ -1511,6 +1524,8 @@ export function GeneralSection() {
             </div>
           )}
         </div>
+          </>
+        )}
       </div>
     </>
   )
