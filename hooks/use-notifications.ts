@@ -1,11 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   notificationApi,
   NOTIFICATION_STREAM_URL,
@@ -61,26 +57,57 @@ function playChime() {
  *
  * Gated to signed-in, company-affiliated users — applicants/guests have no company-scoped inbox.
  */
-export function useNotifications() {
+/**
+ * Data-only: react-query reads + read-state mutations + per-section unread counts. Opens NO stream,
+ * so it's safe to call from multiple components (e.g. the sidebar). The single SSE stream is owned by
+ * {@link useNotifications}. Both share the same query cache, so they always see identical data.
+ */
+export function useNotificationData() {
   const qc = useQueryClient()
-  const pushToast = useToastStore((s) => s.push)
   const user = useAuthStore((s) => s.user)
-  const dashboardRole = useAuthStore((s) => s.dashboardRole)
-  const enabled = !!user && dashboardRole !== "applicant"
+  // Any signed-in identity has a personal inbox — including applicants (review-outcome pings).
+  // Notifications are addressed by userId, not company, so company-less applicants work too.
+  const enabled = !!user
+
+  // SSE pushes instant updates, but it can miss (tab unfocused, flaky stream, token refresh). The
+  // app's global defaults disable focus-refetch and keep data fresh for 5 min, which would leave the
+  // bell/sidebar stale — so these notification queries opt back into short polling + focus refetch.
+  const liveOptions = {
+    enabled,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 0,
+  } as const
 
   const unreadQuery = useQuery({
     queryKey: UNREAD_KEY,
     queryFn: notificationApi.unreadCount,
-    enabled,
-    refetchInterval: 60_000, // fallback if the SSE stream is down
-    refetchOnWindowFocus: true,
+    ...liveOptions,
   })
 
   const listQuery = useQuery({
     queryKey: LIST_KEY,
     queryFn: () => notificationApi.list({ size: 15 }),
-    enabled,
+    ...liveOptions,
   })
+
+  // Unread notifications (a wider page) used to badge sidebar nav items by their target section.
+  const unreadListQuery = useQuery({
+    queryKey: ["notifications", "unread-list"],
+    queryFn: () => notificationApi.list({ unread: true, size: 50 }),
+    ...liveOptions,
+  })
+
+  // Count unread per top-level dashboard section, derived from each notification's linkUrl
+  // ("/dashboard/<section>/..." → "<section>"). Drives the sidebar ping badges.
+  const unreadBySection: Record<string, number> = {}
+  for (const n of unreadListQuery.data?.content ?? []) {
+    const seg = n.linkUrl?.split("/").filter(Boolean) // ["dashboard","applicants",...]
+    if (seg && seg[0] === "dashboard" && seg[1]) {
+      unreadBySection[seg[1]] = (unreadBySection[seg[1]] ?? 0) + 1
+    }
+  }
 
   const markRead = useMutation({
     mutationFn: (id: number) => notificationApi.markRead(id),
@@ -92,10 +119,33 @@ export function useNotifications() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   })
 
+  return {
+    unreadCount: unreadQuery.data ?? 0,
+    notifications: listQuery.data?.content ?? [],
+    unreadBySection,
+    isLoading: listQuery.isLoading,
+    markRead,
+    markAllRead,
+    enabled,
+  }
+}
+
+/**
+ * Full hook for the ONE component that owns the realtime channel (the topbar bell): everything from
+ * {@link useNotificationData} plus the SSE stream, arrival chime, and toast. Call this exactly once.
+ */
+export function useNotifications() {
+  const qc = useQueryClient()
+  const pushToast = useToastStore((s) => s.push)
+  const data = useNotificationData()
+  const { enabled } = data
+
   // Realtime stream. EventSource sends the auth cookie on same-origin requests and auto-reconnects.
   useEffect(() => {
     if (!enabled || typeof window === "undefined") return
-    const es = new EventSource(NOTIFICATION_STREAM_URL, { withCredentials: true })
+    const es = new EventSource(NOTIFICATION_STREAM_URL, {
+      withCredentials: true,
+    })
 
     es.addEventListener("notification", (e) => {
       qc.invalidateQueries({ queryKey: ["notifications"] })
@@ -112,12 +162,5 @@ export function useNotifications() {
     return () => es.close()
   }, [enabled, qc, pushToast])
 
-  return {
-    unreadCount: unreadQuery.data ?? 0,
-    notifications: listQuery.data?.content ?? [],
-    isLoading: listQuery.isLoading,
-    markRead,
-    markAllRead,
-    enabled,
-  }
+  return data
 }

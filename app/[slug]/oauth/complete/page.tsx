@@ -30,7 +30,9 @@ export default function OAuthCompletePage() {
   if (complete.isError) {
     return (
       <Centered>
-        <p className="text-[14px] font-medium">Sign-in couldn&apos;t be completed.</p>
+        <p className="text-[14px] font-medium">
+          Sign-in couldn&apos;t be completed.
+        </p>
         <Link
           href={`/${slug}/login`}
           className="mt-3 text-[13px] text-primary hover:underline"

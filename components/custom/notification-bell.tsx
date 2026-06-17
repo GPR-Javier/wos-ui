@@ -40,8 +40,14 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const slugHref = useSlugHref()
-  const { unreadCount, notifications, isLoading, markRead, markAllRead, enabled } =
-    useNotifications()
+  const {
+    unreadCount,
+    notifications,
+    isLoading,
+    markRead,
+    markAllRead,
+    enabled,
+  } = useNotifications()
 
   if (!enabled) return null
 
@@ -58,7 +64,11 @@ export function NotificationBell() {
           aria-label={`Notifications${unreadCount ? ` (${unreadCount} unread)` : ""}`}
           className="relative flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <HugeiconsIcon icon={Notification01Icon} size={16} strokeWidth={1.8} />
+          <HugeiconsIcon
+            icon={Notification01Icon}
+            size={16}
+            strokeWidth={1.8}
+          />
           {unreadCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
               {unreadCount > 9 ? "9+" : unreadCount}
@@ -110,14 +120,18 @@ export function NotificationBell() {
                 <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                   <HugeiconsIcon
                     icon={
-                      CALENDAR_TYPES.includes(n.type) ? Calendar03Icon : Notification01Icon
+                      CALENDAR_TYPES.includes(n.type)
+                        ? Calendar03Icon
+                        : Notification01Icon
                     }
                     size={14}
                     strokeWidth={1.8}
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[12.5px] font-medium">{n.title}</p>
+                  <p className="truncate text-[12.5px] font-medium">
+                    {n.title}
+                  </p>
                   {n.body && (
                     <p className="line-clamp-2 text-[11.5px] text-muted-foreground">
                       {n.body}

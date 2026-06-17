@@ -48,8 +48,13 @@ export function Topbar() {
   const logoutMutation = useLogout()
   const switchRoleMutation = useSwitchRole()
   const pushToast = useToastStore((s) => s.push)
-  const { user, userRoleNames, availableRoles, activeUserRoleId, dashboardRole } =
-    useAuthStore()
+  const {
+    user,
+    userRoleNames,
+    availableRoles,
+    activeUserRoleId,
+    dashboardRole,
+  } = useAuthStore()
   // Applicants/guests aren't tied to a company — the "My Company" entry doesn't apply to them.
   const isApplicant = dashboardRole === "applicant"
   const { data: me } = useIdentityMe()

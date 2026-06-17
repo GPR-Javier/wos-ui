@@ -128,8 +128,10 @@ export const identityProfileApi = {
     api.delete(`/auth/me/login-methods/${provider}`),
 
   /** Set (first time) or change the password. Omit currentPassword when setting one initially. */
-  changePassword: (payload: { currentPassword?: string; newPassword: string }) =>
-    api.put("/auth/me/password", payload).then((r) => r.data),
+  changePassword: (payload: {
+    currentPassword?: string
+    newPassword: string
+  }) => api.put("/auth/me/password", payload).then((r) => r.data),
 
   // Education
   listEducation: () =>

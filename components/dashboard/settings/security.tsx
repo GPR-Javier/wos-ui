@@ -71,17 +71,35 @@ function PasswordInput({
         tabIndex={-1}
         aria-label={show ? "Hide password" : "Show password"}
         onClick={() => setShow((s) => !s)}
-        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
       >
         {show ? (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
             <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
             <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
             <line x1="2" y1="2" x2="22" y2="22" />
           </svg>
         ) : (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
             <circle cx="12" cy="12" r="3" />
           </svg>
@@ -204,8 +222,7 @@ export function SecuritySection() {
   })
   const connectedProviders = lm?.providers ?? []
   // The user must always retain at least one way to sign in.
-  const totalMethods =
-    (lm?.hasPassword ? 1 : 0) + connectedProviders.length
+  const totalMethods = (lm?.hasPassword ? 1 : 0) + connectedProviders.length
   const onlyOneMethod = totalMethods <= 1
 
   // Connectable providers come from this company's enabled OAuth config (admin → Authentication).
@@ -257,7 +274,9 @@ export function SecuritySection() {
   const [setPwOpen, setSetPwOpen] = useState(false)
   const hasPassword = !!lm?.hasPassword
   const pwdValid =
-    newPwd.length >= 8 && newPwd === confirmPwd && (!hasPassword || curPwd.length > 0)
+    newPwd.length >= 8 &&
+    newPwd === confirmPwd &&
+    (!hasPassword || curPwd.length > 0)
 
   const changePwd = useMutation({
     mutationFn: () =>
@@ -518,10 +537,15 @@ export function SecuritySection() {
       </Dialog>
 
       {/* Delete-account confirmation (retype email, GitHub-style) */}
-      <Dialog open={deleteOpen} onOpenChange={(o) => !o && setDeleteOpen(false)}>
+      <Dialog
+        open={deleteOpen}
+        onOpenChange={(o) => !o && setDeleteOpen(false)}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-destructive">Delete account</DialogTitle>
+            <DialogTitle className="text-destructive">
+              Delete account
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-[13px] text-muted-foreground">

@@ -60,10 +60,10 @@ export const oauthProviderApi = {
     password: string
   }) =>
     api
-      .post<{ requiresCompanySelection: boolean; companyId: number | null }>(
-        "/auth/oauth/link/confirm",
-        payload
-      )
+      .post<{
+        requiresCompanySelection: boolean
+        companyId: number | null
+      }>("/auth/oauth/link/confirm", payload)
       .then((r) => r.data),
 
   create: (payload: OAuthProviderPayload) =>

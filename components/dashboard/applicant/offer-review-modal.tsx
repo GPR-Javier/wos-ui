@@ -14,7 +14,8 @@ import {
   useAcceptOffer,
   useDeclineOffer,
 } from "@/hooks/use-applications"
-import { useLogout } from "@/hooks/use-auth"
+import { useSelectCompany } from "@/hooks/use-auth"
+import { companyApi } from "@/lib/auth-api"
 import {
   EMPLOYMENT_TYPE_LABELS,
   activeLeaveTypes,
@@ -122,11 +123,30 @@ export function OfferReviewModal({
   const { data: offer, isLoading } = useMyOffer(applicationId)
   const acceptMut = useAcceptOffer()
   const declineMut = useDeclineOffer()
-  const logout = useLogout()
+  const selectCompany = useSelectCompany()
 
   const [signature, setSignature] = useState<string | null>(null)
   const [accepted, setAccepted] = useState(false)
+  const [entering, setEntering] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // After accepting, transition into the company as the new employee — same mechanism as switching
+  // company/role (re-mint the token + establish the session + redirect), NOT a logout. The hire just
+  // registered the company membership, so it now appears in the user's company list.
+  async function enterWorkspace() {
+    setEntering(true)
+    try {
+      const companies = await companyApi.list()
+      const target = companies[0] // a freshly-hired applicant gains exactly this one company
+      if (!target) {
+        window.location.href = "/guest/login" // membership not ready — fall back to a clean login
+        return
+      }
+      selectCompany.mutate({ companyId: target.id, slug: target.slug })
+    } catch {
+      setEntering(false)
+    }
+  }
 
   function accept() {
     if (!signature) {
@@ -163,7 +183,8 @@ export function OfferReviewModal({
         {accepted ? (
           <CongratsRelogin
             roleName={offer?.roleName}
-            onRelogin={() => logout.mutate()}
+            busy={entering || selectCompany.isPending}
+            onEnter={enterWorkspace}
           />
         ) : (
           <>
@@ -369,21 +390,23 @@ function Row({ label, value }: { label: string; value?: string | null }) {
 
 function CongratsRelogin({
   roleName,
-  onRelogin,
+  busy,
+  onEnter,
 }: {
   roleName?: string | null
-  onRelogin: () => void
+  busy: boolean
+  onEnter: () => void
 }) {
-  const [seconds, setSeconds] = useState(30)
+  const [seconds, setSeconds] = useState(5)
 
   useEffect(() => {
     if (seconds <= 0) {
-      onRelogin()
+      onEnter()
       return
     }
     const t = setTimeout(() => setSeconds((s) => s - 1), 1000)
     return () => clearTimeout(t)
-  }, [seconds, onRelogin])
+  }, [seconds, onEnter])
 
   return (
     <div className="flex flex-col items-center px-8 py-12 text-center">
@@ -398,12 +421,15 @@ function CongratsRelogin({
       <h2 className="mt-4 text-[18px] font-semibold">Congratulations! 🎉</h2>
       <p className="mt-1 max-w-sm text-[13px] text-muted-foreground">
         You&apos;ve accepted your offer and are now part of the team
-        {roleName ? ` as ${roleName}` : ""}. You&apos;ll be re-logged in to
-        activate your new access in{" "}
-        <span className="font-semibold text-foreground">{seconds}s</span>.
+        {roleName ? ` as ${roleName}` : ""}. Taking you to your workspace
+        {busy ? "" : ` in `}
+        {!busy && (
+          <span className="font-semibold text-foreground">{seconds}s</span>
+        )}
+        …
       </p>
-      <Button size="sm" className="mt-6" onClick={onRelogin}>
-        Re-login now
+      <Button size="sm" className="mt-6" disabled={busy} onClick={onEnter}>
+        {busy ? "Entering…" : "Enter your workspace"}
       </Button>
     </div>
   )

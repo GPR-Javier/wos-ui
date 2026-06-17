@@ -839,86 +839,91 @@ export function GeneralSection() {
 
             {/* Employment stage pipeline — read-only (admin-managed) */}
             <div className="rounded-xl border border-border bg-card p-5">
-          <p className="mb-4 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
-            Employment status
-          </p>
-          {terminal ? (
-            <div
-              className={cn(
-                "rounded-lg border px-4 py-3 text-[13px] font-medium",
-                terminal.className
-              )}
-            >
-              This employee is marked as <strong>{terminal.label}</strong>.
-            </div>
-          ) : (
-            <div className="flex items-center">
-              {EMPLOYMENT_STAGES.map((s, i) => {
-                const isPast = i < stageIdx
-                const isCurrent = i === stageIdx
-                const isLast = i === EMPLOYMENT_STAGES.length - 1
-                return (
-                  <div
-                    key={s.key}
-                    className={cn("flex items-center", !isLast && "flex-1")}
-                  >
-                    <div className="flex flex-col items-center gap-1.5">
+              <p className="mb-4 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+                Employment status
+              </p>
+              {terminal ? (
+                <div
+                  className={cn(
+                    "rounded-lg border px-4 py-3 text-[13px] font-medium",
+                    terminal.className
+                  )}
+                >
+                  This employee is marked as <strong>{terminal.label}</strong>.
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  {EMPLOYMENT_STAGES.map((s, i) => {
+                    const isPast = i < stageIdx
+                    const isCurrent = i === stageIdx
+                    const isLast = i === EMPLOYMENT_STAGES.length - 1
+                    return (
                       <div
-                        className={cn(
-                          "flex size-8 items-center justify-center rounded-full border-2 text-[11px] font-bold transition-all",
-                          isCurrent
-                            ? "border-primary bg-primary/10 text-primary"
-                            : isPast
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "border-border bg-background text-muted-foreground"
-                        )}
+                        key={s.key}
+                        className={cn("flex items-center", !isLast && "flex-1")}
                       >
-                        {isPast ? (
-                          <svg viewBox="0 0 10 10" className="size-3">
-                            <path
-                              d="M1.5 5l2.5 2.5 4.5-4.5"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              fill="none"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        ) : (
-                          i + 1
+                        <div className="flex flex-col items-center gap-1.5">
+                          <div
+                            className={cn(
+                              "flex size-8 items-center justify-center rounded-full border-2 text-[11px] font-bold transition-all",
+                              isCurrent
+                                ? "border-primary bg-primary/10 text-primary"
+                                : isPast
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-border bg-background text-muted-foreground"
+                            )}
+                          >
+                            {isPast ? (
+                              <svg viewBox="0 0 10 10" className="size-3">
+                                <path
+                                  d="M1.5 5l2.5 2.5 4.5-4.5"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  fill="none"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            ) : (
+                              i + 1
+                            )}
+                          </div>
+                          <span
+                            className={cn(
+                              "text-[11px] font-medium",
+                              isCurrent
+                                ? "text-foreground"
+                                : isPast
+                                  ? "text-primary"
+                                  : "text-muted-foreground"
+                            )}
+                          >
+                            {s.label}
+                          </span>
+                        </div>
+                        {!isLast && (
+                          <div
+                            className={cn(
+                              "mx-2 mb-5 h-0.5 flex-1",
+                              i < stageIdx ? "bg-primary" : "bg-border"
+                            )}
+                          />
                         )}
                       </div>
-                      <span
-                        className={cn(
-                          "text-[11px] font-medium",
-                          isCurrent
-                            ? "text-foreground"
-                            : isPast
-                              ? "text-primary"
-                              : "text-muted-foreground"
-                        )}
-                      >
-                        {s.label}
-                      </span>
-                    </div>
-                    {!isLast && (
-                      <div
-                        className={cn(
-                          "mx-2 mb-5 h-0.5 flex-1",
-                          i < stageIdx ? "bg-primary" : "bg-border"
-                        )}
-                      />
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </>
         )}
 
-        <div className={cn("grid gap-4", hasEmployment ? "grid-cols-2" : "grid-cols-1")}>
+        <div
+          className={cn(
+            "grid gap-4",
+            hasEmployment ? "grid-cols-2" : "grid-cols-1"
+          )}
+        >
           {/* Personal information — employee-editable (toggle) */}
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="mb-3 flex items-center justify-between">
@@ -1000,24 +1005,24 @@ export function GeneralSection() {
 
           {/* Employment information — admin-managed, read-only (no edit button) */}
           {hasEmployment && (
-          <div className="rounded-xl border border-border bg-card p-4">
-            <p className="mb-3 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
-              Employment information
-            </p>
-            <div className="space-y-2.5">
-              {EMPLOYMENT_FIELDS.map((f) => (
-                <div
-                  key={f.label}
-                  className="flex items-start justify-between gap-4 text-[13px]"
-                >
-                  <span className="shrink-0 text-muted-foreground">
-                    {f.label}
-                  </span>
-                  <span className="text-right font-medium">{f.value}</span>
-                </div>
-              ))}
+            <div className="rounded-xl border border-border bg-card p-4">
+              <p className="mb-3 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+                Employment information
+              </p>
+              <div className="space-y-2.5">
+                {EMPLOYMENT_FIELDS.map((f) => (
+                  <div
+                    key={f.label}
+                    className="flex items-start justify-between gap-4 text-[13px]"
+                  >
+                    <span className="shrink-0 text-muted-foreground">
+                      {f.label}
+                    </span>
+                    <span className="text-right font-medium">{f.value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
           )}
         </div>
 
@@ -1443,87 +1448,87 @@ export function GeneralSection() {
         {/* Evaluations & documents — company-level, only for actual employees */}
         {hasEmployment && (
           <>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="mb-3 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
-            Evaluations
-          </p>
-          {evaluations.length === 0 ? (
-            <p className="py-3 text-center text-[13px] text-muted-foreground">
-              No evaluations yet.
-            </p>
-          ) : (
-            <div className="space-y-2.5">
-              {evaluations.map((ev) => (
-                <div
-                  key={ev.period}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-medium">{ev.period}</p>
-                    <p className="text-[12px] text-muted-foreground">
-                      Reviewer: {ev.reviewer} · {ev.date}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2.5">
-                    {ev.rating != null && (
-                      <span className="text-[13px] font-semibold tabular-nums">
-                        {ev.rating.toFixed(1)}
-                        <span className="font-normal text-muted-foreground">
-                          /5
-                        </span>
-                      </span>
-                    )}
-                    <StatusBadge variant={ev.completed ? "green" : "amber"}>
-                      {ev.completed ? "Completed" : "Upcoming"}
-                    </StatusBadge>
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      onClick={() => viewEval(ev)}
+            <div className="rounded-xl border border-border bg-card p-4">
+              <p className="mb-3 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+                Evaluations
+              </p>
+              {evaluations.length === 0 ? (
+                <p className="py-3 text-center text-[13px] text-muted-foreground">
+                  No evaluations yet.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {evaluations.map((ev) => (
+                    <div
+                      key={ev.period}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3"
                     >
-                      <HugeiconsIcon icon={EyeIcon} strokeWidth={2} />
-                      View
-                    </Button>
-                  </div>
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-medium">{ev.period}</p>
+                        <p className="text-[12px] text-muted-foreground">
+                          Reviewer: {ev.reviewer} · {ev.date}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2.5">
+                        {ev.rating != null && (
+                          <span className="text-[13px] font-semibold tabular-nums">
+                            {ev.rating.toFixed(1)}
+                            <span className="font-normal text-muted-foreground">
+                              /5
+                            </span>
+                          </span>
+                        )}
+                        <StatusBadge variant={ev.completed ? "green" : "amber"}>
+                          {ev.completed ? "Completed" : "Upcoming"}
+                        </StatusBadge>
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => viewEval(ev)}
+                        >
+                          <HugeiconsIcon icon={EyeIcon} strokeWidth={2} />
+                          View
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Documents */}
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="mb-3 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
-            Documents on file
-          </p>
-          {documents.length === 0 ? (
-            <p className="py-3 text-center text-[13px] text-muted-foreground">
-              No documents on file yet.
-            </p>
-          ) : (
-            <div className="grid grid-cols-2 gap-2.5">
-              {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="flex items-center gap-3 rounded-lg border border-border px-4 py-3"
-                >
-                  <span className="text-base">📄</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-medium">
-                      {doc.name}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {doc.uploadedAt}
-                    </p>
-                  </div>
-                  <button className="shrink-0 text-[12px] text-primary hover:underline">
-                    View
-                  </button>
+            {/* Documents */}
+            <div className="rounded-xl border border-border bg-card p-4">
+              <p className="mb-3 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+                Documents on file
+              </p>
+              {documents.length === 0 ? (
+                <p className="py-3 text-center text-[13px] text-muted-foreground">
+                  No documents on file yet.
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2.5">
+                  {documents.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center gap-3 rounded-lg border border-border px-4 py-3"
+                    >
+                      <span className="text-base">📄</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-medium">
+                          {doc.name}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {doc.uploadedAt}
+                        </p>
+                      </div>
+                      <button className="shrink-0 text-[12px] text-primary hover:underline">
+                        View
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
           </>
         )}
       </div>

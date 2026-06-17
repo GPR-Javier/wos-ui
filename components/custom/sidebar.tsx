@@ -50,6 +50,7 @@ import {
 import { useAuthStore } from "@/store/auth-store"
 import { useIdentityMe } from "@/hooks/use-identity-profile"
 import { useLogout, useMe } from "@/hooks/use-auth"
+import { useNotificationData } from "@/hooks/use-notifications"
 
 const roleVariant: Record<string, "blue" | "purple" | "amber" | "gray"> = {
   EMPLOYEE: "blue",
@@ -142,6 +143,10 @@ export function Sidebar() {
   const { user, apiRole, userRoleNames, authorities } = useAuthStore()
   const { data: me } = useIdentityMe()
   const avatarSrc = me?.profilePhoto ?? user?.profilePhoto ?? undefined
+
+  // Unread-notification ping counts per dashboard section (data-only — the bell owns the stream).
+  const { unreadBySection } = useNotificationData()
+  const sectionBadge = (s: string) => unreadBySection[s] ?? 0
 
   // Path shape is now /<slug>/dashboard/<section>/<sub>, so section/sub shift by +1.
   const segments = pathname.split("/")
@@ -236,16 +241,19 @@ export function Sidebar() {
           <NavIcon section={item.section} />
         </span>
         <span className="flex-1">{item.label}</span>
-        {item.badge != null && item.badge > 0 && (
-          <span
-            className={cn(
-              "flex min-w-4.5 items-center justify-center rounded-full px-1.5 py-px text-[10px] font-semibold",
-              active ? "bg-white/20 text-white" : "bg-red-500 text-white"
-            )}
-          >
-            {item.badge}
-          </span>
-        )}
+        {(() => {
+          const badge = sectionBadge(item.section) || (item.badge ?? 0)
+          return badge > 0 ? (
+            <span
+              className={cn(
+                "flex min-w-4.5 items-center justify-center rounded-full px-1.5 py-px text-[10px] font-semibold",
+                active ? "bg-white/20 text-white" : "bg-red-500 text-white"
+              )}
+            >
+              {badge > 99 ? "99+" : badge}
+            </span>
+          ) : null
+        })()}
       </Link>
     )
   }
@@ -285,6 +293,22 @@ export function Sidebar() {
             // Hide the parent group entirely when none of its children pass authority gating.
             if (visibleChildren.length === 0) return null
             const active = isActive(item.section)
+            // Roll children's unread pings up to the collapsed parent (hidden once expanded,
+            // where each child shows its own).
+            const parentBadge =
+              sectionBadge(item.section) +
+              visibleChildren.reduce((n, c) => n + sectionBadge(c.section), 0)
+            const ParentBadge = () =>
+              !isOpen && parentBadge > 0 ? (
+                <span
+                  className={cn(
+                    "mr-1 flex min-w-4.5 items-center justify-center rounded-full px-1.5 py-px text-[10px] font-semibold",
+                    active ? "bg-white/20 text-white" : "bg-red-500 text-white"
+                  )}
+                >
+                  {parentBadge > 99 ? "99+" : parentBadge}
+                </span>
+              ) : null
             return (
               <div key={item.section}>
                 {/* Parent row — noPage: whole row toggles; otherwise link navigates + chevron toggles */}
@@ -316,6 +340,7 @@ export function Sidebar() {
                         <NavIcon section={item.section} />
                       </span>
                       <span className="flex-1 text-left">{item.label}</span>
+                      <ParentBadge />
                       <HugeiconsIcon
                         icon={ArrowDown01Icon}
                         size={12}
@@ -349,6 +374,7 @@ export function Sidebar() {
                         </span>
                         <span className="flex-1">{item.label}</span>
                       </Link>
+                      <ParentBadge />
                       <button
                         onClick={() => toggleExpanded(item.section)}
                         className="flex h-full items-center px-2 py-2"
