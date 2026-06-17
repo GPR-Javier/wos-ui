@@ -48,6 +48,9 @@ export function useLogin() {
     mutationFn: async (payload: LoginPayload) => {
       // 1. Authenticate identity (gpr-auth sets the cookie + returns the user's companies).
       const company = await authApi.login(payload)
+      if (company.requiresReactivation) {
+        return { requiresReactivation: true as const } // caller shows recover-or-fresh modal
+      }
       if (company.requiresCompanySelection) {
         return { companySelect: company.companies } // caller shows the company picker
       }
@@ -60,10 +63,47 @@ export function useLogin() {
       return sessionApi.establish()
     },
     onSuccess: (data) => {
+      if ("requiresReactivation" in data) return // caller shows recover-or-fresh modal
       if ("companySelect" in data) return // caller handles company picker
       if (data.requiresRoleSelection) return // caller handles role picker
       const res = data as AuthResponse
       setFromAuth(res) // cookies set by server automatically
+      qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
+      redirectAfterAuth(res)
+    },
+  })
+}
+
+// ── Reactivate a soft-deleted account on re-login ─────────────────────────────
+// Mirrors useLogin: recover restores data, fresh wipes it; either way we establish + redirect.
+
+export function useReactivate() {
+  const qc = useQueryClient()
+  const { setFromAuth } = useAuthStore()
+
+  return useMutation({
+    mutationFn: async ({
+      payload,
+      mode,
+    }: {
+      payload: LoginPayload
+      mode: "recover" | "fresh"
+    }) => {
+      const company = await authApi.reactivate(payload, mode)
+      if (company.requiresCompanySelection) {
+        return { companySelect: company.companies }
+      }
+      const active =
+        company.companies.find((c) => c.id === company.companyId) ??
+        company.companies[0]
+      useAuthStore.getState().setCompanySlug(active?.slug ?? "guest")
+      return sessionApi.establish()
+    },
+    onSuccess: (data) => {
+      if ("companySelect" in data) return
+      if (data.requiresRoleSelection) return
+      const res = data as AuthResponse
+      setFromAuth(res)
       qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
       redirectAfterAuth(res)
     },

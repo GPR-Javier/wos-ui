@@ -84,6 +84,8 @@ export interface CompanyLoginResponse {
   requiresCompanySelection: boolean
   companies: CompanyInfo[]
   companyId: number | null
+  /** True when the matched account was soft-deleted — prompt recover-or-fresh, then call reactivate. */
+  requiresReactivation?: boolean
 }
 
 export const companyApi = {
@@ -103,6 +105,11 @@ export const authApi = {
     api.post<AuthResponse>("/auth/register", payload).then((r) => r.data),
   login: (payload: LoginPayload) =>
     api.post<CompanyLoginResponse>("/auth/login", payload).then((r) => r.data),
+  /** Recover a soft-deleted account on re-login. mode "recover" restores data; "fresh" wipes it. */
+  reactivate: (payload: LoginPayload, mode: "recover" | "fresh") =>
+    api
+      .post<CompanyLoginResponse>(`/auth/reactivate?mode=${mode}`, payload)
+      .then((r) => r.data),
   // Role selection/switch live in WorkOS (wos-hr) under Option A — these mint the role token.
   selectRole: (payload: SelectRolePayload) =>
     api

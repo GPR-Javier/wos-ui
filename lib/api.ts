@@ -36,6 +36,7 @@ const AUTH_ENDPOINTS = [
   "/auth/login",
   "/auth/login/select-role",
   "/auth/register",
+  "/auth/reactivate",
   "/auth/refresh",
   // Phase 3 (Option A): wos-hr session minting — a 401 here means "establish failed", not "expired".
   "/hr/auth/session",

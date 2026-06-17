@@ -22,7 +22,12 @@ import {
   Alert01Icon,
   User03Icon,
 } from "@hugeicons/core-free-icons"
-import { useLogin, useSelectRole, useSelectCompany } from "@/hooks/use-auth"
+import {
+  useLogin,
+  useSelectRole,
+  useSelectCompany,
+  useReactivate,
+} from "@/hooks/use-auth"
 import { useAuthStore } from "@/store/auth-store"
 import { useSlugHref } from "@/lib/slug"
 import type { AvailableRole, CompanyInfo } from "@/lib/auth-api"
@@ -76,7 +81,11 @@ export function LoginExperience({
   )
   const [showCompanyModal, setShowCompanyModal] = useState(false)
 
+  // Reactivation (when re-logging into a soft-deleted account)
+  const [showReactivateModal, setShowReactivateModal] = useState(false)
+
   const loginMutation = useLogin()
+  const reactivateMutation = useReactivate()
   const selectRoleMutation = useSelectRole()
   const selectCompanyMutation = useSelectCompany()
 
@@ -156,8 +165,12 @@ export function LoginExperience({
       { email, password },
       {
         onSuccess: (data) => {
+          if ("requiresReactivation" in data) {
+            setShowReactivateModal(true)
+            return
+          }
           if ("companySelect" in data) {
-            setAvailableCompanies(data.companySelect)
+            setAvailableCompanies(data.companySelect ?? [])
             setShowCompanyModal(true)
             return
           }
@@ -169,6 +182,12 @@ export function LoginExperience({
         },
       }
     )
+  }
+
+  // Soft-deleted account re-login: recover restores data, fresh wipes it. Both re-use the
+  // credentials already entered, then establish + redirect via useReactivate.
+  function handleReactivate(mode: "recover" | "fresh") {
+    reactivateMutation.mutate({ payload: { email, password }, mode })
   }
 
   function handleSelectCompany(company: CompanyInfo) {
@@ -491,6 +510,49 @@ export function LoginExperience({
               </button>
             ))}
           </div>
+        </Modal>
+      )}
+
+      {showReactivateModal && (
+        <Modal onClose={() => setShowReactivateModal(false)}>
+          <h2 className="text-[16px] font-semibold text-foreground">
+            Welcome back — this account was deleted
+          </h2>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            Your account is scheduled for deletion but the data is still here.
+            You can recover it, or wipe it and start fresh.
+          </p>
+          <div className="mt-5 flex flex-col gap-2.5">
+            <button
+              onClick={() => handleReactivate("recover")}
+              disabled={reactivateMutation.isPending}
+              className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-left transition-colors hover:bg-primary/10 disabled:opacity-60"
+            >
+              <span className="block text-[14px] font-semibold text-foreground">
+                Recover my account
+              </span>
+              <span className="block text-[12px] text-muted-foreground">
+                Restore everything as it was — profile, history, and access.
+              </span>
+            </button>
+            <button
+              onClick={() => handleReactivate("fresh")}
+              disabled={reactivateMutation.isPending}
+              className="rounded-xl border border-destructive/30 px-4 py-3 text-left transition-colors hover:bg-destructive/5 disabled:opacity-60"
+            >
+              <span className="block text-[14px] font-semibold text-destructive">
+                Erase data &amp; start fresh
+              </span>
+              <span className="block text-[12px] text-muted-foreground">
+                Permanently wipe your data and begin with a clean account.
+              </span>
+            </button>
+          </div>
+          {reactivateMutation.isPending && (
+            <p className="mt-3 text-center text-[12px] text-muted-foreground">
+              Signing you in…
+            </p>
+          )}
         </Modal>
       )}
 
