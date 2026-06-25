@@ -54,8 +54,8 @@ import { useNotificationData } from "@/hooks/use-notifications"
 
 const roleVariant: Record<string, "blue" | "purple" | "amber" | "gray"> = {
   EMPLOYEE: "blue",
-  HR: "purple",
   ADMIN: "amber",
+  APPLICANT: "gray",
 }
 
 const NAV_ICONS: Record<string, IconSvgElement> = {

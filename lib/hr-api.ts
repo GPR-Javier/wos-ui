@@ -106,6 +106,15 @@ export interface HrStats {
   otHoursToday: number // total OT hours across team today (decimal, e.g. 12.5)
 }
 
+/** One day in the workforce trend series (company-scoped). */
+export interface HrTrendPoint {
+  date: string // YYYY-MM-DD
+  day: string // "Mon", "Tue", ...
+  attendancePct: number
+  lateCount: number
+  otHours: number
+}
+
 export const hrApi = {
   employees: (params: { page?: number; size?: number; search?: string } = {}) =>
     api
@@ -167,4 +176,10 @@ export const hrApi = {
   deleteJob: (id: number) => api.delete(`/hr/jobs/${id}`),
 
   stats: () => api.get<HrStats>("/hr/stats").then((r) => r.data),
+
+  /** Company-wide attendance/late/OT series for the last `days` days (default 7). */
+  trends: (days = 7) =>
+    api
+      .get<HrTrendPoint[]>("/hr/stats/trends", { params: { days } })
+      .then((r) => r.data),
 }

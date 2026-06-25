@@ -93,6 +93,13 @@ export function useHrStats() {
   })
 }
 
+export function useHrTrends(days = 7) {
+  return useQuery({
+    queryKey: ["hr", "stats", "trends", days],
+    queryFn: () => hrApi.trends(days),
+  })
+}
+
 export function useHrEmployee(id: number) {
   return useQuery({
     queryKey: ["hr", "employees", id],

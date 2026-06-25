@@ -8,7 +8,7 @@ import type { Role } from "@/lib/types"
 
 export type OnboardingTier = "applicant" | "employee" | "admin"
 
-/** Maps the sidebar/dashboard role key to an onboarding tier. HR shares the employee flow. */
+/** Maps the sidebar/dashboard role key to an onboarding tier. Non-admin roles share the employee flow. */
 export function tierFromRole(role: Role): OnboardingTier {
   if (role === "applicant") return "applicant"
   if (role === "admin") return "admin"

@@ -309,8 +309,8 @@ export function resolveLandingPath(authorities: string[]): string {
 
 export const roleLabels: Record<string, string> = {
   EMPLOYEE: "Employee",
-  HR: "HR Manager",
   ADMIN: "Admin",
+  APPLICANT: "Applicant",
 }
 
 export const sectionTitles: Record<string, string> = {

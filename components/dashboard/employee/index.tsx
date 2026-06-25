@@ -24,6 +24,9 @@ import {
   useLeaveBalances,
 } from "@/hooks/use-employee"
 import { useMyPolicy } from "@/hooks/use-schedule-policy"
+import { useMyChangeRequests } from "@/hooks/use-schedule-change-request"
+import type { AttendanceEntry } from "@/lib/employee-api"
+import type { Weekday } from "@/lib/schedule-policy-api"
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -68,12 +71,60 @@ const LEAVE_COLOR: Record<string, string> = {
   "Special Leave": "bg-purple-500",
 }
 
-// 7-day personal analytics mock trends
-const MOCK_ATTENDANCE_RATE = [100, 100, 0, 100, 100, 100, 100]
-const MOCK_WORKED_HRS = [8, 8.5, 0, 7.5, 9, 8, 8.2]
-const MOCK_LATE_TREND = [0, 0, 0, 15, 0, 0, 0]
-const MOCK_OT_TREND = [0, 1, 0, 0, 2, 0, 0.5]
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+// Pull the leading numeric value out of a "8h" / "8.5h" / "1.2" style string.
+function parseHours(v: string | null | undefined): number {
+  if (!v) return 0
+  const n = parseFloat(v)
+  return Number.isFinite(n) ? n : 0
+}
+
+// Present-ish days count toward the attendance rate; absent/leave/etc. do not.
+const PRESENT_STATUSES = new Set(["present", "late", "overtime", "undertime"])
+
+// Derives the 7-day personal-analytics trends from the most recent attendance
+// records (the same `useAttendance({ size: 7 })` page). Returns oldest→newest so
+// the sparkline reads left-to-right in chronological order.
+function buildTrends(records: AttendanceEntry[]) {
+  const last7 = records.slice(0, 7).reverse()
+  return {
+    days: last7.map((r) => r.day?.slice(0, 3) || ""),
+    attendanceRate: last7.map((r) =>
+      PRESENT_STATUSES.has(r.status) ? 100 : 0
+    ),
+    workedHrs: last7.map((r) => parseHours(r.hoursWorked)),
+    lateTrend: last7.map((r) => r.lateMinutes ?? 0),
+    otTrend: last7.map((r) => parseHours(r.otHours)),
+  }
+}
+
+const WEEKDAY_LABEL: Record<Weekday, string> = {
+  MON: "Monday",
+  TUE: "Tuesday",
+  WED: "Wednesday",
+  THU: "Thursday",
+  FRI: "Friday",
+  SAT: "Saturday",
+  SUN: "Sunday",
+}
+const WEEKDAY_ORDER: Weekday[] = [
+  "MON",
+  "TUE",
+  "WED",
+  "THU",
+  "FRI",
+  "SAT",
+  "SUN",
+]
+// JS getDay() (0=Sun) → our Weekday code.
+const JS_DAY_TO_WEEKDAY: Weekday[] = [
+  "SUN",
+  "MON",
+  "TUE",
+  "WED",
+  "THU",
+  "FRI",
+  "SAT",
+]
 
 function Sparkline({
   data,
@@ -144,11 +195,38 @@ export function OverviewSection() {
   const balancesQ = useLeaveBalances()
   const policyQ = useMyPolicy()
 
+  // Pending self-service requests. Only schedule-change has a per-user backend today; leave is
+  // company-scoped (no /me) and overtime/change-time aren't implemented server-side yet, so they're
+  // omitted until those endpoints exist (add them here once they do).
+  const scheduleChangeQ = useMyChangeRequests({ size: 50 })
+
   const stats = statsQ.data
   const records = attendanceQ.data?.content ?? []
   const todayEntry = records[0]
   const balances = balancesQ.data ?? []
   const policy = policyQ.data
+
+  const trends = buildTrends(records)
+
+  // schedule-change has no status filter on its /me endpoint, so count from the page.
+  const scheduleChangePending = (scheduleChangeQ.data?.content ?? []).filter(
+    (r) => r.status === "PENDING"
+  ).length
+  const pendingTotal = scheduleChangePending
+  const pendingLoading = scheduleChangeQ.isLoading
+
+  // Rest days = weekdays not in the policy's workday set.
+  const workdays = policy?.workdays
+  const restDays =
+    workdays && workdays.length > 0
+      ? WEEKDAY_ORDER.filter((d) => !workdays.includes(d))
+      : []
+  const restDayLabel =
+    restDays.length > 0
+      ? restDays.map((d) => WEEKDAY_LABEL[d]).join(" & ")
+      : "—"
+  const tomorrowWeekday = JS_DAY_TO_WEEKDAY[(new Date().getDay() + 1) % 7]!
+  const tomorrowIsRest = restDays.includes(tomorrowWeekday)
 
   const firstName = user?.firstName ?? "there"
   const dateStr = new Date().toLocaleDateString("en-US", {
@@ -258,9 +336,15 @@ export function OverviewSection() {
         />
         <StatCard
           title="Pending Requests"
-          value="—"
-          meta="Across all types"
-          accent="red"
+          value={
+            pendingLoading ? (
+              <Skeleton className="h-6 w-8" />
+            ) : (
+              String(pendingTotal)
+            )
+          }
+          meta="Awaiting approval"
+          accent={pendingTotal > 0 ? "amber" : "green"}
           icon={
             <HugeiconsIcon icon={Calendar01Icon} size={15} strokeWidth={1.8} />
           }
@@ -333,22 +417,31 @@ export function OverviewSection() {
               },
               {
                 label: "Tomorrow's Shift",
-                value: policy
-                  ? `${policy.earliestClockIn} – ${policy.latestClockIn}`
-                  : "—",
-                sub: "Same schedule",
+                value: tomorrowIsRest
+                  ? "Rest Day"
+                  : policy
+                    ? `${policy.earliestClockIn} – ${policy.latestClockIn}`
+                    : "—",
+                sub: tomorrowIsRest
+                  ? WEEKDAY_LABEL[tomorrowWeekday]
+                  : "Same schedule",
                 dot: "bg-blue-500",
               },
               {
                 label: "Rest Day",
-                value: "Saturday & Sunday",
-                sub: "Fixed rest days",
+                value: restDayLabel,
+                sub: restDays.length > 0 ? "Non-working days" : "From schedule",
                 dot: "bg-gray-400",
               },
               {
                 label: "Pending Shift Changes",
-                value: "—",
-                sub: "No changes filed",
+                value: scheduleChangeQ.isLoading
+                  ? "…"
+                  : String(scheduleChangePending),
+                sub:
+                  scheduleChangePending > 0
+                    ? "Awaiting approval"
+                    : "No changes filed",
                 dot: "bg-amber-500",
               },
             ].map(({ label, value, sub, dot }) => (
@@ -460,10 +553,10 @@ export function OverviewSection() {
             <p className="mb-3 text-[11px] text-muted-foreground">
               Last 7 days
             </p>
-            <Sparkline data={MOCK_ATTENDANCE_RATE} color="bg-green-500" />
+            <Sparkline data={trends.attendanceRate} color="bg-green-500" />
             <div className="mt-1 flex justify-between">
-              {DAYS.map((d) => (
-                <span key={d} className="text-[9px] text-muted-foreground">
+              {trends.days.map((d, i) => (
+                <span key={i} className="text-[9px] text-muted-foreground">
                   {d}
                 </span>
               ))}
@@ -472,15 +565,15 @@ export function OverviewSection() {
 
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-[12px] font-semibold text-foreground">
-              Monthly Hours
+              Worked Hours
             </p>
             <p className="mb-3 text-[11px] text-muted-foreground">
               Hours worked
             </p>
-            <Sparkline data={MOCK_WORKED_HRS} color="bg-blue-500" />
+            <Sparkline data={trends.workedHrs} color="bg-blue-500" />
             <div className="mt-1 flex justify-between">
-              {DAYS.map((d) => (
-                <span key={d} className="text-[9px] text-muted-foreground">
+              {trends.days.map((d, i) => (
+                <span key={i} className="text-[9px] text-muted-foreground">
                   {d}
                 </span>
               ))}
@@ -502,10 +595,10 @@ export function OverviewSection() {
             <p className="mb-3 text-[11px] text-muted-foreground">
               Minutes late per day
             </p>
-            <Sparkline data={MOCK_LATE_TREND} color="bg-amber-500" />
+            <Sparkline data={trends.lateTrend} color="bg-amber-500" />
             <div className="mt-1 flex justify-between">
-              {DAYS.map((d) => (
-                <span key={d} className="text-[9px] text-muted-foreground">
+              {trends.days.map((d, i) => (
+                <span key={i} className="text-[9px] text-muted-foreground">
                   {d}
                 </span>
               ))}
@@ -525,10 +618,10 @@ export function OverviewSection() {
             <p className="mb-3 text-[11px] text-muted-foreground">
               OT hours per day
             </p>
-            <Sparkline data={MOCK_OT_TREND} color="bg-purple-500" />
+            <Sparkline data={trends.otTrend} color="bg-purple-500" />
             <div className="mt-1 flex justify-between">
-              {DAYS.map((d) => (
-                <span key={d} className="text-[9px] text-muted-foreground">
+              {trends.days.map((d, i) => (
+                <span key={i} className="text-[9px] text-muted-foreground">
                   {d}
                 </span>
               ))}

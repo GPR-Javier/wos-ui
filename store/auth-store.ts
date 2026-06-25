@@ -3,11 +3,11 @@ import { persist } from "zustand/middleware"
 import type { AuthResponse, AvailableRole, MeResponse } from "@/lib/auth-api"
 import type { Role } from "@/lib/types"
 
-// Maps API role string → sidebar/dashboard role key
+// Maps API role string → sidebar/dashboard role key. Only Admin, Applicant, and Employee archetypes
+// exist; everything else is Employee (the self-service dashboard).
 function toDashboardRole(apiRole: string): Role {
   const r = apiRole.toUpperCase()
   if (r === "ADMIN") return "admin"
-  if (r === "HR") return "hr"
   if (r === "APPLICANT") return "applicant"
   return "employee"
 }
@@ -15,7 +15,7 @@ function toDashboardRole(apiRole: string): Role {
 interface AuthState {
   // Populated after login
   user: MeResponse | null
-  apiRole: string | null // "EMPLOYEE" | "ADMIN" | "HR" (from API)
+  apiRole: string | null // "EMPLOYEE" | "ADMIN" | "APPLICANT" (from API)
   dashboardRole: Role // mapped to sidebar key
   userRoleNames: string[] // e.g. ["HR Manager"]
   authorities: string[] // e.g. ["DTR:VIEW"]

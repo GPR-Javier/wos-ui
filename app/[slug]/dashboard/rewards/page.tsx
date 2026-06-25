@@ -8,12 +8,11 @@ import {
 
 export default function RewardsPage() {
   const apiRole = useAuthStore((s) => s.apiRole)
-  const isAdminOrHR =
-    apiRole?.toUpperCase() === "ADMIN" || apiRole?.toUpperCase() === "HR"
+  const isAdmin = apiRole?.toUpperCase() === "ADMIN"
 
   return (
     <div className="animate-in p-6 duration-300 fade-in">
-      {isAdminOrHR ? <AdminRewardsView /> : <PublicRewardsView />}
+      {isAdmin ? <AdminRewardsView /> : <PublicRewardsView />}
     </div>
   )
 }

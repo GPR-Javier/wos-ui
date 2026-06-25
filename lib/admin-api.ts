@@ -53,7 +53,7 @@ export interface PageResponse<T> {
 export interface ListUsersParams {
   page?: number
   size?: number
-  role?: string // "EMPLOYEE" | "HR" | "ADMIN" — omit for all
+  role?: string // "EMPLOYEE" | "ADMIN" — omit for all
 }
 
 export interface CreateUserPayload {

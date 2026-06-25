@@ -63,14 +63,12 @@ import type {
 const ROLE_FILTERS = [
   { label: "All", value: undefined },
   { label: "Employee", value: "EMPLOYEE" },
-  { label: "HR", value: "HR" },
   { label: "Admin", value: "ADMIN" },
 ]
 
-const roleVariant = (role: string): "blue" | "purple" | "amber" => {
+const roleVariant = (role: string): "blue" | "amber" => {
   const r = role.toUpperCase()
   if (r === "ADMIN") return "amber"
-  if (r === "HR") return "purple"
   return "blue"
 }
 
