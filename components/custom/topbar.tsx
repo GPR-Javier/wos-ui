@@ -79,10 +79,14 @@ export function Topbar() {
     sectionTitles[titleKey] ??
     titleKey.charAt(0).toUpperCase() + titleKey.slice(1)
 
+  // firstName/lastName can be null (e.g. a freshly re-provisioned account with no profile yet).
   const initials = user
-    ? `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase()
+    ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() ||
+      "—"
     : "—"
-  const displayName = user ? `${user.firstName} ${user.lastName}` : "—"
+  const displayName = user
+    ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "—"
+    : "—"
   const roleLabel = userRoleNames[0] ?? ""
 
   return (

@@ -171,10 +171,14 @@ export function Sidebar() {
     return true
   }
 
+  // firstName/lastName can be null (e.g. a freshly re-provisioned account with no profile yet).
   const initials = user
-    ? `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase()
+    ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() ||
+      "—"
     : "—"
-  const displayName = user ? `${user.firstName} ${user.lastName}` : "—"
+  const displayName = user
+    ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "—"
+    : "—"
   const employeeId = user?.employeeId ?? ""
 
   // Sidebar always shows the main dashboard nav; settings has its own top tabs.

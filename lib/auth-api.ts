@@ -41,8 +41,9 @@ export interface SelectRolePayload {
 export interface MeResponse {
   id: number
   employeeId: string
-  firstName: string
-  lastName: string
+  /** Null until a profile is filled in (e.g. a freshly re-provisioned / fresh-start account). */
+  firstName: string | null
+  lastName: string | null
   email: string
   role: string
   userRoleNames: string[]

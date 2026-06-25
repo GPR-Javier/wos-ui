@@ -11,6 +11,7 @@ import {
   RegisterPayload,
   SessionRolePayload,
 } from "@/lib/auth-api"
+import { oauthProviderApi } from "@/lib/oauth-provider-api"
 import { useAuthStore } from "@/store/auth-store"
 import { resolveLandingPath } from "@/lib/nav-config"
 
@@ -121,6 +122,38 @@ export function useCompleteOAuth() {
 
   return useMutation({
     mutationFn: async () => sessionApi.establish(),
+    onSuccess: (data) => {
+      if (data.requiresRoleSelection) return // caller renders the role picker
+      const res = data as AuthResponse
+      setFromAuth(res)
+      qc.invalidateQueries({ queryKey: AUTH_KEYS.me })
+      redirectAfterAuth(res)
+    },
+  })
+}
+
+// ── Reactivate a soft-deleted account that signed back in via OAuth ────────────
+// The provider login already proved ownership (signed token from the callback), so unlike the
+// password path this needs no password — just the recover/fresh choice. Then establish + redirect.
+
+export function useReactivateOAuth() {
+  const qc = useQueryClient()
+  const { setFromAuth } = useAuthStore()
+
+  return useMutation({
+    mutationFn: async ({
+      token,
+      mode,
+      slug,
+    }: {
+      token: string
+      mode: "recover" | "fresh"
+      slug: string
+    }) => {
+      await oauthProviderApi.reactivateConfirm({ token, mode })
+      useAuthStore.getState().setCompanySlug(slug)
+      return sessionApi.establish()
+    },
     onSuccess: (data) => {
       if (data.requiresRoleSelection) return // caller renders the role picker
       const res = data as AuthResponse

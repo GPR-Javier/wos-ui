@@ -66,6 +66,19 @@ export const oauthProviderApi = {
       }>("/auth/oauth/link/confirm", payload)
       .then((r) => r.data),
 
+  /**
+   * Reactivate a soft-deleted account whose ownership was just proven by an OAuth sign-in.
+   * mode "recover" restores everything; "fresh" wipes the data for a clean start. The signed token
+   * (from the callback) is the proof — no password needed.
+   */
+  reactivateConfirm: (payload: { token: string; mode: "recover" | "fresh" }) =>
+    api
+      .post<{
+        requiresCompanySelection: boolean
+        companyId: number | null
+      }>("/auth/oauth/reactivate/confirm", payload)
+      .then((r) => r.data),
+
   create: (payload: OAuthProviderPayload) =>
     api
       .post<OAuthProvider>("/hr/admin/oauth-providers", payload)
