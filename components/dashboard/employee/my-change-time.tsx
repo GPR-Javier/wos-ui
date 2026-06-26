@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Clock01Icon,
@@ -9,10 +9,10 @@ import {
   File01Icon,
   CheckmarkCircle02Icon,
   Cancel01Icon,
-  ArrowRight01Icon,
   InformationCircleIcon,
   Delete01Icon,
   DocumentAttachmentIcon,
+  PencilEdit02Icon,
 } from "@hugeicons/core-free-icons"
 import { StatCard } from "@/components/custom/stat-card"
 import { StatusBadge } from "@/components/custom/status-badge"
@@ -49,6 +49,8 @@ import { cn } from "@/lib/utils"
 import {
   useMyChangeTimeRequests,
   useCreateChangeTimeRequest,
+  useUpdateChangeTimeRequest,
+  useDeleteChangeTimeRequest,
   useCancelChangeTimeRequest,
 } from "@/hooks/use-change-time"
 import type {
@@ -85,6 +87,13 @@ const REQUEST_TYPE_LABEL: Record<ChangeTimeRequestType, string> = {
   TIME_OUT: "Change Time-Out",
   BOTH: "Change Both",
 }
+
+// Statuses an employee can still edit (before it's actioned / finalized).
+const EDITABLE_STATUSES = new Set<ChangeTimeStatus>([
+  "DRAFT",
+  "PENDING",
+  "RETURNED",
+])
 
 const STATUS_FILTERS: { label: string; value?: ChangeTimeStatus }[] = [
   { label: "All" },
@@ -125,56 +134,54 @@ function fmtDateTime(isoStr: string) {
 interface RequestFormProps {
   open: boolean
   onClose: () => void
+  /** When set, the dialog edits this request instead of creating a new one. */
+  editing?: ChangeTimeRequest | null
 }
 
-function RequestFormDialog({ open, onClose }: RequestFormProps) {
+function RequestFormDialog({ open, onClose, editing }: RequestFormProps) {
   const today = new Date().toISOString().split("T")[0]
+  const isEditing = !!editing
 
   const [attendanceDate, setAttendanceDate] = useState("")
   const [requestType, setRequestType] =
     useState<ChangeTimeRequestType>("TIME_IN")
-  const [currentTimeIn, setCurrentTimeIn] = useState("")
-  const [currentTimeOut, setCurrentTimeOut] = useState("")
   const [requestedTimeIn, setRequestedTimeIn] = useState("")
   const [requestedTimeOut, setRequestedTimeOut] = useState("")
   const [reason, setReason] = useState("")
   const [attachments, setAttachments] = useState<File[]>([])
 
   const createMutation = useCreateChangeTimeRequest()
+  const updateMutation = useUpdateChangeTimeRequest()
+  const isPending = createMutation.isPending || updateMutation.isPending
 
   const showTimeIn = requestType === "TIME_IN" || requestType === "BOTH"
   const showTimeOut = requestType === "TIME_OUT" || requestType === "BOTH"
 
-  function resetForm() {
-    setAttendanceDate("")
-    setRequestType("TIME_IN")
-    setCurrentTimeIn("")
-    setCurrentTimeOut("")
-    setRequestedTimeIn("")
-    setRequestedTimeOut("")
-    setReason("")
+  // Seed the form whenever it opens — from the request being edited, or blank for a new one.
+  useEffect(() => {
+    if (!open) return
+    setAttendanceDate(editing?.attendanceDate ?? "")
+    setRequestType(editing?.requestType ?? "TIME_IN")
+    setRequestedTimeIn(editing?.requestedTimeIn ?? "")
+    setRequestedTimeOut(editing?.requestedTimeOut ?? "")
+    setReason(editing?.reason ?? "")
     setAttachments([])
-  }
-
-  function handleClose() {
-    resetForm()
-    onClose()
-  }
+  }, [open, editing])
 
   function handleSubmit(isDraft: boolean) {
-    createMutation.mutate(
-      {
-        attendanceDate,
-        requestType,
-        currentTimeIn: showTimeIn ? currentTimeIn || null : null,
-        currentTimeOut: showTimeOut ? currentTimeOut || null : null,
-        requestedTimeIn: showTimeIn ? requestedTimeIn || null : null,
-        requestedTimeOut: showTimeOut ? requestedTimeOut || null : null,
-        reason,
-        isDraft,
-      },
-      { onSuccess: handleClose }
-    )
+    const body = {
+      attendanceDate,
+      requestType,
+      requestedTimeIn: showTimeIn ? requestedTimeIn || null : null,
+      requestedTimeOut: showTimeOut ? requestedTimeOut || null : null,
+      reason,
+      isDraft,
+    }
+    if (isEditing && editing) {
+      updateMutation.mutate({ id: editing.id, body }, { onSuccess: onClose })
+    } else {
+      createMutation.mutate(body, { onSuccess: onClose })
+    }
   }
 
   const canSubmit =
@@ -184,7 +191,7 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
     (showTimeOut ? requestedTimeOut !== "" : true)
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -196,10 +203,12 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
                 className="text-amber-600 dark:text-amber-400"
               />
             </div>
-            Request Time Correction
+            {isEditing ? "Edit Time Correction" : "Request Time Correction"}
           </DialogTitle>
           <DialogDescription>
-            Submit a correction to your daily time record for HR approval
+            {isEditing
+              ? "Update your time-correction request"
+              : "Submit a correction to your daily time record for HR approval"}
           </DialogDescription>
         </DialogHeader>
 
@@ -264,25 +273,18 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
           {/* Time fields */}
           <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
             <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-              Time Correction
+              Corrected Time
             </p>
-            {showTimeIn && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-[12px] text-muted-foreground">
-                    Current Time-In
-                  </Label>
-                  <Input
-                    type="time"
-                    value={currentTimeIn}
-                    onChange={(e) => setCurrentTimeIn(e.target.value)}
-                    className="h-9 text-[13px]"
-                    placeholder="Recorded time"
-                  />
-                </div>
+            <div
+              className={cn(
+                "grid gap-3",
+                requestType === "BOTH" ? "grid-cols-2" : "grid-cols-1"
+              )}
+            >
+              {showTimeIn && (
                 <div className="space-y-1.5">
                   <Label className="text-[12px] font-semibold text-primary">
-                    Requested Time-In
+                    Corrected Time-In
                   </Label>
                   <Input
                     type="time"
@@ -291,24 +293,11 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
                     className="h-9 border-primary/40 text-[13px] focus:ring-primary/30"
                   />
                 </div>
-              </div>
-            )}
-            {showTimeOut && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-[12px] text-muted-foreground">
-                    Current Time-Out
-                  </Label>
-                  <Input
-                    type="time"
-                    value={currentTimeOut}
-                    onChange={(e) => setCurrentTimeOut(e.target.value)}
-                    className="h-9 text-[13px]"
-                  />
-                </div>
+              )}
+              {showTimeOut && (
                 <div className="space-y-1.5">
                   <Label className="text-[12px] font-semibold text-primary">
-                    Requested Time-Out
+                    Corrected Time-Out
                   </Label>
                   <Input
                     type="time"
@@ -317,8 +306,8 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
                     className="h-9 border-primary/40 text-[13px] focus:ring-primary/30"
                   />
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Reason */}
@@ -422,28 +411,38 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
           <Button
             variant="outline"
             size="sm"
-            disabled={createMutation.isPending}
-            onClick={handleClose}
+            disabled={isPending}
+            onClick={onClose}
           >
             Cancel
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={
-              !attendanceDate || !reason.trim() || createMutation.isPending
-            }
-            onClick={() => handleSubmit(true)}
-          >
-            Save as Draft
-          </Button>
-          <Button
-            size="sm"
-            disabled={!canSubmit || createMutation.isPending}
-            onClick={() => handleSubmit(false)}
-          >
-            {createMutation.isPending ? "Submitting…" : "Submit Request"}
-          </Button>
+          {isEditing ? (
+            <Button
+              size="sm"
+              disabled={!canSubmit || isPending}
+              onClick={() => handleSubmit(false)}
+            >
+              {isPending ? "Saving…" : "Save Changes"}
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!attendanceDate || !reason.trim() || isPending}
+                onClick={() => handleSubmit(true)}
+              >
+                Save as Draft
+              </Button>
+              <Button
+                size="sm"
+                disabled={!canSubmit || isPending}
+                onClick={() => handleSubmit(false)}
+              >
+                {isPending ? "Submitting…" : "Submit Request"}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -481,49 +480,27 @@ function DetailDialog({
             </StatusBadge>
           </div>
 
-          {/* Time comparison */}
+          {/* Corrected time */}
           <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
             <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-              Time Comparison
+              Corrected Time
             </p>
             {(request.requestType === "TIME_IN" ||
               request.requestType === "BOTH") && (
               <div className="flex items-center justify-between text-[12px]">
                 <span className="text-muted-foreground">Time-In</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-foreground tabular-nums">
-                    {fmt12(request.currentTimeIn)}
-                  </span>
-                  <HugeiconsIcon
-                    icon={ArrowRight01Icon}
-                    size={12}
-                    strokeWidth={2}
-                    className="text-muted-foreground"
-                  />
-                  <span className="font-semibold text-primary tabular-nums">
-                    {fmt12(request.requestedTimeIn)}
-                  </span>
-                </div>
+                <span className="font-semibold text-primary tabular-nums">
+                  {fmt12(request.requestedTimeIn)}
+                </span>
               </div>
             )}
             {(request.requestType === "TIME_OUT" ||
               request.requestType === "BOTH") && (
               <div className="flex items-center justify-between text-[12px]">
                 <span className="text-muted-foreground">Time-Out</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-foreground tabular-nums">
-                    {fmt12(request.currentTimeOut)}
-                  </span>
-                  <HugeiconsIcon
-                    icon={ArrowRight01Icon}
-                    size={12}
-                    strokeWidth={2}
-                    className="text-muted-foreground"
-                  />
-                  <span className="font-semibold text-primary tabular-nums">
-                    {fmt12(request.requestedTimeOut)}
-                  </span>
-                </div>
+                <span className="font-semibold text-primary tabular-nums">
+                  {fmt12(request.requestedTimeOut)}
+                </span>
               </div>
             )}
           </div>
@@ -618,7 +595,26 @@ export function MyChangeTimeSection() {
   >(undefined)
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<ChangeTimeRequest | null>(null)
   const [detail, setDetail] = useState<ChangeTimeRequest | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<ChangeTimeRequest | null>(
+    null
+  )
+
+  const deleteMutation = useDeleteChangeTimeRequest()
+
+  function openCreate() {
+    setEditing(null)
+    setFormOpen(true)
+  }
+  function openEdit(r: ChangeTimeRequest) {
+    setEditing(r)
+    setFormOpen(true)
+  }
+  function closeForm() {
+    setFormOpen(false)
+    setEditing(null)
+  }
 
   const q = useMyChangeTimeRequests({ status: statusFilter, page, size: 20 })
   const items = q.data?.content ?? []
@@ -644,7 +640,7 @@ export function MyChangeTimeSection() {
             File and track your time correction requests
           </p>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={() => setFormOpen(true)}>
+        <Button size="sm" className="gap-1.5" onClick={openCreate}>
           <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} />
           New Request
         </Button>
@@ -724,14 +720,14 @@ export function MyChangeTimeSection() {
               {[
                 "Date",
                 "Request Type",
-                "Current",
-                "Requested",
+                "Corrected Time",
                 "Reason",
                 "Status",
                 "Filed",
               ].map((h) => (
                 <TableHead key={h}>{h}</TableHead>
               ))}
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -765,7 +761,7 @@ export function MyChangeTimeSection() {
                       size="sm"
                       variant="outline"
                       className="mt-1 gap-1.5"
-                      onClick={() => setFormOpen(true)}
+                      onClick={openCreate}
                     >
                       <HugeiconsIcon
                         icon={Add01Icon}
@@ -792,18 +788,6 @@ export function MyChangeTimeSection() {
                       {REQUEST_TYPE_LABEL[r.requestType]}
                     </StatusBadge>
                   </TableCell>
-                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">
-                    <div className="space-y-0.5">
-                      {(r.requestType === "TIME_IN" ||
-                        r.requestType === "BOTH") && (
-                        <p>In: {fmt12(r.currentTimeIn)}</p>
-                      )}
-                      {(r.requestType === "TIME_OUT" ||
-                        r.requestType === "BOTH") && (
-                        <p>Out: {fmt12(r.currentTimeOut)}</p>
-                      )}
-                    </div>
-                  </TableCell>
                   <TableCell className="text-[12px] tabular-nums">
                     <div className="space-y-0.5 font-medium text-primary">
                       {(r.requestType === "TIME_IN" ||
@@ -816,7 +800,7 @@ export function MyChangeTimeSection() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="max-w-[180px]">
+                  <TableCell className="max-w-45">
                     <p className="truncate text-[12px] text-muted-foreground">
                       {r.reason}
                     </p>
@@ -828,6 +812,47 @@ export function MyChangeTimeSection() {
                   </TableCell>
                   <TableCell className="text-[12px] text-muted-foreground tabular-nums">
                     {fmtDate(r.createdAt.split("T")[0])}
+                  </TableCell>
+                  <TableCell
+                    className="text-right"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      {EDITABLE_STATUSES.has(r.status) && (
+                        <Button
+                          size="icon-xs"
+                          variant="ghost"
+                          aria-label="Edit"
+                          onClick={() => openEdit(r)}
+                        >
+                          <HugeiconsIcon
+                            icon={PencilEdit02Icon}
+                            size={13}
+                            strokeWidth={2}
+                          />
+                        </Button>
+                      )}
+                      {r.status !== "APPROVED" && (
+                        <Button
+                          size="icon-xs"
+                          variant="ghost"
+                          aria-label="Delete"
+                          className="text-muted-foreground hover:text-red-500"
+                          onClick={() => setConfirmDelete(r)}
+                        >
+                          <HugeiconsIcon
+                            icon={Delete01Icon}
+                            size={13}
+                            strokeWidth={2}
+                          />
+                        </Button>
+                      )}
+                      {r.status === "APPROVED" && (
+                        <span className="text-[11px] text-muted-foreground">
+                          —
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -850,10 +875,56 @@ export function MyChangeTimeSection() {
       </div>
 
       {/* ── Modals ── */}
-      <RequestFormDialog open={formOpen} onClose={() => setFormOpen(false)} />
+      <RequestFormDialog
+        open={formOpen}
+        onClose={closeForm}
+        editing={editing}
+      />
       {detail && (
         <DetailDialog request={detail} onClose={() => setDetail(null)} />
       )}
+
+      {/* Delete confirmation */}
+      <Dialog
+        open={!!confirmDelete}
+        onOpenChange={(v) => !v && setConfirmDelete(null)}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete request?</DialogTitle>
+            <DialogDescription>
+              This permanently removes your time-correction request
+              {confirmDelete
+                ? ` for ${fmtDate(confirmDelete.attendanceDate)}`
+                : ""}
+              . This can't be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={deleteMutation.isPending}
+              onClick={() => setConfirmDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                if (!confirmDelete) return
+                deleteMutation.mutate(confirmDelete.id, {
+                  onSuccess: () => setConfirmDelete(null),
+                })
+              }}
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -41,6 +41,23 @@ export function useCreateChangeTimeRequest() {
   })
 }
 
+export function useUpdateChangeTimeRequest() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: CreateChangeTimePayload }) =>
+      changeTimeApi.updateMine(id, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  })
+}
+
+export function useDeleteChangeTimeRequest() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => changeTimeApi.deleteMine(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  })
+}
+
 export function useSubmitChangeTimeDraft() {
   const qc = useQueryClient()
   return useMutation({

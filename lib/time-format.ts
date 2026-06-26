@@ -36,7 +36,12 @@ function toHMS(input: Date | string): HMS | null {
   const hm = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
   if (hm) return { h: +hm[1]!, m: +hm[2]!, s: hm[3] ? +hm[3] : 0 }
 
-  // Fall back to anything Date can parse (ISO date-time, etc.)
+  // ISO date-time "...THH:mm[:ss][.frac]" — read the time directly so non-standard
+  // micro/nanosecond precision (e.g. "11:29:49.001397") never trips up Date parsing.
+  const iso = str.match(/T(\d{2}):(\d{2})(?::(\d{2}))?/)
+  if (iso) return { h: +iso[1]!, m: +iso[2]!, s: iso[3] ? +iso[3] : 0 }
+
+  // Fall back to anything Date can parse.
   const d = new Date(str)
   return Number.isNaN(d.getTime())
     ? null

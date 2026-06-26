@@ -801,8 +801,9 @@ export function DTRSection() {
     return sum + b.elapsed
   }, 0)
 
-  const netSecs = Math.max(0, workSecs - breakSecs)
-  const requiredHours = myPolicy?.requiredHours ?? 8
+  // Breaks (incl. the 1h lunch) are paid and count toward the day → worked = full presence span.
+  const netSecs = workSecs
+  const requiredHours = myPolicy?.requiredHours ?? 9
   const stdSecs = requiredHours * 3600
   const otSecs = Math.max(0, netSecs - stdSecs)
   const progressPct = Math.min(100, (netSecs / stdSecs) * 100)

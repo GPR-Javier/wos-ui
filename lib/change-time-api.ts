@@ -64,6 +64,14 @@ export const changeTimeApi = {
       })
       .then((r) => r.data),
 
+  updateMine: (id: number, body: CreateChangeTimePayload) =>
+    api
+      .put<ChangeTimeRequest>(`/hr/change-time-requests/${id}`, body)
+      .then((r) => r.data),
+
+  deleteMine: (id: number) =>
+    api.delete<void>(`/hr/change-time-requests/${id}`).then((r) => r.data),
+
   submitDraft: (id: number) =>
     api
       .post<ChangeTimeRequest>(`/hr/change-time-requests/${id}/submit`)

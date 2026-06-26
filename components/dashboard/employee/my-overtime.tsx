@@ -333,7 +333,7 @@ function RequestFormDialog({ open, onClose }: RequestFormProps) {
               placeholder="Describe the work performed or reason for overtime…"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="min-h-[72px] resize-none text-[13px]"
+              className="min-h-18 resize-none text-[13px]"
             />
           </div>
 
@@ -826,7 +826,7 @@ export function MyOvertimeSection() {
                       {fmtHours(r.totalHours)}
                     </span>
                   </TableCell>
-                  <TableCell className="max-w-[200px]">
+                  <TableCell className="max-w-50">
                     <p className="truncate text-[12px] text-muted-foreground">
                       {r.reason}
                     </p>

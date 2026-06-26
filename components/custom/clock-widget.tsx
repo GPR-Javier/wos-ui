@@ -19,6 +19,7 @@ import {
   MinimizeScreenIcon,
   Clock01Icon,
   StopCircleIcon,
+  CheckmarkCircle02Icon,
 } from "@hugeicons/core-free-icons"
 import { AttendanceCameraCapture } from "@/components/custom/attendance-camera-capture"
 import { ConfirmPunchModal } from "@/components/custom/confirm-punch-modal"
@@ -75,6 +76,14 @@ const INIT_BREAKS: Record<string, BreakState> = {
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
+
+// Local YYYY-MM-DD (matches the backend's record.date, which is the clock-in date).
+function localISODate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}-${String(d.getDate()).padStart(2, "0")}`
+}
 
 function isBreakInWindow(type: string, now: Date | null): boolean {
   if (!now) return false
@@ -237,6 +246,10 @@ export function ClockWidget() {
   )
   const [breaks, setBreaks] = useState<Record<string, BreakState>>(INIT_BREAKS)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  // True once today's session is finished (clock-in + clock-out both on today's
+  // date). A session that started yesterday and was closed today doesn't count —
+  // that clock-out belongs to yesterday, so clocking in again today is allowed.
+  const [completedToday, setCompletedToday] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
   // Camera-validation gating: roles granted DTR:REQUIRE_CAMERA_VALIDATION must
@@ -250,14 +263,20 @@ export function ClockWidget() {
   const { data: attendanceData } = useAttendance({ page: 0, size: 1 })
   useEffect(() => {
     const latest = attendanceData?.content?.[0]
+    const today = localISODate(new Date())
     if (latest?.timeIn && !latest.timeOut) {
       setClocked(true)
       setClockInTime(new Date(latest.timeIn))
       setBreaks((prev) => hydrateBreaks(prev, latest.breaks))
+      setCompletedToday(false)
     } else if (latest?.timeOut) {
       setClocked(false)
       setClockInTime(null)
       setBreaks(INIT_BREAKS)
+      // Only blocks re-clock-in when the finished session's date is today.
+      setCompletedToday(latest.date === today)
+    } else {
+      setCompletedToday(false)
     }
   }, [attendanceData])
 
@@ -276,11 +295,14 @@ export function ClockWidget() {
           setClocked(true)
           setClockInTime(result.timeIn ? new Date(result.timeIn) : new Date())
           setBreaks(INIT_BREAKS)
+          setCompletedToday(false)
         } else {
-          await clockOutMutation.mutateAsync()
+          const result = await clockOutMutation.mutateAsync()
           setClocked(false)
           setClockInTime(null)
           setBreaks(INIT_BREAKS)
+          // Block re-clock-in only if this finished session started today.
+          setCompletedToday(result?.date === localISODate(new Date()))
         }
       } catch (err) {
         // Surface in console for now — caller can layer a toast on top later.
@@ -421,22 +443,11 @@ export function ClockWidget() {
     return `${m}:${String(s).padStart(2, "0")}`
   }
 
-  // Live worked time = elapsed since clock-in minus all break time (active break
-  // counts up to `now`). Mirrors the backend's computeWorkedSeconds; pauses while
-  // on break since break seconds grow at the same rate as elapsed.
+  // Live worked time = full elapsed since clock-in. Breaks (incl. the 1h lunch) are PAID and count
+  // toward the day, so they're not deducted — mirrors the backend's computeWorkedSeconds.
   const workedSeconds =
     clocked && clockInTime && now
-      ? Math.max(
-          0,
-          Math.floor((now.getTime() - clockInTime.getTime()) / 1000) -
-            Object.values(breaks).reduce((sum, b) => {
-              const activeSecs =
-                b.active && b.startTime
-                  ? Math.floor((now.getTime() - b.startTime) / 1000)
-                  : 0
-              return sum + b.elapsed + activeSecs
-            }, 0)
-        )
+      ? Math.max(0, Math.floor((now.getTime() - clockInTime.getTime()) / 1000))
       : 0
 
   const fmtWorked = (secs: number) => {
@@ -524,10 +535,14 @@ export function ClockWidget() {
 
         {/* Status badge */}
         <div className="mt-3">
-          <StatusBadge variant={clocked ? "green" : "gray"}>
+          <StatusBadge
+            variant={clocked ? "green" : completedToday ? "blue" : "gray"}
+          >
             {clocked
               ? `Clocked in · ${clockInTime ? formatTime(clockInTime) : ""}`
-              : "Not clocked in"}
+              : completedToday
+                ? "Shift complete for today"
+                : "Not clocked in"}
           </StatusBadge>
         </div>
 
@@ -545,12 +560,16 @@ export function ClockWidget() {
 
         {/* Clock in/out / End break button */}
         <button
-          disabled={isClockBusy || isBreakBusy}
+          disabled={
+            isClockBusy ||
+            isBreakBusy ||
+            (completedToday && !clocked && !anyBreakActive)
+          }
           onClick={() => {
             if (anyBreakActive && activeBreakEntry) {
               toggleBreak(activeBreakEntry[0])
             } else if (!clocked) {
-              setConfirmPunchType("in")
+              if (!completedToday) setConfirmPunchType("in")
             } else {
               setConfirmPunchType("out")
             }
@@ -558,7 +577,11 @@ export function ClockWidget() {
           className={cn(
             "mt-3 flex w-full items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60",
             !clocked &&
+              !completedToday &&
               "bg-primary text-primary-foreground hover:bg-primary/90",
+            !clocked &&
+              completedToday &&
+              "border border-success-border bg-success-light text-success",
             clocked &&
               !anyBreakActive &&
               "border border-danger-border bg-danger-light text-danger hover:bg-rt",
@@ -581,6 +604,15 @@ export function ClockWidget() {
             <>
               <HugeiconsIcon icon={StopCircleIcon} size={13} strokeWidth={2} />
               Clock Out
+            </>
+          ) : completedToday ? (
+            <>
+              <HugeiconsIcon
+                icon={CheckmarkCircle02Icon}
+                size={13}
+                strokeWidth={2}
+              />
+              Completed for today
             </>
           ) : (
             <>

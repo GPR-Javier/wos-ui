@@ -446,7 +446,7 @@ function RequestFormDialog({
               <span className="text-muted-foreground">(optional)</span>
             </Label>
             <Textarea
-              className="min-h-[72px] resize-none text-[13px]"
+              className="min-h-18 resize-none text-[13px]"
               placeholder="Any special instructions for HR, specific wording required, etc."
               value={form.additionalNotes}
               onChange={(e) =>

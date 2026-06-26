@@ -230,6 +230,18 @@ export function OverviewSection() {
   const tomorrowWeekday = JS_DAY_TO_WEEKDAY[(new Date().getDay() + 1) % 7]!
   const tomorrowIsRest = restDays.includes(tomorrowWeekday)
 
+  // Full shift window: clock-in range → clock-out (end-of-shift) range, e.g.
+  // "6:00 AM – 9:00 AM → 3:00 PM – 7:00 PM". End range is appended only when the policy sets it.
+  const hasClockOutWindow = !!(
+    policy?.earliestClockOut || policy?.latestClockOut
+  )
+  const shiftWindow = policy
+    ? `${formatTime(policy.earliestClockIn)} – ${formatTime(policy.latestClockIn)}` +
+      (hasClockOutWindow
+        ? ` → ${formatTime(policy.earliestClockOut)} – ${formatTime(policy.latestClockOut)}`
+        : "")
+    : "—"
+
   const firstName = user?.firstName ?? "there"
   const dateStr = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -381,8 +393,8 @@ export function OverviewSection() {
           {todayEntry && (
             <div className="mt-3 grid grid-cols-2 gap-2">
               {[
-                { label: "Time In", value: todayEntry.timeIn || "—" },
-                { label: "Time Out", value: todayEntry.timeOut || "—" },
+                { label: "Time In", value: formatTime(todayEntry.timeIn) },
+                { label: "Time Out", value: formatTime(todayEntry.timeOut) },
                 { label: "Hours Worked", value: todayEntry.hoursWorked || "—" },
                 { label: "OT Hours", value: todayEntry.otHours || "0h" },
               ].map(({ label, value }) => (
@@ -409,9 +421,7 @@ export function OverviewSection() {
             {[
               {
                 label: "Today's Shift",
-                value: policy
-                  ? `${formatTime(policy.earliestClockIn)} – ${formatTime(policy.latestClockIn)}`
-                  : "—",
+                value: shiftWindow,
                 sub: policy
                   ? `${policy.requiredHours}h · Grace ${policy.lateGraceMins ?? 0}m`
                   : "",
@@ -419,11 +429,7 @@ export function OverviewSection() {
               },
               {
                 label: "Tomorrow's Shift",
-                value: tomorrowIsRest
-                  ? "Rest Day"
-                  : policy
-                    ? `${formatTime(policy.earliestClockIn)} – ${formatTime(policy.latestClockIn)}`
-                    : "—",
+                value: tomorrowIsRest ? "Rest Day" : shiftWindow,
                 sub: tomorrowIsRest
                   ? WEEKDAY_LABEL[tomorrowWeekday]
                   : "Same schedule",

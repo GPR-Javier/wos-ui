@@ -564,7 +564,7 @@ function RequestFormDialog({
               placeholder="Explain why you need this schedule change…"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="min-h-[72px] resize-none text-[13px]"
+              className="min-h-18 resize-none text-[13px]"
             />
           </div>
 
@@ -933,7 +933,7 @@ export function MyScheduleSection() {
                     {fmtDate(r.effectiveFrom)}
                     {r.effectiveUntil && ` → ${fmtDate(r.effectiveUntil)}`}
                   </TableCell>
-                  <TableCell className="max-w-[220px]">
+                  <TableCell className="max-w-55">
                     <p className="truncate text-[12px] text-muted-foreground">
                       {summarizePayload(r.requestedPayload, formatTime)}
                     </p>
