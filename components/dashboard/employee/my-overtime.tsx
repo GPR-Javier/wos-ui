@@ -45,6 +45,7 @@ import {
   useCreateOvertimeRequest,
   useCancelOvertimeRequest,
 } from "@/hooks/use-overtime"
+import { useTimeFormat } from "@/hooks/use-time-format"
 import {
   OT_TYPE_LABEL,
   OT_TYPE_COLOR,
@@ -109,14 +110,6 @@ function fmtDateTime(isoStr: string) {
     hour: "numeric",
     minute: "2-digit",
   })
-}
-
-function fmt12(time: string) {
-  if (!time) return "—"
-  const [h, m] = time.split(":").map(Number)
-  const period = h >= 12 ? "PM" : "AM"
-  const hour = h % 12 || 12
-  return `${hour}:${String(m).padStart(2, "0")} ${period}`
 }
 
 function fmtHours(h: number) {
@@ -470,6 +463,7 @@ function DetailDialog({
   onClose: () => void
 }) {
   const cancelMutation = useCancelOvertimeRequest()
+  const { formatTime } = useTimeFormat()
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
@@ -512,7 +506,7 @@ function DetailDialog({
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
               <p className="text-muted-foreground">Time</p>
               <p className="mt-0.5 font-semibold text-foreground tabular-nums">
-                {fmt12(request.startTime)} – {fmt12(request.endTime)}
+                {formatTime(request.startTime)} – {formatTime(request.endTime)}
               </p>
             </div>
             <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
@@ -630,6 +624,7 @@ export function MyOvertimeSection() {
   const [page, setPage] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
   const [detail, setDetail] = useState<OvertimeRequest | null>(null)
+  const { formatTime } = useTimeFormat()
 
   const q = useMyOvertimeRequests({ status: statusFilter, page, size: 20 })
   const items = q.data?.content ?? []
@@ -824,7 +819,7 @@ export function MyOvertimeSection() {
                     </StatusBadge>
                   </TableCell>
                   <TableCell className="text-[12px] text-muted-foreground tabular-nums">
-                    {fmt12(r.startTime)} – {fmt12(r.endTime)}
+                    {formatTime(r.startTime)} – {formatTime(r.endTime)}
                   </TableCell>
                   <TableCell>
                     <span className="text-[13px] font-semibold text-primary tabular-nums">

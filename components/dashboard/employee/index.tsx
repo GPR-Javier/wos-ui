@@ -24,6 +24,7 @@ import {
   useLeaveBalances,
 } from "@/hooks/use-employee"
 import { useMyPolicy } from "@/hooks/use-schedule-policy"
+import { useTimeFormat } from "@/hooks/use-time-format"
 import { useMyChangeRequests } from "@/hooks/use-schedule-change-request"
 import type { AttendanceEntry } from "@/lib/employee-api"
 import type { Weekday } from "@/lib/schedule-policy-api"
@@ -189,6 +190,7 @@ const REQUEST_TYPES = [
 export function OverviewSection() {
   const router = useRouter()
   const slugHref = useSlugHref()
+  const { formatTime } = useTimeFormat()
   const { user } = useAuthStore()
   const statsQ = useEmployeeStats()
   const attendanceQ = useAttendance({ size: 7 })
@@ -236,7 +238,7 @@ export function OverviewSection() {
   })
 
   const shiftLabel = policy
-    ? `${policy.earliestClockIn ?? "—"} – ${policy.latestClockIn ?? "—"}`
+    ? `${formatTime(policy.earliestClockIn)} – ${formatTime(policy.latestClockIn)}`
     : "—"
 
   return (
@@ -408,7 +410,7 @@ export function OverviewSection() {
               {
                 label: "Today's Shift",
                 value: policy
-                  ? `${policy.earliestClockIn} – ${policy.latestClockIn}`
+                  ? `${formatTime(policy.earliestClockIn)} – ${formatTime(policy.latestClockIn)}`
                   : "—",
                 sub: policy
                   ? `${policy.requiredHours}h · Grace ${policy.lateGraceMins ?? 0}m`
@@ -420,7 +422,7 @@ export function OverviewSection() {
                 value: tomorrowIsRest
                   ? "Rest Day"
                   : policy
-                    ? `${policy.earliestClockIn} – ${policy.latestClockIn}`
+                    ? `${formatTime(policy.earliestClockIn)} – ${formatTime(policy.latestClockIn)}`
                     : "—",
                 sub: tomorrowIsRest
                   ? WEEKDAY_LABEL[tomorrowWeekday]

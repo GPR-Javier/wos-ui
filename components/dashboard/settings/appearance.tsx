@@ -5,6 +5,9 @@ import { useTheme } from "next-themes"
 import { Separator } from "@/components/ui/separator"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import { usePreferencesStore } from "@/store/preferences-store"
+import { useTimeFormat } from "@/hooks/use-time-format"
+import type { TimeFormat } from "@/lib/time-format"
 
 const TIMEZONES = [
   "Asia/Manila (UTC+8)",
@@ -29,7 +32,14 @@ export function AppearanceSection() {
   const [mounted, setMounted] = useState(false)
   const [timezone, setTimezone] = useState("Asia/Manila (UTC+8)")
   const [language, setLanguage] = useState("English (US)")
+  const setTimeFormat = usePreferencesStore((s) => s.setTimeFormat)
+  const { timeFormat, formatTime } = useTimeFormat()
   useEffect(() => setMounted(true), [])
+
+  const TIME_FORMATS: { value: TimeFormat; label: string; example: Date }[] = [
+    { value: "12h", label: "12-hour (AM/PM)", example: new Date() },
+    { value: "24h", label: "24-hour", example: new Date() },
+  ]
 
   const themes = [
     { value: "light", label: "Light", desc: "Clean and bright" },
@@ -117,6 +127,43 @@ export function AppearanceSection() {
               ))}
             </select>
           </div>
+        </div>
+
+        {/* Time format */}
+        <div className="mt-4 space-y-1.5">
+          <Label>Time format</Label>
+          <div className="grid grid-cols-2 gap-3">
+            {TIME_FORMATS.map((tf) => (
+              <button
+                key={tf.value}
+                onClick={() => setTimeFormat(tf.value)}
+                className={cn(
+                  "flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-all duration-150",
+                  timeFormat === tf.value
+                    ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                    : "border-border hover:border-primary/30 hover:bg-muted/50"
+                )}
+              >
+                <div>
+                  <p className="text-[13px] font-medium">{tf.label}</p>
+                  <p className="text-[11px] text-muted-foreground tabular-nums">
+                    {formatTime(tf.example, { seconds: true })}
+                  </p>
+                </div>
+                <span
+                  className={cn(
+                    "size-3.5 shrink-0 rounded-full border-2",
+                    timeFormat === tf.value
+                      ? "border-primary bg-primary"
+                      : "border-muted-foreground/40"
+                  )}
+                />
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Applies to time displays across the dashboard.
+          </p>
         </div>
       </div>
     </div>

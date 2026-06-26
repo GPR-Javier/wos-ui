@@ -59,6 +59,7 @@ import {
   useBreakEnd,
 } from "@/hooks/use-employee"
 import { useMyPolicy } from "@/hooks/use-schedule-policy"
+import { useTimeFormat } from "@/hooks/use-time-format"
 import type { AttendanceBreakEntry, AttendanceEntry } from "@/lib/employee-api"
 
 function toAttendanceRecord(e: AttendanceEntry): AttendanceRecord {
@@ -97,11 +98,12 @@ function ViewModal({
   open: boolean
   onClose: () => void
 }) {
+  const { formatTime } = useTimeFormat()
   if (!record) return null
   const rows = [
     { label: "Date", value: `${record.date} · ${record.day}` },
-    { label: "Time in", value: record.timeIn },
-    { label: "Time out", value: record.timeOut },
+    { label: "Time in", value: formatTime(record.timeIn) },
+    { label: "Time out", value: formatTime(record.timeOut) },
     { label: "Hours worked", value: record.hoursWorked },
     {
       label: "OT hours",
@@ -502,14 +504,6 @@ function fmtDuration(secs: number): string {
   return `${h}h ${String(m).padStart(2, "0")}m`
 }
 
-function fmtTime(date: Date): string {
-  return date.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  })
-}
-
 function isBreakInWindow(type: string, now: Date | null): boolean {
   if (!now) return false
   const mins = now.getHours() * 60 + now.getMinutes()
@@ -665,6 +659,7 @@ const BREAK_ICONS: Record<string, (color: string) => React.ReactNode> = {
 }
 
 export function DTRSection() {
+  const { formatTime } = useTimeFormat()
   const [now, setNow] = useState<Date | null>(null)
   const [clocked, setClocked] = useState(false)
   const [clockInTime, setClockInTime] = useState<Date | null>(null)
@@ -893,13 +888,7 @@ export function DTRSection() {
     return b.elapsed
   }
 
-  const timeStr = now
-    ? now.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      })
-    : "--:--:-- --"
+  const timeStr = now ? formatTime(now, { seconds: true }) : "--:--:-- --"
 
   const dateStr = now
     ? now.toLocaleDateString("en-US", {
@@ -1166,7 +1155,7 @@ export function DTRSection() {
                   Time in
                 </p>
                 <p className="mt-0.5 text-[15px] font-bold tabular-nums">
-                  {clockInTime ? fmtTime(clockInTime) : "—"}
+                  {clockInTime ? formatTime(clockInTime) : "—"}
                 </p>
               </div>
               <div className="rounded-lg bg-muted/50 px-3 py-2.5">
@@ -1174,7 +1163,7 @@ export function DTRSection() {
                   Time out
                 </p>
                 <p className="mt-0.5 text-[15px] font-bold tabular-nums">
-                  {clockOutTime ? fmtTime(clockOutTime) : "—"}
+                  {clockOutTime ? formatTime(clockOutTime) : "—"}
                 </p>
               </div>
             </div>
@@ -1318,8 +1307,8 @@ export function DTRSection() {
                 Clock-in window
               </p>
               <p className="mt-0.5 tabular-nums">
-                {myPolicy.earliestClockIn ?? "—"} –{" "}
-                {myPolicy.latestClockIn ?? "—"}
+                {formatTime(myPolicy.earliestClockIn)} –{" "}
+                {formatTime(myPolicy.latestClockIn)}
               </p>
               <p className="text-[10px] text-muted-foreground">
                 Grace {myPolicy.lateGraceMins ?? 0}m
@@ -1330,8 +1319,8 @@ export function DTRSection() {
                 Clock-out window
               </p>
               <p className="mt-0.5 tabular-nums">
-                {myPolicy.earliestClockOut ?? "—"} –{" "}
-                {myPolicy.latestClockOut ?? "—"}
+                {formatTime(myPolicy.earliestClockOut)} –{" "}
+                {formatTime(myPolicy.latestClockOut)}
               </p>
             </div>
             <div>
@@ -1445,8 +1434,12 @@ export function DTRSection() {
                   <TableCell className="text-muted-foreground">
                     {r.day}
                   </TableCell>
-                  <TableCell className="tabular-nums">{r.timeIn}</TableCell>
-                  <TableCell className="tabular-nums">{r.timeOut}</TableCell>
+                  <TableCell className="tabular-nums">
+                    {formatTime(r.timeIn)}
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {formatTime(r.timeOut)}
+                  </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {r.hoursWorked}
                   </TableCell>

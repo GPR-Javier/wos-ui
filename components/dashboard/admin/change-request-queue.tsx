@@ -36,6 +36,7 @@ import {
   useApproveChangeRequest,
   useRejectChangeRequest,
 } from "@/hooks/use-schedule-change-request"
+import { useTimeFormat } from "@/hooks/use-time-format"
 import type {
   ChangeRequestStatus,
   ScheduleChangeRequest,
@@ -74,6 +75,7 @@ function ReviewModal({
   onClose: () => void
 }) {
   const [note, setNote] = useState("")
+  const { formatTime } = useTimeFormat()
   const approve = useApproveChangeRequest()
   const reject = useRejectChangeRequest()
   const submit = () => {
@@ -121,9 +123,10 @@ function ReviewModal({
               Requested policy
             </p>
             <p className="text-[11px]">
-              Clock-in {p.earliestClockIn ?? "—"}–{p.latestClockIn ?? "—"}{" "}
-              (grace {p.lateGraceMins ?? 0}m) · {p.requiredHours ?? "—"}h/day ·
-              workdays {(p.workdays ?? []).join(", ") || "—"}
+              Clock-in {formatTime(p.earliestClockIn)}–
+              {formatTime(p.latestClockIn)} (grace {p.lateGraceMins ?? 0}m) ·{" "}
+              {p.requiredHours ?? "—"}h/day · workdays{" "}
+              {(p.workdays ?? []).join(", ") || "—"}
             </p>
           </div>
           {request.reason && (

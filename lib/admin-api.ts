@@ -105,7 +105,19 @@ export interface TeamAttendanceRecord {
   overtimeHours: string | null // "1h 30m" or null
   status: string // "present" | "late" | "absent" | "leave" | ...
   lateMinutes: number | null
+  undertimeMinutes: number | null
+  overtimeMinutes: number | null
+  breakMinutes: number | null // total time on break
+  breakCount: number | null
   shift: string // "day" | "graveyard"
+  breaks: AttendanceBreakSummary[] | null
+}
+
+export interface AttendanceBreakSummary {
+  type: string
+  startedAt: string | null // "hh:mm a"
+  endedAt: string | null // "hh:mm a", or null while ongoing
+  minutes: number | null // duration, or null while ongoing
 }
 
 // ── API calls ─────────────────────────────────────────────────────────────────

@@ -23,6 +23,7 @@ import {
 import { AttendanceCameraCapture } from "@/components/custom/attendance-camera-capture"
 import { ConfirmPunchModal } from "@/components/custom/confirm-punch-modal"
 import { useAuthStore } from "@/store/auth-store"
+import { useTimeFormat } from "@/hooks/use-time-format"
 import {
   useAttendance,
   useClockIn,
@@ -74,14 +75,6 @@ const INIT_BREAKS: Record<string, BreakState> = {
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
-
-function fmtTime(date: Date) {
-  return date.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  })
-}
 
 function isBreakInWindow(type: string, now: Date | null): boolean {
   if (!now) return false
@@ -232,6 +225,7 @@ const BREAK_ICON: Record<string, (color: string) => React.ReactNode> = {
 // ── ClockWidget ───────────────────────────────────────────────────────────────
 
 export function ClockWidget() {
+  const { formatTime } = useTimeFormat()
   const [now, setNow] = useState<Date | null>(null)
   const [clocked, setClocked] = useState(false)
   const [clockInTime, setClockInTime] = useState<Date | null>(null)
@@ -427,14 +421,31 @@ export function ClockWidget() {
     return `${m}:${String(s).padStart(2, "0")}`
   }
 
-  const timeStr = now
-    ? now.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: true,
-      })
-    : "--:-- --"
+  // Live worked time = elapsed since clock-in minus all break time (active break
+  // counts up to `now`). Mirrors the backend's computeWorkedSeconds; pauses while
+  // on break since break seconds grow at the same rate as elapsed.
+  const workedSeconds =
+    clocked && clockInTime && now
+      ? Math.max(
+          0,
+          Math.floor((now.getTime() - clockInTime.getTime()) / 1000) -
+            Object.values(breaks).reduce((sum, b) => {
+              const activeSecs =
+                b.active && b.startTime
+                  ? Math.floor((now.getTime() - b.startTime) / 1000)
+                  : 0
+              return sum + b.elapsed + activeSecs
+            }, 0)
+        )
+      : 0
+
+  const fmtWorked = (secs: number) => {
+    const h = Math.floor(secs / 3600)
+    const m = Math.floor((secs % 3600) / 60)
+    return `${h}h ${String(m).padStart(2, "0")}m`
+  }
+
+  const timeStr = now ? formatTime(now, { seconds: true }) : "--:-- --"
   const dateStr = now
     ? now.toLocaleDateString("en-US", {
         weekday: "long",
@@ -515,10 +526,22 @@ export function ClockWidget() {
         <div className="mt-3">
           <StatusBadge variant={clocked ? "green" : "gray"}>
             {clocked
-              ? `Clocked in · ${clockInTime ? fmtTime(clockInTime) : ""}`
+              ? `Clocked in · ${clockInTime ? formatTime(clockInTime) : ""}`
               : "Not clocked in"}
           </StatusBadge>
         </div>
+
+        {/* Total hours worked indicator */}
+        {clocked && (
+          <div className="mt-2 flex items-center gap-1.5 text-[12px] text-muted-foreground">
+            <HugeiconsIcon icon={Clock01Icon} size={12} strokeWidth={2} />
+            <span>Worked today</span>
+            <span className="font-semibold text-foreground tabular-nums">
+              {fmtWorked(workedSeconds)}
+            </span>
+            {anyBreakActive && <span className="text-warning">· on break</span>}
+          </div>
+        )}
 
         {/* Clock in/out / End break button */}
         <button

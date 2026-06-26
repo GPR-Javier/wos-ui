@@ -1,13 +1,12 @@
 import type { Metadata } from "next"
-import { ComingSoon } from "@/components/custom/coming-soon"
+import { MyScheduleSection } from "@/components/dashboard/employee/my-schedule"
 
-export const metadata: Metadata = { title: "Schedule Change Request" }
+export const metadata: Metadata = { title: "Change Schedule" }
 
 export default function MySchedulePage() {
   return (
-    <ComingSoon
-      title="Schedule Change Request"
-      description="File and track your schedule change requests."
-    />
+    <div className="animate-in p-6 duration-300 fade-in">
+      <MyScheduleSection />
+    </div>
   )
 }
