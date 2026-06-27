@@ -343,7 +343,7 @@ function ReviewModal({
                 )}
               </Label>
               <Textarea
-                className="min-h-[72px] resize-none text-[13px]"
+                className="min-h-18 resize-none text-[13px]"
                 placeholder={
                   mode === "approve"
                     ? "Note to employee (optional)…"
@@ -663,7 +663,7 @@ export function ChangeTimeManagementSection() {
                   </TableCell>
 
                   {/* Reason */}
-                  <TableCell className="max-w-[160px]">
+                  <TableCell className="max-w-40">
                     <p className="truncate text-[12px] text-muted-foreground">
                       {r.reason}
                     </p>

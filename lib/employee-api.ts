@@ -20,6 +20,7 @@ export interface AttendanceEntry {
   timeIn: string
   timeOut: string
   hoursWorked: string
+  rdHours?: string
   otHours: string
   status:
     | "present"

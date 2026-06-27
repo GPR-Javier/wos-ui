@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ClockPlusIcon,
@@ -9,18 +9,11 @@ import {
   CheckmarkCircle02Icon,
   Cancel01Icon,
   File01Icon,
-  Delete01Icon,
-  DocumentAttachmentIcon,
-  InformationCircleIcon,
-  Alert01Icon,
   TimeScheduleIcon,
 } from "@hugeicons/core-free-icons"
 import { StatCard } from "@/components/custom/stat-card"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
@@ -38,11 +31,15 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
-import { TablePagination } from "@/components/custom/table-pagination"
+import {
+  DateRangePicker,
+  type DateRangePreset,
+  type DateRangeValue,
+} from "@/components/ui/date-range-picker"
+import { OvertimeRequestDialog } from "@/components/custom/overtime-request-dialog"
 import { cn } from "@/lib/utils"
 import {
   useMyOvertimeRequests,
-  useCreateOvertimeRequest,
   useCancelOvertimeRequest,
 } from "@/hooks/use-overtime"
 import { useTimeFormat } from "@/hooks/use-time-format"
@@ -50,10 +47,8 @@ import {
   OT_TYPE_LABEL,
   OT_TYPE_COLOR,
   OT_RATE_MULTIPLIER,
-  calcHours,
   type OvertimeRequest,
   type OvertimeStatus,
-  type OvertimeType,
 } from "@/lib/overtime-api"
 
 // ── Constants ───────────────────────────────────────────────────────────────
@@ -85,14 +80,114 @@ const STATUS_FILTERS: { label: string; value?: OvertimeStatus }[] = [
   { label: "Draft", value: "DRAFT" },
 ]
 
-const OT_TYPES: OvertimeType[] = ["REGULAR", "REST_DAY", "HOLIDAY", "EMERGENCY"]
-
-const OT_TYPE_DESC: Record<OvertimeType, string> = {
-  REGULAR: "After regular shift hours",
-  REST_DAY: "Scheduled day off work",
-  HOLIDAY: "Legal or special holiday",
-  EMERGENCY: "Urgent unplanned work",
+function startOfWeek(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay())
 }
+
+function toISODate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}-${String(d.getDate()).padStart(2, "0")}`
+}
+
+/** Current semi-monthly payroll cut-off (1st–15th, or 16th–end of month). */
+function currentCutoff(): { from: Date; until: Date } {
+  const n = new Date()
+  const y = n.getFullYear()
+  const m = n.getMonth()
+  return n.getDate() <= 15
+    ? { from: new Date(y, m, 1), until: new Date(y, m, 15) }
+    : { from: new Date(y, m, 16), until: new Date(y, m + 1, 0) }
+}
+
+// Past-oriented quick ranges — overtime is filed for days already worked. The cut-off presets
+// follow a semi-monthly payroll period: the 1st–15th and the 16th–end of month.
+const RANGE_PRESETS: DateRangePreset[] = [
+  {
+    label: "This week",
+    range: () => {
+      const from = startOfWeek(new Date())
+      return {
+        from,
+        until: new Date(
+          from.getFullYear(),
+          from.getMonth(),
+          from.getDate() + 6
+        ),
+      }
+    },
+  },
+  {
+    label: "Last week",
+    range: () => {
+      const sow = startOfWeek(new Date())
+      const from = new Date(
+        sow.getFullYear(),
+        sow.getMonth(),
+        sow.getDate() - 7
+      )
+      return {
+        from,
+        until: new Date(
+          from.getFullYear(),
+          from.getMonth(),
+          from.getDate() + 6
+        ),
+      }
+    },
+  },
+  {
+    label: "This month",
+    range: () => {
+      const n = new Date()
+      return {
+        from: new Date(n.getFullYear(), n.getMonth(), 1),
+        until: new Date(n.getFullYear(), n.getMonth() + 1, 0),
+      }
+    },
+  },
+  {
+    label: "Last month",
+    range: () => {
+      const n = new Date()
+      return {
+        from: new Date(n.getFullYear(), n.getMonth() - 1, 1),
+        until: new Date(n.getFullYear(), n.getMonth(), 0),
+      }
+    },
+  },
+  {
+    label: "This year",
+    range: () => {
+      const y = new Date().getFullYear()
+      return { from: new Date(y, 0, 1), until: new Date(y, 11, 31) }
+    },
+  },
+  {
+    label: "Last year",
+    range: () => {
+      const y = new Date().getFullYear() - 1
+      return { from: new Date(y, 0, 1), until: new Date(y, 11, 31) }
+    },
+  },
+  {
+    label: "Current cut-off",
+    range: currentCutoff,
+  },
+  {
+    label: "Last cut-off",
+    range: () => {
+      const n = new Date()
+      const y = n.getFullYear()
+      const m = n.getMonth()
+      // First half now → previous = second half of last month; second half now → first half now.
+      return n.getDate() <= 15
+        ? { from: new Date(y, m - 1, 16), until: new Date(y, m, 0) }
+        : { from: new Date(y, m, 1), until: new Date(y, m, 15) }
+    },
+  },
+]
 
 function fmtDate(dateStr: string) {
   return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
@@ -121,337 +216,6 @@ function fmtHours(h: number) {
 }
 
 // ── Request Form Dialog ─────────────────────────────────────────────────────
-
-interface RequestFormProps {
-  open: boolean
-  onClose: () => void
-}
-
-function RequestFormDialog({ open, onClose }: RequestFormProps) {
-  const today = new Date().toISOString().split("T")[0]
-
-  const [overtimeDate, setOvertimeDate] = useState("")
-  const [startTime, setStartTime] = useState("")
-  const [endTime, setEndTime] = useState("")
-  const [overtimeType, setOvertimeType] = useState<OvertimeType>("REGULAR")
-  const [reason, setReason] = useState("")
-  const [attachments, setAttachments] = useState<File[]>([])
-
-  const createMutation = useCreateOvertimeRequest()
-
-  const totalHours = useMemo(
-    () => calcHours(startTime, endTime),
-    [startTime, endTime]
-  )
-
-  const timeError =
-    startTime && endTime && totalHours <= 0
-      ? "End time must be after start time."
-      : null
-
-  function resetForm() {
-    setOvertimeDate("")
-    setStartTime("")
-    setEndTime("")
-    setOvertimeType("REGULAR")
-    setReason("")
-    setAttachments([])
-  }
-
-  function handleClose() {
-    resetForm()
-    onClose()
-  }
-
-  function handleSubmit(isDraft: boolean) {
-    createMutation.mutate(
-      {
-        overtimeDate,
-        startTime,
-        endTime,
-        totalHours,
-        overtimeType,
-        reason,
-        isDraft,
-      },
-      { onSuccess: handleClose }
-    )
-  }
-
-  const canSubmit =
-    overtimeDate !== "" &&
-    startTime !== "" &&
-    endTime !== "" &&
-    totalHours > 0 &&
-    reason.trim() !== ""
-
-  const multiplier = OT_RATE_MULTIPLIER[overtimeType]
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <div className="flex size-7 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/20">
-              <HugeiconsIcon
-                icon={ClockPlusIcon}
-                size={14}
-                strokeWidth={1.8}
-                className="text-red-600 dark:text-red-400"
-              />
-            </div>
-            File Overtime Request
-          </DialogTitle>
-          <DialogDescription>
-            Submit an overtime request for supervisor / HR approval
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* Overtime date */}
-          <div className="space-y-1.5">
-            <Label className="text-[12px]">Overtime Date</Label>
-            <Input
-              type="date"
-              value={overtimeDate}
-              onChange={(e) => setOvertimeDate(e.target.value)}
-              className="h-9 text-[13px]"
-            />
-          </div>
-
-          {/* Time range */}
-          <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
-            <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-              Time Range
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-[12px]">Start Time</Label>
-                <Input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="h-9 text-[13px]"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[12px]">End Time</Label>
-                <Input
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className="h-9 text-[13px]"
-                />
-              </div>
-            </div>
-
-            {timeError ? (
-              <p className="flex items-center gap-1.5 text-[12px] text-red-500">
-                <HugeiconsIcon icon={Alert01Icon} size={12} strokeWidth={2} />
-                {timeError}
-              </p>
-            ) : totalHours > 0 ? (
-              <div className="flex items-center justify-between rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-[12px]">
-                <span className="text-primary">Total Overtime Hours</span>
-                <span className="font-bold text-primary tabular-nums">
-                  {fmtHours(totalHours)}
-                </span>
-              </div>
-            ) : null}
-          </div>
-
-          {/* OT type */}
-          <div className="space-y-1.5">
-            <Label className="text-[12px]">Overtime Type</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {OT_TYPES.map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setOvertimeType(type)}
-                  className={cn(
-                    "rounded-lg border px-3 py-2.5 text-left transition-all",
-                    overtimeType === type
-                      ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                      : "border-border bg-card hover:border-primary/40 hover:bg-muted/40"
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-1.5">
-                    <p
-                      className={cn(
-                        "text-[12px] font-semibold",
-                        overtimeType === type
-                          ? "text-primary"
-                          : "text-foreground"
-                      )}
-                    >
-                      {OT_TYPE_LABEL[type]}
-                    </p>
-                    <span
-                      className={cn(
-                        "shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold tabular-nums",
-                        overtimeType === type
-                          ? "bg-primary/10 text-primary"
-                          : "bg-muted text-muted-foreground"
-                      )}
-                    >
-                      ×{OT_RATE_MULTIPLIER[type].toFixed(2)}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    {OT_TYPE_DESC[type]}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* OT pay preview */}
-          {totalHours > 0 && (
-            <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 dark:border-green-800/40 dark:bg-green-900/10">
-              <HugeiconsIcon
-                icon={TimeScheduleIcon}
-                size={14}
-                strokeWidth={1.8}
-                className="shrink-0 text-green-600 dark:text-green-400"
-              />
-              <p className="text-[12px] text-green-700 dark:text-green-400">
-                <span className="font-semibold">{fmtHours(totalHours)}</span> of{" "}
-                {OT_TYPE_LABEL[overtimeType]} at{" "}
-                <span className="font-semibold">×{multiplier.toFixed(2)}</span>{" "}
-                rate — eligible for payroll computation upon approval.
-              </p>
-            </div>
-          )}
-
-          {/* Reason */}
-          <div className="space-y-1.5">
-            <Label className="text-[12px]">
-              Reason / Task Description <span className="text-red-500">*</span>
-            </Label>
-            <Textarea
-              placeholder="Describe the work performed or reason for overtime…"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              className="min-h-18 resize-none text-[13px]"
-            />
-          </div>
-
-          {/* File upload */}
-          <div className="space-y-1.5">
-            <Label className="text-[12px]">
-              Supporting Documents{" "}
-              <span className="text-muted-foreground">(optional)</span>
-            </Label>
-            <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-muted/20 py-4 transition-colors hover:border-primary/40 hover:bg-muted/40">
-              <HugeiconsIcon
-                icon={DocumentAttachmentIcon}
-                size={20}
-                strokeWidth={1.5}
-                className="text-muted-foreground"
-              />
-              <p className="text-[12px] text-muted-foreground">
-                Drop files or{" "}
-                <span className="font-medium text-primary">browse</span>
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                Approval screenshot, task proof, client request
-              </p>
-              <input
-                type="file"
-                multiple
-                accept="image/*,.pdf,.doc,.docx"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files)
-                    setAttachments((prev) => [
-                      ...prev,
-                      ...Array.from(e.target.files!),
-                    ])
-                }}
-              />
-            </label>
-            {attachments.length > 0 && (
-              <div className="space-y-1">
-                {attachments.map((f, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-1.5 text-[12px]"
-                  >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <HugeiconsIcon
-                        icon={File01Icon}
-                        size={13}
-                        strokeWidth={1.8}
-                        className="shrink-0 text-muted-foreground"
-                      />
-                      <span className="truncate">{f.name}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setAttachments((prev) => prev.filter((_, j) => j !== i))
-                      }
-                      className="ml-2 shrink-0 text-muted-foreground hover:text-red-500"
-                    >
-                      <HugeiconsIcon
-                        icon={Delete01Icon}
-                        size={12}
-                        strokeWidth={2}
-                      />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Policy notice */}
-          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-800/40 dark:bg-amber-900/10">
-            <HugeiconsIcon
-              icon={InformationCircleIcon}
-              size={14}
-              strokeWidth={1.8}
-              className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"
-            />
-            <p className="text-[12px] text-amber-700 dark:text-amber-400">
-              Overtime must be pre-approved by your supervisor. Unapproved OT
-              may be subject to review and will not be paid.
-            </p>
-          </div>
-        </div>
-
-        <DialogFooter className="gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={createMutation.isPending}
-            onClick={handleClose}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={
-              !overtimeDate || !reason.trim() || createMutation.isPending
-            }
-            onClick={() => handleSubmit(true)}
-          >
-            Save as Draft
-          </Button>
-          <Button
-            size="sm"
-            disabled={!canSubmit || !!timeError || createMutation.isPending}
-            onClick={() => handleSubmit(false)}
-          >
-            {createMutation.isPending ? "Submitting…" : "Submit Request"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 // ── Detail Dialog ───────────────────────────────────────────────────────────
 
@@ -621,25 +385,43 @@ export function MyOvertimeSection() {
   const [statusFilter, setStatusFilter] = useState<OvertimeStatus | undefined>(
     undefined
   )
-  const [page, setPage] = useState(0)
+  // Default to the current payroll cut-off on load.
+  const [range, setRange] = useState<DateRangeValue | null>(() => {
+    const c = currentCutoff()
+    return { from: toISODate(c.from), until: toISODate(c.until) }
+  })
   const [formOpen, setFormOpen] = useState(false)
   const [detail, setDetail] = useState<OvertimeRequest | null>(null)
   const { formatTime } = useTimeFormat()
 
-  const q = useMyOvertimeRequests({ status: statusFilter, page, size: 20 })
-  const items = q.data?.content ?? []
-  const total = q.data?.totalElements ?? 0
-  const totalPages = q.data?.totalPages ?? 0
+  const q = useMyOvertimeRequests({ size: 100 })
+  const allItems = q.data?.content ?? []
 
-  const totalApprovedHours = items
-    .filter((r) => r.status === "APPROVED")
+  // The date-range filter (by overtime date) drives both the cards and the table.
+  const rangeItems = range
+    ? allItems.filter(
+        (r) => r.overtimeDate >= range.from && r.overtimeDate <= range.until
+      )
+    : allItems
+  const items = statusFilter
+    ? rangeItems.filter((r) => r.status === statusFilter)
+    : rangeItems
+
+  const approved = rangeItems.filter((r) => r.status === "APPROVED")
+  // Rest-day duty (REST_DAY) is premium pay, not overtime — keep it separate from OT hours
+  // (REGULAR + REST_DAY_OT) so the totals aren't conflated.
+  const approvedRdHours = approved
+    .filter((r) => r.overtimeType === "REST_DAY")
+    .reduce((sum, r) => sum + r.totalHours, 0)
+  const approvedOtHours = approved
+    .filter((r) => r.overtimeType !== "REST_DAY")
     .reduce((sum, r) => sum + r.totalHours, 0)
 
   const counts = {
-    pending: items.filter((r) => r.status === "PENDING").length,
-    approved: items.filter((r) => r.status === "APPROVED").length,
-    rejected: items.filter((r) => r.status === "REJECTED").length,
-    draft: items.filter((r) => r.status === "DRAFT").length,
+    pending: rangeItems.filter((r) => r.status === "PENDING").length,
+    approved: rangeItems.filter((r) => r.status === "APPROVED").length,
+    rejected: rangeItems.filter((r) => r.status === "REJECTED").length,
+    draft: rangeItems.filter((r) => r.status === "DRAFT").length,
   }
 
   return (
@@ -661,7 +443,7 @@ export function MyOvertimeSection() {
       </div>
 
       {/* ── Stat cards ── */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
         <StatCard
           title="Pending"
           value={<span className="text-warning">{counts.pending}</span>}
@@ -685,16 +467,22 @@ export function MyOvertimeSection() {
           }
         />
         <StatCard
-          title="Approved Hours"
-          value={
-            <>
-              {Math.floor(totalApprovedHours)}
-              <span className="text-base font-normal text-muted-foreground">
-                h
-              </span>
-            </>
+          title="RD Hours"
+          value={approvedRdHours ? fmtHours(approvedRdHours) : "0h"}
+          meta="Approved rest-day duty"
+          accent="amber"
+          icon={
+            <HugeiconsIcon
+              icon={TimeScheduleIcon}
+              size={16}
+              strokeWidth={1.8}
+            />
           }
-          meta="Total OT hours this period"
+        />
+        <StatCard
+          title="OT Hours"
+          value={approvedOtHours ? fmtHours(approvedOtHours) : "0h"}
+          meta="Approved overtime"
           accent="blue"
           icon={
             <HugeiconsIcon
@@ -718,15 +506,12 @@ export function MyOvertimeSection() {
       {/* ── Table card ── */}
       <div className="rounded-xl border border-border bg-card shadow-sm">
         {/* Toolbar */}
-        <div className="flex items-center gap-3 border-b border-border px-5 py-3">
+        <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3">
           <div className="flex rounded-lg border border-border bg-muted/40 p-0.5">
             {STATUS_FILTERS.map((f) => (
               <button
                 key={f.label}
-                onClick={() => {
-                  setStatusFilter(f.value)
-                  setPage(0)
-                }}
+                onClick={() => setStatusFilter(f.value)}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors",
                   statusFilter === f.value
@@ -737,6 +522,27 @@ export function MyOvertimeSection() {
                 {f.label}
               </button>
             ))}
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <DateRangePicker
+              value={range}
+              onChange={setRange}
+              presets={RANGE_PRESETS}
+              align="end"
+              className="w-65"
+              fromPlaceholder="From date"
+              untilPlaceholder="To date"
+            />
+            {range && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 text-[12px]"
+                onClick={() => setRange(null)}
+              >
+                Clear
+              </Button>
+            )}
           </div>
         </div>
 
@@ -844,23 +650,13 @@ export function MyOvertimeSection() {
             )}
           </TableBody>
         </Table>
-
-        {totalPages > 1 && (
-          <div className="border-t border-border p-4">
-            <TablePagination
-              page={page + 1}
-              totalPages={totalPages}
-              total={total}
-              pageSize={20}
-              setPage={(p) => setPage(p - 1)}
-              setPageSize={() => {}}
-            />
-          </div>
-        )}
       </div>
 
       {/* ── Modals ── */}
-      <RequestFormDialog open={formOpen} onClose={() => setFormOpen(false)} />
+      <OvertimeRequestDialog
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+      />
       {detail && (
         <DetailDialog request={detail} onClose={() => setDetail(null)} />
       )}

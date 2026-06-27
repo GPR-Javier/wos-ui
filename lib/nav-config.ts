@@ -232,7 +232,7 @@ export const navConfig: NavItem[] = [
       {
         label: "Overtime",
         section: "my-overtime",
-        authority: "OVERTIME:VIEW_OWN",
+        authority: "OVERTIME:VIEW_OWN_OVERTIME",
       },
       {
         label: "Change Schedule",
@@ -242,7 +242,7 @@ export const navConfig: NavItem[] = [
       {
         label: "COE",
         section: "my-coe",
-        authority: "CERTIFICATE_OF_EMPLOYMENT:VIEW_OWN",
+        authority: "CERTIFICATE_OF_EMPLOYMENT:VIEW_OWN_COE",
       },
       {
         label: "Salary Dispute",
@@ -252,7 +252,7 @@ export const navConfig: NavItem[] = [
       {
         label: "Business Trip",
         section: "my-business-trip",
-        authority: "BUSINESS_TRIP:VIEW_OWN",
+        authority: "OFFICIAL_BUSINESS:VIEW_OWN_OB",
       },
       {
         label: "Expense Report",

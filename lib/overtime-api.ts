@@ -1,7 +1,12 @@
 import { api } from "./api"
 import type { PageResponse } from "./admin-api"
 
-export type OvertimeType = "REGULAR" | "REST_DAY" | "HOLIDAY" | "EMERGENCY"
+export type OvertimeType =
+  | "REGULAR"
+  | "REST_DAY"
+  | "REST_DAY_OT"
+  | "HOLIDAY"
+  | "EMERGENCY"
 
 export type OvertimeStatus =
   | "DRAFT"
@@ -33,10 +38,15 @@ export interface OvertimeRequest {
 
 export interface CreateOvertimePayload {
   overtimeDate: string
-  startTime: string
-  endTime: string
-  totalHours: number
-  overtimeType: OvertimeType
+  /** Overtime range — regular-day OT, or the rest-day overtime portion. */
+  startTime?: string | null
+  endTime?: string | null
+  /** Rest-day duty range — only on rest days. */
+  restStartTime?: string | null
+  restEndTime?: string | null
+  totalHours?: number
+  /** Ignored on write — the server determines the type(s) from the schedule + ranges. */
+  overtimeType?: OvertimeType
   reason: string
   isDraft?: boolean
 }
@@ -101,7 +111,8 @@ export const overtimeApi = {
 
 export const OT_TYPE_LABEL: Record<OvertimeType, string> = {
   REGULAR: "Regular OT",
-  REST_DAY: "Rest Day OT",
+  REST_DAY: "Rest Day",
+  REST_DAY_OT: "Rest Day OT",
   HOLIDAY: "Holiday OT",
   EMERGENCY: "Emergency OT",
 }
@@ -110,6 +121,7 @@ export const OT_TYPE_LABEL: Record<OvertimeType, string> = {
 export const OT_RATE_MULTIPLIER: Record<OvertimeType, number> = {
   REGULAR: 1.25,
   REST_DAY: 1.3,
+  REST_DAY_OT: 1.69, // rest-day work beyond the standard hours (1.30 × 1.30)
   HOLIDAY: 1.5,
   EMERGENCY: 1.25,
 }
@@ -120,6 +132,7 @@ export const OT_TYPE_COLOR: Record<
 > = {
   REGULAR: "blue",
   REST_DAY: "amber",
+  REST_DAY_OT: "red",
   HOLIDAY: "red",
   EMERGENCY: "purple",
 }

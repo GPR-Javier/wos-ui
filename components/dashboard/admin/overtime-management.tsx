@@ -309,7 +309,7 @@ function ReviewModal({
                 <span className="text-muted-foreground">(optional)</span>
               </Label>
               <Textarea
-                className="min-h-[72px] resize-none text-[13px]"
+                className="min-h-18 resize-none text-[13px]"
                 placeholder={
                   mode === "approve"
                     ? "Note to employee (e.g. shift confirmation)…"
@@ -627,7 +627,7 @@ export function OvertimeManagementSection() {
                   </TableCell>
 
                   {/* Reason */}
-                  <TableCell className="max-w-[150px]">
+                  <TableCell className="max-w-37.5">
                     <p className="truncate text-[12px] text-muted-foreground">
                       {r.reason}
                     </p>

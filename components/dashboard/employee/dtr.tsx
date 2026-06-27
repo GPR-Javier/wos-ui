@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { EyeIcon, File01Icon } from "@hugeicons/core-free-icons"
+import { EyeIcon, File01Icon, ClockPlusIcon } from "@hugeicons/core-free-icons"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { ChangeTimeRequestDialog } from "@/components/custom/change-time-request-dialog"
+import { OvertimeRequestDialog } from "@/components/custom/overtime-request-dialog"
 import { ScheduleChangeRequestModal } from "@/components/custom/schedule-change-request-modal"
 import { MyPolicyHistoryModal } from "@/components/custom/my-policy-history-modal"
 import { ConfirmPunchModal } from "@/components/custom/confirm-punch-modal"
@@ -43,6 +44,8 @@ import { useAttendance } from "@/hooks/use-employee"
 import { useAttendanceClock, fmtDuration } from "@/hooks/use-attendance-clock"
 import { ClockPanel } from "@/components/custom/clock-panel"
 import { useMyPolicy } from "@/hooks/use-schedule-policy"
+import { useMyOvertimeRequests } from "@/hooks/use-overtime"
+import type { OvertimeStatus, OvertimeType } from "@/lib/overtime-api"
 import { useTimeFormat } from "@/hooks/use-time-format"
 import type { AttendanceEntry } from "@/lib/employee-api"
 
@@ -65,7 +68,27 @@ const statusVariant: Record<
   undertime: "amber",
 }
 
-const APPEAL_STATUSES = new Set(["late", "undertime", "overtime", "overbreak"])
+const APPEAL_STATUSES = new Set(["late", "undertime", "overbreak"])
+// Overtime / rest-day rows file an overtime request instead of an appeal.
+const OT_FILE_STATUSES = new Set(["overtime", "restday"])
+// Picks the most "advanced" status when a date has several OT requests (e.g. rest-day + OT).
+const OT_STATUS_RANK: Record<OvertimeStatus, number> = {
+  APPROVED: 4,
+  PENDING: 3,
+  REJECTED: 2,
+  CANCELLED: 1,
+  DRAFT: 0,
+}
+
+/** Short label for the kind(s) of overtime filed on a day. */
+function otTypeLabel(types: Set<OvertimeType>): string {
+  const rd = types.has("REST_DAY")
+  const rdOt = types.has("REST_DAY_OT")
+  if (rd && rdOt) return "RD + OT"
+  if (rdOt) return "RD OT"
+  if (rd) return "RD"
+  return "OT"
+}
 // Time-change is only relevant when clock-in/out caused the issue
 const TIME_CHANGE_STATUSES = new Set(["late", "undertime"])
 
@@ -89,9 +112,12 @@ function ViewModal({
     { label: "Time in", value: formatTime(record.timeIn) },
     { label: "Time out", value: formatTime(record.timeOut) },
     { label: "Hours worked", value: record.hoursWorked },
+    ...(record.rdHours && record.rdHours !== "—"
+      ? [{ label: "RD hours", value: record.rdHours }]
+      : []),
     {
       label: "OT hours",
-      value: record.otHours !== "—" ? `+${record.otHours}h` : "—",
+      value: record.otHours !== "—" ? `+${record.otHours}` : "—",
     },
     {
       label: "Status",
@@ -410,6 +436,7 @@ export function DTRSection() {
   )
   const [viewOpen, setViewOpen] = useState(false)
   const [appealOpen, setAppealOpen] = useState(false)
+  const [otOpen, setOtOpen] = useState(false)
   const [recordNotes, setRecordNotes] = useState<Record<string, string>>({})
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -475,6 +502,26 @@ export function DTRSection() {
   const paginated = (attendanceData?.content ?? []).map(toAttendanceRecord)
   const total = attendanceData?.totalElements ?? 0
   const totalPages = attendanceData?.totalPages ?? 0
+
+  // The employee's overtime requests, keyed by date, so each attendance row can show whether OT
+  // was already filed (and its status) instead of offering to file again.
+  const otRequestsQ = useMyOvertimeRequests({ size: 100 })
+  const otByDate = new Map<
+    string,
+    { status: OvertimeStatus; types: Set<OvertimeType> }
+  >()
+  for (const o of otRequestsQ.data?.content ?? []) {
+    if (o.status !== "PENDING" && o.status !== "APPROVED") continue // only active
+    let entry = otByDate.get(o.overtimeDate)
+    if (!entry) {
+      entry = { status: o.status, types: new Set() }
+      otByDate.set(o.overtimeDate, entry)
+    }
+    entry.types.add(o.overtimeType)
+    if (OT_STATUS_RANK[o.status] > OT_STATUS_RANK[entry.status]) {
+      entry.status = o.status
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -712,6 +759,7 @@ export function DTRSection() {
                 "Time in",
                 "Time out",
                 "Hours worked",
+                "RD hours",
                 "OT hours",
                 "Status",
                 "Notes",
@@ -720,7 +768,7 @@ export function DTRSection() {
                 <TableHead
                   key={h}
                   className={
-                    h === "Hours worked" || h === "OT hours"
+                    h === "Hours worked" || h === "RD hours" || h === "OT hours"
                       ? "text-right"
                       : undefined
                   }
@@ -753,6 +801,9 @@ export function DTRSection() {
                     <TableCell className="text-right">
                       <Skeleton className="ml-auto h-3 w-12" />
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="ml-auto h-3 w-12" />
+                    </TableCell>
                     <TableCell>
                       <Skeleton className="h-5 w-16 rounded-full" />
                     </TableCell>
@@ -768,7 +819,7 @@ export function DTRSection() {
             ) : paginated.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={9}
+                  colSpan={10}
                   className="py-8 text-center text-[13px] text-muted-foreground"
                 >
                   No attendance records
@@ -777,6 +828,10 @@ export function DTRSection() {
             ) : null}
             {paginated.map((r, i) => {
               const note = recordNotes[r.date]
+              const ot = otByDate.get(r.date)
+              const otStatus = ot?.status
+              const otFiled = !!ot
+              const otLabel = ot ? otTypeLabel(ot.types) : ""
               return (
                 <TableRow key={i}>
                   <TableCell className="font-medium">{r.date}</TableCell>
@@ -793,9 +848,18 @@ export function DTRSection() {
                     {r.hoursWorked}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
+                    {r.rdHours && r.rdHours !== "—" ? (
+                      <span className="font-medium text-warning">
+                        {r.rdHours}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
                     {r.otHours !== "—" ? (
                       <span className="font-medium text-primary">
-                        +{r.otHours}h
+                        +{r.otHours}
                       </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
@@ -842,7 +906,49 @@ export function DTRSection() {
                             View record
                           </TooltipContent>
                         </Tooltip>
-                        {APPEAL_STATUSES.has(r.status) && (
+                        {OT_FILE_STATUSES.has(r.status) && otFiled ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <StatusBadge
+                                variant={
+                                  otStatus === "APPROVED" ? "green" : "amber"
+                                }
+                              >
+                                {otLabel}{" "}
+                                {otStatus === "APPROVED"
+                                  ? "Approved"
+                                  : "Pending"}
+                              </StatusBadge>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              {otLabel} request{" "}
+                              {otStatus === "APPROVED" ? "approved" : "pending"}
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : OT_FILE_STATUSES.has(r.status) ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 text-primary hover:bg-primary/10 hover:text-primary"
+                                onClick={() => {
+                                  setSelectedRecord(r)
+                                  setOtOpen(true)
+                                }}
+                              >
+                                <HugeiconsIcon
+                                  icon={ClockPlusIcon}
+                                  size={14}
+                                  strokeWidth={2}
+                                />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              File overtime
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : APPEAL_STATUSES.has(r.status) ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
@@ -865,7 +971,7 @@ export function DTRSection() {
                               File an appeal
                             </TooltipContent>
                           </Tooltip>
-                        )}
+                        ) : null}
                       </div>
                     </TooltipProvider>
                   </TableCell>
@@ -955,6 +1061,11 @@ export function DTRSection() {
           selectedRecord &&
           setRecordNotes((prev) => ({ ...prev, [selectedRecord.date]: reason }))
         }
+      />
+      <OvertimeRequestDialog
+        open={otOpen}
+        onClose={() => setOtOpen(false)}
+        defaultDate={selectedRecord?.date}
       />
     </div>
   )

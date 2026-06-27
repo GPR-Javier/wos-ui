@@ -29,6 +29,7 @@ export interface AttendanceRecord {
   timeIn: string
   timeOut: string
   hoursWorked: string
+  rdHours?: string
   otHours: string
   status:
     | "present"
