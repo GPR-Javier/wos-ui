@@ -4,5 +4,9 @@ import { ChangeTimeManagementSection } from "@/components/dashboard/admin/change
 export const metadata: Metadata = { title: "Change Time In/Time Out" }
 
 export default function ChangeTimePage() {
-  return <ChangeTimeManagementSection />
+  return (
+    <div className="animate-in p-6 duration-300 fade-in">
+      <ChangeTimeManagementSection />
+    </div>
+  )
 }

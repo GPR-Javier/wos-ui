@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/custom/status-badge"
 import { LeaveModal } from "@/components/custom/leave-modal"
 import { ObModal } from "@/components/custom/ob-modal"
 import { CoeModal } from "@/components/custom/coe-modal"
-import { DtrChangeModal } from "@/components/custom/dtr-change-modal"
+import { ChangeTimeRequestDialog } from "@/components/custom/change-time-request-dialog"
 import { OvertimeModal } from "@/components/custom/overtime-modal"
 import {
   Table,
@@ -359,7 +359,10 @@ export function RequestSection() {
       <LeaveModal open={leaveOpen} onClose={() => setLeaveOpen(false)} />
       <ObModal open={obOpen} onClose={() => setObOpen(false)} />
       <CoeModal open={coeOpen} onClose={() => setCoeOpen(false)} />
-      <DtrChangeModal open={dtrOpen} onClose={() => setDtrOpen(false)} />
+      <ChangeTimeRequestDialog
+        open={dtrOpen}
+        onClose={() => setDtrOpen(false)}
+      />
       <OvertimeModal open={otOpen} onClose={() => setOtOpen(false)} />
     </div>
   )

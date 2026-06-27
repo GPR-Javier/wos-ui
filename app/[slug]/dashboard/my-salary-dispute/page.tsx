@@ -4,5 +4,9 @@ import { MySalaryDisputeSection } from "@/components/dashboard/employee/my-salar
 export const metadata: Metadata = { title: "Salary Dispute" }
 
 export default function MySalaryDisputePage() {
-  return <MySalaryDisputeSection />
+  return (
+    <div className="animate-in p-6 duration-300 fade-in">
+      <MySalaryDisputeSection />
+    </div>
+  )
 }

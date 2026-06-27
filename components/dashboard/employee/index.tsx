@@ -227,6 +227,8 @@ export function OverviewSection() {
     restDays.length > 0
       ? restDays.map((d) => WEEKDAY_LABEL[d]).join(" & ")
       : "—"
+  const todayWeekday = JS_DAY_TO_WEEKDAY[new Date().getDay()]!
+  const todayIsRest = restDays.includes(todayWeekday)
   const tomorrowWeekday = JS_DAY_TO_WEEKDAY[(new Date().getDay() + 1) % 7]!
   const tomorrowIsRest = restDays.includes(tomorrowWeekday)
 
@@ -421,11 +423,13 @@ export function OverviewSection() {
             {[
               {
                 label: "Today's Shift",
-                value: shiftWindow,
-                sub: policy
-                  ? `${policy.requiredHours}h · Grace ${policy.lateGraceMins ?? 0}m`
-                  : "",
-                dot: "bg-green-500",
+                value: todayIsRest ? "Rest Day" : shiftWindow,
+                sub: todayIsRest
+                  ? `${WEEKDAY_LABEL[todayWeekday]} · Non-working day`
+                  : policy
+                    ? `${policy.requiredHours}h · Grace ${policy.lateGraceMins ?? 0}m`
+                    : "",
+                dot: todayIsRest ? "bg-gray-400" : "bg-green-500",
               },
               {
                 label: "Tomorrow's Shift",

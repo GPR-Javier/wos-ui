@@ -4,5 +4,9 @@ import { MyBusinessTripSection } from "@/components/dashboard/employee/my-busine
 export const metadata: Metadata = { title: "Business Trip" }
 
 export default function MyBusinessTripPage() {
-  return <MyBusinessTripSection />
+  return (
+    <div className="animate-in p-6 duration-300 fade-in">
+      <MyBusinessTripSection />
+    </div>
+  )
 }

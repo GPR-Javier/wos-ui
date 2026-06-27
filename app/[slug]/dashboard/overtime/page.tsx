@@ -4,5 +4,9 @@ import { OvertimeManagementSection } from "@/components/dashboard/admin/overtime
 export const metadata: Metadata = { title: "Overtime Management" }
 
 export default function OvertimePage() {
-  return <OvertimeManagementSection />
+  return (
+    <div className="animate-in p-6 duration-300 fade-in">
+      <OvertimeManagementSection />
+    </div>
+  )
 }

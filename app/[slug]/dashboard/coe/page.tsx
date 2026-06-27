@@ -4,5 +4,9 @@ import { CoeManagementSection } from "@/components/dashboard/admin/coe-managemen
 export const metadata: Metadata = { title: "COE Requests" }
 
 export default function CoePage() {
-  return <CoeManagementSection />
+  return (
+    <div className="animate-in p-6 duration-300 fade-in">
+      <CoeManagementSection />
+    </div>
+  )
 }

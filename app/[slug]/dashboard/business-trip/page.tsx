@@ -4,5 +4,9 @@ import { BusinessTripManagementSection } from "@/components/dashboard/admin/busi
 export const metadata: Metadata = { title: "Business Trip" }
 
 export default function BusinessTripPage() {
-  return <BusinessTripManagementSection />
+  return (
+    <div className="animate-in p-6 duration-300 fade-in">
+      <BusinessTripManagementSection />
+    </div>
+  )
 }

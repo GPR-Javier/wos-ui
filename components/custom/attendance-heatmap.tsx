@@ -35,6 +35,8 @@ type DayStatus =
   | "undertime"
   | "absent"
   | "leave"
+  | "restday-present"
+  | "restday-overtime"
   | "weekend"
   | "future"
 
@@ -49,6 +51,8 @@ const STATUS_BG: Record<DayStatus, string> = {
   undertime: "bg-amber-400",
   absent: "bg-red-500",
   leave: "bg-purple-400",
+  "restday-present": "bg-teal-500",
+  "restday-overtime": "bg-indigo-500",
   weekend: "bg-border",
   future: "bg-muted",
 }
@@ -60,6 +64,8 @@ const STATUS_LABEL: Record<DayStatus, string> = {
   undertime: "Undertime",
   absent: "Absent",
   leave: "On leave",
+  "restday-present": "Rest day (worked)",
+  "restday-overtime": "Rest day OT",
   weekend: "Weekend",
   future: "—",
 }
@@ -84,8 +90,12 @@ const VALID_STATUSES = new Set<DayStatus>([
 
 function normalizeStatus(s: string | null | undefined): DayStatus {
   if (!s) return "present"
-  const lower = s.toLowerCase() as DayStatus
-  return VALID_STATUSES.has(lower) ? lower : "present"
+  const lower = s.toLowerCase()
+  // Rest-day work is finalized as "restday" at clock-out and is entirely overtime.
+  if (lower === "restday") return "overtime"
+  return VALID_STATUSES.has(lower as DayStatus)
+    ? (lower as DayStatus)
+    : "present"
 }
 
 function statusForDate(
@@ -93,10 +103,20 @@ function statusForDate(
   today: Date,
   lookup: Map<string, DayStatus>
 ): DayStatus {
+  // A recorded day always wins — including rest days the employee actually worked.
+  const recorded = lookup.get(formatDateKey(date))
   const dow = date.getDay()
-  if (dow === 0 || dow === 6) return "weekend"
+  const isRestDay = dow === 0 || dow === 6
+  if (recorded) {
+    // Day-off attendance gets its own indicator (present vs overtime) so it stands
+    // apart from a normal weekday rather than disappearing into the weekend grey.
+    if (isRestDay)
+      return recorded === "overtime" ? "restday-overtime" : "restday-present"
+    return recorded
+  }
+  if (isRestDay) return "weekend"
   if (date > today) return "future"
-  return lookup.get(formatDateKey(date)) ?? "future" // no record → muted
+  return "future" // past workday with no record → muted
 }
 
 function formatDay(date: Date): string {
@@ -259,7 +279,9 @@ export function AttendanceHeatmap() {
   )
   const stats = {
     total: workDays.length,
-    overtime: workDays.filter((d) => d.status === "overtime").length,
+    overtime: workDays.filter(
+      (d) => d.status === "overtime" || d.status === "restday-overtime"
+    ).length,
     late: workDays.filter((d) => d.status === "late").length,
     absent: workDays.filter((d) => d.status === "absent").length,
   }
@@ -351,22 +373,13 @@ export function AttendanceHeatmap() {
 
           {/* Legend */}
           <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-            <span>Less</span>
-            {(
-              ["future", "present", "overtime", "late", "absent"] as DayStatus[]
-            ).map((s) => (
-              <div
-                key={s}
-                style={{ width: 11, height: 11, borderRadius: 2 }}
-                className={STATUS_BG[s]}
-              />
-            ))}
-            <span className="mr-3">More</span>
             <div className="flex flex-wrap items-center gap-3">
               {(
                 [
                   ["present", "Present"],
                   ["overtime", "Overtime"],
+                  ["restday-present", "Rest day"],
+                  ["restday-overtime", "Rest day OT"],
                   ["late", "Late"],
                   ["absent", "Absent"],
                   ["weekend", "Weekend"],

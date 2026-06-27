@@ -1,27 +1,15 @@
 "use client"
 
-import React, { useState, useEffect, useCallback, useRef } from "react"
+import React, { useState, useEffect } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  Coffee01Icon,
-  SpoonAndForkIcon,
-  Sun01Icon,
-  Moon01Icon,
-  MaximizeScreenIcon,
-  MinimizeScreenIcon,
-  Clock01Icon,
-  StopCircleIcon,
-  EyeIcon,
-  File01Icon,
-} from "@hugeicons/core-free-icons"
+import { EyeIcon, File01Icon } from "@hugeicons/core-free-icons"
 import { StatusBadge } from "@/components/custom/status-badge"
-import { DtrChangeModal } from "@/components/custom/dtr-change-modal"
+import { ChangeTimeRequestDialog } from "@/components/custom/change-time-request-dialog"
 import { ScheduleChangeRequestModal } from "@/components/custom/schedule-change-request-modal"
 import { MyPolicyHistoryModal } from "@/components/custom/my-policy-history-modal"
-import { AttendanceCameraCapture } from "@/components/custom/attendance-camera-capture"
 import { ConfirmPunchModal } from "@/components/custom/confirm-punch-modal"
+import { PunchCameraModal } from "@/components/custom/punch-camera-modal"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useAuthStore } from "@/store/auth-store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -51,16 +39,12 @@ import { cn } from "@/lib/utils"
 import type { AttendanceRecord } from "@/lib/types"
 import { TablePagination } from "@/components/custom/table-pagination"
 import { AttendanceHeatmap } from "@/components/custom/attendance-heatmap"
-import {
-  useAttendance,
-  useClockIn,
-  useClockOut,
-  useBreakStart,
-  useBreakEnd,
-} from "@/hooks/use-employee"
+import { useAttendance } from "@/hooks/use-employee"
+import { useAttendanceClock, fmtDuration } from "@/hooks/use-attendance-clock"
+import { ClockPanel } from "@/components/custom/clock-panel"
 import { useMyPolicy } from "@/hooks/use-schedule-policy"
 import { useTimeFormat } from "@/hooks/use-time-format"
-import type { AttendanceBreakEntry, AttendanceEntry } from "@/lib/employee-api"
+import type { AttendanceEntry } from "@/lib/employee-api"
 
 function toAttendanceRecord(e: AttendanceEntry): AttendanceRecord {
   return e as AttendanceRecord
@@ -416,260 +400,11 @@ function AppealModal({
   )
 }
 
-interface DtrBreak {
-  label: string
-  allowMins: number
-  elapsed: number
-  active: boolean
-  startTime: number | null
-  done: boolean
-  otOnly?: boolean
-}
-
-/**
- * Folds server breaks for the current attendance record into the local DtrBreak map.
- * Completed breaks add to `elapsed` and may flip `done` once allowance is consumed;
- * the one open break (endedAt = null) sets `active` + `startTime`.
- */
-function hydrateDtrBreaks(
-  initial: Record<string, DtrBreak>,
-  serverBreaks: AttendanceBreakEntry[] | undefined
-): Record<string, DtrBreak> {
-  if (!serverBreaks?.length) return initial
-  const result: Record<string, DtrBreak> = Object.fromEntries(
-    Object.entries(initial).map(([k, v]) => [
-      k,
-      { ...v, elapsed: 0, active: false, startTime: null, done: false },
-    ])
-  )
-  for (const br of serverBreaks) {
-    const cur = result[br.type]
-    if (!cur) continue
-    const startMs = new Date(br.startedAt).getTime()
-    if (br.endedAt) {
-      const endMs = new Date(br.endedAt).getTime()
-      const seconds = Math.max(0, Math.floor((endMs - startMs) / 1000))
-      const elapsed = cur.elapsed + seconds
-      result[br.type] = {
-        ...cur,
-        elapsed,
-        done: elapsed >= cur.allowMins * 60,
-      }
-    } else {
-      result[br.type] = { ...cur, active: true, startTime: startMs }
-    }
-  }
-  return result
-}
-
-const INITIAL_BREAKS: Record<string, DtrBreak> = {
-  morning: {
-    label: "Morning",
-    allowMins: 15,
-    elapsed: 0,
-    active: false,
-    startTime: null,
-    done: false,
-  },
-  lunch: {
-    label: "Lunch",
-    allowMins: 60,
-    elapsed: 0,
-    active: false,
-    startTime: null,
-    done: false,
-  },
-  afternoon: {
-    label: "Afternoon",
-    allowMins: 15,
-    elapsed: 0,
-    active: false,
-    startTime: null,
-    done: false,
-  },
-  dinner: {
-    label: "Dinner",
-    allowMins: 30,
-    elapsed: 0,
-    active: false,
-    startTime: null,
-    done: false,
-    otOnly: true,
-  },
-}
-
-function fmtDuration(secs: number): string {
-  const h = Math.floor(secs / 3600)
-  const m = Math.floor((secs % 3600) / 60)
-  return `${h}h ${String(m).padStart(2, "0")}m`
-}
-
-function isBreakInWindow(type: string, now: Date | null): boolean {
-  if (!now) return false
-  const mins = now.getHours() * 60 + now.getMinutes()
-  if (type === "morning") return mins >= 6 * 60 && mins < 12 * 60
-  if (type === "lunch") return mins >= 12 * 60 && mins <= 13 * 60
-  if (type === "afternoon") return mins > 13 * 60 && mins < 18 * 60
-  if (type === "dinner") return mins >= 18 * 60
-  return false
-}
-
-// ── Ring button ───────────────────────────────────────────────────────────────
-
-function DtrRingButton({
-  size,
-  progress,
-  ringColor,
-  onClick,
-  disabled,
-  children,
-  label,
-  sublabel,
-  pulse,
-}: {
-  size: number
-  progress: number
-  ringColor: string
-  onClick: () => void
-  disabled?: boolean
-  children: React.ReactNode
-  label: string
-  sublabel?: string
-  pulse?: boolean
-}) {
-  const sw = 3
-  const r = (size - sw * 2) / 2
-  const circ = 2 * Math.PI * r
-  const offset = circ * (1 - Math.min(1, Math.max(0, progress)))
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <button
-        onClick={onClick}
-        disabled={disabled}
-        className={cn(
-          "relative flex items-center justify-center rounded-full bg-muted/50 transition-all duration-150",
-          "hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40",
-          pulse && "animate-pulse"
-        )}
-        style={{ width: size, height: size }}
-      >
-        <svg
-          className="absolute inset-0"
-          width={size}
-          height={size}
-          style={{ transform: "rotate(-90deg)" }}
-        >
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill="none"
-            stroke="var(--bdr)"
-            strokeWidth={sw}
-          />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill="none"
-            stroke={ringColor}
-            strokeWidth={sw}
-            strokeLinecap="round"
-            strokeDasharray={circ}
-            strokeDashoffset={offset}
-            style={{ transition: "stroke-dashoffset 1s linear, stroke 0.3s" }}
-          />
-        </svg>
-        <span className="relative z-10">{children}</span>
-      </button>
-      <div className="text-center leading-tight">
-        <p className="text-[11px] font-semibold text-foreground">{label}</p>
-        {sublabel && (
-          <p className="text-[10px] text-muted-foreground">{sublabel}</p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function PunchCameraModal({
-  punchType,
-  onClose,
-  onCaptured,
-}: {
-  punchType: "in" | "out"
-  onClose: () => void
-  onCaptured: (capturedTime: string) => void
-}) {
-  const isClockIn = punchType === "in"
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/45 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
-        <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <div>
-            <p className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
-              {isClockIn ? "Clock In" : "Clock Out"} Verification
-            </p>
-            <p className="text-[13px] text-muted-foreground">
-              Capture your photo to complete{" "}
-              {isClockIn ? "clock in" : "clock out"}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            aria-label="Close camera"
-          >
-            x
-          </button>
-        </div>
-        <AttendanceCameraCapture
-          punchType={punchType}
-          onCapture={onCaptured}
-          onBack={onClose}
-        />
-      </div>
-    </div>
-  )
-}
-
-const BREAK_ICONS: Record<string, (color: string) => React.ReactNode> = {
-  morning: (c) => (
-    <HugeiconsIcon icon={Coffee01Icon} size={15} strokeWidth={2} color={c} />
-  ),
-  lunch: (c) => (
-    <HugeiconsIcon
-      icon={SpoonAndForkIcon}
-      size={15}
-      strokeWidth={2}
-      color={c}
-    />
-  ),
-  afternoon: (c) => (
-    <HugeiconsIcon icon={Sun01Icon} size={15} strokeWidth={2} color={c} />
-  ),
-  dinner: (c) => (
-    <HugeiconsIcon icon={Moon01Icon} size={15} strokeWidth={2} color={c} />
-  ),
-}
-
 export function DTRSection() {
   const { formatTime } = useTimeFormat()
-  const [now, setNow] = useState<Date | null>(null)
-  const [clocked, setClocked] = useState(false)
-  const [clockInTime, setClockInTime] = useState<Date | null>(null)
-  const [clockOutTime, setClockOutTime] = useState<Date | null>(null)
-  const [breaks, setBreaks] = useState<Record<string, DtrBreak>>(INITIAL_BREAKS)
   const [dtrOpen, setDtrOpen] = useState(false)
   const [scheduleChangeOpen, setScheduleChangeOpen] = useState(false)
   const [scheduleHistoryOpen, setScheduleHistoryOpen] = useState(false)
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const clockCardRef = useRef<HTMLDivElement>(null)
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(
     null
   )
@@ -687,40 +422,37 @@ export function DTRSection() {
   const [eodOpen, setEodOpen] = useState(false)
   const [pendingClockOut, setPendingClockOut] = useState<Date | null>(null)
 
-  // Camera-validation gating: roles granted DTR:REQUIRE_CAMERA_VALIDATION must
-  // capture a photo before clock-in/out; others bypass the camera modal.
-  const requiresCameraValidation = useAuthStore((s) =>
-    s.authorities.includes("DTR:REQUIRE_CAMERA_VALIDATION")
-  )
-
   const { data: myPolicy } = useMyPolicy()
-  const clockInMutation = useClockIn()
-  const clockOutMutation = useClockOut()
-  const breakStartMutation = useBreakStart()
-  const breakEndMutation = useBreakEnd()
-  const isClockBusy = clockInMutation.isPending || clockOutMutation.isPending
-  const isBreakBusy = breakStartMutation.isPending || breakEndMutation.isPending
 
-  async function applyClockIn() {
-    try {
-      const result = await clockInMutation.mutateAsync()
-      setClocked(true)
-      setClockInTime(result.timeIn ? new Date(result.timeIn) : new Date())
-      setClockOutTime(null)
-      setBreaks(INITIAL_BREAKS)
-    } catch (err) {
-      console.error("Clock in failed:", err)
-    }
-  }
+  // Shared attendance clock — the same hook + UI the dashboard ClockWidget uses, so the
+  // two clocks can't drift. This screen only adds the EOD report on clock-out + the summary.
+  const clock = useAttendanceClock({
+    requiredHours: myPolicy?.requiredHours ?? 9,
+  })
+  const {
+    clocked,
+    clockInTime,
+    clockOutTime,
+    breaks,
+    netSecs,
+    otSecs,
+    requiredHours,
+    progressPct,
+    breakSecs,
+    anyBreakActive,
+    getBreakUsed,
+    applyClockIn,
+    applyClockOut,
+  } = clock
 
+  // Clock-out on the DTR screen captures an EOD report before finalising.
   function startClockOut() {
-    // Skip the camera but still capture the EOD report before finalising.
     setPendingClockOut(new Date())
     setEodOpen(true)
   }
 
   function startPunch(type: "in" | "out") {
-    if (requiresCameraValidation) {
+    if (clock.requiresCameraValidation) {
       setCameraPunchType(type)
     } else if (type === "in") {
       applyClockIn()
@@ -730,417 +462,31 @@ export function DTRSection() {
   }
 
   async function finalizeClockOut() {
-    try {
-      const result = await clockOutMutation.mutateAsync()
-      setClocked(false)
-      setClockOutTime(
-        result.timeOut
-          ? new Date(result.timeOut)
-          : (pendingClockOut ?? new Date())
-      )
-      setBreaks(INITIAL_BREAKS)
-      setPendingClockOut(null)
-      setEodOpen(false)
-    } catch (err) {
-      console.error("Clock out failed:", err)
-    }
+    await applyClockOut()
+    setPendingClockOut(null)
+    setEodOpen(false)
   }
 
+  // Paginated attendance for the log table (separate from the clock's latest-record query).
   const { data: attendanceData, isLoading: attendanceLoading } = useAttendance({
     page: page - 1,
     size: pageSize,
   })
-
-  // Hydrate clocked-in state and any in-flight break from the latest server record
-  // so refresh / re-login doesn't drop the in-flight session.
-  useEffect(() => {
-    const latest = attendanceData?.content?.[0]
-    if (latest?.timeIn && !latest.timeOut) {
-      setClocked(true)
-      setClockInTime(new Date(latest.timeIn))
-      setBreaks((prev) => hydrateDtrBreaks(prev, latest.breaks))
-    } else if (latest?.timeOut) {
-      setClocked(false)
-      setClockInTime(null)
-      setBreaks(INITIAL_BREAKS)
-    }
-  }, [attendanceData])
-
   const paginated = (attendanceData?.content ?? []).map(toAttendanceRecord)
   const total = attendanceData?.totalElements ?? 0
   const totalPages = attendanceData?.totalPages ?? 0
-
-  useEffect(() => {
-    setNow(new Date())
-    const id = setInterval(() => setNow(new Date()), 1000)
-    return () => clearInterval(id)
-  }, [])
-
-  useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement)
-    document.addEventListener("fullscreenchange", handler)
-    return () => document.removeEventListener("fullscreenchange", handler)
-  }, [])
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      clockCardRef.current?.requestFullscreen()
-    } else {
-      document.exitFullscreen()
-    }
-  }
-
-  const workSecs =
-    clocked && clockInTime && now
-      ? Math.floor((now.getTime() - clockInTime.getTime()) / 1000)
-      : 0
-
-  const breakSecs = Object.values(breaks).reduce((sum, b) => {
-    if (b.active && b.startTime && now)
-      return sum + Math.floor((now.getTime() - b.startTime) / 1000)
-    return sum + b.elapsed
-  }, 0)
-
-  // Breaks (incl. the 1h lunch) are paid and count toward the day → worked = full presence span.
-  const netSecs = workSecs
-  const requiredHours = myPolicy?.requiredHours ?? 9
-  const stdSecs = requiredHours * 3600
-  const otSecs = Math.max(0, netSecs - stdSecs)
-  const progressPct = Math.min(100, (netSecs / stdSecs) * 100)
-
-  const toggleBreak = useCallback(
-    async (type: string) => {
-      const target = breaks[type]
-      if (!target || target.done) return
-
-      try {
-        if (target.active) {
-          // Ending the active break.
-          await breakEndMutation.mutateAsync()
-          setBreaks((prev) => {
-            const cur = prev[type]
-            if (!cur) return prev
-            const addedSecs = cur.startTime
-              ? Math.floor((Date.now() - cur.startTime) / 1000)
-              : 0
-            const elapsed = cur.elapsed + addedSecs
-            return {
-              ...prev,
-              [type]: {
-                ...cur,
-                elapsed,
-                active: false,
-                startTime: null,
-                done: elapsed >= cur.allowMins * 60,
-              },
-            }
-          })
-        } else {
-          // Switch breaks: backend rejects start while another is open, so end first.
-          const activeEntry = Object.entries(breaks).find(([, v]) => v.active)
-          if (activeEntry) await breakEndMutation.mutateAsync()
-          await breakStartMutation.mutateAsync(type)
-          setBreaks((prev) => {
-            const next = Object.fromEntries(
-              Object.entries(prev).map(([k, v]) => {
-                if (v.active && v.startTime) {
-                  const addedSecs = Math.floor(
-                    (Date.now() - v.startTime) / 1000
-                  )
-                  const elapsed = v.elapsed + addedSecs
-                  return [
-                    k,
-                    {
-                      ...v,
-                      elapsed,
-                      active: false,
-                      startTime: null,
-                      done: elapsed >= v.allowMins * 60,
-                    },
-                  ]
-                }
-                return [k, v]
-              })
-            )
-            const cur = next[type]
-            if (cur)
-              next[type] = { ...cur, active: true, startTime: Date.now() }
-            return next
-          })
-        }
-      } catch (err) {
-        console.error(`Break toggle (${type}) failed:`, err)
-      }
-    },
-    [breaks, breakStartMutation, breakEndMutation]
-  )
-
-  const getBreakRemaining = (b: DtrBreak) => {
-    const used =
-      b.active && b.startTime && now
-        ? b.elapsed + Math.floor((now.getTime() - b.startTime) / 1000)
-        : b.elapsed
-    return b.allowMins * 60 - used
-  }
-
-  const getBreakUsed = (b: DtrBreak) => {
-    if (b.active && b.startTime && now)
-      return b.elapsed + Math.floor((now.getTime() - b.startTime) / 1000)
-    return b.elapsed
-  }
-
-  const timeStr = now ? formatTime(now, { seconds: true }) : "--:--:-- --"
-
-  const dateStr = now
-    ? now.toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
-    : ""
-
-  const activeBreakEntry =
-    Object.entries(breaks).find(([, b]) => b.active) ?? null
-  const anyBreakActive = activeBreakEntry !== null
-
-  const activeBreakRemaining = activeBreakEntry
-    ? (() => {
-        const b = activeBreakEntry[1]
-        const used =
-          b.startTime && now
-            ? b.elapsed + Math.floor((now.getTime() - b.startTime) / 1000)
-            : b.elapsed
-        return b.allowMins * 60 - used
-      })()
-    : null
-  const activeBreakIsOver =
-    activeBreakRemaining !== null && activeBreakRemaining < 0
-
-  const fmtCountdown = (secs: number) => {
-    const abs = Math.abs(secs)
-    const m = Math.floor(abs / 60)
-    const s = abs % 60
-    return `${m}:${String(s).padStart(2, "0")}`
-  }
-
-  const clockStatus = clocked ? "green" : clockOutTime ? "blue" : "gray"
-  const clockLabel = clocked
-    ? "Clocked in"
-    : clockOutTime
-      ? "Complete"
-      : "Not clocked in"
 
   return (
     <div className="space-y-6">
       {/* Clock + summary */}
       <div className="grid grid-cols-5 gap-4">
         {/* ── Clock panel ── */}
-        <div
-          ref={clockCardRef}
-          className={cn(
-            "col-span-3 overflow-hidden rounded-xl border border-border bg-card shadow-sm",
-            isFullscreen && "flex items-center justify-center"
-          )}
-        >
-          <div
-            className={cn(
-              "flex flex-col items-center px-6 py-5",
-              !clocked && "h-full justify-center",
-              isFullscreen && "w-full max-w-sm"
-            )}
-            style={
-              isFullscreen
-                ? {
-                    transform: "scale(2.2)",
-                    transformOrigin: "center center",
-                    gap: "14px",
-                  }
-                : undefined
-            }
-          >
-            {/* Header row: label + fullscreen toggle */}
-            <div className="flex w-full items-center justify-between">
-              <p className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
-                Current time
-              </p>
-              <TooltipProvider delayDuration={300}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={toggleFullscreen}
-                      className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                      {isFullscreen ? (
-                        <HugeiconsIcon
-                          icon={MinimizeScreenIcon}
-                          size={13}
-                          strokeWidth={2}
-                        />
-                      ) : (
-                        <HugeiconsIcon
-                          icon={MaximizeScreenIcon}
-                          size={13}
-                          strokeWidth={2}
-                        />
-                      )}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    {isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-
-            {/* Big clock */}
-            <p
-              className="mt-2 leading-none font-bold tabular-nums"
-              style={{ fontSize: 40, letterSpacing: "-1px" }}
-            >
-              {timeStr}
-            </p>
-
-            {/* Date */}
-            <p className="mt-1 text-[12px] text-muted-foreground">{dateStr}</p>
-
-            {/* Status badge */}
-            <div className="mt-3">
-              <StatusBadge variant={clockStatus}>{clockLabel}</StatusBadge>
-            </div>
-
-            {/* OT banner */}
-            {clocked && otSecs > 0 && (
-              <div className="mt-2.5 flex w-full items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-[12px] font-medium text-primary">
-                <HugeiconsIcon icon={Clock01Icon} size={14} strokeWidth={2} />
-                OT: {fmtDuration(otSecs)}
-              </div>
-            )}
-
-            {/* Clock in / Clock out / End break button */}
-            <button
-              disabled={isClockBusy || isBreakBusy}
-              onClick={() => {
-                if (anyBreakActive && activeBreakEntry) {
-                  toggleBreak(activeBreakEntry[0])
-                } else if (!clocked) {
-                  setConfirmPunchType("in")
-                } else {
-                  setConfirmPunchType("out")
-                }
-              }}
-              className={cn(
-                "mt-3 flex w-full items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition-all duration-150",
-                !clocked &&
-                  "bg-primary text-primary-foreground hover:bg-primary/90",
-                clocked &&
-                  !anyBreakActive &&
-                  "border border-danger-border bg-danger-light text-danger hover:bg-rt",
-                anyBreakActive &&
-                  !activeBreakIsOver &&
-                  "border border-success-border bg-success-light text-success hover:bg-gt",
-                anyBreakActive &&
-                  activeBreakIsOver &&
-                  "animate-pulse border border-danger-border bg-danger-light text-danger hover:bg-rt"
-              )}
-            >
-              {anyBreakActive ? (
-                <>
-                  <HugeiconsIcon icon={Clock01Icon} size={13} strokeWidth={2} />
-                  {activeBreakIsOver
-                    ? `End Break · ⚠ +${fmtCountdown(activeBreakRemaining!)} over`
-                    : `End Break · ${fmtCountdown(activeBreakRemaining!)} left`}
-                </>
-              ) : clocked ? (
-                <>
-                  <HugeiconsIcon
-                    icon={StopCircleIcon}
-                    size={13}
-                    strokeWidth={2}
-                  />
-                  Clock Out
-                </>
-              ) : (
-                <>
-                  <HugeiconsIcon icon={Clock01Icon} size={13} strokeWidth={2} />
-                  Clock In
-                </>
-              )}
-            </button>
-
-            {/* Break controls — only when clocked in */}
-            {clocked && (
-              <>
-                <div className="my-4 h-px w-full bg-border" />
-                <p className="mb-3 w-full text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
-                  Break controls
-                </p>
-                <div className="flex w-full items-start justify-around">
-                  {Object.entries(breaks).map(([type, b]) => {
-                    const remaining = getBreakRemaining(b)
-                    const isOverbreak = remaining < 0
-                    const inWindow = isBreakInWindow(type, now)
-                    const exhausted = b.done // done=true only when overbreak consumed
-                    const isDisabled =
-                      exhausted ||
-                      isBreakBusy ||
-                      (!b.active && (!inWindow || (!!b.otOnly && otSecs === 0)))
-                    const hasStarted = b.elapsed > 0 || b.active
-                    const breakProgress = Math.max(
-                      0,
-                      remaining / (b.allowMins * 60)
-                    )
-                    const ringColor =
-                      isDisabled || !hasStarted
-                        ? "transparent"
-                        : isOverbreak
-                          ? "var(--red)"
-                          : "var(--green)"
-                    const iconColor = b.active
-                      ? isOverbreak
-                        ? "var(--red)"
-                        : "var(--green)"
-                      : isDisabled
-                        ? "var(--tx3)"
-                        : hasStarted
-                          ? "var(--tx3)"
-                          : "var(--tx2)"
-
-                    return (
-                      <DtrRingButton
-                        key={type}
-                        size={56}
-                        progress={hasStarted ? breakProgress : 1}
-                        ringColor={ringColor}
-                        onClick={() => !isDisabled && toggleBreak(type)}
-                        disabled={isDisabled}
-                        label={b.label}
-                        sublabel={
-                          exhausted
-                            ? "Overbreak"
-                            : b.otOnly && otSecs === 0
-                              ? "OT only"
-                              : !inWindow && !b.active
-                                ? "Not available"
-                                : b.active
-                                  ? isOverbreak
-                                    ? `⚠ +${Math.ceil(Math.abs(remaining) / 60)}m`
-                                    : `${Math.ceil(remaining / 60)}m left`
-                                  : b.elapsed > 0
-                                    ? `${Math.ceil((b.allowMins * 60 - b.elapsed) / 60)}m left`
-                                    : `${b.allowMins}m left`
-                        }
-                        pulse={b.active && isOverbreak}
-                      >
-                        {BREAK_ICONS[type]?.(iconColor)}
-                      </DtrRingButton>
-                    )
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+        <ClockPanel
+          clock={clock}
+          onClockIn={() => setConfirmPunchType("in")}
+          onClockOut={() => setConfirmPunchType("out")}
+          className="col-span-3"
+        />
 
         {/* ── Today's summary ── */}
         <div className="col-span-2 rounded-xl border border-border bg-card shadow-sm">
@@ -1256,7 +602,9 @@ export function DTRSection() {
             </div>
 
             <div className="flex items-center justify-between pt-1">
-              <StatusBadge variant={clockStatus}>{clockLabel}</StatusBadge>
+              <StatusBadge variant={clock.statusVariant}>
+                {clock.statusLabel}
+              </StatusBadge>
               <div className="flex gap-1.5">
                 <Button
                   size="sm"
@@ -1581,7 +929,10 @@ export function DTRSection() {
           void finalizeClockOut()
         }}
       />
-      <DtrChangeModal open={dtrOpen} onClose={() => setDtrOpen(false)} />
+      <ChangeTimeRequestDialog
+        open={dtrOpen}
+        onClose={() => setDtrOpen(false)}
+      />
       <ScheduleChangeRequestModal
         open={scheduleChangeOpen}
         onClose={() => setScheduleChangeOpen(false)}
