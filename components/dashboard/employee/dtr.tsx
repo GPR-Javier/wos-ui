@@ -45,6 +45,8 @@ import { useAttendanceClock, fmtDuration } from "@/hooks/use-attendance-clock"
 import { ClockPanel } from "@/components/custom/clock-panel"
 import { useMyPolicy } from "@/hooks/use-schedule-policy"
 import { useMyOvertimeRequests } from "@/hooks/use-overtime"
+import { useHolidays } from "@/hooks/use-holidays"
+import { HOLIDAY_TYPE_COLOR, HOLIDAY_TYPE_LABEL } from "@/lib/holiday-api"
 import type { OvertimeStatus, OvertimeType } from "@/lib/overtime-api"
 import { useTimeFormat } from "@/hooks/use-time-format"
 import type { AttendanceEntry } from "@/lib/employee-api"
@@ -523,6 +525,21 @@ export function DTRSection() {
     }
   }
 
+  // Declared holidays, so each attendance row can flag a day worked on a holiday. A recurring
+  // holiday (fixed-date, e.g. Christmas) matches any year by its month/day.
+  const holidaysQ = useHolidays()
+  const holidayList = holidaysQ.data ?? []
+  function holidayFor(dateStr: string) {
+    const md = dateStr.slice(5) // "MM-DD"
+    return (
+      holidayList.find((h) => h.active && h.date === dateStr) ??
+      holidayList.find(
+        (h) => h.active && h.recurring && h.date.slice(5) === md
+      ) ??
+      null
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Clock + summary */}
@@ -832,9 +849,26 @@ export function DTRSection() {
               const otStatus = ot?.status
               const otFiled = !!ot
               const otLabel = ot ? otTypeLabel(ot.types) : ""
+              const holiday = holidayFor(r.date)
               return (
                 <TableRow key={i}>
-                  <TableCell className="font-medium">{r.date}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <span>{r.date}</span>
+                      {holiday && (
+                        <span
+                          title={`${holiday.name} · ${HOLIDAY_TYPE_LABEL[holiday.holidayType]}`}
+                        >
+                          <StatusBadge
+                            variant={HOLIDAY_TYPE_COLOR[holiday.holidayType]}
+                            dot={false}
+                          >
+                            {holiday.name}
+                          </StatusBadge>
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {r.day}
                   </TableCell>

@@ -341,3 +341,83 @@
     height: 0;
   }
 }
+
+/* ── FullCalendar — holiday calendar themed to match branding ──────────────── */
+.fc-holiday {
+  --fc-border-color: var(--border);
+  --fc-page-bg-color: var(--card);
+  --fc-neutral-bg-color: var(--muted);
+  --fc-today-bg-color: color-mix(in oklch, var(--primary) 8%, transparent);
+  --fc-list-event-hover-bg-color: var(--muted);
+  --fc-event-bg-color: var(--pbg);
+  --fc-event-border-color: var(--pt);
+  --fc-event-text-color: var(--purple);
+  font-size: 13px;
+}
+.fc-holiday .fc .fc-toolbar.fc-header-toolbar { margin-bottom: 0.75rem; }
+.fc-holiday .fc .fc-toolbar-title { font-size: 15px; font-weight: 600; }
+.fc-holiday .fc .fc-col-header-cell-cushion {
+  padding: 8px 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.fc-holiday .fc .fc-daygrid-day-number { font-size: 11px; color: var(--foreground); padding: 4px 6px; }
+.fc-holiday .fc .fc-daygrid-day.fc-day-other .fc-daygrid-day-number { color: var(--muted-foreground); opacity: 0.5; }
+
+/* Toolbar buttons → match the app's outline buttons */
+.fc-holiday .fc .fc-button {
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+  padding: 5px 12px;
+  box-shadow: none;
+  border-radius: 8px;
+}
+.fc-holiday .fc .fc-button:hover { background: var(--muted); color: var(--foreground); }
+.fc-holiday .fc .fc-button:focus,
+.fc-holiday .fc .fc-button:focus-visible { box-shadow: none; outline: none; }
+.fc-holiday .fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc-holiday .fc .fc-button-primary:not(:disabled):active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+.fc-holiday .fc .fc-button-primary:disabled { background: var(--muted); border-color: var(--border); color: var(--muted-foreground); opacity: 0.5; }
+.fc-holiday .fc .fc-button-group > .fc-button { border-radius: 8px; }
+.fc-holiday .fc .fc-button-group > .fc-button:not(:last-child) { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.fc-holiday .fc .fc-button-group > .fc-button:not(:first-child) { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px; }
+
+/* Day cells — clickable to add */
+.fc-holiday .fc-daygrid-day { cursor: pointer; transition: background-color 0.12s; }
+.fc-holiday .fc-daygrid-day:hover { background: color-mix(in oklch, var(--muted) 45%, transparent); }
+
+/* Event chips */
+.fc-holiday .fc-daygrid-event,
+.fc-holiday .fc-daygrid-block-event {
+  border-radius: 5px;
+  padding: 1px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.fc-holiday .hol-regular { background: var(--pbg); border-color: var(--pt); color: var(--purple); }
+.fc-holiday .hol-special { background: var(--blue-l); border-color: var(--blue-t); color: var(--blue-txt); }
+.fc-holiday .hol-regular .fc-event-title,
+.fc-holiday .hol-special .fc-event-title { color: inherit; font-weight: 500; }
+
+/* List view */
+.fc-holiday .fc .fc-list { border-color: var(--border); border-radius: 10px; overflow: hidden; }
+.fc-holiday .fc .fc-list-day-cushion { background: var(--muted); }
+.fc-holiday .fc .fc-list-day-text,
+.fc-holiday .fc .fc-list-day-side-text { font-size: 12px; font-weight: 600; color: var(--foreground); }
+.fc-holiday .fc .fc-list-event-title { font-size: 13px; }
+.fc-holiday .fc .fc-list-event:hover td { background: var(--muted); cursor: pointer; }
+.fc-holiday .hol-regular .fc-list-event-dot { border-color: var(--purple); }
+.fc-holiday .hol-special .fc-list-event-dot { border-color: var(--blue); }
+.fc-holiday .fc .fc-list-empty { background: var(--card); color: var(--muted-foreground); font-size: 13px; }

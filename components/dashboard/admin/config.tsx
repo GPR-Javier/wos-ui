@@ -32,6 +32,7 @@ import {
 import { MyCompanySection } from "@/components/dashboard/my-company"
 import { SchedulePoliciesSection } from "@/components/dashboard/admin/schedule-policies"
 import { AttendanceConfigSection } from "@/components/dashboard/admin/attendance-config"
+import { HolidaysConfigSection } from "@/components/dashboard/admin/holidays-config"
 import { PayrollSetupSection } from "@/components/dashboard/admin/payroll-setup"
 import { DepartmentsSection } from "@/components/dashboard/admin/departments"
 import { QuestionBankSection } from "@/components/dashboard/admin/question-bank"
@@ -167,6 +168,11 @@ export function ConfigSection() {
           label: "Attendance",
           icon: Clock01Icon,
         },
+        canEditAttendance && {
+          value: "holidays",
+          label: "Holidays",
+          icon: Calendar03Icon,
+        },
         canEditLeave && {
           value: "leave",
           label: "Leave",
@@ -294,6 +300,10 @@ export function ConfigSection() {
 
         {canEditAttendance && activeTab === "attendance" && (
           <AttendanceConfigSection />
+        )}
+
+        {canEditAttendance && activeTab === "holidays" && (
+          <HolidaysConfigSection />
         )}
 
         {canEditLeave && activeTab === "leave" && (

@@ -27,6 +27,8 @@ import { useCreateOvertimeRequest } from "@/hooks/use-overtime"
 import { useAttendance } from "@/hooks/use-employee"
 import { useMyPolicy } from "@/hooks/use-schedule-policy"
 import { useTimeFormat } from "@/hooks/use-time-format"
+import { useHolidays } from "@/hooks/use-holidays"
+import { HOLIDAY_TYPE_LABEL, HOLIDAY_TYPE_MULTIPLIER } from "@/lib/holiday-api"
 import { calcHours, type OvertimeType } from "@/lib/overtime-api"
 
 /** Overtime must be at least this many hours to be filed on a regular day. */
@@ -203,6 +205,21 @@ export function OvertimeRequestDialog({
     return !policy.workdays.includes(code)
   }, [overtimeDate, record, policy])
 
+  // Declared holiday on the selected date (exact, or a recurring fixed-date holiday matched by
+  // month/day). The server makes the final classification; this is an informational heads-up.
+  const { data: holidayList = [] } = useHolidays()
+  const holiday = useMemo(() => {
+    if (!overtimeDate) return null
+    const md = overtimeDate.slice(5)
+    return (
+      holidayList.find((h) => h.active && h.date === overtimeDate) ??
+      holidayList.find(
+        (h) => h.active && h.recurring && h.date.slice(5) === md
+      ) ??
+      null
+    )
+  }, [overtimeDate, holidayList])
+
   const required = policy?.requiredHours ?? 9
   // Only offer the rest-day overtime range when the day actually has overtime (worked past the
   // standard hours) — a rest day worked within the standard hours is rest-day duty only.
@@ -360,6 +377,16 @@ export function OvertimeRequestDialog({
                 <HugeiconsIcon icon={Clock01Icon} size={12} strokeWidth={2} />
                 {dayLabel}
               </p>
+              {holiday && (
+                <div className="flex items-start gap-2 rounded-md border border-purple-200 bg-purple-50 px-2.5 py-2 text-[12px] text-purple-700 dark:border-purple-800/40 dark:bg-purple-900/10 dark:text-purple-300">
+                  <span className="font-semibold">{holiday.name}</span>
+                  <span className="ml-auto shrink-0 font-medium">
+                    {HOLIDAY_TYPE_LABEL[holiday.holidayType]} · ×
+                    {HOLIDAY_TYPE_MULTIPLIER[holiday.holidayType].toFixed(2)}
+                    {isRestDay ? " (×1.30 rest day)" : ""}
+                  </span>
+                </div>
+              )}
               {policy && (
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-muted-foreground">Scheduled shift</span>

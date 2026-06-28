@@ -5,7 +5,10 @@ export type OvertimeType =
   | "REGULAR"
   | "REST_DAY"
   | "REST_DAY_OT"
-  | "HOLIDAY"
+  | "REGULAR_HOLIDAY"
+  | "REGULAR_HOLIDAY_REST_DAY"
+  | "SPECIAL_HOLIDAY"
+  | "SPECIAL_HOLIDAY_REST_DAY"
   | "EMERGENCY"
 
 export type OvertimeStatus =
@@ -113,7 +116,10 @@ export const OT_TYPE_LABEL: Record<OvertimeType, string> = {
   REGULAR: "Regular OT",
   REST_DAY: "Rest Day",
   REST_DAY_OT: "Rest Day OT",
-  HOLIDAY: "Holiday OT",
+  REGULAR_HOLIDAY: "Regular Holiday",
+  REGULAR_HOLIDAY_REST_DAY: "Reg. Holiday + RD",
+  SPECIAL_HOLIDAY: "Special Holiday",
+  SPECIAL_HOLIDAY_REST_DAY: "Special Holiday + RD",
   EMERGENCY: "Emergency OT",
 }
 
@@ -122,7 +128,10 @@ export const OT_RATE_MULTIPLIER: Record<OvertimeType, number> = {
   REGULAR: 1.25,
   REST_DAY: 1.3,
   REST_DAY_OT: 1.69, // rest-day work beyond the standard hours (1.30 × 1.30)
-  HOLIDAY: 1.5,
+  REGULAR_HOLIDAY: 2.0,
+  REGULAR_HOLIDAY_REST_DAY: 2.6, // regular holiday falling on a rest day (2.00 × 1.30)
+  SPECIAL_HOLIDAY: 1.3,
+  SPECIAL_HOLIDAY_REST_DAY: 1.5, // special non-working day on a rest day
   EMERGENCY: 1.25,
 }
 
@@ -133,7 +142,10 @@ export const OT_TYPE_COLOR: Record<
   REGULAR: "blue",
   REST_DAY: "amber",
   REST_DAY_OT: "red",
-  HOLIDAY: "red",
+  REGULAR_HOLIDAY: "purple",
+  REGULAR_HOLIDAY_REST_DAY: "purple",
+  SPECIAL_HOLIDAY: "purple",
+  SPECIAL_HOLIDAY_REST_DAY: "purple",
   EMERGENCY: "purple",
 }
 
