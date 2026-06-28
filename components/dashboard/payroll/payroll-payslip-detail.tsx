@@ -95,7 +95,7 @@ export function PayslipDetail({ payslip, open, onClose }: Props) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
-        className="max-w-[480px] gap-0 overflow-hidden p-0"
+        className="max-w-120 gap-0 overflow-hidden p-0"
         showCloseButton={false}
       >
         <DialogTitle className="sr-only">

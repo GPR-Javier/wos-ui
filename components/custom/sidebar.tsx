@@ -64,7 +64,8 @@ const NAV_ICONS: Record<string, IconSvgElement> = {
   finance: CreditCardIcon,
   payroll: CreditCardIcon,
   leave: Calendar01Icon,
-  request: Calendar01Icon,
+  request: CheckListIcon,
+  "my-leaves": Calendar01Icon,
   profile: UserCircleIcon,
   general: UserCircleIcon,
   team: UserGroup02Icon,
@@ -228,7 +229,7 @@ export function Sidebar() {
         href={href(item.section)}
         className={cn(
           "group mb-0.5 flex items-center gap-2.5 rounded-lg border border-transparent text-[13px] font-medium transition-all duration-150",
-          indent ? "py-1.5 pr-2.5 pl-0" : "px-2.5 py-2",
+          indent ? "px-2.5 py-1.5" : "px-2.5 py-2",
           active
             ? "border-primary/20 bg-primary text-primary-foreground shadow-sm"
             : "text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"

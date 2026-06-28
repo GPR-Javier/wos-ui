@@ -219,15 +219,20 @@ export const navConfig: NavItem[] = [
     noPage: true,
     children: [
       {
+        label: "My Requests",
+        section: "request",
+        authority: "LEAVE:VIEW_OWN_LEAVE",
+        badge: 2,
+      },
+      {
         label: "Change Time In/Time Out",
         section: "my-change-time",
         authority: "CHANGE_TIME_REQUEST:VIEW_OWN",
       },
       {
         label: "File Leave",
-        section: "request",
+        section: "my-leaves",
         authority: "LEAVE:VIEW_OWN_LEAVE",
-        badge: 2,
       },
       {
         label: "Overtime",
@@ -317,7 +322,8 @@ export const sectionTitles: Record<string, string> = {
   overview: "Dashboard",
   dtr: "My Attendance",
   payroll: "Payroll",
-  request: "My Leave",
+  request: "My Requests",
+  "my-leaves": "My Leave",
   leave: "Leave Management",
   team: "Management",
   attendance: "Attendance Logs",

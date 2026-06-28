@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { RequestSection } from "@/components/dashboard/employee/request"
 import { ScreenOnboarding } from "@/components/onboarding/screen-onboarding"
 
-export const metadata: Metadata = { title: "My Request" }
+export const metadata: Metadata = { title: "My Requests" }
 
 export default function RequestPage() {
   return (

@@ -411,6 +411,21 @@
 .fc-holiday .hol-regular .fc-event-title,
 .fc-holiday .hol-special .fc-event-title { color: inherit; font-weight: 500; }
 
+/* Time-grid (week) view — hour axis + timed event blocks */
+.fc-holiday .fc .fc-timegrid-axis-cushion,
+.fc-holiday .fc .fc-timegrid-slot-label-cushion {
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.fc-holiday .fc .fc-timegrid-slot { height: 2.2em; }
+.fc-holiday .fc .fc-timegrid-event,
+.fc-holiday .fc .fc-timegrid-event .fc-event-main { color: #fff; }
+.fc-holiday .fc .fc-timegrid-event { border-radius: 5px; padding: 1px 0; }
+.fc-holiday .fc .fc-timegrid-now-indicator-line { border-color: var(--primary); }
+.fc-holiday .fc .fc-timegrid-now-indicator-arrow { border-color: var(--primary); color: var(--primary); }
+.fc-holiday .fc .fc-col-header-cell.fc-day-today,
+.fc-holiday .fc .fc-timegrid-col.fc-day-today { background: var(--fc-today-bg-color); }
+
 /* List view */
 .fc-holiday .fc .fc-list { border-color: var(--border); border-radius: 10px; overflow: hidden; }
 .fc-holiday .fc .fc-list-day-cushion { background: var(--muted); }

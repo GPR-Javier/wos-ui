@@ -107,7 +107,7 @@ function RunStepsPanel({ runId }: { runId: number }) {
           {i > 0 && (
             <div
               className={cn(
-                "mt-2 mr-[-4px] h-0.5 w-3 shrink-0",
+                "mt-2 -mr-1 h-0.5 w-3 shrink-0",
                 resolved[i - 1].status === "done" ? "bg-green-400" : "bg-border"
               )}
             />

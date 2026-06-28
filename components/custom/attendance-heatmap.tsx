@@ -1,10 +1,20 @@
 "use client"
 
 import { Fragment, useEffect, useMemo, useState } from "react"
+import FullCalendar from "@fullcalendar/react"
+import dayGridPlugin from "@fullcalendar/daygrid"
+import timeGridPlugin from "@fullcalendar/timegrid"
+import listPlugin from "@fullcalendar/list"
+import type { EventContentArg, EventInput } from "@fullcalendar/core"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Calendar01Icon, Cancel01Icon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TypewriterEffect } from "@/components/ui/typewriter-effect"
-import { useAttendanceHeatmap } from "@/hooks/use-employee"
+import { useAttendance, useAttendanceHeatmap } from "@/hooks/use-employee"
+import { useTimeFormat } from "@/hooks/use-time-format"
+import { formatTime as formatTimeRaw } from "@/lib/time-format"
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -55,6 +65,21 @@ const STATUS_BG: Record<DayStatus, string> = {
   "restday-overtime": "bg-indigo-500",
   weekend: "bg-border",
   future: "bg-muted",
+}
+
+// Concrete hex equivalents of STATUS_BG (Tailwind 400/500) — FullCalendar events
+// need real color values rather than utility classes.
+const STATUS_HEX: Record<DayStatus, string> = {
+  present: "#22c55e",
+  overtime: "#3b82f6",
+  late: "#fbbf24",
+  undertime: "#fbbf24",
+  absent: "#ef4444",
+  leave: "#c084fc",
+  "restday-present": "#14b8a6",
+  "restday-overtime": "#6366f1",
+  weekend: "#6b7280",
+  future: "#9ca3af",
 }
 
 const STATUS_LABEL: Record<DayStatus, string> = {
@@ -230,10 +255,156 @@ function MotivationalQuote() {
   )
 }
 
+// ── Calendar modal ───────────────────────────────────────────────────────────
+
+const CALENDAR_LEGEND: [DayStatus, string][] = [
+  ["present", "Present"],
+  ["overtime", "Overtime"],
+  ["restday-present", "Rest day"],
+  ["restday-overtime", "Rest day OT"],
+  ["late", "Late"],
+  ["absent", "Absent"],
+]
+
+// Extra fields carried on each event for rich rendering in the timed/list views.
+interface AttendanceEventProps {
+  label: string
+  range?: string // "8:00 – 17:00" in the user's preferred format
+  ot?: string | null // overtime hours, e.g. "2.0"
+  rd?: string | null // rest-day hours
+}
+
+function renderEventContent(arg: EventContentArg) {
+  const p = arg.event.extendedProps as AttendanceEventProps
+  // Month grid stays compact (label only); week/list views surface the time range + OT.
+  const compact = arg.view.type === "dayGridMonth"
+  const extra =
+    [p.ot ? `+${p.ot} OT` : null, p.rd ? `${p.rd} RD` : null]
+      .filter(Boolean)
+      .join(" · ") || null
+
+  return (
+    <div className="flex flex-col gap-px overflow-hidden px-1 leading-tight">
+      <span className="truncate text-[11px] font-medium">{p.label}</span>
+      {!compact && p.range && (
+        <span className="truncate text-[10px] tabular-nums opacity-90">
+          {p.range}
+        </span>
+      )}
+      {!compact && extra && (
+        <span className="truncate text-[10px] font-semibold opacity-95">
+          {extra}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function AttendanceCalendarModal({
+  events,
+  initialDate,
+  onClose,
+}: {
+  events: EventInput[]
+  initialDate: string
+  onClose: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative flex max-h-[90vh] w-full max-w-3xl animate-in flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl duration-200 zoom-in-95 fade-in">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <div>
+            <h2 className="text-[15px] font-semibold">Attendance Calendar</h2>
+            <p className="mt-0.5 text-[12px] text-muted-foreground">
+              Your recorded attendance, day by day
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
+          </button>
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap items-center gap-3 border-b border-border px-6 py-2.5 text-[11px] text-muted-foreground">
+          {CALENDAR_LEGEND.map(([s, label]) => (
+            <div key={s} className="flex items-center gap-1.5">
+              <span
+                className="size-2.5 rounded-sm"
+                style={{ background: STATUS_HEX[s] }}
+              />
+              {label}
+            </div>
+          ))}
+        </div>
+
+        {/* Calendar */}
+        <div className="fc-holiday overflow-y-auto p-4">
+          <FullCalendar
+            plugins={[dayGridPlugin, timeGridPlugin, listPlugin]}
+            initialView="dayGridMonth"
+            initialDate={initialDate}
+            headerToolbar={{
+              left: "prev,next today",
+              center: "title",
+              right: "dayGridMonth,timeGridWeek,listMonth",
+            }}
+            buttonText={{ today: "Today" }}
+            views={{
+              dayGridMonth: { buttonText: "Month" },
+              timeGridWeek: {
+                buttonText: "Week",
+                // Bound the day to the working window so the grid isn't a tall empty
+                // 24h column; clock-in/out + OT blocks render against the hour axis.
+                slotMinTime: "05:00:00",
+                slotMaxTime: "23:00:00",
+                slotDuration: "01:00:00",
+                scrollTime: "07:00:00",
+                allDaySlot: true,
+                nowIndicator: true,
+              },
+              listMonth: {
+                buttonText: "List",
+                listDayFormat: {
+                  weekday: "long",
+                  month: "short",
+                  day: "numeric",
+                },
+              },
+            }}
+            firstDay={0}
+            height="auto"
+            fixedWeekCount={false}
+            displayEventTime={false}
+            // Render timed events as filled chips in month view too (default would
+            // show them as bare dot+text, which looks empty against the dark grid).
+            eventDisplay="block"
+            dayMaxEvents={3}
+            events={events}
+            eventContent={renderEventContent}
+            noEventsContent="No attendance recorded in this period."
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export function AttendanceHeatmap() {
   const { data: heatmapData, isLoading } = useAttendanceHeatmap()
+  // Timed records (clock-in/out, OT) for the week view — the heatmap endpoint is status-only.
+  const { data: attendancePage } = useAttendance({ size: 366 })
+  const { formatTime } = useTimeFormat()
 
   const lookup = useMemo(() => {
     const map = new Map<string, DayStatus>()
@@ -256,6 +427,7 @@ export function AttendanceHeatmap() {
   }, [heatmapData])
 
   const [year, setYear] = useState<number | null>(null)
+  const [showCalendar, setShowCalendar] = useState(false)
   useEffect(() => {
     if (years.length === 0) return
     if (year == null || !years.includes(year)) {
@@ -286,6 +458,85 @@ export function AttendanceHeatmap() {
     absent: workDays.filter((d) => d.status === "absent").length,
   }
 
+  // Calendar events span every recorded day (all years) so navigating the modal
+  // surfaces the full history; statuses reuse the heatmap's own classification.
+  // Days with recorded clock-in/out become *timed* events (so the week view shows
+  // the actual span + OT); status-only days stay all-day.
+  const calendarEvents = useMemo<EventInput[]>(() => {
+    const byDate = new Map<string, EventInput>()
+
+    // 1. All-day status events from the heatmap — full coverage across years.
+    for (const key of lookup.keys()) {
+      const date = new Date(key + "T00:00:00")
+      const status = statusForDate(date, today, lookup)
+      if (status === "weekend" || status === "future") continue
+      byDate.set(key, {
+        id: key,
+        title: STATUS_LABEL[status],
+        start: key,
+        allDay: true,
+        backgroundColor: STATUS_HEX[status],
+        borderColor: STATUS_HEX[status],
+        textColor: "#fff",
+        extendedProps: {
+          label: STATUS_LABEL[status],
+        } satisfies AttendanceEventProps,
+      })
+    }
+
+    // 2. Timed events from attendance entries — overrides the all-day version for
+    //    that date with the real clock-in → clock-out span (+ OT / RD hours).
+    for (const r of attendancePage?.content ?? []) {
+      const inHHmm = formatTimeRaw(r.timeIn, "24h", { fallback: "" })
+      const outHHmm = formatTimeRaw(r.timeOut, "24h", { fallback: "" })
+      if (!inHHmm || !outHHmm) continue // absent / leave / open session → keep all-day
+
+      // Prefer the heatmap's classification (matches the cell colors); fall back to
+      // the entry's own status when the heatmap has no record for that day.
+      const dayStatus = lookup.has(r.date)
+        ? statusForDate(new Date(r.date + "T00:00:00"), today, lookup)
+        : normalizeStatus(r.status)
+
+      // Clock-out before clock-in → shift crossed midnight; push the end to next day.
+      const startISO = `${r.date}T${inHHmm}:00`
+      let endDate = r.date
+      if (outHHmm <= inHHmm) {
+        const d = new Date(r.date + "T00:00:00")
+        d.setDate(d.getDate() + 1)
+        endDate = formatDateKey(d)
+      }
+      const endISO = `${endDate}T${outHHmm}:00`
+
+      const ot = r.otHours && r.otHours !== "—" ? r.otHours : null
+      const rd = r.rdHours && r.rdHours !== "—" ? r.rdHours : null
+
+      byDate.set(r.date, {
+        id: r.date,
+        title: STATUS_LABEL[dayStatus],
+        start: startISO,
+        end: endISO,
+        allDay: false,
+        backgroundColor: STATUS_HEX[dayStatus],
+        borderColor: STATUS_HEX[dayStatus],
+        textColor: "#fff",
+        extendedProps: {
+          label: STATUS_LABEL[dayStatus],
+          range: `${formatTime(r.timeIn)} – ${formatTime(r.timeOut)}`,
+          ot,
+          rd,
+        } satisfies AttendanceEventProps,
+      })
+    }
+
+    return [...byDate.values()]
+  }, [lookup, today, attendancePage, formatTime])
+
+  // Open the calendar on the active year — current month if it's this year, else January.
+  const calendarInitialDate =
+    activeYear === today.getFullYear()
+      ? formatDateKey(today)
+      : `${activeYear}-01-01`
+
   if (isLoading) {
     return (
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
@@ -311,7 +562,18 @@ export function AttendanceHeatmap() {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+    <div className="relative rounded-xl border border-border bg-card p-5 shadow-sm">
+      {/* View calendar — top-right of the card */}
+      <Button
+        size="sm"
+        variant="outline"
+        className="absolute top-4 right-5 z-10 h-7 gap-1.5 px-2.5 text-[12px]"
+        onClick={() => setShowCalendar(true)}
+      >
+        <HugeiconsIcon icon={Calendar01Icon} size={13} strokeWidth={1.8} />
+        View calendar
+      </Button>
+
       {/* 7fr : 1fr : 2fr  →  70% : 10% : 20% */}
       <div
         className="overflow-hidden"
@@ -425,6 +687,14 @@ export function AttendanceHeatmap() {
           <MotivationalQuote />
         </div>
       </div>
+
+      {showCalendar && (
+        <AttendanceCalendarModal
+          events={calendarEvents}
+          initialDate={calendarInitialDate}
+          onClose={() => setShowCalendar(false)}
+        />
+      )}
     </div>
   )
 }
