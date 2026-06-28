@@ -14,10 +14,17 @@ import {
   FileSpreadsheetIcon,
 } from "@hugeicons/core-free-icons"
 import { payrollApi, type AdminPayslip } from "@/lib/payroll-api"
+import { OT_TYPE_LABEL } from "@/lib/overtime-api"
 import { StatusBadge } from "@/components/custom/status-badge"
 
 function fmt(n: number) {
   return `₱${n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+/** Decimal hours as "H:MM" (e.g. 19.48 → "19:29"). */
+function hhmm(hours: number) {
+  const totalMin = Math.round(hours * 60)
+  return `${Math.floor(totalMin / 60)}:${String(totalMin % 60).padStart(2, "0")}`
 }
 
 function Row({
@@ -191,6 +198,22 @@ export function PayslipDetail({ payslip, open, onClose }: Props) {
             value={`+${fmt(payslip.incentives)}`}
             valueClass="text-success"
           />
+          {payslip.overtimeBreakdown?.length > 0
+            ? payslip.overtimeBreakdown.map((line) => (
+                <Row
+                  key={line.overtimeType}
+                  label={`${OT_TYPE_LABEL[line.overtimeType]} (${hhmm(line.hours)})`}
+                  value={`+${fmt(line.amount)}`}
+                  valueClass="text-success"
+                />
+              ))
+            : payslip.overtimePay > 0 && (
+                <Row
+                  label="Overtime / Premium Pay"
+                  value={`+${fmt(payslip.overtimePay)}`}
+                  valueClass="text-success"
+                />
+              )}
           <Row label="Gross Pay" value={fmt(payslip.grossPay)} bold />
 
           {/* Deductions */}

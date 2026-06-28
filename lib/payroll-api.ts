@@ -1,5 +1,12 @@
 import { api } from "./api"
 import type { PageResponse } from "./admin-api"
+import type { OvertimeType } from "./overtime-api"
+
+export interface PayslipOvertimeLine {
+  overtimeType: OvertimeType
+  hours: number
+  amount: number
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -40,6 +47,8 @@ export interface AdminPayslip {
   // Earnings
   basicSalary: number
   incentives: number
+  overtimePay: number
+  overtimeBreakdown: PayslipOvertimeLine[]
   grossPay: number
   // Deductions
   absences: number

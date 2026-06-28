@@ -6,9 +6,13 @@ export type OvertimeType =
   | "REST_DAY"
   | "REST_DAY_OT"
   | "REGULAR_HOLIDAY"
+  | "REGULAR_HOLIDAY_OT"
   | "REGULAR_HOLIDAY_REST_DAY"
+  | "REGULAR_HOLIDAY_REST_DAY_OT"
   | "SPECIAL_HOLIDAY"
+  | "SPECIAL_HOLIDAY_OT"
   | "SPECIAL_HOLIDAY_REST_DAY"
+  | "SPECIAL_HOLIDAY_REST_DAY_OT"
   | "EMERGENCY"
 
 export type OvertimeStatus =
@@ -117,21 +121,33 @@ export const OT_TYPE_LABEL: Record<OvertimeType, string> = {
   REST_DAY: "Rest Day",
   REST_DAY_OT: "Rest Day OT",
   REGULAR_HOLIDAY: "Regular Holiday",
+  REGULAR_HOLIDAY_OT: "Reg. Holiday OT",
   REGULAR_HOLIDAY_REST_DAY: "Reg. Holiday + RD",
+  REGULAR_HOLIDAY_REST_DAY_OT: "Reg. Holiday + RD OT",
   SPECIAL_HOLIDAY: "Special Holiday",
+  SPECIAL_HOLIDAY_OT: "Special Holiday OT",
   SPECIAL_HOLIDAY_REST_DAY: "Special Holiday + RD",
+  SPECIAL_HOLIDAY_REST_DAY_OT: "Special Holiday + RD OT",
   EMERGENCY: "Emergency OT",
 }
 
-/** Philippine labor code multipliers */
+/**
+ * Philippine labor-code statutory multipliers — the DEFAULTS. The effective rate is
+ * company-configurable; use {@link useEffectiveOtRates} to read a company's values (these are the
+ * fallback when a type hasn't been overridden).
+ */
 export const OT_RATE_MULTIPLIER: Record<OvertimeType, number> = {
   REGULAR: 1.25,
   REST_DAY: 1.3,
   REST_DAY_OT: 1.69, // rest-day work beyond the standard hours (1.30 × 1.30)
   REGULAR_HOLIDAY: 2.0,
+  REGULAR_HOLIDAY_OT: 2.6, // overtime on a regular holiday (2.00 × 1.30)
   REGULAR_HOLIDAY_REST_DAY: 2.6, // regular holiday falling on a rest day (2.00 × 1.30)
+  REGULAR_HOLIDAY_REST_DAY_OT: 3.38, // OT on a regular holiday + rest day (2.60 × 1.30)
   SPECIAL_HOLIDAY: 1.3,
+  SPECIAL_HOLIDAY_OT: 1.69, // overtime on a special non-working day (1.30 × 1.30)
   SPECIAL_HOLIDAY_REST_DAY: 1.5, // special non-working day on a rest day
+  SPECIAL_HOLIDAY_REST_DAY_OT: 1.95, // OT on a special day + rest day (1.50 × 1.30)
   EMERGENCY: 1.25,
 }
 
@@ -143,9 +159,13 @@ export const OT_TYPE_COLOR: Record<
   REST_DAY: "amber",
   REST_DAY_OT: "red",
   REGULAR_HOLIDAY: "purple",
+  REGULAR_HOLIDAY_OT: "purple",
   REGULAR_HOLIDAY_REST_DAY: "purple",
+  REGULAR_HOLIDAY_REST_DAY_OT: "purple",
   SPECIAL_HOLIDAY: "purple",
+  SPECIAL_HOLIDAY_OT: "purple",
   SPECIAL_HOLIDAY_REST_DAY: "purple",
+  SPECIAL_HOLIDAY_REST_DAY_OT: "purple",
   EMERGENCY: "purple",
 }
 

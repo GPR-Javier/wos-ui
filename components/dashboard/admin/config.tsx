@@ -24,6 +24,7 @@ import {
   Building03Icon,
   Building04Icon,
   MoneyBag02Icon,
+  Coins01Icon,
   HelpSquareIcon,
   AiBrain01Icon,
   Mail01Icon,
@@ -34,6 +35,7 @@ import { SchedulePoliciesSection } from "@/components/dashboard/admin/schedule-p
 import { AttendanceConfigSection } from "@/components/dashboard/admin/attendance-config"
 import { HolidaysConfigSection } from "@/components/dashboard/admin/holidays-config"
 import { PayrollSetupSection } from "@/components/dashboard/admin/payroll-setup"
+import { PayRatesSection } from "@/components/dashboard/admin/pay-rates-config"
 import { DepartmentsSection } from "@/components/dashboard/admin/departments"
 import { QuestionBankSection } from "@/components/dashboard/admin/question-bank"
 import { AiProviderConfigSection } from "@/components/dashboard/admin/ai-provider-config"
@@ -195,6 +197,11 @@ export function ConfigSection() {
           label: "Payroll setup",
           icon: MoneyBag02Icon,
         },
+        {
+          value: "pay-rates",
+          label: "Pay rates",
+          icon: Coins01Icon,
+        },
       ],
     },
     {
@@ -323,6 +330,8 @@ export function ConfigSection() {
         {activeTab === "positions" && <PositionsSection />}
 
         {activeTab === "payroll-setup" && <PayrollSetupSection />}
+
+        {activeTab === "pay-rates" && <PayRatesSection />}
 
         {canManageQuestions && activeTab === "question-bank" && (
           <QuestionBankSection />

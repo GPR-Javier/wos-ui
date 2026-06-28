@@ -43,10 +43,10 @@ import {
   useCancelOvertimeRequest,
 } from "@/hooks/use-overtime"
 import { useTimeFormat } from "@/hooks/use-time-format"
+import { useEffectiveOtRates } from "@/hooks/use-overtime-rates"
 import {
   OT_TYPE_LABEL,
   OT_TYPE_COLOR,
-  OT_RATE_MULTIPLIER,
   type OvertimeRequest,
   type OvertimeStatus,
 } from "@/lib/overtime-api"
@@ -228,6 +228,7 @@ function DetailDialog({
 }) {
   const cancelMutation = useCancelOvertimeRequest()
   const { formatTime } = useTimeFormat()
+  const otRates = useEffectiveOtRates()
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
@@ -292,7 +293,7 @@ function DetailDialog({
             <p className="text-[12px] text-green-700 dark:text-green-400">
               Rate:{" "}
               <span className="font-bold">
-                ×{OT_RATE_MULTIPLIER[request.overtimeType].toFixed(2)}
+                ×{otRates[request.overtimeType].toFixed(2)}
               </span>{" "}
               multiplier ({OT_TYPE_LABEL[request.overtimeType]})
             </p>
