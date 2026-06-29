@@ -213,24 +213,19 @@ export const navConfig: NavItem[] = [
     badge: 1,
   },
   {
+    // Clicking the parent lands on the request hub (overview + recent activity);
+    // the chevron expands the per-type drill-down pages below.
     label: "Request",
-    section: "my-requests",
+    section: "request",
     authority: null,
-    noPage: true,
     children: [
-      {
-        label: "My Requests",
-        section: "request",
-        authority: "LEAVE:VIEW_OWN_LEAVE",
-        badge: 2,
-      },
       {
         label: "Change Time In/Time Out",
         section: "my-change-time",
         authority: "CHANGE_TIME_REQUEST:VIEW_OWN",
       },
       {
-        label: "File Leave",
+        label: "Leave",
         section: "my-leaves",
         authority: "LEAVE:VIEW_OWN_LEAVE",
       },

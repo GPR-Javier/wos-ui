@@ -82,7 +82,6 @@ const NAV_ICONS: Record<string, IconSvgElement> = {
   employees: UserMultiple02Icon,
   schedules: TimeScheduleIcon,
   "schedule-changes": Calendar01Icon,
-  "my-requests": CheckListIcon,
   "my-overtime": Timer02Icon,
   "my-coe": Certificate01Icon,
   "my-or": FileManagementIcon,
@@ -363,6 +362,15 @@ export function Sidebar() {
                     <>
                       <Link
                         href={href(item.section)}
+                        // Navigating to the parent's landing page also reveals its
+                        // drill-down children (ensure-open; the chevron still collapses).
+                        onClick={() =>
+                          setExpanded((prev) =>
+                            prev.includes(item.section)
+                              ? prev
+                              : [...prev, item.section]
+                          )
+                        }
                         className="flex flex-1 items-center gap-2.5 px-2.5 py-2 text-[13px] font-medium"
                       >
                         <span

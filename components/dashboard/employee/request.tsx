@@ -1,14 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatCard } from "@/components/custom/stat-card"
 import { StatusBadge } from "@/components/custom/status-badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { LeaveModal } from "@/components/custom/leave-modal"
 import { ObModal } from "@/components/custom/ob-modal"
-import { CoeModal } from "@/components/custom/coe-modal"
+import { CoeRequestModal } from "@/components/custom/coe-request-modal"
 import { ChangeTimeRequestDialog } from "@/components/custom/change-time-request-dialog"
-import { OvertimeModal } from "@/components/custom/overtime-modal"
+import { OvertimeAuthorizeDialog } from "@/components/custom/overtime-authorize-dialog"
 import {
   Table,
   TableHeader,
@@ -18,6 +20,34 @@ import {
   TableCell,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { useSlugHref } from "@/lib/slug"
+import { useMyLeaveRequests } from "@/hooks/use-leave"
+import { useMyCoeRequests } from "@/hooks/use-coe"
+import { useMyOvertimeRequests } from "@/hooks/use-overtime"
+import { useMyChangeTimeRequests } from "@/hooks/use-change-time"
+import { useLeaveBalances } from "@/hooks/use-employee"
+import {
+  LEAVE_TYPE_LABEL,
+  LEAVE_STATUS_LABEL,
+  type LeaveRequest,
+  type LeaveStatus,
+} from "@/lib/leave-api"
+import {
+  COE_PURPOSE_LABEL,
+  COE_CERT_TYPE_LABEL,
+  type CoeRequest,
+  type CoeStatus,
+} from "@/lib/coe-api"
+import {
+  OT_TYPE_LABEL,
+  OT_STATUS_LABEL,
+  type OvertimeRequest,
+  type OvertimeStatus,
+} from "@/lib/overtime-api"
+import {
+  type ChangeTimeRequest,
+  type ChangeTimeStatus,
+} from "@/lib/change-time-api"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Calendar01Icon,
@@ -100,111 +130,269 @@ function RequestTypeCard({
   )
 }
 
-// ── request history ───────────────────────────────────────────────────────────
+// ── unified request feed ────────────────────────────────────────────────────────
 
-type RequestType = "leave" | "ob" | "coe" | "dtr" | "ot"
-type RequestStatus = "approved" | "pending" | "declined"
+type RequestType = "leave" | "coe" | "dtr" | "ot"
+type Bucket = "approved" | "pending" | "declined" | "neutral"
 
-interface RequestRecord {
+interface FeedRow {
+  key: string
   type: RequestType
   title: string
   meta: string
-  filed: string
+  /** ISO timestamp used for sorting (most recent first). */
+  filedAt: string
   forDate: string
-  status: RequestStatus
+  bucket: Bucket
+  statusLabel: string
   remarks: string
+  href: string
 }
-
-const REQUEST_HISTORY: RequestRecord[] = [
-  {
-    type: "leave",
-    title: "Vacation leave",
-    meta: "Jun 14–16 · 3 days · Family trip",
-    filed: "Jun 7",
-    forDate: "Jun 14–16",
-    status: "approved",
-    remarks: "Approved by Sandra R.",
-  },
-  {
-    type: "ob",
-    title: "Client meeting — Makati",
-    meta: "Full day · off-site",
-    filed: "Jun 5",
-    forDate: "Jun 6",
-    status: "approved",
-    remarks: "Approved by Sandra R.",
-  },
-  {
-    type: "coe",
-    title: "Certificate of employment",
-    meta: "For loan application",
-    filed: "May 30",
-    forDate: "—",
-    status: "pending",
-    remarks: "Under HR review",
-  },
-  {
-    type: "dtr",
-    title: "Missed clock-out",
-    meta: "May 28 · Requested time out: 18:00",
-    filed: "May 30",
-    forDate: "May 28",
-    status: "pending",
-    remarks: "Awaiting HR approval",
-  },
-  {
-    type: "leave",
-    title: "Sick leave",
-    meta: "May 22 · 1 day · Flu",
-    filed: "May 22",
-    forDate: "May 22",
-    status: "approved",
-    remarks: "Auto-approved",
-  },
-  {
-    type: "ob",
-    title: "Training — BGC",
-    meta: "Half day AM",
-    filed: "May 10",
-    forDate: "May 15",
-    status: "declined",
-    remarks: "Scheduling conflict",
-  },
-]
 
 const typeLabel: Record<RequestType, string> = {
   leave: "Leave",
-  ob: "Official biz",
   coe: "COE",
-  dtr: "DTR change",
+  dtr: "Time change",
   ot: "Overtime",
 }
 
-const typeVariant: Record<
-  RequestType,
-  "blue" | "green" | "purple" | "amber" | "red"
-> = {
+const typeVariant: Record<RequestType, "blue" | "purple" | "amber" | "red"> = {
   leave: "blue",
-  ob: "green",
   coe: "purple",
   dtr: "amber",
   ot: "red",
 }
 
-const statusVariant: Record<RequestStatus, "green" | "amber" | "red"> = {
+const bucketVariant: Record<Bucket, "green" | "amber" | "red" | "gray"> = {
   approved: "green",
   pending: "amber",
   declined: "red",
+  neutral: "gray",
+}
+
+// ── status → bucket maps (color + stat grouping; granular label kept for the badge) ──
+
+const LEAVE_BUCKET: Record<LeaveStatus, Bucket> = {
+  DRAFT: "neutral",
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "declined",
+  RETURNED: "pending",
+  CANCELLED: "neutral",
+}
+
+const COE_BUCKET: Record<CoeStatus, Bucket> = {
+  DRAFT: "neutral",
+  SUBMITTED: "pending",
+  PENDING_REVIEW: "pending",
+  APPROVED: "approved",
+  REJECTED: "declined",
+  RELEASED: "approved",
+  COMPLETED: "approved",
+}
+
+const OT_BUCKET: Record<OvertimeStatus, Bucket> = {
+  DRAFT: "neutral",
+  PENDING_AUTH: "pending",
+  AUTHORIZED: "pending",
+  AUTH_REJECTED: "declined",
+  PENDING_CLAIM: "pending",
+  APPROVED: "approved",
+  REJECTED: "declined",
+  RETURNED: "pending",
+  DECLINED: "declined",
+  EXPIRED: "neutral",
+  CANCELLED: "neutral",
+  PENDING_EMERGENCY_CLAIM: "pending",
+  PENDING: "pending",
+}
+
+const CT_BUCKET: Record<ChangeTimeStatus, Bucket> = {
+  DRAFT: "neutral",
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "declined",
+  RETURNED: "pending",
+  CANCELLED: "neutral",
+}
+
+const COE_STATUS_LABEL: Record<CoeStatus, string> = {
+  DRAFT: "Draft",
+  SUBMITTED: "Submitted",
+  PENDING_REVIEW: "Under review",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  RELEASED: "Released",
+  COMPLETED: "Completed",
+}
+
+const CT_STATUS_LABEL: Record<ChangeTimeStatus, string> = {
+  DRAFT: "Draft",
+  PENDING: "Pending",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  RETURNED: "Needs revision",
+  CANCELLED: "Cancelled",
+}
+
+const CT_TYPE_LABEL: Record<ChangeTimeRequest["requestType"], string> = {
+  TIME_IN: "Time in",
+  TIME_OUT: "Time out",
+  BOTH: "Time in & out",
+}
+
+// ── date helpers ────────────────────────────────────────────────────────────────
+
+function fmtShort(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  })
+}
+
+function fmtDay(iso: string) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  })
+}
+
+function fmtRange(start: string, end: string) {
+  return start === end ? fmtDay(start) : `${fmtDay(start)}–${fmtDay(end)}`
+}
+
+// ── normalizers ───────────────────────────────────────────────────────────────
+
+function leaveRow(r: LeaveRequest): FeedRow {
+  return {
+    key: `leave-${r.id}`,
+    type: "leave",
+    title: `${LEAVE_TYPE_LABEL[r.leaveType]} leave`,
+    meta: `${fmtRange(r.startDate, r.endDate)} · ${r.days} day${
+      r.days === 1 ? "" : "s"
+    }${r.reason ? ` · ${r.reason}` : ""}`,
+    filedAt: r.filedAt,
+    forDate: fmtRange(r.startDate, r.endDate),
+    bucket: LEAVE_BUCKET[r.status],
+    statusLabel: LEAVE_STATUS_LABEL[r.status],
+    remarks:
+      r.reviewNote ??
+      (r.reviewedByName ? `Reviewed by ${r.reviewedByName}` : "—"),
+    href: "/dashboard/my-leaves",
+  }
+}
+
+function coeRow(r: CoeRequest): FeedRow {
+  return {
+    key: `coe-${r.id}`,
+    type: "coe",
+    title: "Certificate of employment",
+    meta: `${COE_PURPOSE_LABEL[r.purpose]} · ${
+      COE_CERT_TYPE_LABEL[r.certificateType]
+    }`,
+    filedAt: r.createdAt,
+    forDate: "—",
+    bucket: COE_BUCKET[r.status],
+    statusLabel: COE_STATUS_LABEL[r.status],
+    remarks:
+      r.remarks ?? (r.approvedByName ? `Handled by ${r.approvedByName}` : "—"),
+    href: "/dashboard/my-coe",
+  }
+}
+
+function otRow(r: OvertimeRequest): FeedRow {
+  const hours = r.totalHours ?? r.plannedHours
+  return {
+    key: `ot-${r.id}`,
+    type: "ot",
+    title: "Overtime",
+    meta: `${fmtDay(r.overtimeDate)} · ${OT_TYPE_LABEL[r.overtimeType]}${
+      hours != null ? ` · ${hours}h` : ""
+    }`,
+    filedAt: r.createdAt,
+    forDate: fmtDay(r.overtimeDate),
+    bucket: OT_BUCKET[r.status],
+    statusLabel: OT_STATUS_LABEL[r.status],
+    remarks: r.reviewNote ?? r.declineReason ?? "—",
+    href: "/dashboard/my-overtime",
+  }
+}
+
+function ctRow(r: ChangeTimeRequest): FeedRow {
+  return {
+    key: `ct-${r.id}`,
+    type: "dtr",
+    title: "Time correction",
+    meta: `${fmtDay(r.attendanceDate)} · ${CT_TYPE_LABEL[r.requestType]}`,
+    filedAt: r.createdAt,
+    forDate: fmtDay(r.attendanceDate),
+    bucket: CT_BUCKET[r.status],
+    statusLabel: CT_STATUS_LABEL[r.status],
+    remarks: r.reviewNote ?? "—",
+    href: "/dashboard/my-change-time",
+  }
 }
 
 // ── main component ────────────────────────────────────────────────────────────
 
 export function RequestSection() {
+  const router = useRouter()
+  const slugHref = useSlugHref()
+
   const [leaveOpen, setLeaveOpen] = useState(false)
   const [obOpen, setObOpen] = useState(false)
   const [coeOpen, setCoeOpen] = useState(false)
   const [dtrOpen, setDtrOpen] = useState(false)
   const [otOpen, setOtOpen] = useState(false)
+
+  // Live feeds — pull a generous page of each so the merged history + stats are accurate.
+  const leaveQ = useMyLeaveRequests({ size: 50 })
+  const coeQ = useMyCoeRequests({ size: 50 })
+  const otQ = useMyOvertimeRequests({ size: 50 })
+  const ctQ = useMyChangeTimeRequests({ size: 50 })
+  const { data: balances = [] } = useLeaveBalances()
+
+  const loading =
+    leaveQ.isLoading || coeQ.isLoading || otQ.isLoading || ctQ.isLoading
+
+  const rows = useMemo<FeedRow[]>(() => {
+    const merged: FeedRow[] = [
+      ...(leaveQ.data?.content ?? []).map(leaveRow),
+      ...(coeQ.data?.content ?? []).map(coeRow),
+      ...(otQ.data?.content ?? []).map(otRow),
+      ...(ctQ.data?.content ?? []).map(ctRow),
+    ]
+    return merged.sort((a, b) => b.filedAt.localeCompare(a.filedAt))
+  }, [leaveQ.data, coeQ.data, otQ.data, ctQ.data])
+
+  // ── stats ──
+  const thisYear = new Date().getFullYear()
+  const stats = useMemo(() => {
+    let pending = 0
+    let approved = 0
+    let declined = 0
+    for (const r of rows) {
+      const inYear = new Date(r.filedAt).getFullYear() === thisYear
+      if (r.bucket === "pending") pending++
+      else if (r.bucket === "approved" && inYear) approved++
+      else if (r.bucket === "declined" && inYear) declined++
+    }
+    return { pending, approved, declined }
+  }, [rows, thisYear])
+
+  // Credit pools — a single FLEXI pool when enabled, else the dedicated types.
+  const CREDIT_LABEL: Record<string, string> = {
+    VACATION: "vacation",
+    SICK: "sick",
+    EMERGENCY: "emergency",
+    FLEXI: "flexible",
+  }
+  const pools = balances.filter((b) => b.type in CREDIT_LABEL)
+  const leaveRemaining = pools.reduce((s, b) => s + b.remaining, 0)
+  const leaveMeta =
+    pools.length > 0
+      ? pools.map((b) => `${b.remaining} ${CREDIT_LABEL[b.type]}`).join(" · ")
+      : "No leave credits"
 
   return (
     <div className="space-y-5">
@@ -222,30 +410,30 @@ export function RequestSection() {
           title="Leave balance"
           value={
             <>
-              14{" "}
+              {leaveRemaining}{" "}
               <span className="text-sm font-normal text-muted-foreground">
                 days
               </span>
             </>
           }
-          meta="8 vacation · 4 sick · 2 emergency"
+          meta={leaveMeta}
           accent="blue"
         />
         <StatCard
           title="Pending requests"
-          value={<span className="text-warning">2</span>}
+          value={<span className="text-warning">{stats.pending}</span>}
           meta="Awaiting HR action"
           accent="amber"
         />
         <StatCard
           title="Approved this year"
-          value={<span className="text-success">7</span>}
+          value={<span className="text-success">{stats.approved}</span>}
           meta="Across all types"
           accent="green"
         />
         <StatCard
           title="Declined"
-          value={<span className="text-danger">1</span>}
+          value={<span className="text-danger">{stats.declined}</span>}
           meta="This year"
           accent="red"
         />
@@ -290,7 +478,7 @@ export function RequestSection() {
         <RequestTypeCard
           accent="danger"
           title="Overtime request"
-          description="File pre-approved overtime hours for compensation"
+          description="Pre-authorize overtime hours before you work"
           onClick={() => setOtOpen(true)}
           icon={
             <HugeiconsIcon icon={ClockPlusIcon} size={18} strokeWidth={1.8} />
@@ -302,7 +490,9 @@ export function RequestSection() {
       <Card>
         <CardHeader>
           <CardTitle>Request history</CardTitle>
-          <p className="text-[12px] text-muted-foreground">All time</p>
+          <p className="text-[12px] text-muted-foreground">
+            Latest activity across all request types
+          </p>
         </CardHeader>
         <CardContent>
           <Table>
@@ -321,35 +511,68 @@ export function RequestSection() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {REQUEST_HISTORY.map((r, i) => (
-                <TableRow key={i}>
-                  <TableCell>
-                    <StatusBadge variant={typeVariant[r.type]}>
-                      {typeLabel[r.type]}
-                    </StatusBadge>
-                  </TableCell>
-                  <TableCell>
-                    <p className="font-medium">{r.title}</p>
-                    <p className="text-[12px] text-muted-foreground">
-                      {r.meta}
-                    </p>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {r.filed}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {r.forDate}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge variant={statusVariant[r.status]}>
-                      {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
-                    </StatusBadge>
-                  </TableCell>
-                  <TableCell className="text-[12px] text-muted-foreground">
-                    {r.remarks}
+              {loading ? (
+                [0, 1, 2, 3, 4].map((i) => (
+                  <TableRow key={i}>
+                    {[0, 1, 2, 3, 4, 5].map((j) => (
+                      <TableCell key={j}>
+                        <Skeleton className="h-3 w-20" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="py-12 text-center text-[13px] text-muted-foreground"
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <HugeiconsIcon
+                        icon={File01Icon}
+                        size={28}
+                        strokeWidth={1.3}
+                        className="text-muted-foreground/30"
+                      />
+                      <p>No requests yet. File one using the cards above.</p>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                rows.slice(0, 15).map((r) => (
+                  <TableRow
+                    key={r.key}
+                    className="cursor-pointer hover:bg-muted/30"
+                    onClick={() => router.push(slugHref(r.href))}
+                  >
+                    <TableCell>
+                      <StatusBadge variant={typeVariant[r.type]}>
+                        {typeLabel[r.type]}
+                      </StatusBadge>
+                    </TableCell>
+                    <TableCell>
+                      <p className="font-medium">{r.title}</p>
+                      <p className="text-[12px] text-muted-foreground">
+                        {r.meta}
+                      </p>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground tabular-nums">
+                      {fmtShort(r.filedAt)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {r.forDate}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge variant={bucketVariant[r.bucket]}>
+                        {r.statusLabel}
+                      </StatusBadge>
+                    </TableCell>
+                    <TableCell className="text-[12px] text-muted-foreground">
+                      {r.remarks}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -358,12 +581,12 @@ export function RequestSection() {
       {/* ── Modals ── */}
       <LeaveModal open={leaveOpen} onClose={() => setLeaveOpen(false)} />
       <ObModal open={obOpen} onClose={() => setObOpen(false)} />
-      <CoeModal open={coeOpen} onClose={() => setCoeOpen(false)} />
+      <CoeRequestModal open={coeOpen} onClose={() => setCoeOpen(false)} />
       <ChangeTimeRequestDialog
         open={dtrOpen}
         onClose={() => setDtrOpen(false)}
       />
-      <OvertimeModal open={otOpen} onClose={() => setOtOpen(false)} />
+      <OvertimeAuthorizeDialog open={otOpen} onClose={() => setOtOpen(false)} />
     </div>
   )
 }
