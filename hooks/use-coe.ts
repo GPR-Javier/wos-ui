@@ -1,9 +1,23 @@
 "use client"
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { coeApi, type CoeStatus, type CreateCoePayload } from "@/lib/coe-api"
+import {
+  coeApi,
+  saveBlob,
+  type CoeStatus,
+  type CreateCoePayload,
+} from "@/lib/coe-api"
 
 const KEY = ["coe-requests"] as const
+
+export function useDownloadCoeDocument() {
+  return useMutation({
+    mutationFn: ({ id, filename }: { id: number; filename?: string }) =>
+      coeApi
+        .downloadDocument(id)
+        .then((blob) => saveBlob(blob, filename ?? `coe-${id}.pdf`)),
+  })
+}
 
 export function useMyCoeRequests(
   params: { status?: CoeStatus; page?: number; size?: number } = {}
@@ -56,9 +70,25 @@ export function useMarkCoeUnderReview() {
 export function useApproveCoeRequest() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, remarks }: { id: number; remarks?: string | null }) =>
-      coeApi.approve(id, remarks),
+    mutationFn: ({
+      id,
+      remarks,
+      signature,
+    }: {
+      id: number
+      remarks?: string | null
+      signature?: string | null
+    }) => coeApi.approve(id, remarks, signature),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  })
+}
+
+export function useMyCoeSignature(enabled = true) {
+  return useQuery({
+    queryKey: [...KEY, "my-signature"],
+    queryFn: coeApi.mySignature,
+    enabled,
+    staleTime: 5 * 60_000,
   })
 }
 

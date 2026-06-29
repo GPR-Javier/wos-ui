@@ -51,6 +51,7 @@ import {
   useMyCoeRequests,
   useCreateCoeRequest,
   useCancelCoeRequest,
+  useDownloadCoeDocument,
 } from "@/hooks/use-coe"
 import {
   COE_PURPOSES,
@@ -63,6 +64,7 @@ import {
   COE_CERT_TYPE_COLOR,
   COE_RELEASE_METHOD_LABEL,
   COE_RELEASE_METHOD_DESC,
+  COE_DOWNLOADABLE,
   type CoeRequest,
   type CoeStatus,
   type CoePurpose,
@@ -573,7 +575,9 @@ function DetailDialog({
   onClose: () => void
 }) {
   const cancel = useCancelCoeRequest()
+  const download = useDownloadCoeDocument()
   const canCancel = coe.status === "DRAFT" || coe.status === "SUBMITTED"
+  const canDownload = COE_DOWNLOADABLE.includes(coe.status)
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
@@ -741,6 +745,22 @@ function DetailDialog({
               onClick={() => cancel.mutate(coe.id, { onSuccess: onClose })}
             >
               {cancel.isPending ? "Cancelling…" : "Cancel Request"}
+            </Button>
+          )}
+          {canDownload && (
+            <Button
+              size="sm"
+              className="gap-1.5"
+              disabled={download.isPending}
+              onClick={() =>
+                download.mutate({
+                  id: coe.id,
+                  filename: `${coe.referenceNumber ?? "coe-" + coe.id}.pdf`,
+                })
+              }
+            >
+              <HugeiconsIcon icon={File01Icon} size={13} strokeWidth={2} />
+              {download.isPending ? "Preparing…" : "Download COE (PDF)"}
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={onClose}>

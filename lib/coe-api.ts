@@ -81,6 +81,12 @@ export const coeApi = {
   cancelMine: (id: number) =>
     api.post<CoeRequest>(`/hr/coe-requests/${id}/cancel`).then((r) => r.data),
 
+  /** Generated COE PDF (available once approved). Returns a Blob. */
+  downloadDocument: (id: number) =>
+    api
+      .get(`/hr/coe-requests/${id}/document`, { responseType: "blob" })
+      .then((r) => r.data as Blob),
+
   // Admin / HR
   listAll: (
     params: {
@@ -96,12 +102,19 @@ export const coeApi = {
       })
       .then((r) => r.data),
 
-  approve: (id: number, remarks?: string | null) =>
+  approve: (id: number, remarks?: string | null, signature?: string | null) =>
     api
       .post<CoeRequest>(`/hr/coe-requests/${id}/approve`, {
         remarks: remarks ?? null,
+        signature: signature ?? null,
       })
       .then((r) => r.data),
+
+  /** The signed-in reviewer's stored e-signature (null if none). */
+  mySignature: () =>
+    api
+      .get<{ signature: string | null }>("/hr/coe-requests/my-signature")
+      .then((r) => r.data.signature),
 
   reject: (id: number, remarks?: string | null) =>
     api
@@ -123,6 +136,25 @@ export const coeApi = {
         documentUrl: documentUrl ?? null,
       })
       .then((r) => r.data),
+}
+
+/** Status values for which a generated COE PDF can be downloaded. */
+export const COE_DOWNLOADABLE: CoeStatus[] = [
+  "APPROVED",
+  "RELEASED",
+  "COMPLETED",
+]
+
+/** Trigger a browser download of a fetched blob. */
+export function saveBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
 }
 
 // ── Display helpers ────────────────────────────────────────────────────────

@@ -12,7 +12,6 @@ import {
   Clock01Icon,
   Alert01Icon,
   DocumentAttachmentIcon,
-  Download04Icon,
   InformationCircleIcon,
 } from "@hugeicons/core-free-icons"
 import { StatCard } from "@/components/custom/stat-card"
@@ -44,14 +43,17 @@ import {
   useMarkCoeUnderReview,
   useApproveCoeRequest,
   useRejectCoeRequest,
-  useReleaseCoeRequest,
+  useDownloadCoeDocument,
+  useMyCoeSignature,
 } from "@/hooks/use-coe"
+import { SignaturePad } from "@/components/dashboard/applicant/signature-pad"
 import {
   COE_PURPOSE_LABEL,
   COE_PURPOSE_COLOR,
   COE_CERT_TYPE_LABEL,
   COE_CERT_TYPE_COLOR,
   COE_RELEASE_METHOD_LABEL,
+  COE_DOWNLOADABLE,
   type CoeRequest,
   type CoeStatus,
 } from "@/lib/coe-api"
@@ -85,12 +87,11 @@ const STATUS_FILTERS: { label: string; value?: CoeStatus }[] = [
   { label: "All" },
   { label: "Submitted", value: "SUBMITTED" },
   { label: "Under Review", value: "PENDING_REVIEW" },
-  { label: "Approved", value: "APPROVED" },
   { label: "Released", value: "RELEASED" },
   { label: "Rejected", value: "REJECTED" },
 ]
 
-type ReviewMode = "view" | "review" | "approve" | "reject" | "release"
+type ReviewMode = "view" | "review" | "approve" | "reject"
 
 function fmtDate(isoStr: string) {
   return new Date(isoStr).toLocaleDateString("en-US", {
@@ -112,18 +113,18 @@ function ReviewModal({
   onClose: () => void
 }) {
   const [remarks, setRemarks] = useState(coe.remarks ?? "")
-  const [documentUrl, setDocumentUrl] = useState(coe.documentUrl ?? "")
+  const [drawnSig, setDrawnSig] = useState<string | null>(null)
 
   const underReview = useMarkCoeUnderReview()
   const approve = useApproveCoeRequest()
   const reject = useRejectCoeRequest()
-  const release = useReleaseCoeRequest()
+  const download = useDownloadCoeDocument()
+  // Only the approver needs a signature — fetch their stored one when approving.
+  const sigQuery = useMyCoeSignature(mode === "approve")
+  const needsSignature =
+    mode === "approve" && !sigQuery.isLoading && !sigQuery.data
 
-  const busy =
-    underReview.isPending ||
-    approve.isPending ||
-    reject.isPending ||
-    release.isPending
+  const busy = underReview.isPending || approve.isPending || reject.isPending
 
   function handleSubmit() {
     if (mode === "review")
@@ -133,7 +134,11 @@ function ReviewModal({
       )
     else if (mode === "approve")
       approve.mutate(
-        { id: coe.id, remarks: remarks || null },
+        {
+          id: coe.id,
+          remarks: remarks || null,
+          signature: drawnSig ?? undefined,
+        },
         { onSuccess: onClose }
       )
     else if (mode === "reject")
@@ -141,19 +146,13 @@ function ReviewModal({
         { id: coe.id, remarks: remarks || null },
         { onSuccess: onClose }
       )
-    else if (mode === "release")
-      release.mutate(
-        { id: coe.id, documentUrl: documentUrl || null },
-        { onSuccess: onClose }
-      )
   }
 
   const titleMap: Record<ReviewMode, string> = {
     view: "COE Request Details",
     review: "Mark Under Review",
-    approve: "Approve COE Request",
+    approve: "Approve & Release COE",
     reject: "Reject COE Request",
-    release: "Release COE Document",
   }
 
   return (
@@ -178,16 +177,6 @@ function ReviewModal({
                   size={13}
                   strokeWidth={2}
                   className="text-red-500"
-                />
-              </span>
-            )}
-            {mode === "release" && (
-              <span className="flex size-6 items-center justify-center rounded-full bg-purple-100">
-                <HugeiconsIcon
-                  icon={Download04Icon}
-                  size={13}
-                  strokeWidth={2}
-                  className="text-purple-600"
                 />
               </span>
             )}
@@ -366,26 +355,22 @@ function ReviewModal({
             </div>
           )}
 
-          {/* Release — document URL input */}
-          {mode === "release" && (
+          {/* Approver signature capture — only when the reviewer has none on file yet */}
+          {mode === "approve" && needsSignature && (
             <div className="space-y-1.5 border-t border-border pt-3">
               <Label className="text-[12px]">
-                Document URL{" "}
-                <span className="text-muted-foreground">
-                  (optional — leave blank if using printed copy)
-                </span>
+                Your signature <span className="text-red-500">*</span>
               </Label>
-              <Input
-                className="h-9 font-mono text-[12px]"
-                placeholder="https://…"
-                value={documentUrl}
-                onChange={(e) => setDocumentUrl(e.target.value)}
-              />
+              <p className="text-[11px] text-muted-foreground">
+                Draw your signature — it will be saved for reuse and printed on
+                the certificate.
+              </p>
+              <SignaturePad onChange={setDrawnSig} />
             </div>
           )}
 
-          {/* Remarks input (non-view, non-release) */}
-          {mode !== "view" && mode !== "release" && (
+          {/* Remarks input (non-view) */}
+          {mode !== "view" && (
             <div className="space-y-1.5 border-t border-border pt-3">
               <Label className="text-[12px]">
                 Remarks{" "}
@@ -396,7 +381,7 @@ function ReviewModal({
                 )}
               </Label>
               <Textarea
-                className="min-h-[72px] resize-none text-[13px]"
+                className="min-h-18 resize-none text-[13px]"
                 placeholder={
                   mode === "reject"
                     ? "Reason for rejection (shown to employee)…"
@@ -431,10 +416,10 @@ function ReviewModal({
             <Button
               size="sm"
               className="bg-green-600 hover:bg-green-700"
-              disabled={busy}
+              disabled={busy || (needsSignature && !drawnSig)}
               onClick={handleSubmit}
             >
-              {busy ? "Approving…" : "Approve Request"}
+              {busy ? "Approving…" : "Approve & Release"}
             </Button>
           )}
 
@@ -449,14 +434,19 @@ function ReviewModal({
             </Button>
           )}
 
-          {mode === "release" && (
+          {COE_DOWNLOADABLE.includes(coe.status) && (
             <Button
+              variant="outline"
               size="sm"
-              className="bg-purple-600 hover:bg-purple-700"
-              disabled={busy}
-              onClick={handleSubmit}
+              disabled={download.isPending}
+              onClick={() =>
+                download.mutate({
+                  id: coe.id,
+                  filename: `${coe.referenceNumber ?? "coe-" + coe.id}.pdf`,
+                })
+              }
             >
-              {busy ? "Releasing…" : "Release COE"}
+              {download.isPending ? "Preparing…" : "Download COE (PDF)"}
             </Button>
           )}
         </DialogFooter>
@@ -469,7 +459,7 @@ function ReviewModal({
 
 export function CoeManagementSection() {
   const [statusFilter, setStatusFilter] = useState<CoeStatus | undefined>(
-    "SUBMITTED"
+    undefined
   )
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
@@ -495,7 +485,9 @@ export function CoeManagementSection() {
     total: all.length,
     submitted: all.filter((r) => r.status === "SUBMITTED").length,
     underReview: all.filter((r) => r.status === "PENDING_REVIEW").length,
-    approved: all.filter((r) => r.status === "APPROVED").length,
+    released: all.filter(
+      (r) => r.status === "RELEASED" || r.status === "COMPLETED"
+    ).length,
   }
 
   return (
@@ -536,9 +528,9 @@ export function CoeManagementSection() {
           }
         />
         <StatCard
-          title="Pending Release"
-          value={<span className="text-success">{counts.approved}</span>}
-          meta="Approved, awaiting release"
+          title="Released"
+          value={<span className="text-success">{counts.released}</span>}
+          meta="Approved & ready to download"
           accent="green"
           icon={
             <HugeiconsIcon
@@ -590,11 +582,6 @@ export function CoeManagementSection() {
                 {f.value === "SUBMITTED" && counts.submitted > 0 && (
                   <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-100 px-1 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                     {counts.submitted}
-                  </span>
-                )}
-                {f.value === "APPROVED" && counts.approved > 0 && (
-                  <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-green-100 px-1 text-[10px] font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                    {counts.approved}
                   </span>
                 )}
               </button>
@@ -784,26 +771,6 @@ export function CoeManagementSection() {
                             strokeWidth={2}
                           />
                           <span className="sr-only">Reject</span>
-                        </Button>
-                      )}
-
-                      {/* Release (from APPROVED) */}
-                      {r.status === "APPROVED" && (
-                        <Button
-                          size="icon-xs"
-                          variant="outline"
-                          className="border-purple-200 text-purple-600 hover:bg-purple-50 dark:border-purple-900/40 dark:hover:bg-purple-900/20"
-                          onClick={() =>
-                            setReviewTarget({ coe: r, mode: "release" })
-                          }
-                          title="Release COE"
-                        >
-                          <HugeiconsIcon
-                            icon={Download04Icon}
-                            size={12}
-                            strokeWidth={2}
-                          />
-                          <span className="sr-only">Release</span>
                         </Button>
                       )}
                     </div>
