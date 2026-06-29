@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatCard } from "@/components/custom/stat-card"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { LeaveModal } from "@/components/custom/leave-modal"
 import {
   Table,
@@ -23,113 +24,83 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { useLeaveBalances } from "@/hooks/use-employee"
+import {
+  useMyLeaveRequests,
+  useCancelLeaveRequest,
+  useSubmitLeaveDraft,
+} from "@/hooks/use-leave"
+import {
+  LEAVE_TYPE_LABEL,
+  LEAVE_STATUS_LABEL,
+  LEAVE_STATUS_VARIANT,
+  type LeaveType,
+  type LeaveStatus,
+  type LeaveRequest,
+} from "@/lib/leave-api"
 
-// ── Types & static prototype data ─────────────────────────────────────────────
-
-type LeaveStatus = "approved" | "pending" | "declined"
-type LeaveKind = "Vacation" | "Sick" | "Emergency" | "Special"
-
-interface LeaveRecord {
-  kind: LeaveKind
-  dates: string
-  days: number
-  reason: string
-  filed: string
-  status: LeaveStatus
-  remarks: string
-}
-
-const LEAVE_HISTORY: LeaveRecord[] = [
-  {
-    kind: "Vacation",
-    dates: "Jun 14–16",
-    days: 3,
-    reason: "Family trip",
-    filed: "Jun 7",
-    status: "approved",
-    remarks: "Approved by Sandra R.",
-  },
-  {
-    kind: "Sick",
-    dates: "May 22",
-    days: 1,
-    reason: "Flu",
-    filed: "May 22",
-    status: "approved",
-    remarks: "Auto-approved",
-  },
-  {
-    kind: "Emergency",
-    dates: "May 3",
-    days: 1,
-    reason: "Family emergency",
-    filed: "May 3",
-    status: "approved",
-    remarks: "Approved by Sandra R.",
-  },
-  {
-    kind: "Vacation",
-    dates: "Apr 28–30",
-    days: 3,
-    reason: "Out of town",
-    filed: "Apr 18",
-    status: "declined",
-    remarks: "Peak season — please reschedule",
-  },
-  {
-    kind: "Sick",
-    dates: "Jul 2",
-    days: 1,
-    reason: "Medical check-up",
-    filed: "Jun 27",
-    status: "pending",
-    remarks: "Awaiting HR approval",
-  },
-]
-
-const KIND_VARIANT: Record<LeaveKind, "blue" | "amber" | "red" | "purple"> = {
-  Vacation: "blue",
-  Sick: "amber",
-  Emergency: "red",
-  Special: "purple",
-}
-
-const STATUS_VARIANT: Record<LeaveStatus, "green" | "amber" | "red"> = {
-  approved: "green",
-  pending: "amber",
-  declined: "red",
+const TYPE_VARIANT: Record<LeaveType, "blue" | "amber" | "red" | "purple"> = {
+  VACATION: "blue",
+  SICK: "amber",
+  EMERGENCY: "red",
+  MATERNITY: "purple",
+  PATERNITY: "purple",
 }
 
 const STATUS_FILTERS: { label: string; value?: LeaveStatus }[] = [
   { label: "All" },
-  { label: "Pending", value: "pending" },
-  { label: "Approved", value: "approved" },
-  { label: "Declined", value: "declined" },
+  { label: "Pending", value: "PENDING" },
+  { label: "Approved", value: "APPROVED" },
+  { label: "Returned", value: "RETURNED" },
+  { label: "Rejected", value: "REJECTED" },
+  { label: "Draft", value: "DRAFT" },
 ]
 
-// Leave balance breakdown shown beneath the headline stats.
-const BALANCE_BREAKDOWN: { label: LeaveKind; used: number; total: number }[] = [
-  { label: "Vacation", used: 7, total: 15 },
-  { label: "Sick", used: 1, total: 5 },
-  { label: "Emergency", used: 1, total: 3 },
-]
+function fmtDate(iso: string) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  })
+}
 
-// ── Main component ────────────────────────────────────────────────────────────
+function dateRange(start: string, end: string) {
+  return start === end ? fmtDate(start) : `${fmtDate(start)} – ${fmtDate(end)}`
+}
 
 export function MyLeavesSection() {
   const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState<LeaveRequest | null>(null)
   const [statusFilter, setStatusFilter] = useState<LeaveStatus | undefined>(
     undefined
   )
 
+  const q = useMyLeaveRequests({ size: 100 })
+  const all = q.data?.content ?? []
   const items = statusFilter
-    ? LEAVE_HISTORY.filter((r) => r.status === statusFilter)
-    : LEAVE_HISTORY
+    ? all.filter((r) => r.status === statusFilter)
+    : all
 
+  const { data: balances = [] } = useLeaveBalances()
+  const cancelMutation = useCancelLeaveRequest()
+  const submitMutation = useSubmitLeaveDraft()
+
+  const thisYear = new Date().getFullYear()
   const counts = {
-    pending: LEAVE_HISTORY.filter((r) => r.status === "pending").length,
-    approved: LEAVE_HISTORY.filter((r) => r.status === "approved").length,
-    declined: LEAVE_HISTORY.filter((r) => r.status === "declined").length,
+    pending: all.filter((r) => r.status === "PENDING").length,
+    approved: all.filter(
+      (r) => r.status === "APPROVED" && r.startDate.startsWith(`${thisYear}`)
+    ).length,
+    rejected: all.filter((r) => r.status === "REJECTED").length,
+  }
+  const totalRemaining = balances.reduce((s, b) => s + b.remaining, 0)
+
+  function openFile() {
+    setEditing(null)
+    setModalOpen(true)
+  }
+  function openEdit(r: LeaveRequest) {
+    setEditing(r)
+    setModalOpen(true)
   }
 
   return (
@@ -142,11 +113,7 @@ export function MyLeavesSection() {
             File and track your leave requests
           </p>
         </div>
-        <Button
-          size="sm"
-          className="gap-1.5"
-          onClick={() => setModalOpen(true)}
-        >
+        <Button size="sm" className="gap-1.5" onClick={openFile}>
           <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} />
           File Leave
         </Button>
@@ -158,13 +125,13 @@ export function MyLeavesSection() {
           title="Leave balance"
           value={
             <>
-              14{" "}
+              {totalRemaining}{" "}
               <span className="text-sm font-normal text-muted-foreground">
                 days
               </span>
             </>
           }
-          meta="8 vacation · 4 sick · 2 emergency"
+          meta="Remaining across types"
           accent="blue"
           icon={
             <HugeiconsIcon icon={Calendar01Icon} size={16} strokeWidth={1.8} />
@@ -193,8 +160,8 @@ export function MyLeavesSection() {
           }
         />
         <StatCard
-          title="Declined"
-          value={<span className="text-danger">{counts.declined}</span>}
+          title="Rejected"
+          value={<span className="text-danger">{counts.rejected}</span>}
           meta="This year"
           accent="red"
           icon={
@@ -204,50 +171,58 @@ export function MyLeavesSection() {
       </div>
 
       {/* ── Balance breakdown ── */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Leave balance</CardTitle>
-          <p className="text-[12px] text-muted-foreground">
-            Remaining credits for {new Date().getFullYear()}
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {BALANCE_BREAKDOWN.map((b) => {
-              const remaining = b.total - b.used
-              const pct = Math.round((b.used / b.total) * 100)
-              return (
-                <div
-                  key={b.label}
-                  className="rounded-lg border border-border bg-muted/20 p-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <StatusBadge variant={KIND_VARIANT[b.label]} dot={false}>
-                      {b.label}
-                    </StatusBadge>
-                    <span className="text-[12px] text-muted-foreground tabular-nums">
-                      {remaining}/{b.total} days
-                    </span>
+      {balances.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Leave balance</CardTitle>
+            <p className="text-[12px] text-muted-foreground">
+              Remaining credits for {thisYear}
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div
+              className={cn(
+                "grid grid-cols-1 gap-4",
+                balances.length > 1 && "sm:grid-cols-3"
+              )}
+            >
+              {balances.map((b) => {
+                const remaining = b.remaining
+                const pct =
+                  b.total > 0 ? Math.round((b.used / b.total) * 100) : 0
+                return (
+                  <div
+                    key={b.type}
+                    className="rounded-lg border border-border bg-muted/20 p-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-semibold capitalize">
+                        {b.type.toLowerCase()}
+                      </span>
+                      <span className="text-[12px] text-muted-foreground tabular-nums">
+                        {remaining}/{b.total} days
+                      </span>
+                    </div>
+                    <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      {b.used} used
+                      {b.pending > 0 ? ` · ${b.pending} pending` : ""}
+                    </p>
                   </div>
-                  <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <p className="mt-2 text-[11px] text-muted-foreground">
-                    {b.used} day{b.used === 1 ? "" : "s"} used
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── History table ── */}
       <div className="rounded-xl border border-border bg-card shadow-sm">
-        {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3">
           <p className="text-[13px] font-semibold">Leave history</p>
           <div className="ml-auto flex rounded-lg border border-border bg-muted/40 p-0.5">
@@ -268,25 +243,28 @@ export function MyLeavesSection() {
           </div>
         </div>
 
-        {/* Table */}
         <Table>
           <TableHeader>
             <TableRow>
-              {[
-                "Type",
-                "Dates",
-                "Days",
-                "Reason",
-                "Filed",
-                "Status",
-                "Remarks",
-              ].map((h) => (
-                <TableHead key={h}>{h}</TableHead>
-              ))}
+              {["Type", "Dates", "Days", "Reason", "Status", "Filed", ""].map(
+                (h, i) => (
+                  <TableHead key={h || `c-${i}`}>{h}</TableHead>
+                )
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.length === 0 ? (
+            {q.isLoading ? (
+              [0, 1, 2].map((i) => (
+                <TableRow key={i}>
+                  {[0, 1, 2, 3, 4, 5, 6].map((j) => (
+                    <TableCell key={j}>
+                      <Skeleton className="h-3 w-16" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : items.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={7}
@@ -304,7 +282,7 @@ export function MyLeavesSection() {
                       size="sm"
                       variant="outline"
                       className="mt-1 gap-1.5"
-                      onClick={() => setModalOpen(true)}
+                      onClick={openFile}
                     >
                       <HugeiconsIcon
                         icon={Add01Icon}
@@ -317,34 +295,91 @@ export function MyLeavesSection() {
                 </TableCell>
               </TableRow>
             ) : (
-              items.map((r, i) => (
-                <TableRow key={i}>
+              items.map((r) => (
+                <TableRow key={r.id}>
                   <TableCell>
-                    <StatusBadge variant={KIND_VARIANT[r.kind]} dot={false}>
-                      {r.kind}
+                    <StatusBadge
+                      variant={TYPE_VARIANT[r.leaveType]}
+                      dot={false}
+                    >
+                      {LEAVE_TYPE_LABEL[r.leaveType]}
                     </StatusBadge>
                   </TableCell>
                   <TableCell className="text-[13px] font-medium tabular-nums">
-                    {r.dates}
+                    {dateRange(r.startDate, r.endDate)}
                   </TableCell>
                   <TableCell className="text-[13px] tabular-nums">
                     {r.days}
+                    {Object.keys(r.dayParts ?? {}).length > 0 && (
+                      <span className="ml-1 text-[11px] text-muted-foreground">
+                        ½
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="max-w-50">
                     <p className="truncate text-[12px] text-muted-foreground">
-                      {r.reason}
+                      {r.reason || "—"}
                     </p>
-                  </TableCell>
-                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">
-                    {r.filed}
+                    {r.status === "RETURNED" && r.reviewNote && (
+                      <p className="truncate text-[11px] text-amber-600 dark:text-amber-400">
+                        {r.reviewNote}
+                      </p>
+                    )}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge variant={STATUS_VARIANT[r.status]}>
-                      {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
+                    <StatusBadge variant={LEAVE_STATUS_VARIANT[r.status]}>
+                      {LEAVE_STATUS_LABEL[r.status]}
                     </StatusBadge>
                   </TableCell>
-                  <TableCell className="text-[12px] text-muted-foreground">
-                    {r.remarks}
+                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">
+                    {fmtDate(r.filedAt.split("T")[0])}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      {r.status === "RETURNED" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[12px]"
+                          onClick={() => openEdit(r)}
+                        >
+                          Revise
+                        </Button>
+                      )}
+                      {r.status === "DRAFT" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-[12px]"
+                            onClick={() => openEdit(r)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="h-7 text-[12px]"
+                            disabled={submitMutation.isPending}
+                            onClick={() => submitMutation.mutate(r.id)}
+                          >
+                            Submit
+                          </Button>
+                        </>
+                      )}
+                      {(r.status === "PENDING" ||
+                        r.status === "DRAFT" ||
+                        r.status === "RETURNED") && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 border-red-200 text-[12px] text-red-500 hover:bg-red-50 dark:border-red-900/40"
+                          disabled={cancelMutation.isPending}
+                          onClick={() => cancelMutation.mutate(r.id)}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -353,8 +388,11 @@ export function MyLeavesSection() {
         </Table>
       </div>
 
-      {/* ── Modal ── */}
-      <LeaveModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <LeaveModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        editing={editing}
+      />
     </div>
   )
 }

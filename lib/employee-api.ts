@@ -81,6 +81,7 @@ export interface LeaveBalance {
   type: string
   total: number
   used: number
+  pending: number
   remaining: number
 }
 

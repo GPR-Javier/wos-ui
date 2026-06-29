@@ -2,10 +2,25 @@
 
 import { useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { CheckmarkCircle01Icon, Cancel01Icon } from "@hugeicons/core-free-icons"
+import {
+  CheckmarkCircle01Icon,
+  Cancel01Icon,
+  ArrowTurnBackwardIcon,
+} from "@hugeicons/core-free-icons"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { TablePagination } from "@/components/custom/table-pagination"
+import { cn } from "@/lib/utils"
 import {
   Table,
   TableHeader,
@@ -20,36 +35,70 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import {
-  useLeaveRequests,
-  useApproveLeave,
-  useRejectLeave,
-} from "@/hooks/use-hr"
+  useAllLeaveRequests,
+  useApproveLeaveRequest,
+  useRejectLeaveRequest,
+  useReturnLeaveRequest,
+} from "@/hooks/use-leave"
+import {
+  LEAVE_TYPE_LABEL,
+  LEAVE_STATUS_LABEL,
+  LEAVE_STATUS_VARIANT,
+  type LeaveRequest,
+} from "@/lib/leave-api"
+
+const STATUS_FILTERS: { label: string; value?: string }[] = [
+  { label: "All" },
+  { label: "Pending", value: "PENDING" },
+  { label: "Approved", value: "APPROVED" },
+  { label: "Returned", value: "RETURNED" },
+  { label: "Rejected", value: "REJECTED" },
+]
 
 export function LeaveSection() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(
+    undefined
+  )
+  const [returnTarget, setReturnTarget] = useState<LeaveRequest | null>(null)
+  const [returnNote, setReturnNote] = useState("")
 
-  const { data, isLoading, isError } = useLeaveRequests({
+  const { data, isLoading, isError } = useAllLeaveRequests({
+    status: statusFilter,
     page: page - 1,
     size: pageSize,
   })
-  const approveMutation = useApproveLeave()
-  const rejectMutation = useRejectLeave()
+  const approveMutation = useApproveLeaveRequest()
+  const rejectMutation = useRejectLeaveRequest()
+  const returnMutation = useReturnLeaveRequest()
 
   const requests = data?.content ?? []
   const total = data?.totalElements ?? 0
   const totalPages = data?.totalPages ?? 0
 
-  const pendingCount = requests.filter((r) => r.status === "pending").length
-  const approvedCount = requests.filter((r) => r.status === "approved").length
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="font-semibold">Leave requests</h3>
-        <div className="flex gap-2">
-          <StatusBadge variant="amber">{pendingCount} pending</StatusBadge>
-          <StatusBadge variant="green">{approvedCount} approved</StatusBadge>
+        <div className="flex rounded-lg border border-border bg-muted/40 p-0.5">
+          {STATUS_FILTERS.map((f) => (
+            <button
+              key={f.label}
+              onClick={() => {
+                setStatusFilter(f.value)
+                setPage(1)
+              }}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors",
+                statusFilter === f.value
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -119,7 +168,7 @@ export function LeaveSection() {
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {r.leaveType}
+                    {LEAVE_TYPE_LABEL[r.leaveType]}
                   </TableCell>
                   <TableCell className="text-muted-foreground tabular-nums">
                     {r.startDate}
@@ -129,23 +178,15 @@ export function LeaveSection() {
                   </TableCell>
                   <TableCell className="text-center">{r.days}</TableCell>
                   <TableCell className="text-muted-foreground tabular-nums">
-                    {r.filedAt}
+                    {r.filedAt?.split("T")[0]}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge
-                      variant={
-                        r.status === "approved"
-                          ? "green"
-                          : r.status === "pending"
-                            ? "amber"
-                            : "red"
-                      }
-                    >
-                      {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
+                    <StatusBadge variant={LEAVE_STATUS_VARIANT[r.status]}>
+                      {LEAVE_STATUS_LABEL[r.status]}
                     </StatusBadge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {r.status === "pending" && (
+                    {r.status === "PENDING" && (
                       <div className="flex justify-end gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -154,7 +195,9 @@ export function LeaveSection() {
                               variant="outline"
                               className="border-success-border text-success hover:bg-gbg"
                               disabled={approveMutation.isPending}
-                              onClick={() => approveMutation.mutate(r.id)}
+                              onClick={() =>
+                                approveMutation.mutate({ id: r.id })
+                              }
                             >
                               <HugeiconsIcon
                                 icon={CheckmarkCircle01Icon}
@@ -171,9 +214,33 @@ export function LeaveSection() {
                             <Button
                               size="icon-xs"
                               variant="outline"
+                              className="border-amber-300 text-amber-600 hover:bg-amber-50 dark:border-amber-900/40"
+                              disabled={returnMutation.isPending}
+                              onClick={() => {
+                                setReturnNote("")
+                                setReturnTarget(r)
+                              }}
+                            >
+                              <HugeiconsIcon
+                                icon={ArrowTurnBackwardIcon}
+                                size={12}
+                                strokeWidth={2.5}
+                              />
+                              <span className="sr-only">Return</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Return for revision</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="icon-xs"
+                              variant="outline"
                               className="border-danger-border text-danger hover:bg-rbg"
                               disabled={rejectMutation.isPending}
-                              onClick={() => rejectMutation.mutate(r.id)}
+                              onClick={() =>
+                                rejectMutation.mutate({ id: r.id })
+                              }
                             >
                               <HugeiconsIcon
                                 icon={Cancel01Icon}
@@ -202,6 +269,57 @@ export function LeaveSection() {
         setPage={setPage}
         setPageSize={setPageSize}
       />
+
+      {/* Return-for-revision dialog */}
+      <Dialog
+        open={!!returnTarget}
+        onOpenChange={(v) => !v && setReturnTarget(null)}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Return for revision</DialogTitle>
+            <DialogDescription>
+              {returnTarget
+                ? `Send ${returnTarget.employeeName}'s leave request back to be revised.`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label className="text-[12px]">
+              What needs to be revised? <span className="text-red-500">*</span>
+            </Label>
+            <Textarea
+              className="min-h-20 resize-none text-[13px]"
+              placeholder="Shown to the employee…"
+              value={returnNote}
+              onChange={(e) => setReturnNote(e.target.value)}
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={returnMutation.isPending}
+              onClick={() => setReturnTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={!returnNote.trim() || returnMutation.isPending}
+              onClick={() =>
+                returnTarget &&
+                returnMutation.mutate(
+                  { id: returnTarget.id, reviewNote: returnNote.trim() },
+                  { onSuccess: () => setReturnTarget(null) }
+                )
+              }
+            >
+              {returnMutation.isPending ? "Returning…" : "Return for revision"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
