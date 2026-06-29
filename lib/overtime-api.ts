@@ -17,10 +17,23 @@ export type OvertimeType =
 
 export type OvertimeStatus =
   | "DRAFT"
-  | "PENDING"
+  // Phase 1 — authorization (permission before the work)
+  | "PENDING_AUTH"
+  | "AUTHORIZED"
+  | "AUTH_REJECTED"
+  // Phase 2 — claim (actual hours after the work)
+  | "PENDING_CLAIM"
+  // Shared / terminal
   | "APPROVED"
   | "REJECTED"
+  | "RETURNED"
+  | "DECLINED"
+  | "EXPIRED"
   | "CANCELLED"
+  // Emergency (post-hoc, no prior authorization)
+  | "PENDING_EMERGENCY_CLAIM"
+  // Legacy single-phase
+  | "PENDING"
 
 export interface OvertimeRequest {
   id: number
@@ -28,12 +41,24 @@ export interface OvertimeRequest {
   userName: string
   userEmail: string
   overtimeDate: string // ISO date "YYYY-MM-DD"
-  startTime: string // "HH:mm"
-  endTime: string // "HH:mm"
-  totalHours: number // computed decimal hours
+  // Phase 1 — the estimate
+  plannedStartTime: string | null // "HH:mm"
+  plannedEndTime: string | null // "HH:mm"
+  plannedHours: number | null
+  // Phase 2 — the actuals (null until the claim is filed)
+  startTime: string | null // "HH:mm"
+  endTime: string | null // "HH:mm"
+  totalHours: number | null // computed decimal hours
   overtimeType: OvertimeType
   reason: string
   status: OvertimeStatus
+  adminInitiated: boolean
+  // Phase 1 reviewer (authorization)
+  authorizedBy: number | null
+  authorizedByName: string | null
+  authorizedAt: string | null
+  declineReason: string | null
+  // Phase 2 reviewer (claim) + shared review note
   reviewNote: string | null
   reviewedBy: number | null
   reviewedByName: string | null
@@ -41,6 +66,31 @@ export interface OvertimeRequest {
   attachmentUrls: string[]
   createdAt: string
   updatedAt: string
+}
+
+/** Phase 1 — employee files a pre-authorization (estimate) for a future/today date. */
+export interface AuthorizeOvertimePayload {
+  overtimeDate: string
+  plannedStartTime: string // "HH:mm"
+  plannedEndTime: string // "HH:mm"
+  reason?: string
+  isDraft?: boolean
+}
+
+/** Admin/manager bulk pre-authorization. */
+export interface BulkAuthorizePayload {
+  overtimeDate: string
+  plannedStartTime: string
+  plannedEndTime: string
+  reason?: string
+  userIds: number[]
+}
+
+/** Phase 2 — employee confirms the actual hours worked against an authorization. */
+export interface ClaimOvertimePayload {
+  startTime: string // "HH:mm"
+  endTime: string // "HH:mm"
+  reason?: string
 }
 
 export interface CreateOvertimePayload {
@@ -84,6 +134,36 @@ export const overtimeApi = {
       .post<OvertimeRequest>(`/hr/overtime-requests/${id}/cancel`)
       .then((r) => r.data),
 
+  // ── Phase 1: authorization (permission before the work) ──
+  createAuthorization: (body: AuthorizeOvertimePayload) =>
+    api
+      .post<OvertimeRequest>("/hr/overtime-requests/authorizations", body)
+      .then((r) => r.data),
+
+  decline: (id: number, reason?: string | null) =>
+    api
+      .post<OvertimeRequest>(`/hr/overtime-requests/${id}/decline`, {
+        reason: reason ?? null,
+      })
+      .then((r) => r.data),
+
+  resubmit: (id: number) =>
+    api
+      .post<OvertimeRequest>(`/hr/overtime-requests/${id}/resubmit`)
+      .then((r) => r.data),
+
+  // ── Phase 2: claim (actual hours after the work) ──
+  submitClaim: (id: number, body: ClaimOvertimePayload) =>
+    api
+      .post<OvertimeRequest>(`/hr/overtime-requests/${id}/claim`, body)
+      .then((r) => r.data),
+
+  // ── Emergency (post-hoc claim, no prior authorization) ──
+  createEmergency: (body: CreateOvertimePayload) =>
+    api
+      .post<OvertimeRequest>("/hr/overtime-requests/emergency", body)
+      .then((r) => r.data),
+
   // Admin / HR
   listAll: (
     params: {
@@ -110,6 +190,57 @@ export const overtimeApi = {
     api
       .post<OvertimeRequest>(`/hr/overtime-requests/${id}/reject`, {
         reviewNote: reviewNote ?? null,
+      })
+      .then((r) => r.data),
+
+  // ── Phase 1 review (authorization) ──
+  bulkAuthorize: (body: BulkAuthorizePayload) =>
+    api
+      .post<
+        OvertimeRequest[]
+      >("/hr/overtime-requests/authorizations/bulk", body)
+      .then((r) => r.data),
+
+  authorize: (id: number, reviewNote?: string | null) =>
+    api
+      .post<OvertimeRequest>(`/hr/overtime-requests/${id}/authorize`, {
+        reviewNote: reviewNote ?? null,
+      })
+      .then((r) => r.data),
+
+  rejectAuthorization: (id: number, reviewNote?: string | null) =>
+    api
+      .post<OvertimeRequest>(`/hr/overtime-requests/${id}/authorize/reject`, {
+        reviewNote: reviewNote ?? null,
+      })
+      .then((r) => r.data),
+
+  returnAuthorization: (id: number, reviewNote: string) =>
+    api
+      .post<OvertimeRequest>(`/hr/overtime-requests/${id}/authorize/return`, {
+        reviewNote,
+      })
+      .then((r) => r.data),
+
+  // ── Phase 2 review (claim) ──
+  approveClaim: (id: number, reviewNote?: string | null) =>
+    api
+      .post<OvertimeRequest>(`/hr/overtime-requests/${id}/claim/approve`, {
+        reviewNote: reviewNote ?? null,
+      })
+      .then((r) => r.data),
+
+  rejectClaim: (id: number, reviewNote?: string | null) =>
+    api
+      .post<OvertimeRequest>(`/hr/overtime-requests/${id}/claim/reject`, {
+        reviewNote: reviewNote ?? null,
+      })
+      .then((r) => r.data),
+
+  returnClaim: (id: number, reviewNote: string) =>
+    api
+      .post<OvertimeRequest>(`/hr/overtime-requests/${id}/claim/return`, {
+        reviewNote,
       })
       .then((r) => r.data),
 }
@@ -167,6 +298,55 @@ export const OT_TYPE_COLOR: Record<
   SPECIAL_HOLIDAY_REST_DAY: "purple",
   SPECIAL_HOLIDAY_REST_DAY_OT: "purple",
   EMERGENCY: "purple",
+}
+
+export type OtStatusVariant = "amber" | "green" | "red" | "gray" | "blue"
+
+export const OT_STATUS_LABEL: Record<OvertimeStatus, string> = {
+  DRAFT: "Draft",
+  PENDING_AUTH: "Pending authorization",
+  AUTHORIZED: "Authorized",
+  AUTH_REJECTED: "Not authorized",
+  PENDING_CLAIM: "Claim under review",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  RETURNED: "Needs revision",
+  DECLINED: "Declined",
+  EXPIRED: "Expired",
+  CANCELLED: "Cancelled",
+  PENDING_EMERGENCY_CLAIM: "Emergency — under review",
+  PENDING: "Pending",
+}
+
+export const OT_STATUS_VARIANT: Record<OvertimeStatus, OtStatusVariant> = {
+  DRAFT: "gray",
+  PENDING_AUTH: "amber",
+  AUTHORIZED: "blue",
+  AUTH_REJECTED: "red",
+  PENDING_CLAIM: "amber",
+  APPROVED: "green",
+  REJECTED: "red",
+  RETURNED: "amber",
+  DECLINED: "gray",
+  EXPIRED: "gray",
+  CANCELLED: "gray",
+  PENDING_EMERGENCY_CLAIM: "amber",
+  PENDING: "amber",
+}
+
+/** Which queue an admin acts on a request from. */
+export type OtQueue = "authorization" | "claim" | "none"
+
+export function otQueue(status: OvertimeStatus): OtQueue {
+  if (status === "PENDING_AUTH") return "authorization"
+  if (status === "PENDING_CLAIM" || status === "PENDING_EMERGENCY_CLAIM")
+    return "claim"
+  return "none"
+}
+
+/** True when the employee can file actual hours against this row (Phase 2). */
+export function canSubmitClaim(status: OvertimeStatus): boolean {
+  return status === "AUTHORIZED"
 }
 
 /** Compute decimal hours between two "HH:mm" strings */

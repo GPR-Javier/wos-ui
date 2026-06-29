@@ -148,13 +148,16 @@ export function useNotifications() {
     })
 
     es.addEventListener("notification", (e) => {
-      qc.invalidateQueries({ queryKey: ["notifications"] })
+      // Refresh the bell AND every on-screen data table: invalidate all queries so whatever list the
+      // user is viewing (overtime, change-time, leave, applicants, …) reflects the change immediately.
+      // Only ACTIVE (mounted) queries actually refetch, so this is cheap — typically a handful.
+      qc.invalidateQueries()
       playChime()
       try {
         const n = JSON.parse((e as MessageEvent).data) as AppNotification
         pushToast(n.body ?? "", "info", 4500, n.title)
       } catch {
-        // payload parse failed — the query invalidation above still refreshes the bell
+        // payload parse failed — the invalidation above still refreshes the open view + bell
       }
     })
 

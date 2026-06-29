@@ -23,7 +23,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { useCreateOvertimeRequest } from "@/hooks/use-overtime"
+import {
+  useCreateOvertimeRequest,
+  useCreateEmergencyOvertime,
+} from "@/hooks/use-overtime"
 import { useAttendance } from "@/hooks/use-employee"
 import { useMyPolicy } from "@/hooks/use-schedule-policy"
 import { useTimeFormat } from "@/hooks/use-time-format"
@@ -149,6 +152,11 @@ interface OvertimeRequestDialogProps {
   onClose: () => void
   /** Prefill the overtime date (YYYY-MM-DD), e.g. from a DTR row. */
   defaultDate?: string
+  /**
+   * Emergency / unplanned overtime: a post-hoc claim for a regular workday that had no prior
+   * authorization. Routes to the emergency endpoint (admin-only approval) instead of a normal filing.
+   */
+  emergency?: boolean
 }
 
 /**
@@ -160,6 +168,7 @@ export function OvertimeRequestDialog({
   open,
   onClose,
   defaultDate,
+  emergency = false,
 }: OvertimeRequestDialogProps) {
   const { formatTime } = useTimeFormat()
   const { data: policy } = useMyPolicy()
@@ -173,7 +182,9 @@ export function OvertimeRequestDialog({
   const [reason, setReason] = useState("")
   const [attachments, setAttachments] = useState<File[]>([])
 
-  const createMutation = useCreateOvertimeRequest()
+  const normalMutation = useCreateOvertimeRequest()
+  const emergencyMutation = useCreateEmergencyOvertime()
+  const createMutation = emergency ? emergencyMutation : normalMutation
 
   useEffect(() => {
     if (!open) return
@@ -351,10 +362,12 @@ export function OvertimeRequestDialog({
                 className="text-red-600 dark:text-red-400"
               />
             </div>
-            File Overtime Request
+            {emergency ? "File Emergency Overtime" : "File Overtime Request"}
           </DialogTitle>
           <DialogDescription>
-            Submit an overtime request for supervisor / HR approval
+            {emergency
+              ? "Unplanned overtime with no prior authorization — requires admin approval."
+              : "Submit an overtime request for supervisor / HR approval"}
           </DialogDescription>
         </DialogHeader>
 
@@ -587,20 +600,26 @@ export function OvertimeRequestDialog({
           >
             Cancel
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!canDraft || createMutation.isPending}
-            onClick={() => handleSubmit(true)}
-          >
-            Save as Draft
-          </Button>
+          {!emergency && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!canDraft || createMutation.isPending}
+              onClick={() => handleSubmit(true)}
+            >
+              Save as Draft
+            </Button>
+          )}
           <Button
             size="sm"
             disabled={!canSubmit || createMutation.isPending}
             onClick={() => handleSubmit(false)}
           >
-            {createMutation.isPending ? "Submitting…" : "Submit Request"}
+            {createMutation.isPending
+              ? "Submitting…"
+              : emergency
+                ? "Submit Emergency OT"
+                : "Submit Request"}
           </Button>
         </DialogFooter>
       </DialogContent>

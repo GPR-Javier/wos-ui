@@ -89,6 +89,7 @@ const STATUS_FILTERS: { label: string; value?: ChangeTimeStatus }[] = [
   { label: "Pending", value: "PENDING" },
   { label: "Approved", value: "APPROVED" },
   { label: "Rejected", value: "REJECTED" },
+  { label: "Returned", value: "RETURNED" },
 ]
 
 function fmt12(time: string | null | undefined) {
@@ -423,7 +424,7 @@ function ReviewModal({
 export function ChangeTimeManagementSection() {
   const [statusFilter, setStatusFilter] = useState<
     ChangeTimeStatus | undefined
-  >("PENDING")
+  >(undefined)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
   const [reviewTarget, setReviewTarget] = useState<{

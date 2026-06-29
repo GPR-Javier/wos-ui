@@ -2,10 +2,16 @@
 
 import React, { useState, useEffect } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { EyeIcon, File01Icon, ClockPlusIcon } from "@hugeicons/core-free-icons"
+import {
+  EyeIcon,
+  File01Icon,
+  ClockPlusIcon,
+  Alert01Icon,
+} from "@hugeicons/core-free-icons"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { ChangeTimeRequestDialog } from "@/components/custom/change-time-request-dialog"
 import { OvertimeRequestDialog } from "@/components/custom/overtime-request-dialog"
+import { OvertimeClaimDialog } from "@/components/custom/overtime-claim-dialog"
 import { ScheduleChangeRequestModal } from "@/components/custom/schedule-change-request-modal"
 import { MyPolicyHistoryModal } from "@/components/custom/my-policy-history-modal"
 import { ConfirmPunchModal } from "@/components/custom/confirm-punch-modal"
@@ -44,10 +50,18 @@ import { useAttendance } from "@/hooks/use-employee"
 import { useAttendanceClock, fmtDuration } from "@/hooks/use-attendance-clock"
 import { ClockPanel } from "@/components/custom/clock-panel"
 import { useMyPolicy } from "@/hooks/use-schedule-policy"
-import { useMyOvertimeRequests } from "@/hooks/use-overtime"
+import {
+  useMyOvertimeRequests,
+  useResubmitOvertimeRequest,
+} from "@/hooks/use-overtime"
 import { useHolidays } from "@/hooks/use-holidays"
 import { HOLIDAY_TYPE_COLOR, HOLIDAY_TYPE_LABEL } from "@/lib/holiday-api"
-import type { OvertimeStatus, OvertimeType } from "@/lib/overtime-api"
+import {
+  OT_STATUS_VARIANT,
+  type OvertimeStatus,
+  type OvertimeType,
+  type OvertimeRequest,
+} from "@/lib/overtime-api"
 import { useTimeFormat } from "@/hooks/use-time-format"
 import type { AttendanceEntry } from "@/lib/employee-api"
 
@@ -75,11 +89,39 @@ const APPEAL_STATUSES = new Set(["late", "undertime", "overbreak"])
 const OT_FILE_STATUSES = new Set(["overtime", "restday"])
 // Picks the most "advanced" status when a date has several OT requests (e.g. rest-day + OT).
 const OT_STATUS_RANK: Record<OvertimeStatus, number> = {
-  APPROVED: 4,
-  PENDING: 3,
-  REJECTED: 2,
+  APPROVED: 9,
+  PENDING_CLAIM: 8,
+  PENDING_EMERGENCY_CLAIM: 8,
+  AUTHORIZED: 7,
+  PENDING_AUTH: 6,
+  RETURNED: 5,
+  PENDING: 4,
+  REJECTED: 3,
+  AUTH_REJECTED: 3,
+  DECLINED: 2,
+  EXPIRED: 2,
   CANCELLED: 1,
   DRAFT: 0,
+}
+
+// Terminal outcomes free the day — a new request can be filed again.
+const OT_TERMINAL: OvertimeStatus[] = [
+  "AUTH_REJECTED",
+  "REJECTED",
+  "DECLINED",
+  "EXPIRED",
+  "CANCELLED",
+]
+
+// Short status word for the attendance-row badge (the authorized case is handled with an action).
+const OT_SHORT_LABEL: Partial<Record<OvertimeStatus, string>> = {
+  PENDING_AUTH: "Pending auth",
+  AUTHORIZED: "Authorized",
+  PENDING_CLAIM: "In review",
+  PENDING_EMERGENCY_CLAIM: "Emergency review",
+  APPROVED: "Approved",
+  RETURNED: "Returned",
+  PENDING: "Pending",
 }
 
 /** Short label for the kind(s) of overtime filed on a day. */
@@ -438,7 +480,9 @@ export function DTRSection() {
   )
   const [viewOpen, setViewOpen] = useState(false)
   const [appealOpen, setAppealOpen] = useState(false)
-  const [otOpen, setOtOpen] = useState(false)
+  const [emergencyOpen, setEmergencyOpen] = useState(false)
+  const [claimFor, setClaimFor] = useState<OvertimeRequest | null>(null)
+  const resubmitMutation = useResubmitOvertimeRequest()
   const [recordNotes, setRecordNotes] = useState<Record<string, string>>({})
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -474,10 +518,10 @@ export function DTRSection() {
     applyClockOut,
   } = clock
 
-  // Clock-out on the DTR screen captures an EOD report before finalising.
+  // EOD report dropped for now — clock out directly without the report step.
+  // (Restore by setting pendingClockOut + opening the EOD modal here.)
   function startClockOut() {
-    setPendingClockOut(new Date())
-    setEodOpen(true)
+    void finalizeClockOut()
   }
 
   function startPunch(type: "in" | "out") {
@@ -510,18 +554,19 @@ export function DTRSection() {
   const otRequestsQ = useMyOvertimeRequests({ size: 100 })
   const otByDate = new Map<
     string,
-    { status: OvertimeStatus; types: Set<OvertimeType> }
+    { status: OvertimeStatus; types: Set<OvertimeType>; req: OvertimeRequest }
   >()
   for (const o of otRequestsQ.data?.content ?? []) {
-    if (o.status !== "PENDING" && o.status !== "APPROVED") continue // only active
+    if (OT_TERMINAL.includes(o.status)) continue // terminal — the day is free again
     let entry = otByDate.get(o.overtimeDate)
     if (!entry) {
-      entry = { status: o.status, types: new Set() }
+      entry = { status: o.status, types: new Set(), req: o }
       otByDate.set(o.overtimeDate, entry)
     }
     entry.types.add(o.overtimeType)
     if (OT_STATUS_RANK[o.status] > OT_STATUS_RANK[entry.status]) {
       entry.status = o.status
+      entry.req = o // keep the most-advanced request for the row action
     }
   }
 
@@ -848,6 +893,7 @@ export function DTRSection() {
               const ot = otByDate.get(r.date)
               const otStatus = ot?.status
               const otFiled = !!ot
+              const otAuthorized = otStatus === "AUTHORIZED"
               const otLabel = ot ? otTypeLabel(ot.types) : ""
               const holiday = holidayFor(r.date)
               return (
@@ -940,36 +986,17 @@ export function DTRSection() {
                             View record
                           </TooltipContent>
                         </Tooltip>
-                        {OT_FILE_STATUSES.has(r.status) && otFiled ? (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <StatusBadge
-                                variant={
-                                  otStatus === "APPROVED" ? "green" : "amber"
-                                }
-                              >
-                                {otLabel}{" "}
-                                {otStatus === "APPROVED"
-                                  ? "Approved"
-                                  : "Pending"}
-                              </StatusBadge>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              {otLabel} request{" "}
-                              {otStatus === "APPROVED" ? "approved" : "pending"}
-                            </TooltipContent>
-                          </Tooltip>
-                        ) : OT_FILE_STATUSES.has(r.status) ? (
+                        {OT_FILE_STATUSES.has(r.status) &&
+                        otFiled &&
+                        otAuthorized ? (
+                          // Authorized that day → file the actual hours (Phase-2 claim).
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 className="h-7 w-7 p-0 text-primary hover:bg-primary/10 hover:text-primary"
-                                onClick={() => {
-                                  setSelectedRecord(r)
-                                  setOtOpen(true)
-                                }}
+                                onClick={() => ot && setClaimFor(ot.req)}
                               >
                                 <HugeiconsIcon
                                   icon={ClockPlusIcon}
@@ -979,7 +1006,97 @@ export function DTRSection() {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="top">
-                              File overtime
+                              File actual hours
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : OT_FILE_STATUSES.has(r.status) &&
+                          otStatus === "RETURNED" ? (
+                          // Returned for revision → let the employee fix and resubmit.
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 gap-1 px-2 text-warning hover:bg-warning/10 hover:text-warning"
+                                onClick={() => {
+                                  if (!ot) return
+                                  if (ot.req.totalHours != null)
+                                    setClaimFor(ot.req)
+                                  else resubmitMutation.mutate(ot.req.id)
+                                }}
+                              >
+                                <HugeiconsIcon
+                                  icon={Alert01Icon}
+                                  size={13}
+                                  strokeWidth={2}
+                                />
+                                <span className="text-[12px]">Revise</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              Returned for revision — fix &amp; resubmit
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : OT_FILE_STATUSES.has(r.status) && otFiled ? (
+                          // In-flight / decided request → show its status, no new filing.
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <StatusBadge
+                                variant={
+                                  otStatus
+                                    ? OT_STATUS_VARIANT[otStatus]
+                                    : "gray"
+                                }
+                              >
+                                {otLabel}{" "}
+                                {(otStatus && OT_SHORT_LABEL[otStatus]) ??
+                                  "Filed"}
+                              </StatusBadge>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              {otLabel} request —{" "}
+                              {(otStatus && OT_SHORT_LABEL[otStatus]) ??
+                                "filed"}
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : r.status === "overtime" && !holiday ? (
+                          // Regular-day overtime with no authorization → emergency lane (admin-only).
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 text-warning hover:bg-warning/10 hover:text-warning"
+                                onClick={() => {
+                                  setSelectedRecord(r)
+                                  setEmergencyOpen(true)
+                                }}
+                              >
+                                <HugeiconsIcon
+                                  icon={Alert01Icon}
+                                  size={14}
+                                  strokeWidth={2}
+                                />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              File emergency OT (no prior authorization)
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : OT_FILE_STATUSES.has(r.status) ? (
+                          // Rest day / holiday with no authorization → blocked (needs pre-authorization).
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="flex h-7 w-7 items-center justify-center text-muted-foreground/50">
+                                <HugeiconsIcon
+                                  icon={Alert01Icon}
+                                  size={14}
+                                  strokeWidth={2}
+                                />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              Needs prior authorization — not eligible to file
                             </TooltipContent>
                           </Tooltip>
                         ) : APPEAL_STATUSES.has(r.status) ? (
@@ -1097,10 +1214,17 @@ export function DTRSection() {
         }
       />
       <OvertimeRequestDialog
-        open={otOpen}
-        onClose={() => setOtOpen(false)}
+        open={emergencyOpen}
+        onClose={() => setEmergencyOpen(false)}
         defaultDate={selectedRecord?.date}
+        emergency
       />
+      {claimFor && (
+        <OvertimeClaimDialog
+          request={claimFor}
+          onClose={() => setClaimFor(null)}
+        />
+      )}
     </div>
   )
 }

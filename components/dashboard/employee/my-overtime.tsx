@@ -36,48 +36,40 @@ import {
   type DateRangePreset,
   type DateRangeValue,
 } from "@/components/ui/date-range-picker"
-import { OvertimeRequestDialog } from "@/components/custom/overtime-request-dialog"
+import { OvertimeAuthorizeDialog } from "@/components/custom/overtime-authorize-dialog"
+import { OvertimeClaimDialog } from "@/components/custom/overtime-claim-dialog"
 import { cn } from "@/lib/utils"
 import {
   useMyOvertimeRequests,
   useCancelOvertimeRequest,
+  useDeclineOvertimeRequest,
+  useResubmitOvertimeRequest,
 } from "@/hooks/use-overtime"
 import { useTimeFormat } from "@/hooks/use-time-format"
 import { useEffectiveOtRates } from "@/hooks/use-overtime-rates"
 import {
   OT_TYPE_LABEL,
   OT_TYPE_COLOR,
+  OT_STATUS_LABEL,
+  OT_STATUS_VARIANT,
+  canSubmitClaim,
   type OvertimeRequest,
   type OvertimeStatus,
 } from "@/lib/overtime-api"
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
-const STATUS_VARIANT: Record<
-  OvertimeStatus,
-  "amber" | "green" | "red" | "gray"
-> = {
-  DRAFT: "gray",
-  PENDING: "amber",
-  APPROVED: "green",
-  REJECTED: "red",
-  CANCELLED: "gray",
-}
-
-const STATUS_LABEL: Record<OvertimeStatus, string> = {
-  DRAFT: "Draft",
-  PENDING: "Pending",
-  APPROVED: "Approved",
-  REJECTED: "Rejected",
-  CANCELLED: "Cancelled",
-}
+const STATUS_VARIANT = OT_STATUS_VARIANT
+const STATUS_LABEL = OT_STATUS_LABEL
 
 const STATUS_FILTERS: { label: string; value?: OvertimeStatus }[] = [
   { label: "All" },
-  { label: "Pending", value: "PENDING" },
+  { label: "Pending auth", value: "PENDING_AUTH" },
+  { label: "Authorized", value: "AUTHORIZED" },
+  { label: "Claim review", value: "PENDING_CLAIM" },
+  { label: "Needs revision", value: "RETURNED" },
   { label: "Approved", value: "APPROVED" },
   { label: "Rejected", value: "REJECTED" },
-  { label: "Draft", value: "DRAFT" },
 ]
 
 function startOfWeek(d: Date): Date {
@@ -222,13 +214,25 @@ function fmtHours(h: number) {
 function DetailDialog({
   request,
   onClose,
+  onSubmitClaim,
 }: {
   request: OvertimeRequest
   onClose: () => void
+  onSubmitClaim: (r: OvertimeRequest) => void
 }) {
   const cancelMutation = useCancelOvertimeRequest()
+  const declineMutation = useDeclineOvertimeRequest()
+  const resubmitMutation = useResubmitOvertimeRequest()
   const { formatTime } = useTimeFormat()
   const otRates = useEffectiveOtRates()
+
+  const cancellable: OvertimeStatus[] = [
+    "DRAFT",
+    "PENDING_AUTH",
+    "AUTHORIZED",
+    "PENDING_CLAIM",
+    "RETURNED",
+  ]
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
@@ -269,18 +273,42 @@ function DetailDialog({
               </StatusBadge>
             </div>
             <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
-              <p className="text-muted-foreground">Time</p>
+              <p className="text-muted-foreground">
+                {request.startTime ? "Actual Time" : "Planned Time"}
+              </p>
               <p className="mt-0.5 font-semibold text-foreground tabular-nums">
-                {formatTime(request.startTime)} – {formatTime(request.endTime)}
+                {request.startTime
+                  ? `${formatTime(request.startTime)} – ${formatTime(
+                      request.endTime ?? ""
+                    )}`
+                  : request.plannedStartTime
+                    ? `${formatTime(request.plannedStartTime)} – ${formatTime(
+                        request.plannedEndTime ?? ""
+                      )}`
+                    : "—"}
               </p>
             </div>
             <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
-              <p className="text-primary/70">Total Hours</p>
+              <p className="text-primary/70">
+                {request.totalHours ? "Actual Hours" : "Estimated Hours"}
+              </p>
               <p className="mt-0.5 font-bold text-primary tabular-nums">
-                {fmtHours(request.totalHours)}
+                {fmtHours(request.totalHours ?? request.plannedHours ?? 0)}
               </p>
             </div>
           </div>
+
+          {/* Decline reason */}
+          {request.declineReason && (
+            <div className="rounded-lg border border-border bg-muted/20 px-3 py-2.5">
+              <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                Decline Reason
+              </p>
+              <p className="mt-0.5 text-[12px] text-foreground">
+                {request.declineReason}
+              </p>
+            </div>
+          )}
 
           {/* Pay rate */}
           <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 dark:border-green-800/40 dark:bg-green-900/10">
@@ -358,7 +386,7 @@ function DetailDialog({
         </div>
 
         <DialogFooter className="gap-2">
-          {request.status === "PENDING" && (
+          {cancellable.includes(request.status) && (
             <Button
               variant="outline"
               size="sm"
@@ -368,7 +396,45 @@ function DetailDialog({
                 cancelMutation.mutate(request.id, { onSuccess: onClose })
               }
             >
-              {cancelMutation.isPending ? "Cancelling…" : "Cancel Request"}
+              {cancelMutation.isPending ? "Cancelling…" : "Cancel"}
+            </Button>
+          )}
+          {request.status === "AUTHORIZED" && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={declineMutation.isPending}
+              onClick={() => {
+                const reason =
+                  window.prompt("Reason for declining (optional):") ?? undefined
+                declineMutation.mutate(
+                  { id: request.id, reason },
+                  { onSuccess: onClose }
+                )
+              }}
+            >
+              Decline
+            </Button>
+          )}
+          {request.status === "RETURNED" &&
+            (request.totalHours != null ? (
+              <Button size="sm" onClick={() => onSubmitClaim(request)}>
+                Revise actual hours
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                disabled={resubmitMutation.isPending}
+                onClick={() =>
+                  resubmitMutation.mutate(request.id, { onSuccess: onClose })
+                }
+              >
+                {resubmitMutation.isPending ? "Resubmitting…" : "Resubmit"}
+              </Button>
+            ))}
+          {canSubmitClaim(request.status) && (
+            <Button size="sm" onClick={() => onSubmitClaim(request)}>
+              Submit actual hours
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={onClose}>
@@ -393,7 +459,9 @@ export function MyOvertimeSection() {
   })
   const [formOpen, setFormOpen] = useState(false)
   const [detail, setDetail] = useState<OvertimeRequest | null>(null)
+  const [claimFor, setClaimFor] = useState<OvertimeRequest | null>(null)
   const { formatTime } = useTimeFormat()
+  const resubmitMutation = useResubmitOvertimeRequest()
 
   const q = useMyOvertimeRequests({ size: 100 })
   const allItems = q.data?.content ?? []
@@ -413,16 +481,23 @@ export function MyOvertimeSection() {
   // (REGULAR + REST_DAY_OT) so the totals aren't conflated.
   const approvedRdHours = approved
     .filter((r) => r.overtimeType === "REST_DAY")
-    .reduce((sum, r) => sum + r.totalHours, 0)
+    .reduce((sum, r) => sum + (r.totalHours ?? 0), 0)
   const approvedOtHours = approved
     .filter((r) => r.overtimeType !== "REST_DAY")
-    .reduce((sum, r) => sum + r.totalHours, 0)
+    .reduce((sum, r) => sum + (r.totalHours ?? 0), 0)
 
+  const inFlight: OvertimeStatus[] = [
+    "PENDING_AUTH",
+    "PENDING_CLAIM",
+    "PENDING_EMERGENCY_CLAIM",
+  ]
   const counts = {
-    pending: rangeItems.filter((r) => r.status === "PENDING").length,
+    pending: rangeItems.filter((r) => inFlight.includes(r.status)).length,
+    authorized: rangeItems.filter((r) => r.status === "AUTHORIZED").length,
     approved: rangeItems.filter((r) => r.status === "APPROVED").length,
-    rejected: rangeItems.filter((r) => r.status === "REJECTED").length,
-    draft: rangeItems.filter((r) => r.status === "DRAFT").length,
+    rejected: rangeItems.filter(
+      (r) => r.status === "REJECTED" || r.status === "AUTH_REJECTED"
+    ).length,
   }
 
   return (
@@ -559,8 +634,9 @@ export function MyOvertimeSection() {
                 "Reason",
                 "Status",
                 "Filed",
-              ].map((h) => (
-                <TableHead key={h}>{h}</TableHead>
+                "",
+              ].map((h, i) => (
+                <TableHead key={h || `col-${i}`}>{h}</TableHead>
               ))}
             </TableRow>
           </TableHeader>
@@ -580,7 +656,7 @@ export function MyOvertimeSection() {
             ) : items.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="py-12 text-center text-[13px] text-muted-foreground"
                 >
                   <div className="flex flex-col items-center gap-2">
@@ -626,12 +702,25 @@ export function MyOvertimeSection() {
                     </StatusBadge>
                   </TableCell>
                   <TableCell className="text-[12px] text-muted-foreground tabular-nums">
-                    {formatTime(r.startTime)} – {formatTime(r.endTime)}
+                    {r.startTime
+                      ? `${formatTime(r.startTime)} – ${formatTime(
+                          r.endTime ?? ""
+                        )}`
+                      : r.plannedStartTime
+                        ? `${formatTime(r.plannedStartTime)} – ${formatTime(
+                            r.plannedEndTime ?? ""
+                          )}`
+                        : "—"}
                   </TableCell>
                   <TableCell>
                     <span className="text-[13px] font-semibold text-primary tabular-nums">
-                      {fmtHours(r.totalHours)}
+                      {fmtHours(r.totalHours ?? r.plannedHours ?? 0)}
                     </span>
+                    {!r.totalHours && r.plannedHours ? (
+                      <span className="ml-1 text-[11px] text-muted-foreground">
+                        est.
+                      </span>
+                    ) : null}
                   </TableCell>
                   <TableCell className="max-w-50">
                     <p className="truncate text-[12px] text-muted-foreground">
@@ -646,6 +735,35 @@ export function MyOvertimeSection() {
                   <TableCell className="text-[12px] text-muted-foreground tabular-nums">
                     {fmtDate(r.createdAt.split("T")[0])}
                   </TableCell>
+                  <TableCell
+                    className="text-right"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {r.status === "AUTHORIZED" ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 gap-1 text-[12px]"
+                        onClick={() => setClaimFor(r)}
+                      >
+                        File hours
+                      </Button>
+                    ) : r.status === "RETURNED" ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 gap-1 text-[12px]"
+                        disabled={resubmitMutation.isPending}
+                        onClick={() =>
+                          r.totalHours != null
+                            ? setClaimFor(r)
+                            : resubmitMutation.mutate(r.id)
+                        }
+                      >
+                        Revise
+                      </Button>
+                    ) : null}
+                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -654,12 +772,25 @@ export function MyOvertimeSection() {
       </div>
 
       {/* ── Modals ── */}
-      <OvertimeRequestDialog
+      <OvertimeAuthorizeDialog
         open={formOpen}
         onClose={() => setFormOpen(false)}
       />
       {detail && (
-        <DetailDialog request={detail} onClose={() => setDetail(null)} />
+        <DetailDialog
+          request={detail}
+          onClose={() => setDetail(null)}
+          onSubmitClaim={(r) => {
+            setDetail(null)
+            setClaimFor(r)
+          }}
+        />
+      )}
+      {claimFor && (
+        <OvertimeClaimDialog
+          request={claimFor}
+          onClose={() => setClaimFor(null)}
+        />
       )}
     </div>
   )
