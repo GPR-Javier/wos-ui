@@ -9,6 +9,7 @@ import {
   RefreshIcon,
 } from "@hugeicons/core-free-icons"
 import { Button } from "@/components/ui/button"
+import { TableSkeleton } from "@/components/custom/table-skeleton"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import {
@@ -198,11 +199,7 @@ export function PayRatesSection() {
       )}
 
       {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />
-          ))}
-        </div>
+        <TableSkeleton rows={4} rowClassName="h-16" />
       ) : (
         <div className="space-y-4">
           {GROUPS.map((group) => (

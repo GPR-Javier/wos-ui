@@ -3,6 +3,8 @@
 import Link from "next/link"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { StatCard } from "@/components/custom/stat-card"
+import { EmptyState } from "@/components/custom/empty-state"
+import { TableSkeleton } from "@/components/custom/table-skeleton"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -1492,32 +1494,25 @@ export function RecruitmentSection() {
 
       {/* List */}
       {jobsQ.isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-xl bg-muted" />
-          ))}
-        </div>
+        <TableSkeleton rows={3} rowClassName="h-20" />
       ) : jobs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-14 text-center">
-          <p className="text-[14px] font-semibold">No job postings yet</p>
-          <p className="mt-1 text-[12px] text-muted-foreground">
-            Create your first posting — it will appear on the public career
-            page.
-          </p>
-          <Button size="sm" className="mt-5" onClick={openCreate}>
-            <HugeiconsIcon
-              icon={Add01Icon}
-              size={13}
-              strokeWidth={2}
-              className="mr-1.5"
-            />
-            New Job Posting
-          </Button>
-        </div>
+        <EmptyState
+          title="No job postings yet"
+          description="Create your first posting — it will appear on the public career page."
+          action={
+            <Button size="sm" onClick={openCreate}>
+              <HugeiconsIcon
+                icon={Add01Icon}
+                size={13}
+                strokeWidth={2}
+                className="mr-1.5"
+              />
+              New Job Posting
+            </Button>
+          }
+        />
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed py-10 text-center text-[13px] text-muted-foreground">
-          No postings match your filters.
-        </div>
+        <EmptyState title="No postings match your filters." />
       ) : (
         <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
           <div className="divide-y divide-border/60">

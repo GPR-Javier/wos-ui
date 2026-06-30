@@ -8,6 +8,7 @@ import {
   Delete02Icon,
 } from "@hugeicons/core-free-icons"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/custom/empty-state"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { StatusBadge } from "@/components/custom/status-badge"
@@ -236,9 +237,7 @@ export function OAuthProvidersSection() {
           Loading…
         </p>
       ) : providers.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-10 text-center text-[13px] text-muted-foreground">
-          No OAuth providers configured yet.
-        </div>
+        <EmptyState title="No OAuth providers configured yet." />
       ) : (
         <div className="space-y-2.5">
           {providers.map((p) => (

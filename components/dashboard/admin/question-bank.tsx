@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/custom/empty-state"
+import { TableSkeleton } from "@/components/custom/table-skeleton"
 import { Input } from "@/components/ui/input"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -350,17 +352,15 @@ export function QuestionBankSection() {
 
       {/* List */}
       {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-14 animate-pulse rounded-xl bg-muted" />
-          ))}
-        </div>
+        <TableSkeleton rows={3} rowClassName="h-14" />
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed py-14 text-center text-[13px] text-muted-foreground">
-          {questions.length === 0
-            ? "No questions yet. Create your first one."
-            : "No questions match your filters."}
-        </div>
+        <EmptyState
+          title={
+            questions.length === 0
+              ? "No questions yet. Create your first one."
+              : "No questions match your filters."
+          }
+        />
       ) : (
         <div className="divide-y divide-border/60 overflow-hidden rounded-xl border bg-card shadow-sm">
           {filtered.map((x) => (

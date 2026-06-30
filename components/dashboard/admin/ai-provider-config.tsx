@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { TableSkeleton } from "@/components/custom/table-skeleton"
 import { Input } from "@/components/ui/input"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -184,13 +185,7 @@ export function AiProviderConfigSection() {
   }
 
   if (isLoading) {
-    return (
-      <div className="space-y-3">
-        {[1, 2].map((i) => (
-          <div key={i} className="h-24 animate-pulse rounded-xl bg-muted" />
-        ))}
-      </div>
-    )
+    return <TableSkeleton rows={2} rowClassName="h-24" />
   }
 
   return (

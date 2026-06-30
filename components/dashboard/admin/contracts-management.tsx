@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/custom/empty-state"
 import { cn } from "@/lib/utils"
 import { useAllContracts } from "@/hooks/use-contract"
 import {
@@ -164,11 +165,13 @@ export function ContractsManagement() {
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed bg-card py-16 text-center text-[13px] text-muted-foreground">
-          {contracts.length === 0
-            ? "No contracts on record yet."
-            : "No contracts match the current filters."}
-        </div>
+        <EmptyState
+          title={
+            contracts.length === 0
+              ? "No contracts on record yet."
+              : "No contracts match the current filters."
+          }
+        />
       ) : (
         <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
           <table className="w-full text-[13px]">

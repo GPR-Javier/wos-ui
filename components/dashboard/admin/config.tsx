@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useSlugHref } from "@/lib/slug"
 import { StatusBadge } from "@/components/custom/status-badge"
+import { EmptyState } from "@/components/custom/empty-state"
+import { TableSkeleton } from "@/components/custom/table-skeleton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -781,40 +783,35 @@ function PositionsSection() {
 
       {/* List */}
       {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-12 animate-pulse rounded-xl bg-muted" />
-          ))}
-        </div>
+        <TableSkeleton rows={3} />
       ) : positions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-card py-16 text-center">
-          <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-muted">
-            <HugeiconsIcon
-              icon={Briefcase01Icon}
-              size={22}
-              strokeWidth={1.5}
-              className="text-muted-foreground/60"
-            />
-          </div>
-          <p className="text-[14px] font-semibold">No positions yet</p>
-          <p className="mt-1 max-w-xs text-[12px] text-muted-foreground">
-            Create your first job position to link roles to departments and
-            salary grades.
-          </p>
-          <Button size="sm" className="mt-5" onClick={openCreate}>
-            <HugeiconsIcon
-              icon={Add01Icon}
-              size={13}
-              strokeWidth={2}
-              className="mr-1.5"
-            />
-            New Position
-          </Button>
-        </div>
+        <EmptyState
+          icon={
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+              <HugeiconsIcon
+                icon={Briefcase01Icon}
+                size={22}
+                strokeWidth={1.5}
+                className="text-muted-foreground/60"
+              />
+            </div>
+          }
+          title="No positions yet"
+          description="Create your first job position to link roles to departments and salary grades."
+          action={
+            <Button size="sm" onClick={openCreate}>
+              <HugeiconsIcon
+                icon={Add01Icon}
+                size={13}
+                strokeWidth={2}
+                className="mr-1.5"
+              />
+              New Position
+            </Button>
+          }
+        />
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed py-10 text-center text-[13px] text-muted-foreground">
-          No positions match your filters.
-        </div>
+        <EmptyState title="No positions match your filters." />
       ) : (
         <div className="space-y-3">
           {sortedDepts.map((dept) => (

@@ -5,6 +5,8 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { useSlugHref } from "@/lib/slug"
 import { StatusBadge } from "@/components/custom/status-badge"
+import { EmptyState } from "@/components/custom/empty-state"
+import { TableSkeleton } from "@/components/custom/table-skeleton"
 import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -119,42 +121,37 @@ export function MyApplicationsScreen() {
       )}
 
       {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-xl bg-muted" />
-          ))}
-        </div>
+        <TableSkeleton rows={3} rowClassName="h-24" />
       ) : isError ? (
-        <div className="rounded-xl border border-dashed py-16 text-center text-[13px] text-muted-foreground">
-          Couldn&apos;t load your applications. Please try again.
-        </div>
+        <EmptyState title="Couldn't load your applications. Please try again." />
       ) : applications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-card py-16 text-center">
-          <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-muted">
-            <HugeiconsIcon
-              icon={Briefcase01Icon}
-              size={22}
-              strokeWidth={1.5}
-              className="text-muted-foreground/60"
-            />
-          </div>
-          <p className="text-[14px] font-semibold">No applications yet</p>
-          <p className="mt-1 max-w-xs text-[12px] text-muted-foreground">
-            Browse open positions and apply to start tracking your applications
-            here.
-          </p>
-          <Link href={slugHref("/dashboard/careers")} className="mt-5">
-            <Button size="sm">
-              Browse Careers
+        <EmptyState
+          icon={
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
               <HugeiconsIcon
-                icon={ArrowRight01Icon}
-                size={13}
-                strokeWidth={2}
-                className="ml-1.5"
+                icon={Briefcase01Icon}
+                size={22}
+                strokeWidth={1.5}
+                className="text-muted-foreground/60"
               />
-            </Button>
-          </Link>
-        </div>
+            </div>
+          }
+          title="No applications yet"
+          description="Browse open positions and apply to start tracking your applications here."
+          action={
+            <Link href={slugHref("/dashboard/careers")}>
+              <Button size="sm">
+                Browse Careers
+                <HugeiconsIcon
+                  icon={ArrowRight01Icon}
+                  size={13}
+                  strokeWidth={2}
+                  className="ml-1.5"
+                />
+              </Button>
+            </Link>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {applications.map((app) => {

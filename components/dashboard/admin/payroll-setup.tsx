@@ -14,6 +14,8 @@ import {
   EyeIcon,
 } from "@hugeicons/core-free-icons"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/custom/empty-state"
+import { TableSkeleton } from "@/components/custom/table-skeleton"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -1111,39 +1113,35 @@ export function PayrollSetupSection() {
 
       {/* Table */}
       {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-12 animate-pulse rounded-xl bg-muted" />
-          ))}
-        </div>
+        <TableSkeleton rows={3} />
       ) : setups.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-card py-16 text-center">
-          <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-muted">
-            <HugeiconsIcon
-              icon={Money02Icon}
-              size={22}
-              strokeWidth={1.5}
-              className="text-muted-foreground/60"
-            />
-          </div>
-          <p className="text-[14px] font-semibold">No payroll setups yet</p>
-          <p className="mt-1 max-w-xs text-[12px] text-muted-foreground">
-            Create a setup to define how each job position is compensated.
-          </p>
-          <Button size="sm" className="mt-5" onClick={openCreate}>
-            <HugeiconsIcon
-              icon={Add01Icon}
-              size={13}
-              strokeWidth={2}
-              className="mr-1.5"
-            />
-            New Setup
-          </Button>
-        </div>
+        <EmptyState
+          icon={
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+              <HugeiconsIcon
+                icon={Money02Icon}
+                size={22}
+                strokeWidth={1.5}
+                className="text-muted-foreground/60"
+              />
+            </div>
+          }
+          title="No payroll setups yet"
+          description="Create a setup to define how each job position is compensated."
+          action={
+            <Button size="sm" onClick={openCreate}>
+              <HugeiconsIcon
+                icon={Add01Icon}
+                size={13}
+                strokeWidth={2}
+                className="mr-1.5"
+              />
+              New Setup
+            </Button>
+          }
+        />
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed py-10 text-center text-[13px] text-muted-foreground">
-          No setups match your filters.
-        </div>
+        <EmptyState title="No setups match your filters." />
       ) : (
         <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
           <div className="overflow-x-auto">

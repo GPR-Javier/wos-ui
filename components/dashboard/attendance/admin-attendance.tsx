@@ -4,6 +4,7 @@ import { useState, useMemo, type ReactNode } from "react"
 import { useTeamAttendance } from "@/hooks/use-admin-attendance"
 import { useTimeFormat } from "@/hooks/use-time-format"
 import { StatusBadge } from "@/components/custom/status-badge"
+import { EmptyState } from "@/components/custom/empty-state"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -239,11 +240,7 @@ function CardView({
 }) {
   const { formatTime } = useTimeFormat()
   if (records.length === 0) {
-    return (
-      <div className="rounded-xl border border-dashed p-10 text-center text-[13px] text-muted-foreground">
-        No attendance records for this date.
-      </div>
-    )
+    return <EmptyState title="No attendance records for this date." />
   }
 
   return (
