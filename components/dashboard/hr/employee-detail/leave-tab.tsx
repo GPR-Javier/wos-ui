@@ -3,6 +3,7 @@
 import { useMemo } from "react"
 import type { Employee } from "@/lib/types"
 import { StatusBadge } from "@/components/custom/status-badge"
+import { EmptyState } from "@/components/custom/empty-state"
 import {
   Table,
   TableHeader,
@@ -308,9 +309,7 @@ export function LeaveTab({ employee }: Props) {
           })}
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed bg-card py-10 text-center text-[13px] text-muted-foreground">
-          No leave entitlement configured on an active contract.
-        </div>
+        <EmptyState title="No leave entitlement configured on an active contract." />
       )}
 
       {hasConfig && (

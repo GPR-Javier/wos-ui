@@ -19,11 +19,18 @@ export function TableSkeleton({
   className,
 }: TableSkeletonProps) {
   return (
-    <div className={cn("space-y-2", className)} aria-busy="true" aria-live="polite">
+    <div
+      className={cn("space-y-2", className)}
+      aria-busy="true"
+      aria-live="polite"
+    >
       {Array.from({ length: rows }).map((_, i) => (
         <div
           key={i}
-          className={cn("animate-pulse rounded-xl bg-muted", rowClassName ?? "h-12")}
+          className={cn(
+            "animate-pulse rounded-xl bg-muted",
+            rowClassName ?? "h-12"
+          )}
         />
       ))}
     </div>

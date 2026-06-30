@@ -11,6 +11,7 @@ import {
   ArrowDown01Icon,
 } from "@hugeicons/core-free-icons"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/custom/empty-state"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
@@ -436,29 +437,29 @@ export function ContractTab({ employeeId }: Props) {
 
       {/* Empty state */}
       {contracts.length === 0 && !showForm && (
-        <div className="rounded-xl border border-dashed bg-card py-14 text-center">
-          <HugeiconsIcon
-            icon={FileEditIcon}
-            size={28}
-            strokeWidth={1.5}
-            className="mx-auto mb-3 text-muted-foreground/50"
-          />
-          <p className="text-[13px] font-medium text-muted-foreground">
-            No contracts on file
-          </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Create the first employment contract for this employee.
-          </p>
-          <Button size="sm" className="mt-4" onClick={() => setShowForm(true)}>
+        <EmptyState
+          icon={
             <HugeiconsIcon
-              icon={PlusSignIcon}
-              size={13}
-              strokeWidth={2}
-              className="mr-1.5"
+              icon={FileEditIcon}
+              size={28}
+              strokeWidth={1.5}
+              className="text-muted-foreground/50"
             />
-            New Contract
-          </Button>
-        </div>
+          }
+          title="No contracts on file"
+          description="Create the first employment contract for this employee."
+          action={
+            <Button size="sm" onClick={() => setShowForm(true)}>
+              <HugeiconsIcon
+                icon={PlusSignIcon}
+                size={13}
+                strokeWidth={2}
+                className="mr-1.5"
+              />
+              New Contract
+            </Button>
+          }
+        />
       )}
 
       {/* Active Contracts */}
