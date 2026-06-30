@@ -118,7 +118,7 @@ function TrendCard({
 export function OverviewSection() {
   const hrStatsQ = useHrStats()
   const trendsQ = useHrTrends(7)
-  const attendanceQ = useTeamAttendance({ date: today })
+  const attendanceQ = useTeamAttendance({ from: today, to: today })
   const pendingQ = useLeaveRequests({ status: "pending", size: 8 })
   const approve = useApproveLeave()
   const reject = useRejectLeave()

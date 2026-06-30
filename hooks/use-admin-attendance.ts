@@ -1,11 +1,12 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, keepPreviousData } from "@tanstack/react-query"
 import { adminAttendanceApi } from "@/lib/admin-api"
 
 export function useTeamAttendance(
   params: {
-    date?: string
+    from?: string
+    to?: string
     page?: number
     size?: number
   } = {}
@@ -13,5 +14,6 @@ export function useTeamAttendance(
   return useQuery({
     queryKey: ["admin", "attendance", "team", params],
     queryFn: () => adminAttendanceApi.team(params),
+    placeholderData: keepPreviousData,
   })
 }

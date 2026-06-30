@@ -22,15 +22,15 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  DateRangePicker,
+  type DateRangePreset,
+  type DateRangeValue,
+} from "@/components/ui/date-range-picker"
+import { TablePagination } from "@/components/custom/table-pagination"
 import { cn } from "@/lib/utils"
 import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  ArrowLeft01Icon,
-  ArrowRight01Icon,
-  ViewIcon,
-  GridViewIcon,
-  CoffeeIcon,
-} from "@hugeicons/core-free-icons"
+import { ViewIcon, GridViewIcon, CoffeeIcon } from "@hugeicons/core-free-icons"
 import type { TeamAttendanceRecord } from "@/lib/admin-api"
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -50,9 +50,133 @@ const STATUS_VARIANT: Record<
   holiday: "gray",
 }
 
-function toDateStr(d: Date) {
-  return d.toISOString().split("T")[0]!
+/** Local-time `YYYY-MM-DD` (avoids the UTC day-shift of toISOString). */
+function isoLocal(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`
 }
+
+/** The current quarter — the default range. */
+function thisQuarterRange(): DateRangeValue {
+  const n = new Date()
+  const r = quarterRange(n.getFullYear(), quarterOf(n.getMonth()))
+  return { from: isoLocal(r.from), until: isoLocal(r.until) }
+}
+
+/** Quarter (1–4) a month index (0–11) belongs to. */
+function quarterOf(monthIndex: number) {
+  return Math.floor(monthIndex / 3) + 1
+}
+
+/** First/last day of the given quarter (1–4) in a year. */
+function quarterRange(year: number, quarter: number) {
+  const startMonth = (quarter - 1) * 3
+  return {
+    from: new Date(year, startMonth, 1),
+    until: new Date(year, startMonth + 3, 0),
+  }
+}
+
+/** The previous quarter, rolling back to Q4 of the prior year when the current quarter is Q1. */
+function lastQuarter(): { year: number; quarter: number } {
+  const n = new Date()
+  const q = quarterOf(n.getMonth())
+  return q === 1
+    ? { year: n.getFullYear() - 1, quarter: 4 }
+    : { year: n.getFullYear(), quarter: q - 1 }
+}
+
+/**
+ * If {@link range} exactly matches this quarter or last quarter, return its label (e.g. "Q2 2026");
+ * otherwise null — so the indicator only shows for those two quarter ranges.
+ */
+function quarterLabelForRange(range: DateRangeValue): string | null {
+  const n = new Date()
+  const lq = lastQuarter()
+  const candidates = [
+    { year: n.getFullYear(), quarter: quarterOf(n.getMonth()) },
+    { year: lq.year, quarter: lq.quarter },
+  ]
+  for (const { year, quarter } of candidates) {
+    const r = quarterRange(year, quarter)
+    if (range.from === isoLocal(r.from) && range.until === isoLocal(r.until)) {
+      return `Q${quarter} ${year}`
+    }
+  }
+  return null
+}
+
+// Quick-select presets for the range picker (default view is "This month").
+const RANGE_PRESETS: DateRangePreset[] = [
+  {
+    label: "Today",
+    range: () => {
+      const n = new Date()
+      return { from: n, until: n }
+    },
+  },
+  {
+    label: "This week",
+    range: () => {
+      const n = new Date()
+      const from = new Date(
+        n.getFullYear(),
+        n.getMonth(),
+        n.getDate() - n.getDay()
+      )
+      return {
+        from,
+        until: new Date(
+          from.getFullYear(),
+          from.getMonth(),
+          from.getDate() + 6
+        ),
+      }
+    },
+  },
+  {
+    label: "This month",
+    range: () => {
+      const n = new Date()
+      return {
+        from: new Date(n.getFullYear(), n.getMonth(), 1),
+        until: new Date(n.getFullYear(), n.getMonth() + 1, 0),
+      }
+    },
+  },
+  {
+    label: "Last month",
+    range: () => {
+      const n = new Date()
+      return {
+        from: new Date(n.getFullYear(), n.getMonth() - 1, 1),
+        until: new Date(n.getFullYear(), n.getMonth(), 0),
+      }
+    },
+  },
+  {
+    label: "This quarter",
+    range: () => {
+      const n = new Date()
+      return quarterRange(n.getFullYear(), quarterOf(n.getMonth()))
+    },
+  },
+  {
+    label: "Last quarter",
+    range: () => {
+      const { year, quarter } = lastQuarter()
+      return quarterRange(year, quarter)
+    },
+  },
+  {
+    label: "This year",
+    range: () => {
+      const y = new Date().getFullYear()
+      return { from: new Date(y, 0, 1), until: new Date(y, 11, 31) }
+    },
+  },
+]
 
 function formatDate(iso: string) {
   return new Date(iso + "T00:00:00").toLocaleDateString("en-US", {
@@ -134,7 +258,7 @@ function TableView({
                 colSpan={10}
                 className="py-10 text-center text-[13px] text-muted-foreground"
               >
-                No attendance records for this date.
+                No attendance records in this range.
               </TableCell>
             </TableRow>
           ) : (
@@ -240,7 +364,7 @@ function CardView({
 }) {
   const { formatTime } = useTimeFormat()
   if (records.length === 0) {
-    return <EmptyState title="No attendance records for this date." />
+    return <EmptyState title="No attendance records in this range." />
   }
 
   return (
@@ -512,12 +636,24 @@ const FILTER_TABS: { key: StatusFilter; label: string }[] = [
 ]
 
 export function AdminAttendance() {
-  const [date, setDate] = useState(() => toDateStr(new Date()))
+  // Default to the current quarter; quick presets + a custom range are available in the picker.
+  const [range, setRange] = useState<DateRangeValue>(thisQuarterRange)
   const [view, setView] = useState<ViewMode>("table")
   const [filter, setFilter] = useState<StatusFilter>("all")
   const [selected, setSelected] = useState<TeamAttendanceRecord | null>(null)
+  const [page, setPage] = useState(0)
+  const [size, setSize] = useState(50)
 
-  const { data, isLoading } = useTeamAttendance({ date })
+  // Indicator: shown only when the selected range is exactly this quarter or last quarter,
+  // labelled with that quarter (e.g. "Q2 2026"); hidden for any other range.
+  const quarterLabel = quarterLabelForRange(range)
+
+  const { data, isLoading } = useTeamAttendance({
+    from: range.from,
+    to: range.until,
+    page,
+    size,
+  })
   const records = data?.content ?? []
 
   // counts for stat chips
@@ -543,41 +679,32 @@ export function AdminAttendance() {
     return records.filter((r) => r.status === filter)
   }, [records, filter])
 
-  function shiftDate(delta: number) {
-    const d = new Date(date + "T00:00:00")
-    d.setDate(d.getDate() + delta)
-    setDate(toDateStr(d))
+  // Picking a new range (preset or custom) returns to the first page.
+  function applyRange(v: DateRangeValue) {
+    setRange(v)
+    setPage(0)
   }
 
   return (
     <div className="space-y-4">
-      {/* Date nav + view toggle */}
-      <div className="flex items-center justify-between gap-4">
+      {/* Date range + view toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon-sm"
-            onClick={() => shiftDate(-1)}
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={13} strokeWidth={2} />
-          </Button>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => e.target.value && setDate(e.target.value)}
-            className="h-8 rounded-lg border bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+          <DateRangePicker
+            value={range}
+            onChange={applyRange}
+            presets={RANGE_PRESETS}
+            align="start"
+            className="w-full sm:w-76"
           />
-          <Button
-            variant="outline"
-            size="icon-sm"
-            onClick={() => shiftDate(1)}
-            disabled={date >= toDateStr(new Date())}
-          >
-            <HugeiconsIcon icon={ArrowRight01Icon} size={13} strokeWidth={2} />
-          </Button>
-          <span className="text-[13px] text-muted-foreground">
-            {formatDate(date)}
-          </span>
+          {quarterLabel && (
+            <span
+              title="Selected quarter"
+              className="shrink-0 rounded-full border border-border bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground"
+            >
+              {quarterLabel}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1 rounded-lg border bg-muted p-0.5">
@@ -679,6 +806,22 @@ export function AdminAttendance() {
         <TableView records={filtered} onSelect={setSelected} />
       ) : (
         <CardView records={filtered} onSelect={setSelected} />
+      )}
+
+      {/* Pagination — the status tabs above filter the current page. */}
+      {!isLoading && data && data.totalElements > 0 && (
+        <TablePagination
+          page={page + 1}
+          totalPages={data.totalPages}
+          total={data.totalElements}
+          pageSize={size}
+          setPage={(p) => setPage(p - 1)}
+          setPageSize={(s) => {
+            setSize(s)
+            setPage(0)
+          }}
+          pageSizeOptions={[25, 50, 100]}
+        />
       )}
 
       {selected && (

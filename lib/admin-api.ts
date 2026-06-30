@@ -125,7 +125,14 @@ export interface AttendanceBreakSummary {
 // ── API calls ─────────────────────────────────────────────────────────────────
 
 export const adminAttendanceApi = {
-  team: (params: { date?: string; page?: number; size?: number } = {}) =>
+  team: (
+    params: {
+      from?: string
+      to?: string
+      page?: number
+      size?: number
+    } = {}
+  ) =>
     api
       .get<PageResponse<TeamAttendanceRecord>>("/hr/attendance/team", {
         params: { page: 0, size: 50, ...params },
