@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { StatusBadge } from "@/components/custom/status-badge"
+import { EmptyState } from "@/components/custom/empty-state"
+import { TableSkeleton } from "@/components/custom/table-skeleton"
 import { RichTextEditor } from "@/components/custom/rich-text-editor"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -221,17 +223,15 @@ export function ApplicantsReviewSection() {
 
       {/* Table */}
       {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-12 animate-pulse rounded-xl bg-muted" />
-          ))}
-        </div>
+        <TableSkeleton rows={3} />
       ) : visible.length === 0 ? (
-        <div className="rounded-xl border border-dashed py-16 text-center text-[13px] text-muted-foreground">
-          {applications.length === 0
-            ? "No applicants in this view."
-            : "No applicants meet the score threshold."}
-        </div>
+        <EmptyState
+          title={
+            applications.length === 0
+              ? "No applicants in this view."
+              : "No applicants meet the score threshold."
+          }
+        />
       ) : (
         <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
           <table className="w-full text-left text-[12px]">
