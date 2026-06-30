@@ -16,7 +16,13 @@ const KEY = ["overtime-requests"] as const
 type ReviewArgs = { id: number; reviewNote?: string | null }
 
 export function useMyOvertimeRequests(
-  params: { status?: OvertimeStatus; page?: number; size?: number } = {}
+  params: {
+    status?: OvertimeStatus
+    from?: string
+    to?: string
+    page?: number
+    size?: number
+  } = {}
 ) {
   return useQuery({
     queryKey: [...KEY, "me", params],
@@ -28,6 +34,8 @@ export function useAllOvertimeRequests(
   params: {
     status?: OvertimeStatus
     search?: string
+    from?: string
+    to?: string
     page?: number
     size?: number
   } = {}

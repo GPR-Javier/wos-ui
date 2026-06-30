@@ -10,7 +10,7 @@ import {
 const KEY = ["schedule-change-request"] as const
 
 export function useMyChangeRequests(
-  params: { page?: number; size?: number } = {}
+  params: { from?: string; to?: string; page?: number; size?: number } = {}
 ) {
   return useQuery({
     queryKey: [...KEY, "me", params],
@@ -19,7 +19,13 @@ export function useMyChangeRequests(
 }
 
 export function useAllChangeRequests(
-  params: { status?: ChangeRequestStatus; page?: number; size?: number } = {}
+  params: {
+    status?: ChangeRequestStatus
+    from?: string
+    to?: string
+    page?: number
+    size?: number
+  } = {}
 ) {
   return useQuery({
     queryKey: [...KEY, "all", params],

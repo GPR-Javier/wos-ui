@@ -13,6 +13,11 @@ import {
 } from "@hugeicons/core-free-icons"
 import { StatCard } from "@/components/custom/stat-card"
 import { StatusBadge } from "@/components/custom/status-badge"
+import {
+  DateRangeFilter,
+  useDateRange,
+  thisYearRange,
+} from "@/components/custom/date-range-filter"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -260,6 +265,7 @@ export function MyChangeTimeSection() {
     ChangeTimeStatus | undefined
   >(undefined)
   const [page, setPage] = useState(0)
+  const { range, setRange } = useDateRange(thisYearRange)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<ChangeTimeRequest | null>(null)
   const [detail, setDetail] = useState<ChangeTimeRequest | null>(null)
@@ -282,7 +288,13 @@ export function MyChangeTimeSection() {
     setEditing(null)
   }
 
-  const q = useMyChangeTimeRequests({ status: statusFilter, page, size: 20 })
+  const q = useMyChangeTimeRequests({
+    status: statusFilter,
+    from: range.from,
+    to: range.until,
+    page,
+    size: 20,
+  })
   const items = q.data?.content ?? []
   const total = q.data?.totalElements ?? 0
   const totalPages = q.data?.totalPages ?? 0
@@ -357,7 +369,14 @@ export function MyChangeTimeSection() {
       {/* ── Filter tabs + table ── */}
       <div className="rounded-xl border border-border bg-card shadow-sm">
         {/* Toolbar */}
-        <div className="flex items-center gap-3 border-b border-border px-5 py-3">
+        <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3">
+          <DateRangeFilter
+            value={range}
+            onChange={(v) => {
+              setRange(v)
+              setPage(0)
+            }}
+          />
           <div className="flex rounded-lg border border-border bg-muted/40 p-0.5">
             {STATUS_FILTERS.map((f) => (
               <button

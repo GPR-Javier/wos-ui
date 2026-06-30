@@ -46,7 +46,9 @@ export const scheduleChangeRequestApi = {
       .post<ScheduleChangeRequest>("/hr/schedule-change-requests", body)
       .then((r) => r.data),
 
-  listMine: (params: { page?: number; size?: number } = {}) =>
+  listMine: (
+    params: { from?: string; to?: string; page?: number; size?: number } = {}
+  ) =>
     api
       .get<PageResponse<ScheduleChangeRequest>>(
         "/hr/schedule-change-requests/me",
@@ -62,7 +64,13 @@ export const scheduleChangeRequestApi = {
       .then((r) => r.data),
 
   listAll: (
-    params: { status?: ChangeRequestStatus; page?: number; size?: number } = {}
+    params: {
+      status?: ChangeRequestStatus
+      from?: string
+      to?: string
+      page?: number
+      size?: number
+    } = {}
   ) =>
     api
       .get<PageResponse<ScheduleChangeRequest>>(

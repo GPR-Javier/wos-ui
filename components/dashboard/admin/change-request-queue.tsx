@@ -30,6 +30,10 @@ import {
   TableCell,
 } from "@/components/ui/table"
 import { TablePagination } from "@/components/custom/table-pagination"
+import {
+  DateRangeFilter,
+  useDateRange,
+} from "@/components/custom/date-range-filter"
 import { cn } from "@/lib/utils"
 import {
   useAllChangeRequests,
@@ -183,12 +187,19 @@ export function ChangeRequestQueueSection() {
   )
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState("")
+  const { range, setRange } = useDateRange()
   const [reviewTarget, setReviewTarget] = useState<{
     req: ScheduleChangeRequest
     mode: "approve" | "reject" | "view"
   } | null>(null)
 
-  const q = useAllChangeRequests({ status, page, size: 20 })
+  const q = useAllChangeRequests({
+    status,
+    from: range.from,
+    to: range.until,
+    page,
+    size: 20,
+  })
   const items = q.data?.content ?? []
   const filtered = search
     ? items.filter((r) =>
@@ -217,6 +228,13 @@ export function ChangeRequestQueueSection() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <DateRangeFilter
+          value={range}
+          onChange={(v) => {
+            setRange(v)
+            setPage(0)
+          }}
+        />
         <div className="flex rounded-lg border border-border bg-muted/40 p-0.5">
           {STATUS_FILTERS.map((f) => (
             <button

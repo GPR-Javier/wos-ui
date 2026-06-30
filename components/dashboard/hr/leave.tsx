@@ -20,6 +20,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { TablePagination } from "@/components/custom/table-pagination"
+import {
+  DateRangeFilter,
+  useDateRange,
+} from "@/components/custom/date-range-filter"
 import { cn } from "@/lib/utils"
 import {
   Table,
@@ -63,9 +67,12 @@ export function LeaveSection() {
   )
   const [returnTarget, setReturnTarget] = useState<LeaveRequest | null>(null)
   const [returnNote, setReturnNote] = useState("")
+  const { range, setRange } = useDateRange()
 
   const { data, isLoading, isError } = useAllLeaveRequests({
     status: statusFilter,
+    from: range.from,
+    to: range.until,
     page: page - 1,
     size: pageSize,
   })
@@ -80,7 +87,16 @@ export function LeaveSection() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="font-semibold">Leave requests</h3>
+        <div className="flex flex-wrap items-center gap-3">
+          <h3 className="font-semibold">Leave requests</h3>
+          <DateRangeFilter
+            value={range}
+            onChange={(v) => {
+              setRange(v)
+              setPage(1)
+            }}
+          />
+        </div>
         <div className="flex rounded-lg border border-border bg-muted/40 p-0.5">
           {STATUS_FILTERS.map((f) => (
             <button

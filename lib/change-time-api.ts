@@ -56,7 +56,13 @@ export const changeTimeApi = {
       .then((r) => r.data),
 
   listMine: (
-    params: { status?: ChangeTimeStatus; page?: number; size?: number } = {}
+    params: {
+      status?: ChangeTimeStatus
+      from?: string
+      to?: string
+      page?: number
+      size?: number
+    } = {}
   ) =>
     api
       .get<PageResponse<ChangeTimeRequest>>("/hr/change-time-requests/me", {
@@ -87,6 +93,8 @@ export const changeTimeApi = {
     params: {
       status?: ChangeTimeStatus
       search?: string
+      from?: string
+      to?: string
       page?: number
       size?: number
     } = {}

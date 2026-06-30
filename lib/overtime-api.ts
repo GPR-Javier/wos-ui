@@ -116,7 +116,13 @@ export const overtimeApi = {
       .then((r) => r.data),
 
   listMine: (
-    params: { status?: OvertimeStatus; page?: number; size?: number } = {}
+    params: {
+      status?: OvertimeStatus
+      from?: string
+      to?: string
+      page?: number
+      size?: number
+    } = {}
   ) =>
     api
       .get<PageResponse<OvertimeRequest>>("/hr/overtime-requests/me", {
@@ -169,6 +175,8 @@ export const overtimeApi = {
     params: {
       status?: OvertimeStatus
       search?: string
+      from?: string
+      to?: string
       page?: number
       size?: number
     } = {}

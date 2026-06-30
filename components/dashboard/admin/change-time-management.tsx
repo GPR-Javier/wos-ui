@@ -36,6 +36,10 @@ import {
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TablePagination } from "@/components/custom/table-pagination"
+import {
+  DateRangeFilter,
+  useDateRange,
+} from "@/components/custom/date-range-filter"
 import { cn } from "@/lib/utils"
 import {
   useAllChangeTimeRequests,
@@ -427,6 +431,7 @@ export function ChangeTimeManagementSection() {
   >(undefined)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const { range, setRange } = useDateRange()
   const [reviewTarget, setReviewTarget] = useState<{
     req: ChangeTimeRequest
     mode: ReviewMode
@@ -435,6 +440,8 @@ export function ChangeTimeManagementSection() {
   const q = useAllChangeTimeRequests({
     status: statusFilter,
     search: search || undefined,
+    from: range.from,
+    to: range.until,
     page,
     size: 20,
   })
@@ -443,7 +450,11 @@ export function ChangeTimeManagementSection() {
   const total = q.data?.totalElements ?? 0
   const totalPages = q.data?.totalPages ?? 0
 
-  const allQ = useAllChangeTimeRequests({ size: 100 })
+  const allQ = useAllChangeTimeRequests({
+    from: range.from,
+    to: range.until,
+    size: 100,
+  })
   const allItems = allQ.data?.content ?? []
   const summaryCounts = {
     total: allItems.length,
@@ -528,6 +539,13 @@ export function ChangeTimeManagementSection() {
               }}
             />
           </div>
+          <DateRangeFilter
+            value={range}
+            onChange={(v) => {
+              setRange(v)
+              setPage(0)
+            }}
+          />
           <div className="flex rounded-lg border border-border bg-muted/40 p-0.5">
             {STATUS_FILTERS.map((f) => (
               <button

@@ -11,6 +11,11 @@ import {
 } from "@hugeicons/core-free-icons"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatCard } from "@/components/custom/stat-card"
+import {
+  DateRangeFilter,
+  useDateRange,
+  thisYearRange,
+} from "@/components/custom/date-range-filter"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -73,8 +78,13 @@ export function MyLeavesSection() {
   const [statusFilter, setStatusFilter] = useState<LeaveStatus | undefined>(
     undefined
   )
+  const { range, setRange } = useDateRange(thisYearRange)
 
-  const q = useMyLeaveRequests({ size: 100 })
+  const q = useMyLeaveRequests({
+    from: range.from,
+    to: range.until,
+    size: 100,
+  })
   const all = q.data?.content ?? []
   const items = statusFilter
     ? all.filter((r) => r.status === statusFilter)
@@ -225,6 +235,7 @@ export function MyLeavesSection() {
       <div className="rounded-xl border border-border bg-card shadow-sm">
         <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3">
           <p className="text-[13px] font-semibold">Leave history</p>
+          <DateRangeFilter value={range} onChange={setRange} />
           <div className="ml-auto flex rounded-lg border border-border bg-muted/40 p-0.5">
             {STATUS_FILTERS.map((f) => (
               <button

@@ -10,7 +10,13 @@ import {
 const KEY = ["change-time-requests"] as const
 
 export function useMyChangeTimeRequests(
-  params: { status?: ChangeTimeStatus; page?: number; size?: number } = {}
+  params: {
+    status?: ChangeTimeStatus
+    from?: string
+    to?: string
+    page?: number
+    size?: number
+  } = {}
 ) {
   return useQuery({
     queryKey: [...KEY, "me", params],
@@ -22,6 +28,8 @@ export function useAllChangeTimeRequests(
   params: {
     status?: ChangeTimeStatus
     search?: string
+    from?: string
+    to?: string
     page?: number
     size?: number
   } = {}

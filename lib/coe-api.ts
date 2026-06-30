@@ -70,7 +70,13 @@ export const coeApi = {
     api.post<CoeRequest>("/hr/coe-requests", body).then((r) => r.data),
 
   listMine: (
-    params: { status?: CoeStatus; page?: number; size?: number } = {}
+    params: {
+      status?: CoeStatus
+      from?: string
+      to?: string
+      page?: number
+      size?: number
+    } = {}
   ) =>
     api
       .get<PageResponse<CoeRequest>>("/hr/coe-requests/me", {
@@ -92,6 +98,8 @@ export const coeApi = {
     params: {
       status?: CoeStatus
       search?: string
+      from?: string
+      to?: string
       page?: number
       size?: number
     } = {}

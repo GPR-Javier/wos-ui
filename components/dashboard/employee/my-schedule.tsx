@@ -15,6 +15,11 @@ import {
 } from "@hugeicons/core-free-icons"
 import { StatCard } from "@/components/custom/stat-card"
 import { StatusBadge } from "@/components/custom/status-badge"
+import {
+  DateRangeFilter,
+  useDateRange,
+  thisYearRange,
+} from "@/components/custom/date-range-filter"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -732,11 +737,17 @@ export function MyScheduleSection() {
     ChangeRequestStatus | undefined
   >(undefined)
   const [page, setPage] = useState(0)
+  const { range, setRange } = useDateRange(thisYearRange)
   const [formOpen, setFormOpen] = useState(false)
   const [detail, setDetail] = useState<ScheduleChangeRequest | null>(null)
 
   const { formatTime } = useTimeFormat()
-  const q = useMyChangeRequests({ page, size: 20 })
+  const q = useMyChangeRequests({
+    from: range.from,
+    to: range.until,
+    page,
+    size: 20,
+  })
   const policyQ = useMyPolicy()
   const policy = policyQ.data
 
@@ -836,7 +847,14 @@ export function MyScheduleSection() {
       {/* ── Table card ── */}
       <div className="rounded-xl border border-border bg-card shadow-sm">
         {/* Toolbar */}
-        <div className="flex items-center gap-3 border-b border-border px-5 py-3">
+        <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3">
+          <DateRangeFilter
+            value={range}
+            onChange={(v) => {
+              setRange(v)
+              setPage(0)
+            }}
+          />
           <div className="flex rounded-lg border border-border bg-muted/40 p-0.5">
             {STATUS_FILTERS.map((f) => (
               <button

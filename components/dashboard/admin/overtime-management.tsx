@@ -38,6 +38,10 @@ import {
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TablePagination } from "@/components/custom/table-pagination"
+import {
+  DateRangeFilter,
+  useDateRange,
+} from "@/components/custom/date-range-filter"
 import { OvertimeBulkAuthorizeDialog } from "@/components/custom/overtime-bulk-authorize-dialog"
 import { cn } from "@/lib/utils"
 import {
@@ -516,6 +520,7 @@ export function OvertimeManagementSection() {
   const [queue, setQueue] = useState<Queue>("all")
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const { range, setRange } = useDateRange()
   const [bulkOpen, setBulkOpen] = useState(false)
   const [reviewTarget, setReviewTarget] = useState<{
     req: OvertimeRequest
@@ -523,7 +528,11 @@ export function OvertimeManagementSection() {
   } | null>(null)
 
   // Fetch a wide page once; the lifecycle queues span multiple statuses, so filter client-side.
-  const q = useAllOvertimeRequests({ size: 200 })
+  const q = useAllOvertimeRequests({
+    from: range.from,
+    to: range.until,
+    size: 200,
+  })
   const allItems = useMemo(() => q.data?.content ?? [], [q.data])
 
   const counts = {
@@ -684,6 +693,13 @@ export function OvertimeManagementSection() {
               }}
             />
           </div>
+          <DateRangeFilter
+            value={range}
+            onChange={(v) => {
+              setRange(v)
+              setPage(0)
+            }}
+          />
         </div>
 
         {/* Table */}

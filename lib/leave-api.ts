@@ -54,7 +54,13 @@ export const leaveApi = {
     api.post<LeaveRequest>("/hr/leave-requests", body).then((r) => r.data),
 
   listMine: (
-    params: { status?: LeaveStatus; page?: number; size?: number } = {}
+    params: {
+      status?: LeaveStatus
+      from?: string
+      to?: string
+      page?: number
+      size?: number
+    } = {}
   ) =>
     api
       .get<PageResponse<LeaveRequest>>("/hr/leave-requests/me", {
@@ -79,7 +85,15 @@ export const leaveApi = {
     api.delete(`/hr/leave-requests/${id}`).then((r) => r.data),
 
   // ── Admin / HR ──
-  listAll: (params: { status?: string; page?: number; size?: number } = {}) =>
+  listAll: (
+    params: {
+      status?: string
+      from?: string
+      to?: string
+      page?: number
+      size?: number
+    } = {}
+  ) =>
     api
       .get<PageResponse<LeaveRequest>>("/hr/leave-requests", {
         params: { page: 0, size: 20, ...params },

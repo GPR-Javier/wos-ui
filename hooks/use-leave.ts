@@ -1,6 +1,11 @@
 "use client"
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query"
 import {
   leaveApi,
   type LeaveStatus,
@@ -22,20 +27,34 @@ function useInvalidate() {
 }
 
 export function useMyLeaveRequests(
-  params: { status?: LeaveStatus; page?: number; size?: number } = {}
+  params: {
+    status?: LeaveStatus
+    from?: string
+    to?: string
+    page?: number
+    size?: number
+  } = {}
 ) {
   return useQuery({
     queryKey: [...KEY, "me", params],
     queryFn: () => leaveApi.listMine(params),
+    placeholderData: keepPreviousData,
   })
 }
 
 export function useAllLeaveRequests(
-  params: { status?: string; page?: number; size?: number } = {}
+  params: {
+    status?: string
+    from?: string
+    to?: string
+    page?: number
+    size?: number
+  } = {}
 ) {
   return useQuery({
     queryKey: [...KEY, "all", params],
     queryFn: () => leaveApi.listAll(params),
+    placeholderData: keepPreviousData,
   })
 }
 

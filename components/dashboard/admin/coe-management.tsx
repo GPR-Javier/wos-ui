@@ -37,6 +37,10 @@ import {
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TablePagination } from "@/components/custom/table-pagination"
+import {
+  DateRangeFilter,
+  useDateRange,
+} from "@/components/custom/date-range-filter"
 import { cn } from "@/lib/utils"
 import {
   useAllCoeRequests,
@@ -463,6 +467,7 @@ export function CoeManagementSection() {
   )
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
+  const { range, setRange } = useDateRange()
   const [reviewTarget, setReviewTarget] = useState<{
     coe: CoeRequest
     mode: ReviewMode
@@ -471,6 +476,8 @@ export function CoeManagementSection() {
   const q = useAllCoeRequests({
     status: statusFilter,
     search: search || undefined,
+    from: range.from,
+    to: range.until,
     page,
     size: 20,
   })
@@ -479,7 +486,11 @@ export function CoeManagementSection() {
   const total = q.data?.totalElements ?? 0
   const totalPages = q.data?.totalPages ?? 0
 
-  const summaryQ = useAllCoeRequests({ size: 200 })
+  const summaryQ = useAllCoeRequests({
+    from: range.from,
+    to: range.until,
+    size: 200,
+  })
   const all = summaryQ.data?.content ?? []
   const counts = {
     total: all.length,
@@ -563,6 +574,13 @@ export function CoeManagementSection() {
               }}
             />
           </div>
+          <DateRangeFilter
+            value={range}
+            onChange={(v) => {
+              setRange(v)
+              setPage(0)
+            }}
+          />
           <div className="flex flex-wrap rounded-lg border border-border bg-muted/40 p-0.5">
             {STATUS_FILTERS.map((f) => (
               <button

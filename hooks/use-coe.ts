@@ -20,7 +20,13 @@ export function useDownloadCoeDocument() {
 }
 
 export function useMyCoeRequests(
-  params: { status?: CoeStatus; page?: number; size?: number } = {}
+  params: {
+    status?: CoeStatus
+    from?: string
+    to?: string
+    page?: number
+    size?: number
+  } = {}
 ) {
   return useQuery({
     queryKey: [...KEY, "me", params],
@@ -32,6 +38,8 @@ export function useAllCoeRequests(
   params: {
     status?: CoeStatus
     search?: string
+    from?: string
+    to?: string
     page?: number
     size?: number
   } = {}
