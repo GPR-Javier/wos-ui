@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -977,21 +977,27 @@ export function UsersSection() {
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null)
   const [tempRoleTarget, setTempRoleTarget] = useState<AdminUser | null>(null)
 
+  // Debounce the search box so each keystroke doesn't fire a request; server-side search runs
+  // across the whole dataset (employee code + identity name/email), not just the current page.
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300)
+    return () => clearTimeout(t)
+  }, [search])
+  // Any new search resets to the first page so results aren't hidden on a stale page index.
+  useEffect(() => {
+    setPage(0)
+  }, [debouncedSearch])
+
   const { data, isLoading, isError } = useAdminUsers({
     page,
     size: 20,
     role: roleFilter,
+    search: debouncedSearch || undefined,
   })
   const deleteMutation = useDeleteUser()
 
   const users = data?.content ?? []
-  const filtered = search
-    ? users.filter((u) =>
-        `${u.firstName} ${u.lastName} ${u.email} ${u.employeeId}`
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      )
-    : users
 
   function confirmDelete() {
     if (!deleteTarget) return
@@ -1090,7 +1096,7 @@ export function UsersSection() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {users.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={5}
@@ -1100,7 +1106,7 @@ export function UsersSection() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((u) => (
+                users.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell>
                       <div className="flex items-center gap-2.5">

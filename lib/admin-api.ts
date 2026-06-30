@@ -54,6 +54,8 @@ export interface ListUsersParams {
   page?: number
   size?: number
   role?: string // "EMPLOYEE" | "ADMIN" — omit for all
+  /** Server-side search over employee code + identity name/email. Omit/blank for no filter. */
+  search?: string
 }
 
 export interface CreateUserPayload {
