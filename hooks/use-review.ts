@@ -1,6 +1,11 @@
 "use client"
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query"
 import {
   reviewApi,
   type ReviewPayload,
@@ -8,14 +13,16 @@ import {
   type HumanStagePayload,
   type InterviewSummaryPayload,
   type OfferPayload,
+  type ReviewListParams,
 } from "@/lib/review-api"
 import type { ApplicationStatus } from "@/lib/application-api"
 import type { AssessmentPartType } from "@/lib/assessment-api"
 
-export function useReviewList(status?: ApplicationStatus) {
+export function useReviewList(params: ReviewListParams = {}) {
   return useQuery({
-    queryKey: ["review", "applications", status ?? "all"],
-    queryFn: () => reviewApi.list(status),
+    queryKey: ["review", "applications", params],
+    queryFn: () => reviewApi.list(params),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -36,7 +43,8 @@ export function useGradeApplication() {
     }: {
       id: number
       partType: AssessmentPartType
-    }) => reviewApi.grade(id, partType),
+      // grading runs in wos-ai; recompute the board's filter columns afterwards
+    }) => reviewApi.grade(id, partType).then(() => reviewApi.recompute(id)),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["review", "application", vars.id] })
       qc.invalidateQueries({ queryKey: ["review", "applications"] })
@@ -147,9 +155,11 @@ export function useEnhanceComment() {
 export function useReviewCoverLetter() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => reviewApi.reviewCoverLetter(id),
+    mutationFn: (id: number) =>
+      reviewApi.reviewCoverLetter(id).then(() => reviewApi.recompute(id)),
     onSuccess: (_data, id) => {
       qc.invalidateQueries({ queryKey: ["review", "application", id] })
+      qc.invalidateQueries({ queryKey: ["review", "applications"] })
     },
   })
 }
@@ -157,7 +167,8 @@ export function useReviewCoverLetter() {
 export function useReviewResume() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => reviewApi.reviewResume(id),
+    mutationFn: (id: number) =>
+      reviewApi.reviewResume(id).then(() => reviewApi.recompute(id)),
     onSuccess: (_data, id) => {
       qc.invalidateQueries({ queryKey: ["review", "application", id] })
       qc.invalidateQueries({ queryKey: ["review", "applications"] })

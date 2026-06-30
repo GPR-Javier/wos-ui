@@ -1,4 +1,5 @@
 import { api } from "./api"
+import type { PageResponse } from "./admin-api"
 import type { ApplicationStatus, OfferView } from "./application-api"
 import type { AssessmentPartType } from "./assessment-api"
 import type { Pipeline } from "./pipeline-api"
@@ -176,13 +177,34 @@ export interface HumanStagePayload {
 const AI_TIMEOUT = 120_000
 const AI_GRADE_TIMEOUT = 300_000
 
+/** Server-side filters/paging for the recruiter board. Score thresholds: 0 = no filter. */
+export interface ReviewListParams {
+  status?: ApplicationStatus
+  minBasic?: number
+  minCover?: number
+  minResume?: number
+  minOverall?: number
+  hrAi?: StageStatus
+  techAi?: StageStatus
+  live?: StageStatus
+  finalStage?: StageStatus
+  page?: number
+  size?: number
+}
+
 export const reviewApi = {
-  list: (status?: ApplicationStatus) =>
+  list: (params: ReviewListParams = {}) =>
     api
-      .get<ReviewListItem[]>("/hr/review/applications", {
-        params: status ? { status } : {},
+      .get<PageResponse<ReviewListItem>>("/hr/review/applications", {
+        params: { page: 0, size: 20, ...params },
       })
       .then((r) => r.data),
+  /**
+   * Refresh the materialized filter fields after an AI action that runs in wos-ai (grade / cover /
+   * résumé review), so the board's server-side filters reflect the new scores.
+   */
+  recompute: (id: number) =>
+    api.post(`/hr/review/applications/${id}/recompute`).then(() => {}),
   detail: (id: number) =>
     api.get<ReviewDetail>(`/hr/review/applications/${id}`).then((r) => r.data),
   setStatus: (id: number, status: ApplicationStatus, note?: string) =>

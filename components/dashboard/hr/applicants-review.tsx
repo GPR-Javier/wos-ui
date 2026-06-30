@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { EmptyState } from "@/components/custom/empty-state"
 import { TableSkeleton } from "@/components/custom/table-skeleton"
+import { TablePagination } from "@/components/custom/table-pagination"
 import { RichTextEditor } from "@/components/custom/rich-text-editor"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -89,28 +90,53 @@ export function ApplicantsReviewSection() {
   const [fLive, setFLive] = useState<StageStatus | "">("")
   const [fFinal, setFFinal] = useState<StageStatus | "">("")
   const [selectedId, setSelectedId] = useState<number | null>(null)
-  const { data: applications = [], isLoading } = useReviewList(
-    filter || undefined
-  )
+  const [page, setPage] = useState(0)
+  const [size, setSize] = useState(20)
 
-  // Threshold filters: a metric passes if its slider is 0, or the score exists and meets it.
-  const meets = (score: number | null, min: number) =>
-    min === 0 || (score != null && score >= min)
-  // Stage filter: passes if "any" is selected, else the stage's status must match.
-  const stageOk = (s: StageStatus | null, want: StageStatus | "") =>
-    want === "" || s === want
+  // Sliders/selects change rapidly — debounce them before they drive a server query.
+  const [applied, setApplied] = useState({
+    minBasic: 0,
+    minCover: 0,
+    minResume: 0,
+    minOverall: 0,
+    fHrAi: "" as StageStatus | "",
+    fTechAi: "" as StageStatus | "",
+    fLive: "" as StageStatus | "",
+    fFinal: "" as StageStatus | "",
+  })
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setApplied({
+        minBasic,
+        minCover,
+        minResume,
+        minOverall,
+        fHrAi,
+        fTechAi,
+        fLive,
+        fFinal,
+      })
+      setPage(0) // a changed filter returns to the first page (async — not a render-time setState)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [minBasic, minCover, minResume, minOverall, fHrAi, fTechAi, fLive, fFinal])
+
+  // Server-side: filtering, sorting and pagination all run in the DB.
+  const { data, isLoading } = useReviewList({
+    status: filter || undefined,
+    minBasic: applied.minBasic,
+    minCover: applied.minCover,
+    minResume: applied.minResume,
+    minOverall: applied.minOverall,
+    hrAi: applied.fHrAi || undefined,
+    techAi: applied.fTechAi || undefined,
+    live: applied.fLive || undefined,
+    finalStage: applied.fFinal || undefined,
+    page,
+    size,
+  })
+  const applications = data?.content ?? []
   const hasStageFilter = !!(fHrAi || fTechAi || fLive || fFinal)
-  const visible = applications.filter(
-    (a) =>
-      meets(a.basicScore, minBasic) &&
-      meets(a.coverLetterScore, minCover) &&
-      meets(a.resumeScore, minResume) &&
-      meets(a.overall, minOverall) &&
-      stageOk(a.hrAiStatus, fHrAi) &&
-      stageOk(a.technicalAiStatus, fTechAi) &&
-      stageOk(a.liveStatus, fLive) &&
-      stageOk(a.finalStatus, fFinal)
-  )
 
   return (
     <div className="space-y-5">
@@ -129,7 +155,10 @@ export function ApplicantsReviewSection() {
             <button
               key={f.label}
               type="button"
-              onClick={() => setFilter(f.value)}
+              onClick={() => {
+                setFilter(f.value)
+                setPage(0)
+              }}
               className={cn(
                 "rounded-full px-3 py-1 text-[12px] font-medium transition-colors",
                 filter === f.value
@@ -224,14 +253,8 @@ export function ApplicantsReviewSection() {
       {/* Table */}
       {isLoading ? (
         <TableSkeleton rows={3} />
-      ) : visible.length === 0 ? (
-        <EmptyState
-          title={
-            applications.length === 0
-              ? "No applicants in this view."
-              : "No applicants meet the score threshold."
-          }
-        />
+      ) : applications.length === 0 ? (
+        <EmptyState title="No applicants match the current filters." />
       ) : (
         <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
           <table className="w-full text-left text-[12px]">
@@ -251,7 +274,7 @@ export function ApplicantsReviewSection() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
-              {visible.map((a) => (
+              {applications.map((a) => (
                 <tr
                   key={a.id}
                   onClick={() => setSelectedId(a.id)}
@@ -317,6 +340,21 @@ export function ApplicantsReviewSection() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {data && data.totalElements > 0 && (
+        <TablePagination
+          page={page + 1}
+          totalPages={data.totalPages}
+          total={data.totalElements}
+          pageSize={size}
+          setPage={(p) => setPage(p - 1)}
+          setPageSize={(s) => {
+            setSize(s)
+            setPage(0)
+          }}
+          pageSizeOptions={[20, 50, 100]}
+        />
       )}
 
       {selectedId != null && (
