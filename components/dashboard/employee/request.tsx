@@ -1,11 +1,24 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatCard } from "@/components/custom/stat-card"
 import { StatusBadge } from "@/components/custom/status-badge"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  DateRangePicker,
+  type DateRangeValue,
+} from "@/components/ui/date-range-picker"
+import { TablePagination } from "@/components/custom/table-pagination"
 import { LeaveModal } from "@/components/custom/leave-modal"
 import { ObModal } from "@/components/custom/ob-modal"
 import { CoeRequestModal } from "@/components/custom/coe-request-modal"
@@ -21,32 +34,35 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import { useSlugHref } from "@/lib/slug"
-import { useMyLeaveRequests } from "@/hooks/use-leave"
-import { useMyCoeRequests } from "@/hooks/use-coe"
-import { useMyOvertimeRequests } from "@/hooks/use-overtime"
-import { useMyChangeTimeRequests } from "@/hooks/use-change-time"
 import { useLeaveBalances } from "@/hooks/use-employee"
+import { useMyRequestFeed } from "@/hooks/use-request-feed"
+import {
+  type RequestSummary,
+  type RequestKind,
+  type RequestBucket,
+} from "@/lib/requests-api"
 import {
   LEAVE_TYPE_LABEL,
   LEAVE_STATUS_LABEL,
-  type LeaveRequest,
+  type LeaveType,
   type LeaveStatus,
 } from "@/lib/leave-api"
 import {
   COE_PURPOSE_LABEL,
   COE_CERT_TYPE_LABEL,
-  type CoeRequest,
+  type CoePurpose,
+  type CoeCertificateType,
   type CoeStatus,
 } from "@/lib/coe-api"
 import {
   OT_TYPE_LABEL,
   OT_STATUS_LABEL,
-  type OvertimeRequest,
+  type OvertimeType,
   type OvertimeStatus,
 } from "@/lib/overtime-api"
 import {
-  type ChangeTimeRequest,
   type ChangeTimeStatus,
+  type ChangeTimeRequestType,
 } from "@/lib/change-time-api"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -55,6 +71,7 @@ import {
   File01Icon,
   Clock01Icon,
   ClockPlusIcon,
+  Cancel01Icon,
 } from "@hugeicons/core-free-icons"
 
 // ── request type cards ────────────────────────────────────────────────────────
@@ -130,92 +147,33 @@ function RequestTypeCard({
   )
 }
 
-// ── unified request feed ────────────────────────────────────────────────────────
+// ── feed display mapping ────────────────────────────────────────────────────────
 
-type RequestType = "leave" | "coe" | "dtr" | "ot"
-type Bucket = "approved" | "pending" | "declined" | "neutral"
+type DisplayType = "leave" | "coe" | "dtr" | "ot"
 
-interface FeedRow {
-  key: string
-  type: RequestType
-  title: string
-  meta: string
-  /** ISO timestamp used for sorting (most recent first). */
-  filedAt: string
-  forDate: string
-  bucket: Bucket
-  statusLabel: string
-  remarks: string
-  href: string
-}
-
-const typeLabel: Record<RequestType, string> = {
+const typeLabel: Record<DisplayType, string> = {
   leave: "Leave",
   coe: "COE",
   dtr: "Time change",
   ot: "Overtime",
 }
 
-const typeVariant: Record<RequestType, "blue" | "purple" | "amber" | "red"> = {
+const typeVariant: Record<DisplayType, "blue" | "purple" | "amber" | "red"> = {
   leave: "blue",
   coe: "purple",
   dtr: "amber",
   ot: "red",
 }
 
-const bucketVariant: Record<Bucket, "green" | "amber" | "red" | "gray"> = {
-  approved: "green",
-  pending: "amber",
-  declined: "red",
-  neutral: "gray",
-}
+const bucketVariant: Record<RequestBucket, "green" | "amber" | "red" | "gray"> =
+  {
+    APPROVED: "green",
+    PENDING: "amber",
+    DECLINED: "red",
+    NEUTRAL: "gray",
+  }
 
-// ── status → bucket maps (color + stat grouping; granular label kept for the badge) ──
-
-const LEAVE_BUCKET: Record<LeaveStatus, Bucket> = {
-  DRAFT: "neutral",
-  PENDING: "pending",
-  APPROVED: "approved",
-  REJECTED: "declined",
-  RETURNED: "pending",
-  CANCELLED: "neutral",
-}
-
-const COE_BUCKET: Record<CoeStatus, Bucket> = {
-  DRAFT: "neutral",
-  SUBMITTED: "pending",
-  PENDING_REVIEW: "pending",
-  APPROVED: "approved",
-  REJECTED: "declined",
-  RELEASED: "approved",
-  COMPLETED: "approved",
-}
-
-const OT_BUCKET: Record<OvertimeStatus, Bucket> = {
-  DRAFT: "neutral",
-  PENDING_AUTH: "pending",
-  AUTHORIZED: "pending",
-  AUTH_REJECTED: "declined",
-  PENDING_CLAIM: "pending",
-  APPROVED: "approved",
-  REJECTED: "declined",
-  RETURNED: "pending",
-  DECLINED: "declined",
-  EXPIRED: "neutral",
-  CANCELLED: "neutral",
-  PENDING_EMERGENCY_CLAIM: "pending",
-  PENDING: "pending",
-}
-
-const CT_BUCKET: Record<ChangeTimeStatus, Bucket> = {
-  DRAFT: "neutral",
-  PENDING: "pending",
-  APPROVED: "approved",
-  REJECTED: "declined",
-  RETURNED: "pending",
-  CANCELLED: "neutral",
-}
-
+// Granular status labels not exported by their api modules.
 const COE_STATUS_LABEL: Record<CoeStatus, string> = {
   DRAFT: "Draft",
   SUBMITTED: "Submitted",
@@ -235,11 +193,21 @@ const CT_STATUS_LABEL: Record<ChangeTimeStatus, string> = {
   CANCELLED: "Cancelled",
 }
 
-const CT_TYPE_LABEL: Record<ChangeTimeRequest["requestType"], string> = {
+const CT_TYPE_LABEL: Record<ChangeTimeRequestType, string> = {
   TIME_IN: "Time in",
   TIME_OUT: "Time out",
   BOTH: "Time in & out",
 }
+
+const TYPE_FILTERS: { label: string; value?: RequestKind }[] = [
+  { label: "All" },
+  { label: "Leave", value: "LEAVE" },
+  { label: "COE", value: "COE" },
+  { label: "Overtime", value: "OVERTIME" },
+  { label: "Time change", value: "CHANGE_TIME" },
+]
+
+const PAGE_SIZE = 10
 
 // ── date helpers ────────────────────────────────────────────────────────────────
 
@@ -261,75 +229,61 @@ function fmtRange(start: string, end: string) {
   return start === end ? fmtDay(start) : `${fmtDay(start)}–${fmtDay(end)}`
 }
 
-// ── normalizers ───────────────────────────────────────────────────────────────
-
-function leaveRow(r: LeaveRequest): FeedRow {
-  return {
-    key: `leave-${r.id}`,
-    type: "leave",
-    title: `${LEAVE_TYPE_LABEL[r.leaveType]} leave`,
-    meta: `${fmtRange(r.startDate, r.endDate)} · ${r.days} day${
-      r.days === 1 ? "" : "s"
-    }${r.reason ? ` · ${r.reason}` : ""}`,
-    filedAt: r.filedAt,
-    forDate: fmtRange(r.startDate, r.endDate),
-    bucket: LEAVE_BUCKET[r.status],
-    statusLabel: LEAVE_STATUS_LABEL[r.status],
-    remarks:
-      r.reviewNote ??
-      (r.reviewedByName ? `Reviewed by ${r.reviewedByName}` : "—"),
-    href: "/dashboard/my-leaves",
-  }
+interface DisplayRow {
+  type: DisplayType
+  title: string
+  meta: string
+  forDate: string
+  statusLabel: string
+  href: string
 }
 
-function coeRow(r: CoeRequest): FeedRow {
-  return {
-    key: `coe-${r.id}`,
-    type: "coe",
-    title: "Certificate of employment",
-    meta: `${COE_PURPOSE_LABEL[r.purpose]} · ${
-      COE_CERT_TYPE_LABEL[r.certificateType]
-    }`,
-    filedAt: r.createdAt,
-    forDate: "—",
-    bucket: COE_BUCKET[r.status],
-    statusLabel: COE_STATUS_LABEL[r.status],
-    remarks:
-      r.remarks ?? (r.approvedByName ? `Handled by ${r.approvedByName}` : "—"),
-    href: "/dashboard/my-coe",
-  }
-}
-
-function otRow(r: OvertimeRequest): FeedRow {
-  const hours = r.totalHours ?? r.plannedHours
-  return {
-    key: `ot-${r.id}`,
-    type: "ot",
-    title: "Overtime",
-    meta: `${fmtDay(r.overtimeDate)} · ${OT_TYPE_LABEL[r.overtimeType]}${
-      hours != null ? ` · ${hours}h` : ""
-    }`,
-    filedAt: r.createdAt,
-    forDate: fmtDay(r.overtimeDate),
-    bucket: OT_BUCKET[r.status],
-    statusLabel: OT_STATUS_LABEL[r.status],
-    remarks: r.reviewNote ?? r.declineReason ?? "—",
-    href: "/dashboard/my-overtime",
-  }
-}
-
-function ctRow(r: ChangeTimeRequest): FeedRow {
-  return {
-    key: `ct-${r.id}`,
-    type: "dtr",
-    title: "Time correction",
-    meta: `${fmtDay(r.attendanceDate)} · ${CT_TYPE_LABEL[r.requestType]}`,
-    filedAt: r.createdAt,
-    forDate: fmtDay(r.attendanceDate),
-    bucket: CT_BUCKET[r.status],
-    statusLabel: CT_STATUS_LABEL[r.status],
-    remarks: r.reviewNote ?? "—",
-    href: "/dashboard/my-change-time",
+function describe(r: RequestSummary): DisplayRow {
+  switch (r.type) {
+    case "LEAVE":
+      return {
+        type: "leave",
+        title: `${LEAVE_TYPE_LABEL[r.leaveType as LeaveType]} leave`,
+        meta: `${fmtRange(r.startDate!, r.endDate!)} · ${r.days} day${
+          r.days === 1 ? "" : "s"
+        }${r.reason ? ` · ${r.reason}` : ""}`,
+        forDate: fmtRange(r.startDate!, r.endDate!),
+        statusLabel: LEAVE_STATUS_LABEL[r.status as LeaveStatus],
+        href: "/dashboard/my-leaves",
+      }
+    case "COE":
+      return {
+        type: "coe",
+        title: "Certificate of employment",
+        meta: `${COE_PURPOSE_LABEL[r.purpose as CoePurpose]} · ${
+          COE_CERT_TYPE_LABEL[r.certificateType as CoeCertificateType]
+        }`,
+        forDate: "—",
+        statusLabel: COE_STATUS_LABEL[r.status as CoeStatus],
+        href: "/dashboard/my-coe",
+      }
+    case "OVERTIME":
+      return {
+        type: "ot",
+        title: "Overtime",
+        meta: `${fmtDay(r.overtimeDate!)} · ${
+          OT_TYPE_LABEL[r.overtimeType as OvertimeType]
+        }${r.hours != null ? ` · ${r.hours}h` : ""}`,
+        forDate: fmtDay(r.overtimeDate!),
+        statusLabel: OT_STATUS_LABEL[r.status as OvertimeStatus],
+        href: "/dashboard/my-overtime",
+      }
+    case "CHANGE_TIME":
+      return {
+        type: "dtr",
+        title: "Time correction",
+        meta: `${fmtDay(r.attendanceDate!)} · ${
+          CT_TYPE_LABEL[r.requestType as ChangeTimeRequestType]
+        }`,
+        forDate: fmtDay(r.attendanceDate!),
+        statusLabel: CT_STATUS_LABEL[r.status as ChangeTimeStatus],
+        href: "/dashboard/my-change-time",
+      }
   }
 }
 
@@ -345,40 +299,47 @@ export function RequestSection() {
   const [dtrOpen, setDtrOpen] = useState(false)
   const [otOpen, setOtOpen] = useState(false)
 
-  // Live feeds — pull a generous page of each so the merged history + stats are accurate.
-  const leaveQ = useMyLeaveRequests({ size: 50 })
-  const coeQ = useMyCoeRequests({ size: 50 })
-  const otQ = useMyOvertimeRequests({ size: 50 })
-  const ctQ = useMyChangeTimeRequests({ size: 50 })
+  // ── filters + pagination (server-side) ──
+  const [type, setType] = useState<RequestKind | undefined>(undefined)
+  const [status, setStatus] = useState<RequestBucket | undefined>(undefined)
+  const [range, setRange] = useState<DateRangeValue | null>(null)
+  const [page, setPage] = useState(0)
+
+  function resetTo(fn: () => void) {
+    fn()
+    setPage(0)
+  }
+
+  const from = range?.from || undefined
+  const to = range?.until || undefined
+
+  const feedQ = useMyRequestFeed({
+    type,
+    status,
+    from,
+    to,
+    page,
+    size: PAGE_SIZE,
+  })
+  const rows = feedQ.data?.content ?? []
+  const total = feedQ.data?.totalElements ?? 0
+  const totalPages = feedQ.data?.totalPages ?? 0
+  const hasFilters = !!type || !!status || !!range
+
+  // ── stats (lightweight server counts; size 1 → read totalElements) ──
+  const yearStart = `${new Date().getFullYear()}-01-01`
   const { data: balances = [] } = useLeaveBalances()
-
-  const loading =
-    leaveQ.isLoading || coeQ.isLoading || otQ.isLoading || ctQ.isLoading
-
-  const rows = useMemo<FeedRow[]>(() => {
-    const merged: FeedRow[] = [
-      ...(leaveQ.data?.content ?? []).map(leaveRow),
-      ...(coeQ.data?.content ?? []).map(coeRow),
-      ...(otQ.data?.content ?? []).map(otRow),
-      ...(ctQ.data?.content ?? []).map(ctRow),
-    ]
-    return merged.sort((a, b) => b.filedAt.localeCompare(a.filedAt))
-  }, [leaveQ.data, coeQ.data, otQ.data, ctQ.data])
-
-  // ── stats ──
-  const thisYear = new Date().getFullYear()
-  const stats = useMemo(() => {
-    let pending = 0
-    let approved = 0
-    let declined = 0
-    for (const r of rows) {
-      const inYear = new Date(r.filedAt).getFullYear() === thisYear
-      if (r.bucket === "pending") pending++
-      else if (r.bucket === "approved" && inYear) approved++
-      else if (r.bucket === "declined" && inYear) declined++
-    }
-    return { pending, approved, declined }
-  }, [rows, thisYear])
+  const pendingQ = useMyRequestFeed({ status: "PENDING", size: 1 })
+  const approvedQ = useMyRequestFeed({
+    status: "APPROVED",
+    from: yearStart,
+    size: 1,
+  })
+  const declinedQ = useMyRequestFeed({
+    status: "DECLINED",
+    from: yearStart,
+    size: 1,
+  })
 
   // Credit pools — a single FLEXI pool when enabled, else the dedicated types.
   const CREDIT_LABEL: Record<string, string> = {
@@ -421,19 +382,31 @@ export function RequestSection() {
         />
         <StatCard
           title="Pending requests"
-          value={<span className="text-warning">{stats.pending}</span>}
+          value={
+            <span className="text-warning">
+              {pendingQ.data?.totalElements ?? 0}
+            </span>
+          }
           meta="Awaiting HR action"
           accent="amber"
         />
         <StatCard
           title="Approved this year"
-          value={<span className="text-success">{stats.approved}</span>}
+          value={
+            <span className="text-success">
+              {approvedQ.data?.totalElements ?? 0}
+            </span>
+          }
           meta="Across all types"
           accent="green"
         />
         <StatCard
           title="Declined"
-          value={<span className="text-danger">{stats.declined}</span>}
+          value={
+            <span className="text-danger">
+              {declinedQ.data?.totalElements ?? 0}
+            </span>
+          }
           meta="This year"
           accent="red"
         />
@@ -491,10 +464,84 @@ export function RequestSection() {
         <CardHeader>
           <CardTitle>Request history</CardTitle>
           <p className="text-[12px] text-muted-foreground">
-            Latest activity across all request types
+            Activity across all request types
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Filter bar */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Type — segmented control */}
+            <div className="flex flex-wrap rounded-lg border border-border bg-muted/40 p-0.5">
+              {TYPE_FILTERS.map((f) => (
+                <button
+                  key={f.label}
+                  onClick={() => resetTo(() => setType(f.value))}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors",
+                    type === f.value
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Status + date range + clear — right-aligned */}
+            <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+              <Select
+                value={status ?? "ALL"}
+                onValueChange={(v) =>
+                  resetTo(() =>
+                    setStatus(v === "ALL" ? undefined : (v as RequestBucket))
+                  )
+                }
+              >
+                <SelectTrigger className="h-9 w-35 text-[12px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All statuses</SelectItem>
+                  <SelectItem value="APPROVED">Approved</SelectItem>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="DECLINED">Declined</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <DateRangePicker
+                value={range}
+                onChange={(v) => resetTo(() => setRange(v))}
+                align="end"
+                className="w-62 text-[12px]"
+                fromPlaceholder="From"
+                untilPlaceholder="To"
+              />
+
+              {hasFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 gap-1.5 text-[12px] text-muted-foreground"
+                  onClick={() =>
+                    resetTo(() => {
+                      setType(undefined)
+                      setStatus(undefined)
+                      setRange(null)
+                    })
+                  }
+                >
+                  <HugeiconsIcon
+                    icon={Cancel01Icon}
+                    size={13}
+                    strokeWidth={2}
+                  />
+                  Clear
+                </Button>
+              )}
+            </div>
+          </div>
+
           <Table>
             <TableHeader>
               <TableRow>
@@ -511,7 +558,7 @@ export function RequestSection() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
+              {feedQ.isLoading ? (
                 [0, 1, 2, 3, 4].map((i) => (
                   <TableRow key={i}>
                     {[0, 1, 2, 3, 4, 5].map((j) => (
@@ -534,47 +581,65 @@ export function RequestSection() {
                         strokeWidth={1.3}
                         className="text-muted-foreground/30"
                       />
-                      <p>No requests yet. File one using the cards above.</p>
+                      <p>
+                        {hasFilters
+                          ? "No requests match these filters."
+                          : "No requests yet. File one using the cards above."}
+                      </p>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.slice(0, 15).map((r) => (
-                  <TableRow
-                    key={r.key}
-                    className="cursor-pointer hover:bg-muted/30"
-                    onClick={() => router.push(slugHref(r.href))}
-                  >
-                    <TableCell>
-                      <StatusBadge variant={typeVariant[r.type]}>
-                        {typeLabel[r.type]}
-                      </StatusBadge>
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-medium">{r.title}</p>
-                      <p className="text-[12px] text-muted-foreground">
-                        {r.meta}
-                      </p>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground tabular-nums">
-                      {fmtShort(r.filedAt)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {r.forDate}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge variant={bucketVariant[r.bucket]}>
-                        {r.statusLabel}
-                      </StatusBadge>
-                    </TableCell>
-                    <TableCell className="text-[12px] text-muted-foreground">
-                      {r.remarks}
-                    </TableCell>
-                  </TableRow>
-                ))
+                rows.map((r) => {
+                  const d = describe(r)
+                  return (
+                    <TableRow
+                      key={`${r.type}-${r.id}`}
+                      className="cursor-pointer hover:bg-muted/30"
+                      onClick={() => router.push(slugHref(d.href))}
+                    >
+                      <TableCell>
+                        <StatusBadge variant={typeVariant[d.type]}>
+                          {typeLabel[d.type]}
+                        </StatusBadge>
+                      </TableCell>
+                      <TableCell>
+                        <p className="font-medium">{d.title}</p>
+                        <p className="text-[12px] text-muted-foreground">
+                          {d.meta}
+                        </p>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground tabular-nums">
+                        {fmtShort(r.filedAt)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {d.forDate}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge variant={bucketVariant[r.bucket]}>
+                          {d.statusLabel}
+                        </StatusBadge>
+                      </TableCell>
+                      <TableCell className="text-[12px] text-muted-foreground">
+                        {r.remarks ?? "—"}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
+
+          {totalPages > 1 && (
+            <TablePagination
+              page={page + 1}
+              totalPages={totalPages}
+              total={total}
+              pageSize={PAGE_SIZE}
+              setPage={(p) => setPage(p - 1)}
+              setPageSize={() => {}}
+            />
+          )}
         </CardContent>
       </Card>
 
