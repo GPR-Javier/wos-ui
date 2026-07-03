@@ -1,12 +1,12 @@
 import type { Metadata } from "next"
-import { MyObSection } from "@/components/dashboard/employee/my-ob"
+import { ObManagementSection } from "@/components/dashboard/admin/ob-management"
 
 export const metadata: Metadata = { title: "Official Business" }
 
-export default function MyORPage() {
+export default function ObPage() {
   return (
     <div className="animate-in p-6 duration-300 fade-in">
-      <MyObSection />
+      <ObManagementSection />
     </div>
   )
 }

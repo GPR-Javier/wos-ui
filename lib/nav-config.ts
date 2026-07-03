@@ -59,6 +59,11 @@ export const navConfig: NavItem[] = [
         authority: "OVERTIME_MANAGEMENT:VIEW_ALL",
       },
       {
+        label: "Official Business",
+        section: "ob",
+        authority: "OFFICIAL_BUSINESS_MANAGEMENT:VIEW_ALL",
+      },
+      {
         label: "HR Disputes",
         section: "salary-disputes",
         authority: "SALARY_DISPUTE_MANAGEMENT:VIEW_ALL",
@@ -250,8 +255,8 @@ export const navConfig: NavItem[] = [
         authority: "SALARY_DISPUTE:VIEW_OWN",
       },
       {
-        label: "Business Trip",
-        section: "my-business-trip",
+        label: "Official Business",
+        section: "my-or",
         authority: "OFFICIAL_BUSINESS:VIEW_OWN_OB",
       },
       {
@@ -329,7 +334,8 @@ export const sectionTitles: Record<string, string> = {
   overtime: "OT Requests",
   "my-overtime": "Overtime",
   "my-coe": "COE Requests",
-  "my-or": "OR Requests",
+  ob: "Official Business",
+  "my-or": "Official Business",
   "my-change-time": "Change Time In/Time Out",
   "my-schedule": "Schedule Change Request",
   "salary-disputes": "HR Disputes",

@@ -2,7 +2,7 @@ import { api } from "./api"
 import type { PageResponse } from "./admin-api"
 
 /** Discriminator for the unified employee request feed. */
-export type RequestKind = "LEAVE" | "COE" | "OVERTIME" | "CHANGE_TIME"
+export type RequestKind = "LEAVE" | "COE" | "OVERTIME" | "CHANGE_TIME" | "OB"
 
 /** Normalized status grouping the feed filters + colour-codes on. */
 export type RequestBucket = "APPROVED" | "PENDING" | "DECLINED" | "NEUTRAL"

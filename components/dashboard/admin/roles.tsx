@@ -478,6 +478,7 @@ const GROUP_ITEM_ORDER: Record<string, string[]> = {
     "coe",
     "certificate of employment",
     "overtime",
+    "official business",
     "salary dispute",
     "hr dispute",
   ],

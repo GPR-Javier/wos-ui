@@ -64,6 +64,7 @@ import {
   type ChangeTimeStatus,
   type ChangeTimeRequestType,
 } from "@/lib/change-time-api"
+import { type ObStatus, type ObDuration } from "@/lib/ob-api"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Calendar01Icon,
@@ -149,20 +150,25 @@ function RequestTypeCard({
 
 // ── feed display mapping ────────────────────────────────────────────────────────
 
-type DisplayType = "leave" | "coe" | "dtr" | "ot"
+type DisplayType = "leave" | "coe" | "dtr" | "ot" | "ob"
 
 const typeLabel: Record<DisplayType, string> = {
   leave: "Leave",
   coe: "COE",
   dtr: "Time change",
   ot: "Overtime",
+  ob: "Official business",
 }
 
-const typeVariant: Record<DisplayType, "blue" | "purple" | "amber" | "red"> = {
+const typeVariant: Record<
+  DisplayType,
+  "blue" | "purple" | "amber" | "red" | "green"
+> = {
   leave: "blue",
   coe: "purple",
   dtr: "amber",
   ot: "red",
+  ob: "green",
 }
 
 const bucketVariant: Record<RequestBucket, "green" | "amber" | "red" | "gray"> =
@@ -199,12 +205,29 @@ const CT_TYPE_LABEL: Record<ChangeTimeRequestType, string> = {
   BOTH: "Time in & out",
 }
 
+const OB_STATUS_LABEL: Record<ObStatus, string> = {
+  DRAFT: "Draft",
+  PENDING: "Pending",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  RETURNED: "Needs revision",
+  CANCELLED: "Cancelled",
+}
+
+const OB_DURATION_LABEL: Record<ObDuration, string> = {
+  FULL_DAY: "Full day",
+  HALF_DAY_AM: "Half day AM",
+  HALF_DAY_PM: "Half day PM",
+  CUSTOM: "Custom hours",
+}
+
 const TYPE_FILTERS: { label: string; value?: RequestKind }[] = [
   { label: "All" },
   { label: "Leave", value: "LEAVE" },
   { label: "COE", value: "COE" },
   { label: "Overtime", value: "OVERTIME" },
   { label: "Time change", value: "CHANGE_TIME" },
+  { label: "Official business", value: "OB" },
 ]
 
 const PAGE_SIZE = 10
@@ -283,6 +306,17 @@ function describe(r: RequestSummary): DisplayRow {
         forDate: fmtDay(r.attendanceDate!),
         statusLabel: CT_STATUS_LABEL[r.status as ChangeTimeStatus],
         href: "/dashboard/my-change-time",
+      }
+    case "OB":
+      return {
+        type: "ob",
+        title: "Official business",
+        meta: `${fmtDay(r.attendanceDate!)} · ${
+          OB_DURATION_LABEL[r.requestType as ObDuration]
+        }${r.reason ? ` · ${r.reason}` : ""}`,
+        forDate: fmtDay(r.attendanceDate!),
+        statusLabel: OB_STATUS_LABEL[r.status as ObStatus],
+        href: "/dashboard/my-or",
       }
   }
 }
