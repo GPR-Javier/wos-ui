@@ -39,7 +39,12 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { TablePagination } from "@/components/custom/table-pagination"
 import { ObModal, OB_DURATION_LABEL } from "@/components/custom/ob-modal"
 import { cn } from "@/lib/utils"
-import { useMyObRequests, useDeleteObRequest, useCancelObRequest } from "@/hooks/use-ob"
+import {
+  useMyObRequests,
+  useDeleteObRequest,
+  useCancelObRequest,
+  useSubmitObDraft,
+} from "@/hooks/use-ob"
 import type { ObRequest, ObStatus } from "@/lib/ob-api"
 
 // ── Constants ───────────────────────────────────────────────────────────────
@@ -114,11 +119,14 @@ function fmtDuration(r: ObRequest) {
 function DetailDialog({
   request,
   onClose,
+  onEdit,
 }: {
   request: ObRequest
   onClose: () => void
+  onEdit: (r: ObRequest) => void
 }) {
   const cancelMutation = useCancelObRequest()
+  const submitMutation = useSubmitObDraft()
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
@@ -211,6 +219,28 @@ function DetailDialog({
               }
             >
               {cancelMutation.isPending ? "Cancelling…" : "Cancel Request"}
+            </Button>
+          )}
+          {request.status === "DRAFT" && (
+            <Button
+              size="sm"
+              disabled={submitMutation.isPending}
+              onClick={() =>
+                submitMutation.mutate(request.id, { onSuccess: onClose })
+              }
+            >
+              {submitMutation.isPending ? "Submitting…" : "Submit for Approval"}
+            </Button>
+          )}
+          {request.status === "RETURNED" && (
+            <Button
+              size="sm"
+              onClick={() => {
+                onClose()
+                onEdit(request)
+              }}
+            >
+              Edit &amp; Resubmit
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={onClose}>
@@ -517,7 +547,11 @@ export function MyObSection() {
       {/* ── Modals ── */}
       <ObModal open={formOpen} onClose={closeForm} editing={editing} />
       {detail && (
-        <DetailDialog request={detail} onClose={() => setDetail(null)} />
+        <DetailDialog
+          request={detail}
+          onClose={() => setDetail(null)}
+          onEdit={openEdit}
+        />
       )}
 
       {/* Delete confirmation */}

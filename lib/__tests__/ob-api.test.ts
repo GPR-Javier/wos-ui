@@ -94,7 +94,11 @@ describe("obApi client", () => {
   })
 
   it("listMine GETs /hr/ob-requests/me with default + merged query params", async () => {
-    await obApi.listMine({ status: "PENDING", from: "2026-01-01", to: "2026-12-31" })
+    await obApi.listMine({
+      status: "PENDING",
+      from: "2026-01-01",
+      to: "2026-12-31",
+    })
     expect(mockApi.get).toHaveBeenCalledWith("/hr/ob-requests/me", {
       params: {
         page: 0,

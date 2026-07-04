@@ -3,15 +3,29 @@ import React from "react"
 import { render, screen, fireEvent } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-// Spy mutate fns, shared with the mocked hook module.
-const { createMutate, updateMutate } = vi.hoisted(() => ({
+// Spy mutate fns + the approved-OB rows the date pre-check reads, shared with the mocked modules.
+const { createMutate, updateMutate, approvedOb } = vi.hoisted(() => ({
   createMutate: vi.fn(),
   updateMutate: vi.fn(),
+  approvedOb: { content: [] as Array<{ id: number; obDate: string }> },
 }))
 
 vi.mock("@/hooks/use-ob", () => ({
   useCreateObRequest: () => ({ mutate: createMutate, isPending: false }),
   useUpdateObRequest: () => ({ mutate: updateMutate, isPending: false }),
+  // The date pre-check queries approved OB requests; feed it the hoisted rows.
+  useMyObRequests: () => ({ data: approvedOb }),
+}))
+
+// The remaining pre-check hooks: return undefined data so those constraints stay dormant.
+vi.mock("@/hooks/use-schedule-policy", () => ({
+  useMyPolicy: () => ({ data: undefined }),
+}))
+vi.mock("@/hooks/use-leave", () => ({
+  useMyLeaveRequests: () => ({ data: undefined }),
+}))
+vi.mock("@/hooks/use-holidays", () => ({
+  useHolidays: () => ({ data: undefined }),
 }))
 
 import { ObModal } from "@/components/custom/ob-modal"
@@ -47,6 +61,7 @@ function fillRequired() {
 describe("ObModal", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    approvedOb.content = []
   })
 
   it("(b) the OB date input's min attribute equals today's ISO date", () => {
@@ -99,5 +114,37 @@ describe("ObModal", () => {
     fireEvent.click(screen.getByRole("button", { name: /Submit Request/i }))
     expect(createMutate).toHaveBeenCalledTimes(1)
     expect(createMutate.mock.calls[0][0].isDraft).toBeFalsy()
+  })
+
+  it("(d) picking a date that already has an approved OB shows the error and blocks Submit + Draft", () => {
+    approvedOb.content = [{ id: 99, obDate: today }]
+    renderModal()
+    fillRequired() // sets OB date = today, which now collides with an approved OB
+
+    expect(
+      screen.getByText(/already have an approved OB request for this date/i)
+    ).toBeInTheDocument()
+
+    const submitBtn = screen.getByRole("button", { name: /Submit Request/i })
+    const draftBtn = screen.getByRole("button", { name: /Save as Draft/i })
+    expect(submitBtn).toBeDisabled()
+    expect(draftBtn).toBeDisabled()
+
+    fireEvent.click(submitBtn)
+    fireEvent.click(draftBtn)
+    expect(createMutate).not.toHaveBeenCalled()
+  })
+
+  it("(e) an approved OB on a DIFFERENT date does not block today's request", () => {
+    approvedOb.content = [{ id: 99, obDate: "2020-01-01" }]
+    renderModal()
+    fillRequired()
+
+    expect(
+      screen.queryByText(/already have an approved OB request/i)
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: /Submit Request/i })
+    ).toBeEnabled()
   })
 })

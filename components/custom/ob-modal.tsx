@@ -19,8 +19,28 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
-import { useCreateObRequest, useUpdateObRequest } from "@/hooks/use-ob"
+import {
+  useCreateObRequest,
+  useUpdateObRequest,
+  useMyObRequests,
+} from "@/hooks/use-ob"
+import { useMyPolicy } from "@/hooks/use-schedule-policy"
+import { useMyLeaveRequests } from "@/hooks/use-leave"
+import { useHolidays } from "@/hooks/use-holidays"
+import { apiErrorMessage } from "@/lib/api-error"
 import type { ObRequest, ObDuration } from "@/lib/ob-api"
+import type { Weekday } from "@/lib/schedule-policy-api"
+
+/** getDay() (0=Sun..6=Sat) → backend Weekday union. */
+const WEEKDAY_BY_INDEX = [
+  "SUN",
+  "MON",
+  "TUE",
+  "WED",
+  "THU",
+  "FRI",
+  "SAT",
+] as const satisfies readonly Weekday[]
 
 export const OB_DURATION_LABEL: Record<ObDuration, string> = {
   FULL_DAY: "Full Day",
@@ -54,12 +74,79 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
   const [purpose, setPurpose] = useState("")
   const [location, setLocation] = useState("")
   const [notes, setNotes] = useState("")
+  // Backend backstop: the message a server-side 400 returned (e.g. a rule the
+  // client-side pre-check couldn't see). Shown inline under the date field.
+  const [serverError, setServerError] = useState<string | null>(null)
 
   const createMutation = useCreateObRequest()
   const updateMutation = useUpdateObRequest()
   const isPending = createMutation.isPending || updateMutation.isPending
+  const isResubmit = editing?.status === "RETURNED"
 
   const showCustom = duration === "CUSTOM"
+
+  // ── Data for the client-side date pre-check (instant UX mirror of the backend rules) ──
+  // Wide holiday window so recurring holidays seeded in this year are caught.
+  const holidayUntil = (() => {
+    const d = new Date(today + "T00:00:00")
+    d.setFullYear(d.getFullYear() + 1)
+    return d.toISOString().split("T")[0]
+  })()
+  const policyQ = useMyPolicy()
+  const leaveQ = useMyLeaveRequests({ status: "APPROVED" })
+  const holidaysQ = useHolidays({ from: today, until: holidayUntil })
+  const approvedObQ = useMyObRequests({ status: "APPROVED" })
+
+  /**
+   * Blocking reason for the picked OB date, or null. Each constraint fires ONLY
+   * once its source query has loaded (data !== undefined) — loading/empty never
+   * produces a false positive. Order + wording mirror the backend verbatim.
+   */
+  const dateError: string | null = (() => {
+    if (obDate === "") return null
+    const picked = new Date(obDate + "T00:00:00")
+    const weekday = WEEKDAY_BY_INDEX[picked.getDay()]
+
+    // 1. Rest day — only when workdays is defined AND non-empty (matches OT semantics).
+    const workdays = policyQ.data?.workdays
+    if (workdays && workdays.length > 0 && !workdays.includes(weekday)) {
+      return "You cannot file OB on your rest day."
+    }
+
+    // 2. Approved leave — any approved row whose inclusive range covers the date.
+    const leaveRows = leaveQ.data?.content
+    if (
+      leaveRows &&
+      leaveRows.some((r) => r.startDate <= obDate && obDate <= r.endDate)
+    ) {
+      return "You cannot file OB on a day you are on approved leave."
+    }
+
+    // 3. Company holiday — active row on the exact date, or a recurring row on the same month/day.
+    const holidays = holidaysQ.data
+    if (
+      holidays &&
+      holidays.some(
+        (h) =>
+          h.active &&
+          (h.date === obDate ||
+            (h.recurring && h.date.slice(5) === obDate.slice(5)))
+      )
+    ) {
+      return "You cannot file OB on a company holiday."
+    }
+
+    // 4. Existing approved OB for the same date (ignore the request being edited).
+    const obRows = approvedObQ.data?.content
+    if (
+      obRows &&
+      obRows.some((r) => r.obDate === obDate && r.id !== editing?.id)
+    ) {
+      return "You already have an approved OB request for this date."
+    }
+
+    return null
+  })()
 
   // Seed the form whenever it opens — from the request being edited, or blank for a new one.
   useEffect(() => {
@@ -71,9 +158,11 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
     setPurpose(editing?.purpose ?? "")
     setLocation(editing?.location ?? "")
     setNotes(editing?.notes ?? "")
+    setServerError(null)
   }, [open, editing, defaultDate])
 
   function handleSubmit(isDraft: boolean) {
+    setServerError(null)
     const body = {
       obDate,
       duration,
@@ -84,15 +173,22 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
       notes: notes || null,
       isDraft,
     }
+    // Surface a backend rejection (e.g. a rule the FE window missed) inline. The
+    // global axios interceptor also raises a toast; this mirrors it next to the field.
+    const onError = (e: unknown) => setServerError(apiErrorMessage(e))
     if (isEditing && editing) {
-      updateMutation.mutate({ id: editing.id, body }, { onSuccess: onClose })
+      updateMutation.mutate(
+        { id: editing.id, body },
+        { onSuccess: onClose, onError }
+      )
     } else {
-      createMutation.mutate(body, { onSuccess: onClose })
+      createMutation.mutate(body, { onSuccess: onClose, onError })
     }
   }
 
   const canSubmit =
     obDate !== "" &&
+    !dateError &&
     purpose.trim() !== "" &&
     location.trim() !== "" &&
     (showCustom ? customStartTime !== "" && customEndTime !== "" : true)
@@ -110,12 +206,18 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
                 className="text-success"
               />
             </div>
-            {isEditing ? "Edit Official Business" : "Official Business Request"}
+            {isResubmit
+              ? "Resubmit Official Business"
+              : isEditing
+                ? "Edit Official Business"
+                : "Official Business Request"}
           </DialogTitle>
           <DialogDescription>
-            {isEditing
-              ? "Update your official business request"
-              : "Request time away from office for work-related activities"}
+            {isResubmit
+              ? "Address the reviewer's remarks, then resubmit for approval"
+              : isEditing
+                ? "Update your official business request"
+                : "Request time away from office for work-related activities"}
           </DialogDescription>
         </DialogHeader>
 
@@ -141,12 +243,25 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
                 type="date"
                 min={today}
                 value={obDate}
-                onChange={(e) => setObDate(e.target.value)}
-                className="h-9 text-[13px]"
+                onChange={(e) => {
+                  setObDate(e.target.value)
+                  setServerError(null)
+                }}
+                className={cn(
+                  "h-9 text-[13px]",
+                  (dateError || serverError) && "border-red-500"
+                )}
+                aria-invalid={!!(dateError || serverError)}
               />
-              <p className="text-[11px] text-muted-foreground">
-                Must be filed in advance.
-              </p>
+              {dateError || serverError ? (
+                <p className="text-[11px] text-red-500">
+                  {dateError ?? serverError}
+                </p>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">
+                  Must be filed in advance.
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-[12px]">Duration</Label>
@@ -259,7 +374,11 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
               disabled={!canSubmit || isPending}
               onClick={() => handleSubmit(false)}
             >
-              {isPending ? "Saving…" : "Save Changes"}
+              {isPending
+                ? "Saving…"
+                : isResubmit
+                  ? "Resubmit for Approval"
+                  : "Save Changes"}
             </Button>
           ) : (
             <>
@@ -267,7 +386,11 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
                 variant="outline"
                 size="sm"
                 disabled={
-                  !obDate || !purpose.trim() || !location.trim() || isPending
+                  !obDate ||
+                  !!dateError ||
+                  !purpose.trim() ||
+                  !location.trim() ||
+                  isPending
                 }
                 onClick={() => handleSubmit(true)}
               >
