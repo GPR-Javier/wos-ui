@@ -134,6 +134,57 @@ export interface SplitScreen {
   finish: () => Promise<void>
 }
 
+export interface ApproverWindow {
+  page: Page
+  /** Stops tracing, closes the browser, and attaches this approver's video + trace. */
+  finish: () => Promise<void>
+}
+
+/**
+ * Launches a THIRD headed window for a SECOND approver — a distinct company admin loaded
+ * from e2e/.auth/admin2.json — recording its own video + trace. Used only by the
+ * co-approver journey to prove the "Official business handled / No action needed" notice
+ * reaches the OTHER approver after the first approver acts. Positioned below the two
+ * split-screen windows so all three are visible. Call finish() in the journey's finally.
+ */
+export async function setupCoApprover(info: TestInfo): Promise<ApproverWindow> {
+  const browser = await chromium.launch({
+    headless: false,
+    args: [
+      `--window-position=${Math.round(HALF / 2)},120`,
+      `--window-size=${HALF},1040`,
+    ],
+  })
+  const ctx = await browser.newContext({
+    baseURL: BASE,
+    storageState: "e2e/.auth/admin2.json",
+    viewport: VIEWPORT,
+    recordVideo: { dir: info.outputPath("video-approver2"), size: VIEWPORT },
+  })
+  await ctx.tracing.start({ screenshots: true, snapshots: true, sources: true })
+  const page = await ctx.newPage()
+
+  const finish = async () => {
+    const trace = info.outputPath("approver2-trace.zip")
+    await ctx.tracing.stop({ path: trace }).catch(() => {})
+    const video = page.video()?.path()
+    await browser.close()
+    await info
+      .attach("approver2-trace", {
+        path: trace,
+        contentType: "application/zip",
+      })
+      .catch(() => {})
+    const v = await video?.catch(() => undefined)
+    if (v)
+      await info
+        .attach("approver2-video", { path: v, contentType: "video/webm" })
+        .catch(() => {})
+  }
+
+  return { page, finish }
+}
+
 /**
  * Launches two side-by-side headed browsers (employee LEFT, admin RIGHT), each in its
  * own context loaded from the saved session, recording video + a trace. Call `finish()`

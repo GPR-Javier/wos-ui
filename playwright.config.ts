@@ -32,6 +32,9 @@ export default defineConfig({
     // Employee: email/password (use a password-based test employee, NOT Google OAuth —
     // Google blocks automated sign-in). Fully automated, same as admin.
     { name: "setup-employee", testMatch: "**/auth.employee.setup.ts" },
+    // Second admin: only the co-approver journey needs it. SKIPS itself (no throw) when
+    // E2E_ADMIN2_* creds are absent, so the other journeys aren't forced to have one.
+    { name: "setup-admin2", testMatch: "**/auth.admin2.setup.ts" },
 
     // ── Role suites (specs split by folder) ──────────────────────────────────
     {
@@ -59,7 +62,9 @@ export default defineConfig({
     {
       name: "journey",
       testMatch: "**/journeys/**/*.spec.ts",
-      dependencies: ["setup-admin", "setup-employee"],
+      // setup-admin2 is a no-op when its creds aren't set, so listing it here is safe;
+      // it only produces admin2.json for the (self-skipping) co-approver journey.
+      dependencies: ["setup-admin", "setup-employee", "setup-admin2"],
       // The journey launches its own browsers and manages per-role trace/video
       // itself, so disable the runner's auto-instrumentation to avoid a double-start.
       use: { trace: "off", video: "off", screenshot: "off" },

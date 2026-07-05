@@ -22,6 +22,7 @@
     "e2e:employee": "playwright test --project=employee",
     "e2e:auth": "playwright test --project=setup-admin",
     "e2e:auth:employee": "playwright test --project=setup-employee",
+    "e2e:auth:admin2": "playwright test --project=setup-admin2",
     "e2e:codegen": "playwright codegen http://localhost:3000",
     "e2e:report": "playwright show-report"
   },

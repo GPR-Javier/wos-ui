@@ -132,7 +132,8 @@ export function CreateUserModal({ onClose }: CreateModalProps) {
   const createMutation = useCreateUser()
   const activeRolesQ = useActiveUserRoles()
   const { data: jobPositions = [] } = useJobPositions()
-  const { data: orgEmployees = [] } = useOrgGraph()
+  const { data: orgGraph } = useOrgGraph()
+  const orgEmployees = orgGraph?.nodes ?? []
   const setManagerMutation = useSetManager()
   const [roleSearch, setRoleSearch] = useState("")
   const [roleMenuOpen, setRoleMenuOpen] = useState(false)

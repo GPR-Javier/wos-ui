@@ -31,6 +31,7 @@ import {
   AiBrain01Icon,
   Mail01Icon,
   ShieldUserIcon,
+  UserGroupIcon,
 } from "@hugeicons/core-free-icons"
 import { MyCompanySection } from "@/components/dashboard/my-company"
 import { SchedulePoliciesSection } from "@/components/dashboard/admin/schedule-policies"
@@ -39,6 +40,7 @@ import { HolidaysConfigSection } from "@/components/dashboard/admin/holidays-con
 import { PayrollSetupSection } from "@/components/dashboard/admin/payroll-setup"
 import { PayRatesSection } from "@/components/dashboard/admin/pay-rates-config"
 import { DepartmentsSection } from "@/components/dashboard/admin/departments"
+import { ReportingRolesConfigSection } from "@/components/dashboard/admin/reporting-roles-config"
 import { QuestionBankSection } from "@/components/dashboard/admin/question-bank"
 import { AiProviderConfigSection } from "@/components/dashboard/admin/ai-provider-config"
 import { OAuthProvidersSection } from "@/components/dashboard/admin/oauth-providers-config"
@@ -189,7 +191,12 @@ export function ConfigSection() {
       items: [
         { value: "departments", label: "Departments", icon: Building03Icon },
         { value: "positions", label: "Job positions", icon: Briefcase01Icon },
-      ],
+        canEditCompany && {
+          value: "reporting-roles",
+          label: "Reporting roles",
+          icon: UserGroupIcon,
+        },
+      ].filter(Boolean) as ConfigNavItem[],
     },
     {
       title: "Payroll",
@@ -330,6 +337,10 @@ export function ConfigSection() {
         {activeTab === "departments" && <DepartmentsSection />}
 
         {activeTab === "positions" && <PositionsSection />}
+
+        {canEditCompany && activeTab === "reporting-roles" && (
+          <ReportingRolesConfigSection />
+        )}
 
         {activeTab === "payroll-setup" && <PayrollSetupSection />}
 

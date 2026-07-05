@@ -54,7 +54,8 @@ interface Props {
  * person and enforces approver scope.
  */
 export function OvertimeBulkAuthorizeDialog({ open, onClose }: Props) {
-  const { data: graph = [], isLoading } = useOrgGraph()
+  const { data: graphData, isLoading } = useOrgGraph()
+  const graph = graphData?.nodes ?? []
   const bulkMutation = useBulkAuthorizeOvertime()
 
   const [date, setDate] = useState("")

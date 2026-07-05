@@ -53,6 +53,7 @@ import {
   PencilEdit01Icon,
   Add01Icon,
   FloppyDiskIcon,
+  Delete02Icon,
 } from "@hugeicons/core-free-icons"
 import {
   Tooltip,
@@ -75,16 +76,21 @@ import type { Department } from "@/lib/employee-profile-api"
 import {
   useOrgGraph,
   useOrgLayout,
-  useSetManager,
+  useReportsTo,
+  useAddReportingLine,
+  useRemoveReportingLine,
   useSetDepartment,
   useSaveLayout,
 } from "@/hooks/use-org-chart"
-import type { OrgNode, OrgLayout } from "@/lib/org-chart-api"
+import { useReportingRoles } from "@/hooks/use-reporting-roles"
+import type { OrgEdge, OrgLayout, OrgGraphResponse } from "@/lib/org-chart-api"
+import type { ReportingRoleDTO } from "@/lib/reporting-role-api"
 
 const EDIT_AUTHORITY = "CONFIGURATION:EDIT_COMPANY_DETAILS"
 
 // ── Model ───────────────────────────────────────────────────────────────────────
-// Node ids are String(userId); managerId is String(manager userId) | null.
+// Node ids are String(userId). Reporting lines are a typed many-to-many, so a person
+// can have MANY parents — those come from the graph's `edges`, never from the node.
 
 type Person = {
   id: string
@@ -93,7 +99,6 @@ type Person = {
   title: string
   departmentId: number | null
   deptName: string
-  managerId: string | null
 }
 
 type DeptInfo = { id: number; name: string }
@@ -154,28 +159,27 @@ const initials = (n: string) =>
     .join("")
     .toUpperCase()
 
-function descendantsOf(people: Person[], id: string): Set<string> {
-  const out = new Set<string>()
-  const stack = [id]
+/**
+ * Everyone reachable downward from `startUserId` via the reporting edges — used to
+ * block cycles when adding a line (a manager may not already report (in)directly to
+ * their new report).
+ */
+function descendantsFromEdges(
+  edges: OrgEdge[],
+  startUserId: number
+): Set<number> {
+  const out = new Set<number>()
+  const stack = [startUserId]
   while (stack.length) {
     const cur = stack.pop()!
-    for (const c of people.filter((p) => p.managerId === cur)) {
-      out.add(c.id)
-      stack.push(c.id)
+    for (const e of edges) {
+      if (e.managerId === cur && !out.has(e.userId)) {
+        out.add(e.userId)
+        stack.push(e.userId)
+      }
     }
   }
   return out
-}
-
-/** Sets reportId's manager to managerId, unless it would create a cycle. */
-function reparentPeople(
-  people: Person[],
-  managerId: string,
-  reportId: string
-): Person[] {
-  if (managerId === reportId || descendantsOf(people, reportId).has(managerId))
-    return people
-  return people.map((p) => (p.id === reportId ? { ...p, managerId } : p))
 }
 
 /** Does a node's rectangle contain the point (cx, cy)? Used for center-of-card hit-testing. */
@@ -192,10 +196,9 @@ function nodeContains(n: Node, cx: number, cy: number): boolean {
   )
 }
 
-type DropTarget =
-  | { mode: "report"; id: string; label: string }
-  | { mode: "dept"; departmentId: number; label: string }
-  | null
+// Drag drop-targets are department boxes only. Reporting lines are added by wiring
+// the card handles (or via the person modal), not by dragging a card onto another.
+type DropTarget = { departmentId: number; label: string } | null
 
 function resolveTarget(
   people: Person[],
@@ -207,32 +210,13 @@ function resolveTarget(
   if (!me) return null
   const cx = pos.x + NODE_W / 2
   const cy = pos.y + NODE_H / 2
-
-  const personHit = nodes.find(
-    (n) => n.type === "person" && n.id !== draggedId && nodeContains(n, cx, cy)
-  )
-  if (
-    personHit &&
-    me.managerId !== personHit.id &&
-    !descendantsOf(people, draggedId).has(personHit.id)
-  ) {
-    return {
-      mode: "report",
-      id: personHit.id,
-      label: people.find((p) => p.id === personHit.id)?.name ?? "",
-    }
-  }
   const boxHit = nodes.find(
     (n) => n.type === "deptbox" && nodeContains(n, cx, cy)
   )
   if (boxHit) {
     const departmentId = Number(String(boxHit.id).slice(4))
     if (departmentId !== me.departmentId) {
-      return {
-        mode: "dept",
-        departmentId,
-        label: (boxHit.data as BoxData).label,
-      }
+      return { departmentId, label: (boxHit.data as BoxData).label }
     }
   }
   return null
@@ -249,6 +233,7 @@ type BoxData = {
   onOpen: (id: number) => void
   isTarget?: boolean
 }
+type EdgeData = { lineId: number; reportingRoleId: number }
 type Rect = { x: number; y: number; w: number; h: number }
 
 type SavedPos = Map<string, { x: number; y: number }>
@@ -257,15 +242,22 @@ type SavedBox = Map<number, Rect>
 /** A point-in-time snapshot for undo: structure (people) + canvas (nodes) + grouped mode. */
 type Snapshot = { people: Person[]; nodes: Node[]; grouped: boolean }
 
-const edgesFromPeople = (people: Person[]): Edge[] =>
-  people
-    .filter((p) => p.managerId)
-    .map((p) => ({
-      id: `e-${p.managerId}-${p.id}`,
-      source: p.managerId!,
-      target: p.id,
-      type: "smoothstep",
-    }))
+/** One React Flow edge per reporting line; the edge label is the role. */
+const edgesToFlow = (graphEdges: OrgEdge[]): Edge[] =>
+  graphEdges.map((e) => ({
+    id: `e-${e.id}`,
+    source: String(e.managerId),
+    target: String(e.userId),
+    type: "smoothstep",
+    label: e.roleLabel,
+    labelStyle: { fontSize: 10, fontWeight: 600 },
+    labelBgPadding: [4, 2] as [number, number],
+    labelBgBorderRadius: 4,
+    data: {
+      lineId: e.id,
+      reportingRoleId: e.reportingRoleId,
+    } satisfies EdgeData,
+  }))
 
 function makeBoxNode(
   dept: DeptInfo,
@@ -338,6 +330,7 @@ function deptBoxesFromNodes(
 /** Full dagre layout, with optional saved-position overlay. Used on first load, Reset and Tidy. */
 function buildFlow(
   people: Person[],
+  graphEdges: OrgEdge[],
   depts: DeptInfo[],
   onDeptOpen: (id: number) => void,
   grouped: boolean,
@@ -353,8 +346,14 @@ function buildFlow(
     marginy: 30,
   })
   g.setDefaultEdgeLabel(() => ({}))
+  const ids = new Set(people.map((p) => p.id))
   people.forEach((p) => g.setNode(p.id, { width: NODE_W, height: NODE_H }))
-  people.forEach((p) => p.managerId && g.setEdge(p.managerId, p.id))
+  // One dagre edge per reporting line — dagre happily ranks a node with several parents.
+  graphEdges.forEach((e) => {
+    const s = String(e.managerId)
+    const t = String(e.userId)
+    if (ids.has(s) && ids.has(t)) g.setEdge(s, t)
+  })
   dagre.layout(g)
 
   // Saved position wins; otherwise the auto-computed one (so new hires still land sensibly).
@@ -391,7 +390,7 @@ function buildFlow(
 
   return {
     nodes: [...boxNodes, ...personNodes],
-    edges: edgesFromPeople(people),
+    edges: edgesToFlow(graphEdges),
   }
 }
 
@@ -487,10 +486,17 @@ const nodeTypes = { person: PersonNode, deptbox: DeptBoxNode }
 
 type FlowProps = {
   initialPeople: Person[]
+  initialEdges: OrgEdge[]
   depts: DeptInfo[]
+  roles: ReportingRoleDTO[]
   initialLayout: OrgLayout
   editable: boolean
-  onSetManager: (userId: number, managerId: number | null) => void
+  onAddLine: (
+    userId: number,
+    managerId: number,
+    reportingRoleId: number
+  ) => void
+  onRemoveLine: (userId: number, lineId: number) => void
   onSetDepartment: (userId: number, departmentId: number | null) => void
   onSaveLayout: (layout: OrgLayout) => void
   saving: boolean
@@ -498,10 +504,13 @@ type FlowProps = {
 
 function Flow({
   initialPeople,
+  initialEdges,
   depts,
+  roles,
   initialLayout,
   editable,
-  onSetManager,
+  onAddLine,
+  onRemoveLine,
   onSetDepartment,
   onSaveLayout,
   saving,
@@ -514,6 +523,10 @@ function Flow({
   const peopleRef = useRef<Person[]>(initialPeople)
   const deptsRef = useRef<DeptInfo[]>(depts)
   deptsRef.current = depts
+  // The live reporting-line set — kept in a ref so callbacks (connect/cycle-check,
+  // Tidy/Reset) always read the freshest edges without re-binding.
+  const graphEdgesRef = useRef<OrgEdge[]>(initialEdges)
+  graphEdgesRef.current = initialEdges
 
   const savedPos = useRef<SavedPos>(
     new Map(
@@ -531,6 +544,10 @@ function Flow({
 
   const [personModal, setPersonModal] = useState<string | null>(null)
   const [deptModal, setDeptModal] = useState<number | null>(null)
+  const [connectPrompt, setConnectPrompt] = useState<{
+    managerUserId: number
+    reportUserId: number
+  } | null>(null)
   const [removeConfirm, setRemoveConfirm] = useState<{
     id: string
     name: string
@@ -560,6 +577,7 @@ function Flow({
       peopleRef.current = people
       const { nodes: n, edges: e } = buildFlow(
         people,
+        graphEdgesRef.current,
         deptsRef.current,
         onDeptOpen,
         groupedRef.current,
@@ -572,7 +590,8 @@ function Flow({
     [onDeptOpen, setNodes, setEdges]
   )
 
-  // Position-preserving update — keeps cards where they are; only edges/badges/boxes recompute.
+  // Position-preserving update — keeps cards where they are; only person data/badges/boxes recompute.
+  // Reporting edges are owned by the server (synced via the effect below), so this never touches them.
   const commit = useCallback(
     (people: Person[]) => {
       peopleRef.current = people
@@ -596,15 +615,22 @@ function Flow({
           : []
         return [...boxes, ...persons]
       })
-      setEdges(edgesFromPeople(people))
     },
-    [setNodes, setEdges]
+    [setNodes]
   )
 
+  // Keep the canvas edges in sync with the server graph. After an add/remove line
+  // mutation invalidates the graph, the refetched edges flow in here — positions are
+  // untouched (node state is separate), so lines just appear/disappear in place.
+  useEffect(() => {
+    setEdges(edgesToFlow(initialEdges))
+  }, [initialEdges, setEdges])
+
   // ── Undo (Ctrl/⌘-Z) ──────────────────────────────────────────────────────
+  // Covers position/department/grouped changes. Reporting-line edits go straight to
+  // the server and are not part of the layout undo stack.
   const history = useRef<Snapshot[]>([])
 
-  // Capture the current state BEFORE a mutating action, so it can be restored.
   const pushHistory = useCallback(() => {
     history.current.push({
       people: peopleRef.current,
@@ -617,13 +643,11 @@ function Flow({
   const undo = useCallback(() => {
     const prev = history.current.pop()
     if (!prev) return
-    // Re-persist any structural reverts (manager/department) to the backend.
+    // Re-persist any department reverts to the backend.
     const cur = peopleRef.current
     prev.people.forEach((p) => {
       const c = cur.find((x) => x.id === p.id)
       if (!c) return
-      if (c.managerId !== p.managerId)
-        onSetManager(p.userId, p.managerId ? Number(p.managerId) : null)
       if (c.departmentId !== p.departmentId)
         onSetDepartment(p.userId, p.departmentId)
     })
@@ -631,10 +655,9 @@ function Flow({
     groupedRef.current = prev.grouped
     setGrouped(prev.grouped)
     setNodes(prev.nodes)
-    setEdges(edgesFromPeople(prev.people))
     setDirty(true)
     pushToast("Undid last change.", "info")
-  }, [onSetManager, onSetDepartment, setNodes, setEdges, pushToast])
+  }, [onSetDepartment, setNodes, pushToast])
 
   useEffect(() => {
     if (!editable) return
@@ -646,7 +669,6 @@ function Flow({
       )
         return
       const t = e.target as HTMLElement | null
-      // Don't hijack undo while typing in a field.
       if (
         t &&
         (t.tagName === "INPUT" ||
@@ -729,16 +751,12 @@ function Flow({
     setDirty(false)
   }, [collectLayout, onSaveLayout])
 
-  // Discard unsaved moves and snap back to the saved/default arrangement (positions are an overlay;
-  // structural edits are committed separately and stay). Re-applies the saved overlay, no server call.
   const handleReset = useCallback(() => {
     apply(peopleRef.current, true)
     setDirty(false)
     pushToast("Unsaved changes discarded.", "info")
   }, [apply, pushToast])
 
-  // A drag or resize that has settled marks the layout dirty (so Save appears). Programmatic
-  // re-layouts (mount, Tidy, commit) emit other change types and don't trip this.
   const handleNodesChange = useCallback(
     (changes: NodeChange[]) => {
       onNodesChange(changes)
@@ -794,14 +812,15 @@ function Flow({
         node.id,
         node.position
       )
-      const tid = target?.mode === "report" ? target.id : null
-      if (tid !== lastTargetId.current) {
-        lastTargetId.current = tid
+      // Person cards no longer highlight as re-parent targets; only dept-move hints.
+      if (lastTargetId.current !== null) {
+        lastTargetId.current = null
         setNodes((prev) =>
-          prev.map((n) => ({
-            ...n,
-            data: { ...n.data, isTarget: n.id === tid },
-          }))
+          prev.map((n) =>
+            n.data?.isTarget
+              ? { ...n, data: { ...n.data, isTarget: false } }
+              : n
+          )
         )
       }
       setHint(target)
@@ -819,65 +838,55 @@ function Flow({
     )
   }, [setNodes])
 
-  // Capture state at the start of any node drag, so Ctrl/⌘-Z can revert the whole gesture.
   const onNodeDragStart: OnNodeDrag = useCallback(() => {
     pushHistory()
   }, [pushHistory])
 
-  // Edge reconnection: drag a reporting line's end onto empty space to detach, or onto a card to re-manage.
-  const reconnectOk = useRef(true)
-  const onReconnectStart = useCallback(() => {
-    reconnectOk.current = false
-    pushHistory()
-  }, [pushHistory])
-  const onReconnect = useCallback(
-    (_oldEdge: Edge, conn: Connection) => {
-      reconnectOk.current = true
-      if (conn.source && conn.target) {
-        commit(reparentPeople(peopleRef.current, conn.source, conn.target))
-        onSetManager(Number(conn.target), Number(conn.source))
-      }
-    },
-    [commit, onSetManager]
-  )
-  const onReconnectEnd = useCallback(
-    (_: unknown, edge: Edge) => {
-      if (!reconnectOk.current) {
-        commit(
-          peopleRef.current.map((p) =>
-            p.id === edge.target ? { ...p, managerId: null } : p
-          )
-        )
-        onSetManager(Number(edge.target), null)
-      }
-      reconnectOk.current = true
-    },
-    [commit, onSetManager]
-  )
+  // Wire a handle-to-handle connection into a new reporting line. The source handle is
+  // the manager (bottom), the target is the report (top). We prompt for a role, then POST.
   const onConnect = useCallback(
     (conn: Connection) => {
-      if (conn.source && conn.target) {
-        pushHistory()
-        commit(reparentPeople(peopleRef.current, conn.source, conn.target))
-        onSetManager(Number(conn.target), Number(conn.source))
+      if (!conn.source || !conn.target) return
+      const managerUserId = Number(conn.source)
+      const reportUserId = Number(conn.target)
+      if (managerUserId === reportUserId) return
+      if (
+        descendantsFromEdges(graphEdgesRef.current, reportUserId).has(
+          managerUserId
+        )
+      ) {
+        pushToast("That would create a reporting cycle.", "error")
+        return
       }
+      const dup = graphEdgesRef.current.some(
+        (e) => e.userId === reportUserId && e.managerId === managerUserId
+      )
+      if (dup) {
+        pushToast("That reporting line already exists.", "info")
+        return
+      }
+      if (roles.length === 0) {
+        pushToast(
+          "Add a reporting role first (Config → Reporting roles).",
+          "error"
+        )
+        return
+      }
+      setConnectPrompt({ managerUserId, reportUserId })
     },
-    [commit, onSetManager, pushHistory]
+    [pushToast, roles.length]
   )
 
+  // Ctrl/⌘-click a reporting line to detach it (DELETE that line).
   const onEdgeClick = useCallback(
     (event: React.MouseEvent, edge: Edge) => {
       if (!editable || !(event.ctrlKey || event.metaKey)) return
       event.stopPropagation()
-      pushHistory()
-      commit(
-        peopleRef.current.map((p) =>
-          p.id === edge.target ? { ...p, managerId: null } : p
-        )
-      )
-      onSetManager(Number(edge.target), null)
+      const lineId = (edge.data as EdgeData | undefined)?.lineId
+      if (lineId == null) return
+      onRemoveLine(Number(edge.target), lineId)
     },
-    [commit, onSetManager, editable, pushHistory]
+    [editable, onRemoveLine]
   )
 
   const onNodeDragStop: OnNodeDrag = useCallback(
@@ -892,17 +901,8 @@ function Flow({
       const me = people.find((p) => p.id === node.id)
       if (!me) return
       const target = resolveTarget(people, getNodes(), node.id, node.position)
-      if (target?.mode === "report") {
-        commit(
-          people.map((p) =>
-            p.id === node.id ? { ...p, managerId: target.id } : p
-          )
-        )
-        onSetManager(me.userId, Number(target.id))
-        return
-      }
-      if (target?.mode === "dept") {
-        // Confirm before moving into a department (mirrors the remove-from-department confirm).
+      if (target) {
+        // Confirm before moving into a department (mirrors remove-from-department).
         setMoveConfirm({
           id: me.id,
           userId: me.userId,
@@ -927,8 +927,15 @@ function Flow({
       }
       commit(people)
     },
-    [commit, getNodes, clearHint, onSetManager, onSetDepartment]
+    [commit, getNodes, clearHint]
   )
+
+  const connectManager = connectPrompt
+    ? peopleRef.current.find((p) => p.userId === connectPrompt.managerUserId)
+    : undefined
+  const connectReport = connectPrompt
+    ? peopleRef.current.find((p) => p.userId === connectPrompt.reportUserId)
+    : undefined
 
   return (
     <>
@@ -944,9 +951,6 @@ function Flow({
         }
         onConnect={editable ? onConnect : undefined}
         onEdgeClick={onEdgeClick}
-        onReconnectStart={editable ? onReconnectStart : undefined}
-        onReconnect={editable ? onReconnect : undefined}
-        onReconnectEnd={editable ? onReconnectEnd : undefined}
         nodeTypes={nodeTypes}
         nodesDraggable={editable}
         nodesConnectable={editable}
@@ -1008,14 +1012,10 @@ function Flow({
             <div
               className={cn(
                 "rounded-full px-3 py-1 text-[12px] font-semibold shadow-md ring-1",
-                hint.mode === "report"
-                  ? "bg-primary text-primary-foreground ring-primary/30"
-                  : colorFor(hint.departmentId).chip
+                colorFor(hint.departmentId).chip
               )}
             >
-              {hint.mode === "report"
-                ? `↳ Reports to ${hint.label}`
-                : `⊕ Move to ${hint.label}`}
+              {`⊕ Move to ${hint.label}`}
             </div>
           </Panel>
         )}
@@ -1027,28 +1027,19 @@ function Flow({
           personId={personModal}
           people={peopleRef.current}
           depts={depts}
+          roles={roles}
           editable={editable}
-          onSave={(managerId, departmentId, deptName) => {
+          onSaveDept={(departmentId, deptName) => {
             const me = peopleRef.current.find((p) => p.id === personModal)!
-            const prevManager = me.managerId ? Number(me.managerId) : null
-            const prevDept = me.departmentId
-            if (managerId !== prevManager || departmentId !== prevDept)
+            if (departmentId !== me.departmentId) {
               pushHistory()
-            commit(
-              peopleRef.current.map((p) =>
-                p.id === personModal
-                  ? {
-                      ...p,
-                      managerId: managerId != null ? String(managerId) : null,
-                      departmentId,
-                      deptName,
-                    }
-                  : p
+              commit(
+                peopleRef.current.map((p) =>
+                  p.id === personModal ? { ...p, departmentId, deptName } : p
+                )
               )
-            )
-            if (managerId !== prevManager) onSetManager(me.userId, managerId)
-            if (departmentId !== prevDept)
               onSetDepartment(me.userId, departmentId)
+            }
             setPersonModal(null)
           }}
           onClose={() => setPersonModal(null)}
@@ -1063,6 +1054,25 @@ function Flow({
           onClose={() => setDeptModal(null)}
         />
       )}
+
+      {/* Pick a role for a freshly-wired reporting line. */}
+      {connectPrompt && (
+        <RolePickerDialog
+          roles={roles}
+          managerName={connectManager?.name ?? "manager"}
+          reportName={connectReport?.name ?? "report"}
+          onCancel={() => setConnectPrompt(null)}
+          onConfirm={(reportingRoleId) => {
+            onAddLine(
+              connectPrompt.reportUserId,
+              connectPrompt.managerUserId,
+              reportingRoleId
+            )
+            setConnectPrompt(null)
+          }}
+        />
+      )}
+
       {removeConfirm && (
         <Dialog
           open
@@ -1199,39 +1209,239 @@ function Flow({
 
 // ── Modals ───────────────────────────────────────────────────────────────────────
 
+/** Small dialog to choose the role for a reporting line created by wiring two cards. */
+function RolePickerDialog({
+  roles,
+  managerName,
+  reportName,
+  onCancel,
+  onConfirm,
+}: {
+  roles: ReportingRoleDTO[]
+  managerName: string
+  reportName: string
+  onCancel: () => void
+  onConfirm: (reportingRoleId: number) => void
+}) {
+  const [roleId, setRoleId] = useState<string>(
+    roles[0] ? String(roles[0].id) : ""
+  )
+  return (
+    <Dialog open onOpenChange={(o) => !o && onCancel()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Add reporting line</DialogTitle>
+        </DialogHeader>
+        <p className="text-[13px] text-muted-foreground">
+          <span className="font-medium text-foreground">{reportName}</span> will
+          report to{" "}
+          <span className="font-medium text-foreground">{managerName}</span>.
+          Pick the kind of line:
+        </p>
+        <Field label="Reporting role">
+          <NativeSelect
+            value={roleId}
+            onChange={setRoleId}
+            data-testid="connect-role-picker"
+          >
+            {roles.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.label}
+              </option>
+            ))}
+          </NativeSelect>
+        </Field>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            disabled={!roleId}
+            data-testid="connect-role-confirm"
+            onClick={() => roleId && onConfirm(Number(roleId))}
+          >
+            Add line
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * Lists a person's typed reporting lines (manager + role) with remove buttons, plus an
+ * add row (manager picker + active-role picker) that POSTs a new line. Self-contained:
+ * it reads/writes the server directly and the org graph re-syncs on success.
+ */
+function ReportsToEditor({
+  userId,
+  people,
+  roles,
+  editable,
+}: {
+  userId: number
+  people: Person[]
+  roles: ReportingRoleDTO[]
+  editable: boolean
+}) {
+  const { data: lines = [], isLoading } = useReportsTo(userId)
+  const addMut = useAddReportingLine()
+  const removeMut = useRemoveReportingLine()
+  const [managerId, setManagerId] = useState<string>("")
+  const [roleId, setRoleId] = useState<string>("")
+
+  const busy = addMut.isPending || removeMut.isPending
+  const managerOptions = people.filter((p) => p.userId !== userId)
+
+  function add() {
+    if (!managerId || !roleId) return
+    addMut.mutate(
+      {
+        userId,
+        body: {
+          managerId: Number(managerId),
+          reportingRoleId: Number(roleId),
+        },
+      },
+      {
+        onSuccess: () => {
+          setManagerId("")
+          setRoleId("")
+        },
+      }
+    )
+  }
+
+  return (
+    <div className="space-y-2" data-testid="reports-to-editor">
+      <Label className="text-[12.5px]">Reports to</Label>
+
+      {isLoading ? (
+        <p className="text-[12px] text-muted-foreground">Loading lines…</p>
+      ) : lines.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-border px-3 py-3 text-[12px] text-muted-foreground">
+          No reporting lines yet.
+        </p>
+      ) : (
+        <div className="space-y-1.5">
+          {lines.map((l) => (
+            <div
+              key={l.id}
+              data-testid="reports-to-line"
+              className="flex items-center gap-2 rounded-lg border border-border px-3 py-2"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-medium text-foreground">
+                  {l.managerName}
+                </p>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  {l.roleLabel}
+                </p>
+              </div>
+              {editable && (
+                <button
+                  type="button"
+                  title="Remove line"
+                  data-testid="reports-to-remove"
+                  disabled={busy}
+                  onClick={() => removeMut.mutate({ userId, lineId: l.id })}
+                  className="flex size-7 shrink-0 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-30 dark:hover:bg-red-900/20"
+                >
+                  <HugeiconsIcon
+                    icon={Delete02Icon}
+                    size={12}
+                    strokeWidth={2}
+                  />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {editable && (
+        <div className="flex items-end gap-2 pt-1">
+          <div className="flex-1 space-y-1">
+            <span className="text-[11px] text-muted-foreground">Manager</span>
+            <NativeSelect
+              value={managerId}
+              onChange={setManagerId}
+              data-testid="reports-to-manager"
+            >
+              <option value="">Select…</option>
+              {managerOptions.map((m) => (
+                <option key={m.userId} value={m.userId}>
+                  {m.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
+          <div className="flex-1 space-y-1">
+            <span className="text-[11px] text-muted-foreground">Role</span>
+            <NativeSelect
+              value={roleId}
+              onChange={setRoleId}
+              data-testid="reports-to-role"
+            >
+              <option value="">Select…</option>
+              {roles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.label}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
+          <Button
+            size="sm"
+            disabled={!managerId || !roleId || busy}
+            data-testid="reports-to-add"
+            onClick={add}
+          >
+            <HugeiconsIcon
+              icon={Add01Icon}
+              size={13}
+              strokeWidth={2}
+              className="mr-1"
+            />
+            Add
+          </Button>
+        </div>
+      )}
+      {roles.length === 0 && editable && (
+        <p className="text-[11px] text-amber-600 dark:text-amber-400">
+          No active reporting roles — add one under Config → Reporting roles.
+        </p>
+      )}
+    </div>
+  )
+}
+
 function PersonModal({
   personId,
   people,
   depts,
+  roles,
   editable,
-  onSave,
+  onSaveDept,
   onClose,
 }: {
   personId: string
   people: Person[]
   depts: DeptInfo[]
+  roles: ReportingRoleDTO[]
   editable: boolean
-  onSave: (
-    managerId: number | null,
-    departmentId: number | null,
-    deptName: string
-  ) => void
+  onSaveDept: (departmentId: number | null, deptName: string) => void
   onClose: () => void
 }) {
   const person = people.find((p) => p.id === personId)!
   const [departmentId, setDepartmentId] = useState<number | null>(
     person.departmentId
   )
-  const [managerId, setManagerId] = useState<string | null>(person.managerId)
-
-  const blocked = descendantsOf(people, personId)
-  const managerOptions = people.filter(
-    (p) => p.id !== personId && !blocked.has(p.id)
-  )
 
   function save() {
     const deptName = depts.find((d) => d.id === departmentId)?.name ?? ""
-    onSave(managerId ? Number(managerId) : null, departmentId, deptName)
+    onSaveDept(departmentId, deptName)
   }
 
   return (
@@ -1249,36 +1459,27 @@ function PersonModal({
               {person.title || "No title"}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Department">
-              <NativeSelect
-                value={departmentId != null ? String(departmentId) : ""}
-                onChange={(v) => setDepartmentId(v ? Number(v) : null)}
-                disabled={!editable}
-              >
-                <option value="">Unassigned</option>
-                {depts.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </NativeSelect>
-            </Field>
-            <Field label="Reports to">
-              <NativeSelect
-                value={managerId ?? ""}
-                onChange={(v) => setManagerId(v || null)}
-                disabled={!editable}
-              >
-                <option value="">— None (top level) —</option>
-                {managerOptions.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </NativeSelect>
-            </Field>
-          </div>
+          <Field label="Department">
+            <NativeSelect
+              value={departmentId != null ? String(departmentId) : ""}
+              onChange={(v) => setDepartmentId(v ? Number(v) : null)}
+              disabled={!editable}
+            >
+              <option value="">Unassigned</option>
+              {depts.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
+
+          <ReportsToEditor
+            userId={person.userId}
+            people={people}
+            roles={roles}
+            editable={editable}
+          />
         </div>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose}>
@@ -1385,18 +1586,20 @@ function NativeSelect({
   onChange,
   disabled,
   children,
+  ...rest
 }: {
   value: string
   onChange: (v: string) => void
   disabled?: boolean
   children: React.ReactNode
-}) {
+} & { "data-testid"?: string }) {
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
       className="h-9 w-full rounded-lg border border-input bg-background px-3 text-[13px] text-foreground focus:ring-2 focus:ring-ring/40 focus:outline-none disabled:opacity-60"
+      {...rest}
     >
       {children}
     </select>
@@ -1452,7 +1655,7 @@ function AddExistingMemberModal({
         </DialogHeader>
         <p className="text-[12px] text-muted-foreground">
           Move a member from another department (or unassigned) into this one.
-          Their reporting line is kept.
+          Their reporting lines are kept.
         </p>
         <Input
           autoFocus
@@ -1562,23 +1765,22 @@ function mergeLayout(global: OrgLayout, partial: OrgLayout): OrgLayout {
   }
 }
 
-function toPeople(graph: OrgNode[]): Person[] {
-  return graph.map((n) => ({
+function toPeople(graph: OrgGraphResponse): Person[] {
+  return graph.nodes.map((n) => ({
     id: String(n.id),
     userId: n.id,
     name: n.name,
     title: n.title,
     departmentId: n.departmentId,
     deptName: n.department ?? "",
-    managerId: n.managerId != null ? String(n.managerId) : null,
   }))
 }
 
 /**
  * Org chart. With no props it renders the whole company (editable for admins).
  * Pass `departmentId` to scope it to a single department's members — used by the
- * department "Dept tree" tab. The scoped view is read-only so it can't overwrite
- * the global saved layout (which is keyed by userId across all departments).
+ * department "Dept tree" tab. The scoped view is read-only for structure but can
+ * still save its layout (merged into the global one).
  */
 export function CompanyOrgChart({
   departmentId,
@@ -1586,18 +1788,16 @@ export function CompanyOrgChart({
   departmentId?: number
 } = {}) {
   const scoped = departmentId != null
-  // Admins can edit structure (re-parent, move, remove, add) and save layout in
-  // both the full and the scoped department view. A scoped save is merged into the
-  // global layout (see mergeLayout) so it also shows in the company tree without
-  // clobbering other departments' saved positions.
   const canEdit = useAuthStore((s) => s.authorities.includes(EDIT_AUTHORITY))
   const pushToast = useToastStore((s) => s.push)
   const { data: graph, isLoading: graphLoading } = useOrgGraph()
   const { data: departments } = useDepartments()
   const { data: layout, isLoading: layoutLoading } = useOrgLayout()
+  const { data: roles = [] } = useReportingRoles()
 
-  const setManager = useSetManager()
   const setDepartment = useSetDepartment()
+  const addLine = useAddReportingLine()
+  const removeLine = useRemoveReportingLine()
   const saveLayout = useSaveLayout()
   const qc = useQueryClient()
 
@@ -1620,14 +1820,17 @@ export function CompanyOrgChart({
 
   const people = useMemo(() => {
     if (departmentId == null) return allPeople
-    const inDept = allPeople.filter((p) => p.departmentId === departmentId)
-    const ids = new Set(inDept.map((p) => p.id))
-    // A member whose manager sits outside this department becomes a local root,
-    // so the subtree shown is exactly "everyone under this department".
-    return inDept.map((p) =>
-      p.managerId && ids.has(p.managerId) ? p : { ...p, managerId: null }
-    )
+    return allPeople.filter((p) => p.departmentId === departmentId)
   }, [allPeople, departmentId])
+
+  // Reporting lines to draw. Scoped views only draw lines whose BOTH endpoints are in
+  // the department, so the subtree stays self-contained (cross-department lines hide).
+  const edges: OrgEdge[] = useMemo(() => {
+    const all = graph?.edges ?? []
+    if (departmentId == null) return all
+    const ids = new Set(people.map((p) => p.userId))
+    return all.filter((e) => ids.has(e.userId) && ids.has(e.managerId))
+  }, [graph, departmentId, people])
 
   // Candidates for "add existing member": everyone not already in this department.
   const addCandidates = useMemo(
@@ -1640,7 +1843,9 @@ export function CompanyOrgChart({
     : ""
 
   const ready = !graphLoading && !layoutLoading && graph && layout
-  // Re-mount Flow when the source data identity changes so it re-initialises cleanly.
+  // Re-mount Flow when the source people/departments change so it re-initialises cleanly.
+  // Edges are NOT in the key — they re-sync into the live canvas via an effect, so adding
+  // or removing a reporting line doesn't wipe unsaved card positions.
   const flowKey = ready
     ? `${departmentId ?? "all"}:${people.length}:${depts.length}`
     : "loading"
@@ -1654,20 +1859,23 @@ export function CompanyOrgChart({
               <>
                 <Hint
                   icon={DragDropIcon}
-                  label="Drag a card onto another to re-parent"
+                  label="Drag a card into a department box to move it"
                 />
-                <Hint icon={PencilEdit01Icon} label="Click a card to edit" />
+                <Hint
+                  icon={PencilEdit01Icon}
+                  label="Click a card to edit reporting lines & department"
+                />
+                <Hint
+                  icon={Add01Icon}
+                  label="Drag from a card's handle to another to add a reporting line"
+                />
                 <Hint
                   icon={Cancel01Icon}
-                  label="Ctrl / ⌘-click a line to detach"
+                  label="Ctrl / ⌘-click a line to detach it"
                 />
                 <Hint
                   icon={CursorMove01Icon}
                   label="Middle-mouse drag to pan · scroll to zoom"
-                />
-                <Hint
-                  icon={Add01Icon}
-                  label="Right-click the canvas to create"
                 />
                 {scoped && (
                   <Hint
@@ -1718,14 +1926,35 @@ export function CompanyOrgChart({
                 <Flow
                   key={flowKey}
                   initialPeople={people}
+                  initialEdges={edges}
                   depts={depts}
+                  roles={roles}
                   initialLayout={layout!}
                   editable={canEdit}
-                  onSetManager={(userId, managerId) =>
-                    setManager.mutate({ userId, managerId })
+                  onAddLine={(userId, managerId, reportingRoleId) =>
+                    addLine.mutate(
+                      { userId, body: { managerId, reportingRoleId } },
+                      {
+                        onSuccess: () =>
+                          pushToast("Reporting line added.", "success"),
+                        onError: () =>
+                          pushToast("Couldn’t add reporting line.", "error"),
+                      }
+                    )
                   }
-                  onSetDepartment={(userId, departmentId) =>
-                    setDepartment.mutate({ userId, departmentId })
+                  onRemoveLine={(userId, lineId) =>
+                    removeLine.mutate(
+                      { userId, lineId },
+                      {
+                        onSuccess: () =>
+                          pushToast("Reporting line removed.", "success"),
+                        onError: () =>
+                          pushToast("Couldn’t remove line.", "error"),
+                      }
+                    )
+                  }
+                  onSetDepartment={(userId, deptId) =>
+                    setDepartment.mutate({ userId, departmentId: deptId })
                   }
                   onSaveLayout={(l) =>
                     saveLayout.mutate(scoped ? mergeLayout(layout!, l) : l, {
