@@ -299,6 +299,7 @@ function ReviewModal({
                 )}
               </Label>
               <Textarea
+                data-testid="ob-review-note"
                 className="min-h-18 resize-none text-[13px]"
                 placeholder={
                   mode === "approve"

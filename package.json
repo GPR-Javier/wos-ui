@@ -16,7 +16,7 @@
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test --project=admin --project=employee",
     "e2e:ui": "playwright test --ui",
-    "e2e:journey": "playwright test --project=journey",
+    "e2e:journey": "playwright test --project=journey --workers=1",
     "e2e:headed": "playwright test --headed",
     "e2e:admin": "playwright test --project=admin",
     "e2e:employee": "playwright test --project=employee",
