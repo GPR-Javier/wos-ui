@@ -44,3 +44,6 @@ pnpm-debug.log*
 next-env.d.ts
 CLAUDE.md
 .claude/
+
+# coverage
+/coverage

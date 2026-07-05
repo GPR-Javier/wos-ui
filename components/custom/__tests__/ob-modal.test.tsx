@@ -10,6 +10,7 @@ import type { ObRequest } from "@/lib/ob-api"
 const {
   createMutate,
   updateMutate,
+  pending,
   approvedOb,
   policyData,
   leaveData,
@@ -17,6 +18,9 @@ const {
 } = vi.hoisted(() => ({
   createMutate: vi.fn(),
   updateMutate: vi.fn(),
+  // Mutable pending flag both mutations read, so a spec can render the
+  // "Submitting…" / "Saving…" busy states on demand.
+  pending: { current: false },
   approvedOb: { content: [] as Array<{ id: number; obDate: string }> },
   policyData: { current: undefined as { workdays: string[] } | undefined },
   leaveData: {
@@ -32,8 +36,14 @@ const {
 }))
 
 vi.mock("@/hooks/use-ob", () => ({
-  useCreateObRequest: () => ({ mutate: createMutate, isPending: false }),
-  useUpdateObRequest: () => ({ mutate: updateMutate, isPending: false }),
+  useCreateObRequest: () => ({
+    mutate: createMutate,
+    isPending: pending.current,
+  }),
+  useUpdateObRequest: () => ({
+    mutate: updateMutate,
+    isPending: pending.current,
+  }),
   // The date pre-check queries approved OB requests; feed it the hoisted rows.
   useMyObRequests: () => ({ data: approvedOb }),
 }))
@@ -92,6 +102,7 @@ describe("ObModal", () => {
     policyData.current = undefined
     leaveData.current = undefined
     holidaysData.current = undefined
+    pending.current = false
   })
 
   it("(b) the OB date input's min attribute equals today's local date", () => {
@@ -291,5 +302,138 @@ describe("ObModal", () => {
     expect(updateMutate).toHaveBeenCalledTimes(1)
     expect(updateMutate.mock.calls[0][0]).toMatchObject({ id: 42 })
     expect(createMutate).not.toHaveBeenCalled()
+  })
+
+  // ── Notes field ─────────────────────────────────────────────────────────────
+
+  it("(l) typing into Supporting Details is sent as notes on submit", () => {
+    renderModal()
+    fillRequired()
+    fireEvent.change(
+      screen.getByPlaceholderText(/Add any relevant context/i),
+      { target: { value: "Bring the signed contract" } }
+    )
+    fireEvent.click(screen.getByRole("button", { name: /Submit Request/i }))
+    expect(createMutate.mock.calls[0][0]).toMatchObject({
+      notes: "Bring the signed contract",
+    })
+  })
+
+  // ── Custom-hours payload shaping ─────────────────────────────────────────────
+
+  it("(m) CUSTOM submit sends the picked start/end times", () => {
+    renderModal()
+    fillRequired()
+    fireEvent.click(screen.getByRole("button", { name: /Custom Hours/i }))
+    const timeInputs = document.querySelectorAll('input[type="time"]')
+    fireEvent.change(timeInputs[0], { target: { value: "09:00" } })
+    fireEvent.change(timeInputs[1], { target: { value: "12:00" } })
+    fireEvent.click(screen.getByRole("button", { name: /Submit Request/i }))
+    expect(createMutate.mock.calls[0][0]).toMatchObject({
+      duration: "CUSTOM",
+      customStartTime: "09:00",
+      customEndTime: "12:00",
+    })
+  })
+
+  it("(n) CUSTOM draft with empty times sends null start/end (draft ignores time gate)", () => {
+    renderModal()
+    fillRequired()
+    fireEvent.click(screen.getByRole("button", { name: /Custom Hours/i }))
+    // Times left blank — Save as Draft stays enabled and normalizes them to null.
+    fireEvent.click(screen.getByRole("button", { name: /Save as Draft/i }))
+    expect(createMutate.mock.calls[0][0]).toMatchObject({
+      duration: "CUSTOM",
+      customStartTime: null,
+      customEndTime: null,
+      isDraft: true,
+    })
+  })
+
+  // ── Closed / open lifecycle ──────────────────────────────────────────────────
+
+  it("(o) rendering closed does not crash and skips the seed effect", () => {
+    renderModal({ open: false })
+    // Closed dialog renders no form fields.
+    expect(
+      screen.queryByPlaceholderText(/Client meeting, training, conference/i)
+    ).not.toBeInTheDocument()
+  })
+
+  it("(p) pressing Escape triggers onClose", () => {
+    const onClose = vi.fn()
+    renderModal({ onClose })
+    fireEvent.keyDown(document.activeElement || document.body, {
+      key: "Escape",
+      code: "Escape",
+    })
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  // ── Edit (non-RETURNED) titles + Save Changes ────────────────────────────────
+
+  const pendingEdit: ObRequest = {
+    id: 7,
+    userId: 1,
+    userName: "Jane",
+    userEmail: "jane@example.com",
+    obDate: today,
+    duration: "FULL_DAY",
+    customStartTime: null,
+    customEndTime: null,
+    purpose: "Client meeting",
+    location: "BGC",
+    notes: null,
+    status: "PENDING",
+    reviewNote: null,
+    reviewedBy: null,
+    reviewedByName: null,
+    reviewedAt: null,
+    createdAt: "2026-07-01T00:00:00Z",
+    updatedAt: "2026-07-01T00:00:00Z",
+  }
+
+  it("(q) editing a PENDING request shows the Edit title and 'Save Changes'", () => {
+    renderModal({ editing: pendingEdit })
+    expect(screen.getByText("Edit Official Business")).toBeInTheDocument()
+    expect(
+      screen.getByText(/Update your official business request/i)
+    ).toBeInTheDocument()
+    const save = screen.getByRole("button", { name: /Save Changes/i })
+    fireEvent.click(save)
+    expect(updateMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 7 }),
+      expect.anything()
+    )
+  })
+
+  // ── Busy / pending button states ─────────────────────────────────────────────
+
+  it("(r) while a create is pending the submit button reads 'Submitting…' and is disabled", () => {
+    pending.current = true
+    renderModal()
+    const submit = screen.getByRole("button", { name: /Submitting…/i })
+    expect(submit).toBeDisabled()
+  })
+
+  it("(s) while an edit is pending the save button reads 'Saving…'", () => {
+    pending.current = true
+    renderModal({ editing: pendingEdit })
+    expect(
+      screen.getByRole("button", { name: /Saving…/i })
+    ).toBeInTheDocument()
+  })
+
+  // ── Server-side rejection surfaced inline ────────────────────────────────────
+
+  it("(t) a backend error from the mutation is shown inline under the date field", () => {
+    createMutate.mockImplementation(
+      (_body: unknown, opts: { onError: (e: unknown) => void }) =>
+        opts.onError({ response: { data: { message: "Server said no" } } })
+    )
+    renderModal()
+    fillRequired()
+    fireEvent.click(screen.getByRole("button", { name: /Submit Request/i }))
+    expect(screen.getByText("Server said no")).toBeInTheDocument()
   })
 })

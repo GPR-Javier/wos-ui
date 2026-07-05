@@ -588,6 +588,8 @@ export function MyObSection() {
               size="sm"
               disabled={deleteMutation.isPending}
               onClick={() => {
+                /* v8 ignore next -- defensive TS null-guard: the dialog (and this
+                   button) only render while confirmDelete is set, so this is unreachable. */
                 if (!confirmDelete) return
                 deleteMutation.mutate(confirmDelete.id, {
                   onSuccess: () => setConfirmDelete(null),

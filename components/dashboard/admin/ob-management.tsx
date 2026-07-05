@@ -148,7 +148,8 @@ function ReviewModal({
         { id: request.id, reviewNote: reviewNote || null },
         { onSuccess: onClose }
       )
-    } else if (mode === "return") {
+    } else {
+      // The only remaining review action is "return" (view has no confirm button).
       returnMutation.mutate(
         { id: request.id, reviewNote },
         { onSuccess: onClose }
