@@ -310,7 +310,12 @@ export function MyObSection() {
             File and track your official business requests
           </p>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={openCreate}>
+        <Button
+          data-testid="ob-new-request"
+          size="sm"
+          className="gap-1.5"
+          onClick={openCreate}
+        >
           <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} />
           New Request
         </Button>
@@ -454,6 +459,7 @@ export function MyObSection() {
               items.map((r) => (
                 <TableRow
                   key={r.id}
+                  data-testid="ob-row"
                   className="cursor-pointer"
                   onClick={() => setDetail(r)}
                 >

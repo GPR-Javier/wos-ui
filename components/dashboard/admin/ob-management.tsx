@@ -23,6 +23,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
 import {
@@ -199,6 +200,9 @@ function ReviewModal({
             )}
             {titleMap[mode]}
           </DialogTitle>
+          <DialogDescription>
+            {fmtDuration(request)} · {fmtDate(request.obDate)}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
@@ -335,6 +339,7 @@ function ReviewModal({
           </Button>
           {mode === "approve" && (
             <Button
+              data-testid="ob-review-approve"
               size="sm"
               className="bg-green-600 hover:bg-green-700"
               disabled={busy}
@@ -345,6 +350,7 @@ function ReviewModal({
           )}
           {mode === "reject" && (
             <Button
+              data-testid="ob-review-reject"
               size="sm"
               variant="destructive"
               disabled={busy}
@@ -355,6 +361,7 @@ function ReviewModal({
           )}
           {mode === "return" && (
             <Button
+              data-testid="ob-review-return"
               size="sm"
               className="bg-purple-600 hover:bg-purple-700"
               disabled={busy || !reviewNote.trim()}
@@ -573,7 +580,11 @@ export function ObManagementSection() {
               </TableRow>
             ) : (
               items.map((r) => (
-                <TableRow key={r.id} className="hover:bg-muted/30">
+                <TableRow
+                  key={r.id}
+                  data-testid="ob-mgmt-row"
+                  className="hover:bg-muted/30"
+                >
                   {/* Employee */}
                   <TableCell>
                     <div>
@@ -628,6 +639,7 @@ export function ObManagementSection() {
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button
+                        data-testid="ob-view"
                         size="icon-xs"
                         variant="outline"
                         onClick={() =>
@@ -646,6 +658,7 @@ export function ObManagementSection() {
                       {r.status === "PENDING" && (
                         <>
                           <Button
+                            data-testid="ob-approve"
                             size="icon-xs"
                             variant="outline"
                             className="border-green-300 text-green-600 hover:bg-green-50 dark:border-green-900/40 dark:hover:bg-green-900/20"
@@ -662,6 +675,7 @@ export function ObManagementSection() {
                             <span className="sr-only">Approve</span>
                           </Button>
                           <Button
+                            data-testid="ob-reject"
                             size="icon-xs"
                             variant="outline"
                             className="border-red-200 text-red-500 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/20"
@@ -678,6 +692,7 @@ export function ObManagementSection() {
                             <span className="sr-only">Reject</span>
                           </Button>
                           <Button
+                            data-testid="ob-return"
                             size="icon-xs"
                             variant="outline"
                             className="border-purple-200 text-purple-500 hover:bg-purple-50 dark:border-purple-900/40 dark:hover:bg-purple-900/20"

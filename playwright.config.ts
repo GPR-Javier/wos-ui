@@ -1,0 +1,75 @@
+import { defineConfig, devices } from "@playwright/test"
+import { existsSync, readFileSync } from "node:fs"
+
+// Load e2e env from .env.e2e (gitignored) without a dotenv dependency. See .env.e2e.example.
+if (existsSync(".env.e2e")) {
+  for (const line of readFileSync(".env.e2e", "utf8").split("\n")) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/)
+    if (m && !process.env[m[1]]) {
+      process.env[m[1]] = m[2].replace(/^["']|["']$/g, "")
+    }
+  }
+}
+
+const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:3000"
+
+export default defineConfig({
+  testDir: "./e2e",
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: 0,
+  reporter: [["list"], ["html", { open: "never" }]],
+  use: {
+    baseURL: BASE_URL,
+    trace: "on", // scrub every run in the trace viewer (time-travel DOM)
+    video: "on", // watch the screen flow back after a run
+    screenshot: "on",
+  },
+  projects: [
+    // ── Auth capture ─────────────────────────────────────────────────────────
+    // Admin: email/password, fully automated. Runs as a dependency of the admin suite.
+    { name: "setup-admin", testMatch: "**/auth.admin.setup.ts" },
+    // Employee: email/password (use a password-based test employee, NOT Google OAuth —
+    // Google blocks automated sign-in). Fully automated, same as admin.
+    { name: "setup-employee", testMatch: "**/auth.employee.setup.ts" },
+
+    // ── Role suites (specs split by folder) ──────────────────────────────────
+    {
+      name: "admin",
+      testMatch: "**/admin/**/*.spec.ts",
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: "e2e/.auth/admin.json",
+      },
+      dependencies: ["setup-admin"],
+    },
+    {
+      name: "employee",
+      testMatch: "**/employee/**/*.spec.ts",
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: "e2e/.auth/employee.json",
+      },
+      dependencies: ["setup-employee"],
+    },
+
+    // ── Dual-role journeys: one test drives BOTH roles in side-by-side windows.
+    // Contexts are created in-test from both saved sessions (admin auto + employee
+    // pre-captured). Run with `pnpm e2e:journey`. Needs employee.json captured first.
+    {
+      name: "journey",
+      testMatch: "**/journeys/**/*.spec.ts",
+      dependencies: ["setup-admin", "setup-employee"],
+      // The journey launches its own browsers and manages per-role trace/video
+      // itself, so disable the runner's auto-instrumentation to avoid a double-start.
+      use: { trace: "off", video: "off", screenshot: "off" },
+    },
+  ],
+  // Drive your already-running dev server; start one if none is up.
+  webServer: {
+    command: "pnpm dev",
+    url: BASE_URL,
+    reuseExistingServer: true,
+    timeout: 120_000,
+  },
+})

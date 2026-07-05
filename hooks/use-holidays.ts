@@ -9,10 +9,14 @@ import {
 
 const KEY = ["holidays"] as const
 
-export function useHolidays(params: { from?: string; until?: string } = {}) {
+export function useHolidays(
+  params: { from?: string; until?: string } = {},
+  enabled = true
+) {
   return useQuery({
     queryKey: [...KEY, params],
     queryFn: () => holidayApi.list(params),
+    enabled,
   })
 }
 

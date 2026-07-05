@@ -64,7 +64,10 @@ interface ObModalProps {
  * request (wired to the ob API).
  */
 export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
-  const today = new Date().toISOString().split("T")[0]
+  // Local Y-M-D (not UTC): toLocaleDateString("en-CA") yields "YYYY-MM-DD" in
+  // the browser's own timezone, so `min` / "filed in advance" stay correct in
+  // PH (UTC+8) during the 00:00–08:00 window where the UTC date is still yesterday.
+  const today = new Date().toLocaleDateString("en-CA")
   const isEditing = !!editing
 
   const [obDate, setObDate] = useState("")
@@ -86,16 +89,24 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
   const showCustom = duration === "CUSTOM"
 
   // ── Data for the client-side date pre-check (instant UX mirror of the backend rules) ──
-  // Wide holiday window so recurring holidays seeded in this year are caught.
+  // Window starts at Jan 1 of the current year so recurring holidays seeded
+  // earlier THIS year (e.g. 2026-01-01) are in scope for the recurring match,
+  // and runs a full year forward to cover future OB dates.
+  const holidayFrom = `${new Date().getFullYear()}-01-01`
   const holidayUntil = (() => {
     const d = new Date(today + "T00:00:00")
     d.setFullYear(d.getFullYear() + 1)
-    return d.toISOString().split("T")[0]
+    return d.toLocaleDateString("en-CA")
   })()
-  const policyQ = useMyPolicy()
-  const leaveQ = useMyLeaveRequests({ status: "APPROVED" })
-  const holidaysQ = useHolidays({ from: today, until: holidayUntil })
-  const approvedObQ = useMyObRequests({ status: "APPROVED" })
+  // Gate all four pre-check queries on `open`: the modal is always mounted by
+  // its callers, so without this they'd fire on every render even while closed.
+  const policyQ = useMyPolicy(open)
+  const leaveQ = useMyLeaveRequests({ status: "APPROVED" }, open)
+  const holidaysQ = useHolidays(
+    { from: holidayFrom, until: holidayUntil },
+    open
+  )
+  const approvedObQ = useMyObRequests({ status: "APPROVED" }, open)
 
   /**
    * Blocking reason for the picked OB date, or null. Each constraint fires ONLY
@@ -228,6 +239,7 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
               Purpose / Activity <span className="text-red-500">*</span>
             </Label>
             <Input
+              data-testid="ob-purpose"
               placeholder="e.g. Client meeting, training, conference…"
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
@@ -240,6 +252,7 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
             <div className="space-y-1.5">
               <Label className="text-[12px]">OB Date</Label>
               <Input
+                data-testid="ob-date"
                 type="date"
                 min={today}
                 value={obDate}
@@ -297,6 +310,7 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
                     Start Time
                   </Label>
                   <Input
+                    data-testid="ob-custom-start"
                     type="time"
                     value={customStartTime}
                     onChange={(e) => setCustomStartTime(e.target.value)}
@@ -308,6 +322,7 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
                     End Time
                   </Label>
                   <Input
+                    data-testid="ob-custom-end"
                     type="time"
                     value={customEndTime}
                     onChange={(e) => setCustomEndTime(e.target.value)}
@@ -324,6 +339,7 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
               Location / Venue <span className="text-red-500">*</span>
             </Label>
             <Input
+              data-testid="ob-location"
               placeholder="e.g. Makati office, BGC, Remote"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
@@ -370,6 +386,7 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
           </Button>
           {isEditing ? (
             <Button
+              data-testid="ob-submit"
               size="sm"
               disabled={!canSubmit || isPending}
               onClick={() => handleSubmit(false)}
@@ -383,6 +400,7 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
           ) : (
             <>
               <Button
+                data-testid="ob-save-draft"
                 variant="outline"
                 size="sm"
                 disabled={
@@ -397,6 +415,7 @@ export function ObModal({ open, onClose, editing, defaultDate }: ObModalProps) {
                 Save as Draft
               </Button>
               <Button
+                data-testid="ob-submit"
                 size="sm"
                 disabled={!canSubmit || isPending}
                 onClick={() => handleSubmit(false)}

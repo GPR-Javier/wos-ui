@@ -12,11 +12,13 @@ export function useMyObRequests(
     to?: string
     page?: number
     size?: number
-  } = {}
+  } = {},
+  enabled = true
 ) {
   return useQuery({
     queryKey: [...KEY, "me", params],
     queryFn: () => obApi.listMine(params),
+    enabled,
   })
 }
 

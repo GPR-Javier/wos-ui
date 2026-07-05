@@ -61,6 +61,7 @@ export function NotificationBell() {
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <button
+          data-testid="notification-bell"
           aria-label={`Notifications${unreadCount ? ` (${unreadCount} unread)` : ""}`}
           className="relative flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
@@ -111,10 +112,11 @@ export function NotificationBell() {
             notifications.map((n) => (
               <button
                 key={n.id}
+                data-testid="notification-item"
                 onClick={() => openNotification(n)}
                 className={cn(
                   "flex w-full items-start gap-3 border-b border-border/60 px-3 py-3 text-left transition-colors last:border-b-0 hover:bg-muted/60",
-                  !n.read && "bg-primary/[0.04]"
+                  !n.read && "bg-primary/4"
                 )}
               >
                 <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">

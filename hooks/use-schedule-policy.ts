@@ -38,11 +38,12 @@ export function useSavePolicy(scope: PolicyScope) {
   })
 }
 
-export function useMyPolicy() {
+export function useMyPolicy(enabled = true) {
   return useQuery({
     queryKey: ["employee", "policy"],
     queryFn: schedulePolicyApi.myPolicy,
     staleTime: 60_000, // policy rarely changes; don't refetch on every focus
+    enabled,
   })
 }
 

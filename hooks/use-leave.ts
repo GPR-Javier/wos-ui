@@ -33,12 +33,14 @@ export function useMyLeaveRequests(
     to?: string
     page?: number
     size?: number
-  } = {}
+  } = {},
+  enabled = true
 ) {
   return useQuery({
     queryKey: [...KEY, "me", params],
     queryFn: () => leaveApi.listMine(params),
     placeholderData: keepPreviousData,
+    enabled,
   })
 }
 

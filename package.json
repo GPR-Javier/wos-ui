@@ -12,7 +12,17 @@
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e": "playwright test --project=admin --project=employee",
+    "e2e:ui": "playwright test --ui",
+    "e2e:journey": "playwright test --project=journey",
+    "e2e:headed": "playwright test --headed",
+    "e2e:admin": "playwright test --project=admin",
+    "e2e:employee": "playwright test --project=employee",
+    "e2e:auth": "playwright test --project=setup-admin",
+    "e2e:auth:employee": "playwright test --project=setup-employee",
+    "e2e:codegen": "playwright codegen http://localhost:3000",
+    "e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -53,6 +63,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4.2.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
