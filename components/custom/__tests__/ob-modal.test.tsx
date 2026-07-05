@@ -309,10 +309,9 @@ describe("ObModal", () => {
   it("(l) typing into Supporting Details is sent as notes on submit", () => {
     renderModal()
     fillRequired()
-    fireEvent.change(
-      screen.getByPlaceholderText(/Add any relevant context/i),
-      { target: { value: "Bring the signed contract" } }
-    )
+    fireEvent.change(screen.getByPlaceholderText(/Add any relevant context/i), {
+      target: { value: "Bring the signed contract" },
+    })
     fireEvent.click(screen.getByRole("button", { name: /Submit Request/i }))
     expect(createMutate.mock.calls[0][0]).toMatchObject({
       notes: "Bring the signed contract",
@@ -419,9 +418,7 @@ describe("ObModal", () => {
   it("(s) while an edit is pending the save button reads 'Saving…'", () => {
     pending.current = true
     renderModal({ editing: pendingEdit })
-    expect(
-      screen.getByRole("button", { name: /Saving…/i })
-    ).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Saving…/i })).toBeInTheDocument()
   })
 
   // ── Server-side rejection surfaced inline ────────────────────────────────────

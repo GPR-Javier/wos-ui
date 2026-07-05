@@ -68,9 +68,7 @@ describe("use-ob query hooks", () => {
       size: 20,
     }
     renderHook(() => useMyObRequests(params), { wrapper })
-    await waitFor(() =>
-      expect(mockObApi.listMine).toHaveBeenCalledWith(params)
-    )
+    await waitFor(() => expect(mockObApi.listMine).toHaveBeenCalledWith(params))
   })
 
   it("useMyObRequests defaults to empty params when called with none", async () => {
@@ -81,7 +79,9 @@ describe("use-ob query hooks", () => {
 
   it("useMyObRequests does not fetch when disabled", () => {
     const { wrapper } = setup()
-    renderHook(() => useMyObRequests({ status: "APPROVED" }, false), { wrapper })
+    renderHook(() => useMyObRequests({ status: "APPROVED" }, false), {
+      wrapper,
+    })
     expect(mockObApi.listMine).not.toHaveBeenCalled()
   })
 

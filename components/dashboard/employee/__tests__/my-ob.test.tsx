@@ -5,20 +5,22 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import type { ObRequest } from "@/lib/ob-api"
 
 // ── Mutable state + spies the mocked hooks read on every render ────────────────
-const { deleteMutate, cancelMutate, submitMutate, obState } = vi.hoisted(() => ({
-  deleteMutate: vi.fn(),
-  cancelMutate: vi.fn(),
-  submitMutate: vi.fn(),
-  obState: {
-    paged: undefined as
-      | { content: ObRequest[]; totalElements: number; totalPages: number }
-      | undefined,
-    loading: false,
-    deletePending: false,
-    cancelPending: false,
-    submitPending: false,
-  },
-}))
+const { deleteMutate, cancelMutate, submitMutate, obState } = vi.hoisted(
+  () => ({
+    deleteMutate: vi.fn(),
+    cancelMutate: vi.fn(),
+    submitMutate: vi.fn(),
+    obState: {
+      paged: undefined as
+        | { content: ObRequest[]; totalElements: number; totalPages: number }
+        | undefined,
+      loading: false,
+      deletePending: false,
+      cancelPending: false,
+      submitPending: false,
+    },
+  })
+)
 
 vi.mock("@/hooks/use-ob", () => ({
   useMyObRequests: () => ({ data: obState.paged, isLoading: obState.loading }),
@@ -355,7 +357,9 @@ describe("MyObSection — detail dialog", () => {
   it("PENDING detail can be cancelled", () => {
     renderSection()
     const dialog = openDetail(0)
-    fireEvent.click(within(dialog).getByRole("button", { name: /Cancel Request/i }))
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: /Cancel Request/i })
+    )
     expect(cancelMutate).toHaveBeenCalledWith(1, expect.anything())
   })
 

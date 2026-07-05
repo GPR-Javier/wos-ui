@@ -5,24 +5,26 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import type { ObRequest } from "@/lib/ob-api"
 
 // ── Shared, mutable state the mocked hooks read on every render ────────────────
-const { approveMutate, rejectMutate, returnMutate, obState } = vi.hoisted(() => ({
-  approveMutate: vi.fn(),
-  rejectMutate: vi.fn(),
-  returnMutate: vi.fn(),
-  obState: {
-    // Paged (main table) query result — `undefined` when loading.
-    paged: undefined as
-      | { content: ObRequest[]; totalElements: number; totalPages: number }
-      | undefined,
-    pagedLoading: false,
-    // Summary (size:100) query rows — set `allUndefined` to force a missing data.
-    all: [] as ObRequest[],
-    allUndefined: false,
-    approvePending: false,
-    rejectPending: false,
-    returnPending: false,
-  },
-}))
+const { approveMutate, rejectMutate, returnMutate, obState } = vi.hoisted(
+  () => ({
+    approveMutate: vi.fn(),
+    rejectMutate: vi.fn(),
+    returnMutate: vi.fn(),
+    obState: {
+      // Paged (main table) query result — `undefined` when loading.
+      paged: undefined as
+        | { content: ObRequest[]; totalElements: number; totalPages: number }
+        | undefined,
+      pagedLoading: false,
+      // Summary (size:100) query rows — set `allUndefined` to force a missing data.
+      all: [] as ObRequest[],
+      allUndefined: false,
+      approvePending: false,
+      rejectPending: false,
+      returnPending: false,
+    },
+  })
+)
 
 vi.mock("@/hooks/use-ob", () => ({
   // The component calls useAllObRequests twice — the summary variant passes size:100.
@@ -280,7 +282,9 @@ describe("ObManagementSection — review modal (view mode)", () => {
     expect(within(dialog).getByText(/Admin One/)).toBeInTheDocument()
     // Close button (view mode footer) dismisses — the last "Close" is the footer
     // one (Radix also renders a top-right X with an sr-only "Close").
-    const closeButtons = within(dialog).getAllByRole("button", { name: "Close" })
+    const closeButtons = within(dialog).getAllByRole("button", {
+      name: "Close",
+    })
     fireEvent.click(closeButtons[closeButtons.length - 1])
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
   })

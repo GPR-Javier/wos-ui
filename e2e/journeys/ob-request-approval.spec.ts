@@ -187,12 +187,10 @@ test("employee files OB → admin approves → employee sees it approved", async
     await employeeBrowser.close()
     await adminBrowser.close()
 
-    await test
-      .info()
-      .attach("employee-trace", {
-        path: empTrace,
-        contentType: "application/zip",
-      })
+    await test.info().attach("employee-trace", {
+      path: empTrace,
+      contentType: "application/zip",
+    })
     await test
       .info()
       .attach("admin-trace", { path: admTrace, contentType: "application/zip" })
