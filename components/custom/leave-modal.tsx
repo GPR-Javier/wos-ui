@@ -171,11 +171,12 @@ export function LeaveModal({ open, onClose, editing }: LeaveModalProps) {
   }
 
   function handleSubmit(isDraft: boolean) {
-    if (!range?.from || !range?.until) return
+    // Both action buttons are gated on `dates.length` / `canSubmit`, which are only
+    // truthy once the range is fully picked — so `range` is guaranteed here.
     const body = {
       leaveType: type,
-      startDate: range.from,
-      endDate: range.until,
+      startDate: range!.from,
+      endDate: range!.until,
       dayParts: scopedParts,
       reason: reason || undefined,
       isDraft,
@@ -225,7 +226,7 @@ export function LeaveModal({ open, onClose, editing }: LeaveModalProps) {
             </Select>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-1.5" data-testid="leave-daterange">
             <Label>Dates</Label>
             <DateRangePicker
               value={range}
@@ -293,6 +294,7 @@ export function LeaveModal({ open, onClose, editing }: LeaveModalProps) {
             <Label htmlFor="leave-reason">Reason (optional)</Label>
             <Textarea
               id="leave-reason"
+              data-testid="leave-reason"
               placeholder="Brief description…"
               rows={2}
               className="resize-none"
@@ -344,6 +346,7 @@ export function LeaveModal({ open, onClose, editing }: LeaveModalProps) {
             <Button
               variant="outline"
               size="sm"
+              data-testid="leave-save-draft"
               disabled={dates.length === 0 || mutation.isPending}
               onClick={() => handleSubmit(true)}
             >
@@ -352,6 +355,7 @@ export function LeaveModal({ open, onClose, editing }: LeaveModalProps) {
           )}
           <Button
             size="sm"
+            data-testid="leave-submit"
             disabled={!canSubmit || mutation.isPending}
             onClick={() => handleSubmit(false)}
           >

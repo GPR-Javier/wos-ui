@@ -59,6 +59,37 @@ export default defineConfig({
           functions: 100,
           lines: 100,
         },
+        // Leave module — held at the same 100% per-file bar as Official Business.
+        "**/lib/leave-api.ts": {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
+        "**/hooks/use-leave.ts": {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
+        "**/components/custom/leave-modal.tsx": {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
+        "**/components/dashboard/hr/leave.tsx": {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
+        "**/components/dashboard/employee/my-leaves.tsx": {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
       },
     },
   },

@@ -26,15 +26,34 @@ export default defineConfig({
     screenshot: "on",
   },
   projects: [
+    // ── Reset + seed (runs FIRST) ─────────────────────────────────────────────
+    // Truncates the backend transactional tables and seeds the journey fixtures via the
+    // guarded /internal/test/reset endpoints. Every auth setup depends on it, so plain
+    // `pnpm e2e` / `pnpm e2e:journey` trigger reset→seed→tests with no extra step. FAILS
+    // FAST (throws) if the reset endpoint is unreachable / disabled / rejects the token.
+    { name: "setup-reset", testMatch: "**/reset.setup.ts" },
+
     // ── Auth capture ─────────────────────────────────────────────────────────
     // Admin: email/password, fully automated. Runs as a dependency of the admin suite.
-    { name: "setup-admin", testMatch: "**/auth.admin.setup.ts" },
+    {
+      name: "setup-admin",
+      testMatch: "**/auth.admin.setup.ts",
+      dependencies: ["setup-reset"],
+    },
     // Employee: email/password (use a password-based test employee, NOT Google OAuth —
     // Google blocks automated sign-in). Fully automated, same as admin.
-    { name: "setup-employee", testMatch: "**/auth.employee.setup.ts" },
+    {
+      name: "setup-employee",
+      testMatch: "**/auth.employee.setup.ts",
+      dependencies: ["setup-reset"],
+    },
     // Second admin: only the co-approver journey needs it. SKIPS itself (no throw) when
     // E2E_ADMIN2_* creds are absent, so the other journeys aren't forced to have one.
-    { name: "setup-admin2", testMatch: "**/auth.admin2.setup.ts" },
+    {
+      name: "setup-admin2",
+      testMatch: "**/auth.admin2.setup.ts",
+      dependencies: ["setup-reset"],
+    },
 
     // ── Role suites (specs split by folder) ──────────────────────────────────
     {

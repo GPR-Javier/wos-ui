@@ -123,7 +123,12 @@ export function MyLeavesSection() {
             File and track your leave requests
           </p>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={openFile}>
+        <Button
+          size="sm"
+          className="gap-1.5"
+          data-testid="leave-new-request"
+          onClick={openFile}
+        >
           <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} />
           File Leave
         </Button>
@@ -307,7 +312,7 @@ export function MyLeavesSection() {
               </TableRow>
             ) : (
               items.map((r) => (
-                <TableRow key={r.id}>
+                <TableRow key={r.id} data-testid="leave-row">
                   <TableCell>
                     <StatusBadge
                       variant={TYPE_VARIANT[r.leaveType]}

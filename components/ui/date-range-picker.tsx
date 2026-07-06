@@ -343,6 +343,7 @@ export function DateRangePicker({
                           {inMonth ? (
                             <button
                               type="button"
+                              data-testid={`drp-day-${toISO(day)}`}
                               disabled={dis}
                               onClick={() => handleDayClick(day)}
                               onMouseEnter={() => setHovered(day)}

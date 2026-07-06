@@ -4,6 +4,7 @@ import {
   type Page,
   type Locator,
   type TestInfo,
+  type BrowserContext,
 } from "@playwright/test"
 
 // Shared helpers for the dual-role split-screen journeys. NOT a spec file (no
@@ -13,6 +14,22 @@ export const slug = process.env.E2E_SLUG ?? "gpr"
 export const BASE = process.env.E2E_BASE_URL ?? "http://localhost:3000"
 const HALF = Number(process.env.E2E_SPLIT_WIDTH ?? 940) // per-window width (px)
 const VIEWPORT = { width: HALF - 20, height: 940 }
+
+/**
+ * Suppresses the first-run onboarding tour for a context. The tour renders coachmark
+ * overlays that intercept clicks and wedge the journeys; `useScreenOnboarding` bails when
+ * this localStorage flag is set. addInitScript runs before app JS on every navigation, so
+ * the flag is present before React mounts (and survives the /me re-hydration of onboarding).
+ */
+async function disableOnboarding(ctx: BrowserContext) {
+  await ctx.addInitScript(() => {
+    try {
+      window.localStorage.setItem("wos_e2e_no_onboarding", "1")
+    } catch {
+      /* storage unavailable — tour will simply show, non-fatal */
+    }
+  })
+}
 
 /**
  * Opens the notification bell and clicks the newest notification whose title matches,
@@ -127,6 +144,92 @@ export async function fileOb(employee: Page, purpose: string) {
   return chosen
 }
 
+/**
+ * Selects a SINGLE-day leave range in the modal's real calendar popover: opens the
+ * picker, pages forward until the target ISO day is on screen, then clicks it twice
+ * (first click = start, second click on the same day = commit → single-day range).
+ */
+async function selectSingleLeaveDay(employee: Page, iso: string) {
+  await employee
+    .getByTestId("leave-daterange")
+    .locator("button")
+    .first()
+    .click()
+  let day = employee.getByTestId(`drp-day-${iso}`)
+  for (let i = 0; i < 14 && (await day.count()) === 0; i++) {
+    await employee.getByRole("button", { name: "Next month" }).click()
+    day = employee.getByTestId(`drp-day-${iso}`)
+  }
+  await day.click() // start
+  await day.click() // end (same day) → commits + closes the popover
+}
+
+/**
+ * Files a LEAVE request as the employee (on /my-leaves): opens the modal, fills the
+ * reason, then picks the first single day the modal accepts (Submit enables) — skipping
+ * rest days / holidays. Submits and confirms the row is listed. Returns the chosen ISO
+ * date (the admin table's "From" column, used to locate the row). Analogue of `fileOb`.
+ *
+ * Override the starting day with E2E_LEAVE_DATE=YYYY-MM-DD. The employee must have leave
+ * credits for the default VACATION type (Submit stays disabled on insufficient balance).
+ */
+export async function fileLeave(employee: Page, reason: string) {
+  await employee.goto(`/${slug}/dashboard/my-leaves`)
+
+  // Opening the modal fires the availability pre-checks (balances / policy / holidays).
+  // WAIT for them before evaluating Submit, so we don't read the button mid-load.
+  const preChecks = [
+    "/hr/employee/leave-balances",
+    "/hr/attendance/me/policy",
+    "/hr/holidays",
+  ].map((u) =>
+    employee
+      .waitForResponse(
+        (r) => r.url().includes(u) && r.request().method() === "GET",
+        { timeout: 30_000 }
+      )
+      .catch(() => null)
+  )
+  await employee.getByTestId("leave-new-request").click()
+  await Promise.all(preChecks)
+
+  await employee.getByTestId("leave-reason").fill(reason)
+
+  const submitBtn = employee.getByTestId("leave-submit")
+  const override = process.env.E2E_LEAVE_DATE
+  const cursor = override
+    ? new Date(`${override}T00:00:00`)
+    : (() => {
+        const d = new Date()
+        d.setDate(d.getDate() + 14) // a couple weeks out — clear of "must file in advance"
+        return d
+      })()
+
+  let chosen = ""
+  for (let i = 0; i < 60; i++) {
+    const iso = cursor.toLocaleDateString("en-CA")
+    await selectSingleLeaveDay(employee, iso)
+    await employee.waitForTimeout(400) // let the per-day pre-check recompute
+    if ((await submitBtn.isEnabled()) && (await submitBtn.isEnabled())) {
+      chosen = iso
+      break
+    }
+    cursor.setDate(cursor.getDate() + 1) // blocked (rest day / holiday / no credit) — next day
+  }
+  if (!chosen) {
+    throw new Error(
+      "No fileable leave day found in 60 days. Set E2E_LEAVE_DATE to a known-free day and ensure the employee has leave credits."
+    )
+  }
+
+  await submitBtn.click()
+  // Generous timeout: the FIRST create hits the Next dev proxy route cold (Turbopack
+  // compiles /api/[...path] on demand), so the POST can take 10-15s before the modal closes.
+  await expect(submitBtn).toBeHidden({ timeout: 30_000 })
+  await expect(employee.getByText(reason)).toBeVisible({ timeout: 15_000 })
+  return chosen
+}
+
 export interface SplitScreen {
   employee: Page
   admin: Page
@@ -161,6 +264,7 @@ export async function setupCoApprover(info: TestInfo): Promise<ApproverWindow> {
     viewport: VIEWPORT,
     recordVideo: { dir: info.outputPath("video-approver2"), size: VIEWPORT },
   })
+  await disableOnboarding(ctx)
   await ctx.tracing.start({ screenshots: true, snapshots: true, sources: true })
   const page = await ctx.newPage()
 
@@ -212,6 +316,9 @@ export async function setupSplitScreen(info: TestInfo): Promise<SplitScreen> {
     viewport: VIEWPORT,
     recordVideo: { dir: info.outputPath("video-admin"), size: VIEWPORT },
   })
+
+  await disableOnboarding(employeeCtx)
+  await disableOnboarding(adminCtx)
 
   await employeeCtx.tracing.start({
     screenshots: true,

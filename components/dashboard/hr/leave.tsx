@@ -174,7 +174,7 @@ export function LeaveSection() {
                 .slice(0, 2)
                 .toUpperCase()
               return (
-                <TableRow key={r.id}>
+                <TableRow key={r.id} data-testid="leave-mgmt-row">
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
@@ -209,6 +209,7 @@ export function LeaveSection() {
                             <Button
                               size="icon-xs"
                               variant="outline"
+                              data-testid="leave-approve"
                               className="border-success-border text-success hover:bg-gbg"
                               disabled={approveMutation.isPending}
                               onClick={() =>
@@ -230,6 +231,7 @@ export function LeaveSection() {
                             <Button
                               size="icon-xs"
                               variant="outline"
+                              data-testid="leave-return"
                               className="border-amber-300 text-amber-600 hover:bg-amber-50 dark:border-amber-900/40"
                               disabled={returnMutation.isPending}
                               onClick={() => {
@@ -252,6 +254,7 @@ export function LeaveSection() {
                             <Button
                               size="icon-xs"
                               variant="outline"
+                              data-testid="leave-reject"
                               className="border-danger-border text-danger hover:bg-rbg"
                               disabled={rejectMutation.isPending}
                               onClick={() =>
@@ -286,56 +289,57 @@ export function LeaveSection() {
         setPageSize={setPageSize}
       />
 
-      {/* Return-for-revision dialog */}
-      <Dialog
-        open={!!returnTarget}
-        onOpenChange={(v) => !v && setReturnTarget(null)}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Return for revision</DialogTitle>
-            <DialogDescription>
-              {returnTarget
-                ? `Send ${returnTarget.employeeName}'s leave request back to be revised.`
-                : ""}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-1.5">
-            <Label className="text-[12px]">
-              What needs to be revised? <span className="text-red-500">*</span>
-            </Label>
-            <Textarea
-              className="min-h-20 resize-none text-[13px]"
-              placeholder="Shown to the employee…"
-              value={returnNote}
-              onChange={(e) => setReturnNote(e.target.value)}
-            />
-          </div>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={returnMutation.isPending}
-              onClick={() => setReturnTarget(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              disabled={!returnNote.trim() || returnMutation.isPending}
-              onClick={() =>
-                returnTarget &&
-                returnMutation.mutate(
-                  { id: returnTarget.id, reviewNote: returnNote.trim() },
-                  { onSuccess: () => setReturnTarget(null) }
-                )
-              }
-            >
-              {returnMutation.isPending ? "Returning…" : "Return for revision"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Return-for-revision dialog — mounted only while a target is selected, so
+          `returnTarget` is guaranteed non-null inside (mirrors the OB review modal). */}
+      {returnTarget && (
+        <Dialog open onOpenChange={(v) => !v && setReturnTarget(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Return for revision</DialogTitle>
+              <DialogDescription>
+                {`Send ${returnTarget.employeeName}'s leave request back to be revised.`}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-1.5">
+              <Label className="text-[12px]">
+                What needs to be revised?{" "}
+                <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                className="min-h-20 resize-none text-[13px]"
+                placeholder="Shown to the employee…"
+                value={returnNote}
+                onChange={(e) => setReturnNote(e.target.value)}
+              />
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={returnMutation.isPending}
+                onClick={() => setReturnTarget(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                data-testid="leave-review-return"
+                disabled={!returnNote.trim() || returnMutation.isPending}
+                onClick={() =>
+                  returnMutation.mutate(
+                    { id: returnTarget.id, reviewNote: returnNote.trim() },
+                    { onSuccess: () => setReturnTarget(null) }
+                  )
+                }
+              >
+                {returnMutation.isPending
+                  ? "Returning…"
+                  : "Return for revision"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

@@ -19,6 +19,13 @@ export function useScreenOnboarding(screenKey: string) {
   const authorities = useAuthStore((s) => s.authorities)
 
   useEffect(() => {
+    // E2E: a running tour overlays coachmarks that intercept clicks and wedge journeys.
+    // Playwright sets this flag on every context so tours never auto-start under test.
+    if (
+      typeof window !== "undefined" &&
+      window.localStorage.getItem("wos_e2e_no_onboarding") === "1"
+    )
+      return
     if (!apiRole) return // not logged in
     if (onboarded) return // fully done / skipped for this role
     if (onboardingDone.includes(screenKey)) return // already seen this screen
