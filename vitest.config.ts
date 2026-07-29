@@ -90,6 +90,56 @@ export default defineConfig({
           functions: 100,
           lines: 100,
         },
+        // Overtime module — two-phase (authorize-before-work + claim-after) held
+        // at the same 100% per-file bar as Official Business and Leave.
+        "**/lib/overtime-api.ts": {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
+        "**/hooks/use-overtime.ts": {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
+        "**/components/custom/overtime-request-dialog.tsx": {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
+        "**/components/custom/overtime-authorize-dialog.tsx": {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
+        "**/components/custom/overtime-bulk-authorize-dialog.tsx": {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
+        "**/components/custom/overtime-claim-dialog.tsx": {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
+        "**/components/dashboard/admin/overtime-management.tsx": {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
+        "**/components/dashboard/employee/my-overtime.tsx": {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
       },
     },
   },

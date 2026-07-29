@@ -34,6 +34,12 @@ export interface BreakConfigEntry {
 
 export type BreakConfig = Record<string, BreakConfigEntry>
 
+/**
+ * Outcome of a punch attempt. `at` is the server-recorded punch time (used for the success
+ * confirmation); `error` carries the axios failure for inline display.
+ */
+export type PunchResult = { ok: boolean; at?: Date; error?: unknown }
+
 /** The standard company break policy — shared by the dashboard clock and the DTR clock. */
 export const DEFAULT_BREAK_CONFIG: BreakConfig = {
   morning: { label: "Morning", allowMins: 15 },
@@ -130,7 +136,7 @@ export interface UseAttendanceClockOptions {
  * `ClockWidget` and the DTR clock panel: ticking time, clocked-in state, breaks,
  * overtime, and the status badge. Owns the clock-in/out + break mutations and
  * hydrates from the latest server record. UI lives in `ClockPanel`; modal
- * orchestration (confirm / camera / EOD) stays with the caller.
+ * orchestration (confirm / face verification / EOD) stays with the caller.
  */
 export function useAttendanceClock(options: UseAttendanceClockOptions = {}) {
   const { requiredHours = 9, breakConfig = DEFAULT_BREAK_CONFIG } = options
@@ -153,10 +159,11 @@ export function useAttendanceClock(options: UseAttendanceClockOptions = {}) {
   const [completedToday, setCompletedToday] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
-  // Camera-validation gating: roles granted DTR:REQUIRE_CAMERA_VALIDATION must capture a
-  // photo before clock-in/out; others bypass the camera modal.
-  const requiresCameraValidation = useAuthStore((s) =>
-    s.authorities.includes("DTR:REQUIRE_CAMERA_VALIDATION")
+  // Face-verification gating: BIOMETRICS:ENROLL_FACE is the single Face ID switch — roles that
+  // hold it must pass a live face match before clock-in/out; others punch directly. wos-hr
+  // enforces the same authority server-side, so this only decides whether to show the modal.
+  const requiresFaceVerification = useAuthStore((s) =>
+    s.authorities.includes("BIOMETRICS:ENROLL_FACE")
   )
 
   const { data: attendanceData } = useAttendance({ page: 0, size: 1 })
@@ -189,30 +196,44 @@ export function useAttendanceClock(options: UseAttendanceClockOptions = {}) {
   const isClockBusy = clockInMutation.isPending || clockOutMutation.isPending
   const isBreakBusy = breakStartMutation.isPending || breakEndMutation.isPending
 
-  const applyClockIn = useCallback(async () => {
-    try {
-      const result = await clockInMutation.mutateAsync()
-      setClocked(true)
-      setClockInTime(result.timeIn ? new Date(result.timeIn) : new Date())
-      setClockOutTime(null)
-      setBreaks(initialBreaks)
-      setCompletedToday(false)
-    } catch (err) {
-      console.error("Clock in failed:", err)
-    }
-  }, [clockInMutation, initialBreaks])
+  // Both return a result rather than throwing, so the face-verification modal can keep itself open
+  // and show a rejection inline instead of the punch failing silently.
+  const applyClockIn = useCallback(
+    async (faceDescriptor?: number[]): Promise<PunchResult> => {
+      try {
+        const result = await clockInMutation.mutateAsync(faceDescriptor)
+        const at = result.timeIn ? new Date(result.timeIn) : new Date()
+        setClocked(true)
+        setClockInTime(at)
+        setClockOutTime(null)
+        setBreaks(initialBreaks)
+        setCompletedToday(false)
+        return { ok: true, at }
+      } catch (err) {
+        console.error("Clock in failed:", err)
+        return { ok: false, error: err }
+      }
+    },
+    [clockInMutation, initialBreaks]
+  )
 
-  const applyClockOut = useCallback(async () => {
-    try {
-      const result = await clockOutMutation.mutateAsync()
-      setClocked(false)
-      setClockOutTime(result.timeOut ? new Date(result.timeOut) : new Date())
-      setBreaks(initialBreaks)
-      setCompletedToday(result?.date === localISODate(new Date()))
-    } catch (err) {
-      console.error("Clock out failed:", err)
-    }
-  }, [clockOutMutation, initialBreaks])
+  const applyClockOut = useCallback(
+    async (faceDescriptor?: number[]): Promise<PunchResult> => {
+      try {
+        const result = await clockOutMutation.mutateAsync(faceDescriptor)
+        const at = result.timeOut ? new Date(result.timeOut) : new Date()
+        setClocked(false)
+        setClockOutTime(at)
+        setBreaks(initialBreaks)
+        setCompletedToday(result?.date === localISODate(new Date()))
+        return { ok: true, at }
+      } catch (err) {
+        console.error("Clock out failed:", err)
+        return { ok: false, error: err }
+      }
+    },
+    [clockOutMutation, initialBreaks]
+  )
 
   // Tick every second.
   useEffect(() => {
@@ -374,7 +395,7 @@ export function useAttendanceClock(options: UseAttendanceClockOptions = {}) {
     // flags
     isClockBusy,
     isBreakBusy,
-    requiresCameraValidation,
+    requiresFaceVerification,
     // computed
     workSecs,
     breakSecs,

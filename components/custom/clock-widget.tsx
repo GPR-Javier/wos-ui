@@ -3,42 +3,74 @@
 import { useCallback, useState } from "react"
 import { ClockPanel } from "@/components/custom/clock-panel"
 import { ConfirmPunchModal } from "@/components/custom/confirm-punch-modal"
-import { PunchCameraModal } from "@/components/custom/punch-camera-modal"
+import { PunchFaceModal } from "@/components/custom/punch-face-modal"
 import { useAttendanceClock } from "@/hooks/use-attendance-clock"
 import { useMyPolicy } from "@/hooks/use-schedule-policy"
+import { apiErrorMessage } from "@/lib/api-error"
 
 /**
  * Dashboard clock card. A thin wrapper over the shared {@link useAttendanceClock}
  * hook + {@link ClockPanel} — the same building blocks the DTR clock uses, so the
- * two stay in lockstep. This one owns the confirm + camera punch modals.
+ * two stay in lockstep. This one owns the confirm + face-verification modals.
  */
 export function ClockWidget() {
   const { data: myPolicy } = useMyPolicy()
   const clock = useAttendanceClock({
     requiredHours: myPolicy?.requiredHours ?? 9,
   })
-  const [cameraPunchType, setCameraPunchType] = useState<"in" | "out" | null>(
-    null
-  )
+  const [facePunchType, setFacePunchType] = useState<"in" | "out" | null>(null)
+  const [faceError, setFaceError] = useState<string | null>(null)
+  const [faceSuccess, setFaceSuccess] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
   const [confirmPunchType, setConfirmPunchType] = useState<"in" | "out" | null>(
     null
   )
 
   const applyPunch = useCallback(
-    (type: "in" | "out") => {
-      if (type === "in") clock.applyClockIn()
-      else clock.applyClockOut()
-    },
+    (type: "in" | "out", faceDescriptor?: number[]) =>
+      type === "in"
+        ? clock.applyClockIn(faceDescriptor)
+        : clock.applyClockOut(faceDescriptor),
     [clock]
   )
 
   const startPunch = useCallback(
     (type: "in" | "out") => {
-      if (clock.requiresCameraValidation) setCameraPunchType(type)
-      else applyPunch(type)
+      if (clock.requiresFaceVerification) {
+        setFaceError(null)
+        setFaceSuccess(null)
+        setFacePunchType(type)
+      } else {
+        applyPunch(type)
+      }
     },
-    [clock.requiresCameraValidation, applyPunch]
+    [clock.requiresFaceVerification, applyPunch]
   )
+
+  // The modal only produces a descriptor — wos-hr decides whether it matches, so a rejection
+  // comes back here as a failed punch and is shown inline rather than closing the modal.
+  const onVerified = useCallback(
+    async (descriptor: number[]) => {
+      if (!facePunchType) return
+      setSubmitting(true)
+      const result = await applyPunch(facePunchType, descriptor)
+      setSubmitting(false)
+      if (result.ok) {
+        // Leave the modal open on its success panel — it dismisses itself.
+        setFaceError(null)
+        setFaceSuccess(clock.formatTime(result.at ?? new Date()))
+      } else {
+        setFaceError(apiErrorMessage(result.error, "Verification failed. Please try again."))
+      }
+    },
+    [facePunchType, applyPunch, clock]
+  )
+
+  function closeFaceModal() {
+    setFacePunchType(null)
+    setFaceError(null)
+    setFaceSuccess(null)
+  }
 
   return (
     <>
@@ -57,14 +89,15 @@ export function ClockWidget() {
         }}
       />
 
-      {cameraPunchType && (
-        <PunchCameraModal
-          punchType={cameraPunchType}
-          onClose={() => setCameraPunchType(null)}
-          onCaptured={() => {
-            applyPunch(cameraPunchType)
-            setCameraPunchType(null)
-          }}
+      {facePunchType && (
+        <PunchFaceModal
+          punchType={facePunchType}
+          submitting={submitting}
+          errorMessage={faceError}
+          successLabel={faceSuccess}
+          onClose={closeFaceModal}
+          onRetry={() => setFaceError(null)}
+          onVerified={onVerified}
         />
       )}
     </>

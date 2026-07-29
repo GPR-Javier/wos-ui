@@ -15,7 +15,8 @@ import { OvertimeClaimDialog } from "@/components/custom/overtime-claim-dialog"
 import { ScheduleChangeRequestModal } from "@/components/custom/schedule-change-request-modal"
 import { MyPolicyHistoryModal } from "@/components/custom/my-policy-history-modal"
 import { ConfirmPunchModal } from "@/components/custom/confirm-punch-modal"
-import { PunchCameraModal } from "@/components/custom/punch-camera-modal"
+import { PunchFaceModal } from "@/components/custom/punch-face-modal"
+import { apiErrorMessage } from "@/lib/api-error"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -486,9 +487,10 @@ export function DTRSection() {
   const [recordNotes, setRecordNotes] = useState<Record<string, string>>({})
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [cameraPunchType, setCameraPunchType] = useState<"in" | "out" | null>(
-    null
-  )
+  const [facePunchType, setFacePunchType] = useState<"in" | "out" | null>(null)
+  const [faceError, setFaceError] = useState<string | null>(null)
+  const [faceSuccess, setFaceSuccess] = useState<string | null>(null)
+  const [facePunchSubmitting, setFacePunchSubmitting] = useState(false)
   const [confirmPunchType, setConfirmPunchType] = useState<"in" | "out" | null>(
     null
   )
@@ -525,8 +527,10 @@ export function DTRSection() {
   }
 
   function startPunch(type: "in" | "out") {
-    if (clock.requiresCameraValidation) {
-      setCameraPunchType(type)
+    if (clock.requiresFaceVerification) {
+      setFaceError(null)
+      setFaceSuccess(null)
+      setFacePunchType(type)
     } else if (type === "in") {
       applyClockIn()
     } else {
@@ -534,10 +538,42 @@ export function DTRSection() {
     }
   }
 
-  async function finalizeClockOut() {
-    await applyClockOut()
-    setPendingClockOut(null)
-    setEodOpen(false)
+  async function finalizeClockOut(faceDescriptor?: number[]) {
+    const result = await applyClockOut(faceDescriptor)
+    if (result.ok) {
+      setPendingClockOut(null)
+      setEodOpen(false)
+    }
+    return result
+  }
+
+  /**
+   * The modal only supplies a descriptor — wos-hr decides whether it matches, so a rejection
+   * comes back as a failed punch and is shown inline instead of closing the modal.
+   */
+  async function onFaceVerified(descriptor: number[]) {
+    if (!facePunchType) return
+    setFacePunchSubmitting(true)
+    const result =
+      facePunchType === "in"
+        ? await applyClockIn(descriptor)
+        : await finalizeClockOut(descriptor)
+    setFacePunchSubmitting(false)
+    if (result.ok) {
+      // Leave the modal open on its success panel — it dismisses itself.
+      setFaceError(null)
+      setFaceSuccess(clock.formatTime(result.at ?? new Date()))
+    } else {
+      setFaceError(
+        apiErrorMessage(result.error, "Verification failed. Please try again.")
+      )
+    }
+  }
+
+  function closeFaceModal() {
+    setFacePunchType(null)
+    setFaceError(null)
+    setFaceSuccess(null)
   }
 
   // Paginated attendance for the log table (separate from the clock's latest-record query).
@@ -1152,18 +1188,15 @@ export function DTRSection() {
         }}
       />
 
-      {cameraPunchType && (
-        <PunchCameraModal
-          punchType={cameraPunchType}
-          onClose={() => setCameraPunchType(null)}
-          onCaptured={() => {
-            if (cameraPunchType === "in") {
-              applyClockIn()
-            } else {
-              startClockOut()
-            }
-            setCameraPunchType(null)
-          }}
+      {facePunchType && (
+        <PunchFaceModal
+          punchType={facePunchType}
+          submitting={facePunchSubmitting}
+          errorMessage={faceError}
+          successLabel={faceSuccess}
+          onClose={closeFaceModal}
+          onRetry={() => setFaceError(null)}
+          onVerified={onFaceVerified}
         />
       )}
 

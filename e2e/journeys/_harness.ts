@@ -230,6 +230,55 @@ export async function fileLeave(employee: Page, reason: string) {
   return chosen
 }
 
+/**
+ * Files an OVERTIME PRE-AUTHORIZATION as the employee (on /my-overtime) — this is Phase 1
+ * of the two-phase overtime flow (authorize-before-work, then claim-after). It's the
+ * SIMPLEST reviewable state: a PENDING_AUTH request an approver acts on from the
+ * "Authorizations" queue, and it needs no logged attendance (unlike the Phase-2 claim,
+ * which files actual hours against an approved authorization).
+ *
+ * Opens the OvertimeAuthorizeDialog via "New Request", fills a planned window + reason for
+ * TODAY (accepted — authorization only rejects PAST dates — and, being inside the current
+ * payroll cut-off, the new row stays visible in the employee's default my-overtime range so
+ * we can confirm it). Submits and confirms the row is listed. Returns the chosen ISO date.
+ * Analogue of `fileOb` / `fileLeave`. Override the date with E2E_OT_DATE=YYYY-MM-DD.
+ */
+export async function fileOvertime(employee: Page, reason: string) {
+  await employee.goto(`/${slug}/dashboard/my-overtime`)
+
+  // Opening the authorization modal fetches the schedule policy + holiday calendar for its
+  // day-guide. Wait for them (best-effort) so the dialog is settled before we type.
+  const preChecks = ["/hr/attendance/me/policy", "/hr/holidays"].map((u) =>
+    employee
+      .waitForResponse(
+        (r) => r.url().includes(u) && r.request().method() === "GET",
+        { timeout: 30_000 }
+      )
+      .catch(() => null)
+  )
+  await employee.getByRole("button", { name: /New Request/ }).click()
+  await Promise.all(preChecks)
+
+  const dialog = employee.getByRole("dialog")
+  const iso = process.env.E2E_OT_DATE ?? new Date().toLocaleDateString("en-CA")
+  await dialog.locator('input[type="date"]').fill(iso)
+  const times = dialog.locator('input[type="time"]')
+  await times.nth(0).fill("18:00")
+  await times.nth(1).fill("20:00")
+  await dialog.getByPlaceholder(/Why is this overtime needed/i).fill(reason)
+
+  const submitBtn = dialog.getByRole("button", {
+    name: "Request Authorization",
+  })
+  await expect(submitBtn).toBeEnabled({ timeout: 15_000 })
+  await submitBtn.click()
+  // Generous timeout: the FIRST create hits the Next dev proxy route cold (Turbopack
+  // compiles /api/[...path] on demand), so the POST can take 10-15s before the modal closes.
+  await expect(submitBtn).toBeHidden({ timeout: 30_000 })
+  await expect(employee.getByText(reason)).toBeVisible({ timeout: 15_000 })
+  return iso
+}
+
 export interface SplitScreen {
   employee: Page
   admin: Page

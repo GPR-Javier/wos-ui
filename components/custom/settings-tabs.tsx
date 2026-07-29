@@ -4,15 +4,25 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useSlugHref } from "@/lib/slug"
+import { useAuthStore } from "@/store/auth-store"
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import {
   Setting06Icon,
   ShieldUserIcon,
   Notification01Icon,
   Sun01Icon,
+  FaceIdIcon,
 } from "@hugeicons/core-free-icons"
 
-const TABS: { label: string; href: string; icon: IconSvgElement }[] = [
+type Tab = {
+  label: string
+  href: string
+  icon: IconSvgElement
+  /** When set, the tab is only shown if the user's authorities include this code. */
+  authority?: string
+}
+
+const TABS: Tab[] = [
   {
     label: "General",
     href: "/dashboard/settings/general",
@@ -22,6 +32,12 @@ const TABS: { label: string; href: string; icon: IconSvgElement }[] = [
     label: "Security",
     href: "/dashboard/settings/security",
     icon: ShieldUserIcon,
+  },
+  {
+    label: "Face ID",
+    href: "/dashboard/settings/face-id",
+    icon: FaceIdIcon,
+    authority: "BIOMETRICS:ENROLL_FACE",
   },
   {
     label: "Notifications",
@@ -38,11 +54,16 @@ const TABS: { label: string; href: string; icon: IconSvgElement }[] = [
 export function SettingsTabs() {
   const pathname = usePathname()
   const slugHref = useSlugHref()
+  const authorities = useAuthStore((s) => s.authorities)
+
+  const visibleTabs = TABS.filter(
+    (tab) => !tab.authority || authorities.includes(tab.authority)
+  )
 
   return (
     <div className="shrink-0 border-b border-border px-6">
       <div className="flex gap-0.5">
-        {TABS.map((tab) => {
+        {visibleTabs.map((tab) => {
           const href = slugHref(tab.href)
           const isActive = pathname === href
           return (

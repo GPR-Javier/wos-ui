@@ -108,11 +108,26 @@ export const employeeApi = {
       >("/hr/attendance/me", { params: { page: 0, size: 20, ...params } })
       .then((r) => r.data),
 
-  clockIn: () =>
-    api.post<AttendanceEntry>("/hr/attendance/clock-in").then((r) => r.data),
+  // `faceDescriptor` is required only for roles gated on face verification; wos-hr matches it
+  // against the enrolled gallery and refuses the punch on mismatch. When one is sent the global
+  // error toast is suppressed — the verification modal shows the rejection inline instead.
+  clockIn: (faceDescriptor?: number[]) =>
+    api
+      .post<AttendanceEntry>(
+        "/hr/attendance/clock-in",
+        { faceDescriptor },
+        { skipErrorToast: !!faceDescriptor }
+      )
+      .then((r) => r.data),
 
-  clockOut: () =>
-    api.post<AttendanceEntry>("/hr/attendance/clock-out").then((r) => r.data),
+  clockOut: (faceDescriptor?: number[]) =>
+    api
+      .post<AttendanceEntry>(
+        "/hr/attendance/clock-out",
+        { faceDescriptor },
+        { skipErrorToast: !!faceDescriptor }
+      )
+      .then((r) => r.data),
 
   breakStart: (type: string) =>
     api

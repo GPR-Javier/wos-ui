@@ -33,3 +33,8 @@ export function apiErrorMessage(
 ) {
   return extract(e).message?.trim() || fallback
 }
+
+/** The HTTP status of a failed request — for callers that branch on specific codes. */
+export function apiErrorStatus(e: unknown): number | undefined {
+  return (e as { response?: { status?: number } })?.response?.status
+}

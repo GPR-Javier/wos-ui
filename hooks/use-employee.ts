@@ -20,7 +20,7 @@ export function useAttendanceHeatmap() {
 export function useClockIn() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: () => employeeApi.clockIn(),
+    mutationFn: (faceDescriptor?: number[]) => employeeApi.clockIn(faceDescriptor),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["employee", "attendance"] }),
   })
@@ -29,7 +29,7 @@ export function useClockIn() {
 export function useClockOut() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: () => employeeApi.clockOut(),
+    mutationFn: (faceDescriptor?: number[]) => employeeApi.clockOut(faceDescriptor),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["employee", "attendance"] }),
   })

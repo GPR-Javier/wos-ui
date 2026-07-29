@@ -185,7 +185,9 @@ function ReviewModal({
       if (isAuth) rejectAuth.mutate(args, { onSuccess: onClose })
       else if (isLegacy) legacyReject.mutate(args, { onSuccess: onClose })
       else rejectClaim.mutate(args, { onSuccess: onClose })
-    } else if (mode === "return") {
+    } else {
+      // mode === "return" — view mode has no submit button, so this is the only
+      // remaining case (a plain else avoids an unreachable "return" branch).
       const ret = { id: request.id, reviewNote }
       if (isAuth) returnAuth.mutate(ret, { onSuccess: onClose })
       else returnClaim.mutate(ret, { onSuccess: onClose })
