@@ -111,10 +111,10 @@ export function BiometricsManagementSection() {
           Face ID enrollments
         </h3>
         <p className="mt-0.5 text-[13px] text-muted-foreground">
-          Face ID is required only for roles granted the{" "}
-          <span className="font-medium text-foreground">Enroll Face</span>{" "}
-          permission — those employees must enroll before they can clock in or
-          out. Reset an enrollment to let someone enroll again.
+          A face is required only for roles granted{" "}
+          <span className="font-medium text-foreground">Require Face</span> under My
+          Attendance in role config — those employees must enroll before they can clock
+          in or out. Reset an enrollment to let someone enroll again.
         </p>
       </div>
 
