@@ -4,7 +4,6 @@ import { useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useSlugHref } from "@/lib/slug"
-import { StatusBadge } from "@/components/custom/status-badge"
 import { EmptyState } from "@/components/custom/empty-state"
 import { TableSkeleton } from "@/components/custom/table-skeleton"
 import { Button } from "@/components/ui/button"
@@ -37,6 +36,7 @@ import { MyCompanySection } from "@/components/dashboard/my-company"
 import { SchedulePoliciesSection } from "@/components/dashboard/admin/schedule-policies"
 import { AttendanceConfigSection } from "@/components/dashboard/admin/attendance-config"
 import { HolidaysConfigSection } from "@/components/dashboard/admin/holidays-config"
+import { LeaveConfigSection } from "@/components/dashboard/admin/leave-config"
 import { PayrollSetupSection } from "@/components/dashboard/admin/payroll-setup"
 import { PayRatesSection } from "@/components/dashboard/admin/pay-rates-config"
 import { DepartmentsSection } from "@/components/dashboard/admin/departments"
@@ -53,58 +53,6 @@ import {
   useDeleteJobPosition,
   useDepartments,
 } from "@/hooks/use-employee-profile"
-
-// ── PlaceholderSection ─────────────────────────────────────────────────────
-
-interface PlaceholderItem {
-  label: string
-  value: string
-  tag?: string
-}
-
-function PlaceholderSection({
-  title,
-  description,
-  items,
-}: {
-  title: string
-  description: string
-  items: PlaceholderItem[]
-}) {
-  return (
-    <div className="rounded-xl border border-border p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <p className="text-[13px] font-semibold">{title}</p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            {description}
-          </p>
-        </div>
-        <Button size="xs" variant="outline" disabled>
-          Edit
-        </Button>
-      </div>
-      <div className="space-y-3">
-        {items.map((item) => (
-          <div
-            key={item.label}
-            className="flex items-center justify-between text-[13px]"
-          >
-            <span className="text-muted-foreground">{item.label}</span>
-            <div className="flex items-center gap-2">
-              <span className="font-medium">{item.value}</span>
-              {item.tag && (
-                <StatusBadge variant="amber" dot={false}>
-                  {item.tag}
-                </StatusBadge>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 // ── ConfigSection ──────────────────────────────────────────────────────────
 
@@ -322,17 +270,7 @@ export function ConfigSection() {
           <HolidaysConfigSection />
         )}
 
-        {canEditLeave && activeTab === "leave" && (
-          <PlaceholderSection
-            title="Leave settings"
-            description="Coming soon."
-            items={[
-              { label: "Vacation leave accrual", value: "1.25 days/month" },
-              { label: "Sick leave accrual", value: "1.25 days/month" },
-              { label: "Leave carry-over", value: "10 days max" },
-            ]}
-          />
-        )}
+        {canEditLeave && activeTab === "leave" && <LeaveConfigSection />}
 
         {activeTab === "departments" && <DepartmentsSection />}
 
