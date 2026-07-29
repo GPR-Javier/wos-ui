@@ -7,6 +7,7 @@ import { PunchFaceModal } from "@/components/custom/punch-face-modal"
 import { useAttendanceClock } from "@/hooks/use-attendance-clock"
 import { useMyPolicy } from "@/hooks/use-schedule-policy"
 import { apiErrorMessage } from "@/lib/api-error"
+import { useToastStore } from "@/store/toast-store"
 
 /**
  * Dashboard clock card. A thin wrapper over the shared {@link useAttendanceClock}
@@ -14,6 +15,7 @@ import { apiErrorMessage } from "@/lib/api-error"
  * two stay in lockstep. This one owns the confirm + face-verification modals.
  */
 export function ClockWidget() {
+  const pushToast = useToastStore((s) => s.push)
   const { data: myPolicy } = useMyPolicy()
   const clock = useAttendanceClock({
     requiredHours: myPolicy?.requiredHours ?? 9,
@@ -35,16 +37,23 @@ export function ClockWidget() {
   )
 
   const startPunch = useCallback(
-    (type: "in" | "out") => {
+    async (type: "in" | "out") => {
       if (clock.requiresFaceVerification) {
         setFaceError(null)
         setFaceSuccess(null)
         setFacePunchType(type)
-      } else {
-        applyPunch(type)
+        return
+      }
+      // No verification modal to confirm in, so a toast is the only feedback this path gets.
+      const result = await applyPunch(type)
+      if (result.ok) {
+        pushToast(
+          `${type === "in" ? "Timed in" : "Timed out"} at ${clock.formatTime(result.at ?? new Date())}`,
+          "success"
+        )
       }
     },
-    [clock.requiresFaceVerification, applyPunch]
+    [clock, applyPunch, pushToast]
   )
 
   // The modal only produces a descriptor — wos-hr decides whether it matches, so a rejection
@@ -60,7 +69,12 @@ export function ClockWidget() {
         setFaceError(null)
         setFaceSuccess(clock.formatTime(result.at ?? new Date()))
       } else {
-        setFaceError(apiErrorMessage(result.error, "Verification failed. Please try again."))
+        setFaceError(
+          apiErrorMessage(
+            result.error,
+            "Verification failed. Please try again."
+          )
+        )
       }
     },
     [facePunchType, applyPunch, clock]
@@ -84,7 +98,7 @@ export function ClockWidget() {
         punchType={confirmPunchType}
         onCancel={() => setConfirmPunchType(null)}
         onConfirm={() => {
-          if (confirmPunchType) startPunch(confirmPunchType)
+          if (confirmPunchType) void startPunch(confirmPunchType)
           setConfirmPunchType(null)
         }}
       />

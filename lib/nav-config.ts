@@ -24,6 +24,11 @@ export const navConfig: NavItem[] = [
         section: "schedules",
         authority: "SCHEDULE_MANAGEMENT:VIEW_SCHEDULES",
       },
+      {
+        label: "Biometrics",
+        section: "biometrics",
+        authority: "BIOMETRICS_MANAGEMENT:VIEW_ALL",
+      },
     ],
   },
   {
@@ -327,6 +332,7 @@ export const sectionTitles: Record<string, string> = {
   leave: "Leave Management",
   team: "Management",
   attendance: "Attendance Logs",
+  biometrics: "Biometrics",
   employees: "Employees",
   "change-time": "Change Time In/Time Out",
   or: "Official Receipts",

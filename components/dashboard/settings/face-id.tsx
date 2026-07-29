@@ -22,7 +22,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { CameraPicker } from "@/components/custom/camera-picker"
 import { useToastStore } from "@/store/toast-store"
+import { usePreferencesStore } from "@/store/preferences-store"
 import {
   useMyFaceEnrollment,
   useEnrollFace,
@@ -30,6 +32,15 @@ import {
 } from "@/hooks/use-face-enrollment"
 import type { EnrollMode } from "@/lib/biometric-api"
 import { loadFaceApi, MODEL_VERSION, type FaceApi } from "@/lib/face-api-loader"
+import {
+  estimatePose,
+  POSE_TARGETS,
+  HOLD_TICKS,
+  TICK_OWNER,
+  tickAngle,
+  type PoseKey,
+  type PoseTarget,
+} from "@/lib/face-pose"
 
 /** Descriptors captured per pose target — the gallery ends up ~2× the number of targets. */
 const FRAMES_PER_POSE = 2
@@ -72,16 +83,51 @@ type LiveStatus = GateStatus | "aligning" | "holding" | "done"
 /** Camera never came up — the detection loop must not overwrite these with "no-face". */
 const CAMERA_FAILED: LiveStatus[] = ["denied", "no-camera", "busy", "no-stream"]
 
-const LIVE_LABEL: Record<GateStatus, { label: string; sub: string; tone: "neutral" | "warn" | "deny" | "ok" }> = {
+const LIVE_LABEL: Record<
+  GateStatus,
+  { label: string; sub: string; tone: "neutral" | "warn" | "deny" | "ok" }
+> = {
   init: { label: "Starting camera…", sub: "Please wait", tone: "neutral" },
-  denied: { label: "Camera access denied", sub: "Allow camera access in your browser", tone: "deny" },
-  "no-camera": { label: "No camera found", sub: "Connect a webcam, then try again", tone: "deny" },
-  busy: { label: "Camera unavailable", sub: "Another app may be using it — close it and try again", tone: "deny" },
-  "no-stream": { label: "No video from camera", sub: "Camera opened but sent no frames — check for a privacy shutter", tone: "deny" },
-  "no-face": { label: "No face detected", sub: "Position your face inside the oval", tone: "deny" },
-  multi: { label: "Only one face", sub: "Only your face should be in view", tone: "deny" },
-  "too-far": { label: "Move closer", sub: "You are too far from the camera", tone: "warn" },
-  "too-close": { label: "Move back", sub: "You are too close to the camera", tone: "warn" },
+  denied: {
+    label: "Camera access denied",
+    sub: "Allow camera access in your browser",
+    tone: "deny",
+  },
+  "no-camera": {
+    label: "No camera found",
+    sub: "Connect a webcam, then try again",
+    tone: "deny",
+  },
+  busy: {
+    label: "Camera unavailable",
+    sub: "Another app may be using it — close it and try again",
+    tone: "deny",
+  },
+  "no-stream": {
+    label: "No video from camera",
+    sub: "Camera opened but sent no frames — check for a privacy shutter",
+    tone: "deny",
+  },
+  "no-face": {
+    label: "No face detected",
+    sub: "Position your face inside the oval",
+    tone: "deny",
+  },
+  multi: {
+    label: "Only one face",
+    sub: "Only your face should be in view",
+    tone: "deny",
+  },
+  "too-far": {
+    label: "Move closer",
+    sub: "You are too far from the camera",
+    tone: "warn",
+  },
+  "too-close": {
+    label: "Move back",
+    sub: "You are too close to the camera",
+    tone: "warn",
+  },
 }
 
 const TONE_STROKE: Record<string, string> = {
@@ -90,133 +136,6 @@ const TONE_STROKE: Record<string, string> = {
   deny: "#ef4444",
   ok: "#22c55e",
 }
-
-// ── Head pose ───────────────────────────────────────────────────────────────────
-
-type Point = { x: number; y: number }
-/** Both components are normalised to roughly -1..1, where 0 is facing the camera. */
-type Pose = { yaw: number; pitch: number }
-
-const dist = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y)
-
-function centroid(points: Point[]): Point {
-  const n = points.length || 1
-  return {
-    x: points.reduce((s, p) => s + p.x, 0) / n,
-    y: points.reduce((s, p) => s + p.y, 0) / n,
-  }
-}
-
-/** Nose tip sits ~36% of the way down the eye-line→chin span on a level head. */
-const NEUTRAL_NOSE_DROP = 0.36
-const PITCH_SCALE = 0.22
-
-/**
- * Estimates head yaw/pitch from the 68-point landmark mesh.
- *
- * Yaw compares nose-tip distance to each jaw edge — turning the head shortens one side and
- * lengthens the other. Pitch places the nose tip along the eye-line→chin span, which
- * foreshortens as the head tilts. Both are normalised by face size so they hold at any
- * distance. This is a cheap 2D approximation, not a real 3D pose solve — accurate enough to
- * gate a guided capture, which is why the target zones below are deliberately generous.
- */
-function estimatePose(positions: Point[], leftEye: Point[], rightEye: Point[]): Pose {
-  const jawLeft = positions[0] // image-left edge = the subject's right cheek
-  const jawRight = positions[16]
-  const chin = positions[8]
-  const noseTip = positions[30]
-  const eyeMid = centroid([centroid(leftEye), centroid(rightEye)])
-
-  const toLeft = dist(noseTip, jawLeft)
-  const toRight = dist(noseTip, jawRight)
-  // > 0 when the subject turns toward their own left.
-  const yaw = (toLeft - toRight) / (toLeft + toRight || 1)
-
-  const span = chin.y - eyeMid.y || 1
-  // > 0 when looking down, < 0 when looking up.
-  const pitch = ((noseTip.y - eyeMid.y) / span - NEUTRAL_NOSE_DROP) / PITCH_SCALE
-
-  return { yaw, pitch: Math.max(-2, Math.min(2, pitch)) }
-}
-
-// ── Guided pose targets ─────────────────────────────────────────────────────────
-
-type PoseKey = "center" | "right" | "down" | "left" | "up"
-
-type PoseTarget = {
-  key: PoseKey
-  label: string
-  hint: string
-  /** Degrees around the ring (0 = 3 o'clock, clockwise). null = the centre pose, which owns no arc. */
-  arc: number | null
-  inZone: (p: Pose) => boolean
-}
-
-const YAW_TURN = 0.16
-const PITCH_TILT = 0.5
-/** A turned head is allowed to drift off-centre; only the straight-on pose is held tight. */
-const YAW_LEVEL = 0.34
-
-// Ordered as a clockwise sweep so the head movement feels continuous, like iPhone's Face ID.
-const POSE_TARGETS: PoseTarget[] = [
-  {
-    key: "center",
-    label: "Look straight ahead",
-    hint: "Fill the oval with your face",
-    arc: null,
-    inZone: (p) => Math.abs(p.yaw) < 0.1 && Math.abs(p.pitch) < 0.35,
-  },
-  {
-    key: "right",
-    label: "Slowly turn your head right",
-    hint: "Keep your eyes on the screen",
-    arc: 0,
-    inZone: (p) => p.yaw <= -YAW_TURN && Math.abs(p.pitch) < 0.7,
-  },
-  {
-    key: "down",
-    label: "Slowly tilt your chin down",
-    hint: "A small nod is enough",
-    arc: 90,
-    inZone: (p) => p.pitch >= PITCH_TILT && Math.abs(p.yaw) < YAW_LEVEL,
-  },
-  {
-    key: "left",
-    label: "Slowly turn your head left",
-    hint: "Keep your eyes on the screen",
-    arc: 180,
-    inZone: (p) => p.yaw >= YAW_TURN && Math.abs(p.pitch) < 0.7,
-  },
-  {
-    key: "up",
-    label: "Slowly tilt your chin up",
-    hint: "A small lift is enough",
-    arc: 270,
-    inZone: (p) => p.pitch <= -PITCH_TILT && Math.abs(p.yaw) < YAW_LEVEL,
-  },
-]
-
-/** Consecutive in-zone detections required before a pose is captured (~0.5s at 250ms/tick). */
-const HOLD_TICKS = 2
-
-const RING_TICKS = 16
-const TICK_STEP = 360 / RING_TICKS
-
-function angleGap(a: number, b: number) {
-  const d = Math.abs(a - b) % 360
-  return d > 180 ? 360 - d : d
-}
-
-/** Which pose target each ring tick belongs to — the ring fills as poses are captured. */
-const TICK_OWNER: PoseKey[] = Array.from({ length: RING_TICKS }, (_, i) => {
-  const angle = i * TICK_STEP
-  const arced = POSE_TARGETS.filter((t) => t.arc !== null)
-  let owner = arced[0]
-  for (const t of arced) {
-    if (angleGap(angle, t.arc!) < angleGap(angle, owner.arc!)) owner = t
-  }
-  return owner.key
-})
 
 function FaceCapture({
   faceapi,
@@ -232,6 +151,8 @@ function FaceCapture({
   // The in-flight getUserMedia call, shared across effect re-runs. Refs survive StrictMode's
   // double-invoke (same fiber), so a remount reuses this instead of opening the device twice.
   const acquireRef = useRef<Promise<MediaStream> | null>(null)
+  // Which camera the cached acquisition belongs to, so a switch can't silently reuse the old one.
+  const acquiredDeviceRef = useRef<string | null>(null)
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const statusRef = useRef<LiveStatus>("init")
   const runningRef = useRef(false)
@@ -242,6 +163,8 @@ function FaceCapture({
   const descriptorsRef = useRef<number[][]>([])
   const thumbRef = useRef("")
   const finishedRef = useRef(false)
+
+  const cameraDeviceId = usePreferencesStore((s) => s.cameraDeviceId)
 
   const [status, setStatus] = useState<LiveStatus>("init")
   const [poseIdx, setPoseIdx] = useState(0)
@@ -281,9 +204,24 @@ function FaceCapture({
         // Reuse the existing/in-flight stream. Calling getUserMedia a second time for the same
         // device while the first is being released powers the camera down on Windows — the LED
         // goes dark and the <video> keeps showing its frozen, pre-exposure first frame.
+        // A camera switch must release the previous device rather than reuse its stream.
+        if (
+          acquireRef.current &&
+          acquiredDeviceRef.current !== cameraDeviceId
+        ) {
+          streamRef.current?.getTracks().forEach((t) => t.stop())
+          streamRef.current = null
+          acquireRef.current = null
+        }
         if (!acquireRef.current) {
+          acquiredDeviceRef.current = cameraDeviceId
           acquireRef.current = navigator.mediaDevices.getUserMedia({
             video: {
+              // `exact` would fail outright if the saved camera is gone; prefer it and let the
+              // browser fall back, since a working default beats a hard error.
+              ...(cameraDeviceId
+                ? { deviceId: { ideal: cameraDeviceId } }
+                : {}),
               facingMode: "user",
               width: { ideal: 640 },
               height: { ideal: 480 },
@@ -325,7 +263,11 @@ function FaceCapture({
       watchdog = setTimeout(() => {
         const v = videoRef.current
         const trackLive = stream.getVideoTracks()[0]?.readyState === "live"
-        if (!cancelled && v && (v.readyState < 2 || v.videoWidth === 0 || !trackLive)) {
+        if (
+          !cancelled &&
+          v &&
+          (v.readyState < 2 || v.videoWidth === 0 || !trackLive)
+        ) {
           pushStatus("no-stream")
         }
       }, 6000)
@@ -344,13 +286,20 @@ function FaceCapture({
         stopTimerRef.current = null
       }, 500)
     }
-  }, [])
+    // Switching camera tears the stream down and re-acquires on the new device.
+  }, [cameraDeviceId])
 
   // Guided capture loop — walks the pose targets in order, capturing each automatically once the
   // head holds inside its zone. There is no manual shutter; the sweep drives itself.
   useEffect(() => {
-    const gateOpts = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 })
-    const grabOpts = new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 })
+    const gateOpts = new faceapi.TinyFaceDetectorOptions({
+      inputSize: 320,
+      scoreThreshold: 0.5,
+    })
+    const grabOpts = new faceapi.TinyFaceDetectorOptions({
+      inputSize: 416,
+      scoreThreshold: 0.5,
+    })
 
     const id = setInterval(async () => {
       const video = videoRef.current
@@ -364,7 +313,9 @@ function FaceCapture({
 
       runningRef.current = true
       try {
-        const found = await faceapi.detectAllFaces(video, gateOpts).withFaceLandmarks()
+        const found = await faceapi
+          .detectAllFaces(video, gateOpts)
+          .withFaceLandmarks()
         if (finishedRef.current) return
 
         if (found.length === 0) {
@@ -425,7 +376,9 @@ function FaceCapture({
         if (grabbed.length === 0) return
 
         descriptorsRef.current.push(...grabbed)
-        setCaptured((prev) => (prev.includes(target.key) ? prev : [...prev, target.key]))
+        setCaptured((prev) =>
+          prev.includes(target.key) ? prev : [...prev, target.key]
+        )
 
         const next = poseIdxRef.current + 1
         poseIdxRef.current = next
@@ -461,7 +414,11 @@ function FaceCapture({
 
   const cfg =
     status === "done"
-      ? { label: "All angles captured", sub: "Finishing up…", tone: "ok" as const }
+      ? {
+          label: "All angles captured",
+          sub: "Finishing up…",
+          tone: "ok" as const,
+        }
       : onTarget && target
         ? {
             label: target.label,
@@ -519,7 +476,7 @@ function FaceCapture({
 
             {/* iPhone-style ring: each tick belongs to a pose target and fills when captured. */}
             {TICK_OWNER.map((owner, i) => {
-              const rad = (i * TICK_STEP * Math.PI) / 180
+              const rad = (tickAngle(i) * Math.PI) / 180
               const cos = Math.cos(rad)
               const sin = Math.sin(rad)
               const done = capturedSet.has(owner)
@@ -619,9 +576,15 @@ function FaceCapture({
         </div>
       )}
 
+      <CameraPicker className="mt-3" disabled={status === "done"} />
+
       {/* No shutter button — the sweep captures each angle on its own. */}
       <div className="mt-4 flex items-center gap-3">
-        <Button variant="outline" onClick={onCancel} disabled={status === "done"}>
+        <Button
+          variant="outline"
+          onClick={onCancel}
+          disabled={status === "done"}
+        >
           Cancel
         </Button>
         <div className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-[12px] text-muted-foreground">
@@ -661,9 +624,10 @@ export function FaceEnrollmentSection() {
   const [phase, setPhase] = useState<Phase>("idle")
   const [faceapi, setFaceApi] = useState<FaceApi | null>(null)
   const [modelError, setModelError] = useState(false)
-  const [captured, setCaptured] = useState<{ descriptors: number[][]; thumbnail: string } | null>(
-    null
-  )
+  const [captured, setCaptured] = useState<{
+    descriptors: number[][]
+    thumbnail: string
+  } | null>(null)
   const [mode, setMode] = useState<EnrollMode>("REPLACE")
   const [consent, setConsent] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
@@ -711,7 +675,10 @@ export function FaceEnrollmentSection() {
         consent: true,
         mode,
       })
-      pushToast(appending ? "Alternate look added" : "Face ID enrolled", "success")
+      pushToast(
+        appending ? "Alternate look added" : "Face ID enrolled",
+        "success"
+      )
       setCaptured(null)
       setConsent(false)
       setMode("REPLACE")
@@ -740,8 +707,8 @@ export function FaceEnrollmentSection() {
           Face ID
         </h3>
         <p className="text-[13px] text-muted-foreground">
-          Enroll your face for faster, camera-based check-in. Your face template is
-          processed on this device and stored encrypted for your company.
+          Enroll your face for faster, camera-based check-in. Your face template
+          is processed on this device and stored encrypted for your company.
         </p>
       </div>
       <Separator />
@@ -764,12 +731,18 @@ export function FaceEnrollmentSection() {
                   />
                 ) : (
                   <div className="flex size-16 shrink-0 items-center justify-center rounded-xl bg-green-500/10 text-green-500">
-                    <HugeiconsIcon icon={FaceIdIcon} size={28} strokeWidth={1.8} />
+                    <HugeiconsIcon
+                      icon={FaceIdIcon}
+                      size={28}
+                      strokeWidth={1.8}
+                    />
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="text-[14px] font-semibold">Face ID is set up</p>
+                    <p className="text-[14px] font-semibold">
+                      Face ID is set up
+                    </p>
                     <span className="inline-flex items-center gap-1 rounded-full border border-green-500/30 bg-green-500/10 px-2 py-0.5 text-[11px] font-medium text-green-600 dark:text-green-400">
                       <HugeiconsIcon
                         icon={CheckmarkBadge01Icon}
@@ -791,7 +764,11 @@ export function FaceEnrollmentSection() {
                       onClick={() => startCapture("APPEND")}
                       disabled={phase === "loading"}
                     >
-                      <HugeiconsIcon icon={Add01Icon} size={14} strokeWidth={2} />
+                      <HugeiconsIcon
+                        icon={Add01Icon}
+                        size={14}
+                        strokeWidth={2}
+                      />
                       Add another look
                     </Button>
                     <Button
@@ -800,7 +777,11 @@ export function FaceEnrollmentSection() {
                       onClick={() => startCapture("REPLACE")}
                       disabled={phase === "loading"}
                     >
-                      <HugeiconsIcon icon={Refresh01Icon} size={14} strokeWidth={2} />
+                      <HugeiconsIcon
+                        icon={Refresh01Icon}
+                        size={14}
+                        strokeWidth={2}
+                      />
                       {phase === "loading" ? "Preparing…" : "Re-enroll"}
                     </Button>
                     <Button
@@ -808,7 +789,11 @@ export function FaceEnrollmentSection() {
                       variant="destructive"
                       onClick={() => setConfirmRemove(true)}
                     >
-                      <HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={2} />
+                      <HugeiconsIcon
+                        icon={Delete02Icon}
+                        size={14}
+                        strokeWidth={2}
+                      />
                       Remove face
                     </Button>
                   </div>
@@ -819,18 +804,30 @@ export function FaceEnrollmentSection() {
             <div className="rounded-xl border border-border bg-card p-6">
               <div className="flex flex-col items-center gap-4 text-center">
                 <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <HugeiconsIcon icon={FaceIdIcon} size={28} strokeWidth={1.6} />
+                  <HugeiconsIcon
+                    icon={FaceIdIcon}
+                    size={28}
+                    strokeWidth={1.6}
+                  />
                 </div>
                 <div>
                   <p className="text-[14px] font-semibold">Set up Face ID</p>
                   <p className="mx-auto mt-1 max-w-md text-[13px] text-muted-foreground">
-                    We&apos;ll guide you through {POSE_TARGETS.length} head angles to
-                    build your face template. This happens entirely in your browser —
-                    only the encrypted template is sent to your company&apos;s server.
+                    We&apos;ll guide you through {POSE_TARGETS.length} head
+                    angles to build your face template. This happens entirely in
+                    your browser — only the encrypted template is sent to your
+                    company&apos;s server.
                   </p>
                 </div>
-                <Button onClick={() => startCapture("REPLACE")} disabled={phase === "loading"}>
-                  <HugeiconsIcon icon={Camera01Icon} size={16} strokeWidth={2} />
+                <Button
+                  onClick={() => startCapture("REPLACE")}
+                  disabled={phase === "loading"}
+                >
+                  <HugeiconsIcon
+                    icon={Camera01Icon}
+                    size={16}
+                    strokeWidth={2}
+                  />
                   {phase === "loading" ? "Preparing camera…" : "Set up Face ID"}
                 </Button>
                 {modelError && (
@@ -851,9 +848,9 @@ export function FaceEnrollmentSection() {
               className="mt-0.5 shrink-0 text-muted-foreground"
             />
             <p className="text-[12px] leading-relaxed text-muted-foreground">
-              Your biometric face template is encrypted at rest and scoped to your
-              company. It is never shared across companies and you can remove it at
-              any time.
+              Your biometric face template is encrypted at rest and scoped to
+              your company. It is never shared across companies and you can
+              remove it at any time.
             </p>
           </div>
         </>
@@ -889,7 +886,11 @@ export function FaceEnrollmentSection() {
               />
             ) : (
               <div className="flex size-20 shrink-0 items-center justify-center rounded-xl bg-green-500/10 text-green-500">
-                <HugeiconsIcon icon={CheckmarkBadge01Icon} size={32} strokeWidth={1.6} />
+                <HugeiconsIcon
+                  icon={CheckmarkBadge01Icon}
+                  size={32}
+                  strokeWidth={1.6}
+                />
               </div>
             )}
             <div className="min-w-0 flex-1">
@@ -915,8 +916,8 @@ export function FaceEnrollmentSection() {
               data-testid="face-consent-checkbox"
             />
             <span className="text-[12px] leading-relaxed text-muted-foreground">
-              I consent to my company storing an encrypted face template derived from
-              these images for the purpose of biometric check-in.
+              I consent to my company storing an encrypted face template derived
+              from these images for the purpose of biometric check-in.
             </span>
           </label>
 
@@ -938,7 +939,11 @@ export function FaceEnrollmentSection() {
               disabled={!consent || enrollMutation.isPending}
               data-testid="face-enroll-submit"
             >
-              <HugeiconsIcon icon={CheckmarkBadge01Icon} size={16} strokeWidth={2} />
+              <HugeiconsIcon
+                icon={CheckmarkBadge01Icon}
+                size={16}
+                strokeWidth={2}
+              />
               {enrollMutation.isPending
                 ? "Saving…"
                 : appending
@@ -956,8 +961,8 @@ export function FaceEnrollmentSection() {
             <DialogTitle>Remove Face ID?</DialogTitle>
           </DialogHeader>
           <p className="text-[13px] text-muted-foreground">
-            This permanently deletes your stored face template. You can enroll again
-            at any time.
+            This permanently deletes your stored face template. You can enroll
+            again at any time.
           </p>
           <DialogFooter>
             <Button

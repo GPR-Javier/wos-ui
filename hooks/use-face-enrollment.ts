@@ -28,3 +28,23 @@ export function useRemoveFace() {
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   })
 }
+
+// ── Admin (BIOMETRICS_MANAGEMENT) ─────────────────────────────────────────────
+
+const ADMIN_KEY = ["biometrics", "face", "admin"] as const
+
+export function useFaceEnrollments(enabled = true) {
+  return useQuery({
+    queryKey: ADMIN_KEY,
+    queryFn: () => biometricApi.listEnrollments(),
+    enabled,
+  })
+}
+
+export function useResetFaceEnrollment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (userId: number) => biometricApi.resetEnrollment(userId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ADMIN_KEY }),
+  })
+}

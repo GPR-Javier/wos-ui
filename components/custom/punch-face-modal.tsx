@@ -12,7 +12,9 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useSlugHref } from "@/lib/slug"
 import { loadFaceApi, type FaceApi } from "@/lib/face-api-loader"
+import { CameraPicker } from "@/components/custom/camera-picker"
 import { useMyFaceEnrollment } from "@/hooks/use-face-enrollment"
+import { usePreferencesStore } from "@/store/preferences-store"
 
 /**
  * Face-verification gate shown before clock-in / clock-out for roles that require it.
@@ -35,18 +37,53 @@ type ScanStatus =
   | "scanning"
   | "captured"
 
-const LABEL: Record<ScanStatus, { label: string; sub: string; tone: "neutral" | "warn" | "deny" | "ok" }> = {
+const LABEL: Record<
+  ScanStatus,
+  { label: string; sub: string; tone: "neutral" | "warn" | "deny" | "ok" }
+> = {
   loading: { label: "Preparing…", sub: "Loading face models", tone: "neutral" },
-  "model-error": { label: "Could not load face models", sub: "Check your connection and try again", tone: "deny" },
+  "model-error": {
+    label: "Could not load face models",
+    sub: "Check your connection and try again",
+    tone: "deny",
+  },
   init: { label: "Starting camera…", sub: "Please wait", tone: "neutral" },
-  denied: { label: "Camera access denied", sub: "Allow camera access in your browser", tone: "deny" },
-  "no-camera": { label: "No camera found", sub: "Connect a webcam, then try again", tone: "deny" },
-  busy: { label: "Camera unavailable", sub: "Another app may be using it", tone: "deny" },
-  "no-face": { label: "No face detected", sub: "Position your face inside the oval", tone: "deny" },
-  multi: { label: "Only one face", sub: "Only your face should be in view", tone: "deny" },
-  "too-far": { label: "Move closer", sub: "You are too far from the camera", tone: "warn" },
+  denied: {
+    label: "Camera access denied",
+    sub: "Allow camera access in your browser",
+    tone: "deny",
+  },
+  "no-camera": {
+    label: "No camera found",
+    sub: "Connect a webcam, then try again",
+    tone: "deny",
+  },
+  busy: {
+    label: "Camera unavailable",
+    sub: "Another app may be using it",
+    tone: "deny",
+  },
+  "no-face": {
+    label: "No face detected",
+    sub: "Position your face inside the oval",
+    tone: "deny",
+  },
+  multi: {
+    label: "Only one face",
+    sub: "Only your face should be in view",
+    tone: "deny",
+  },
+  "too-far": {
+    label: "Move closer",
+    sub: "You are too far from the camera",
+    tone: "warn",
+  },
   scanning: { label: "Verifying…", sub: "Hold still", tone: "ok" },
-  captured: { label: "Face captured", sub: "Completing your punch…", tone: "ok" },
+  captured: {
+    label: "Face captured",
+    sub: "Completing your punch…",
+    tone: "ok",
+  },
 }
 
 const TONE_STROKE: Record<string, string> = {
@@ -83,16 +120,21 @@ export function PunchFaceModal({
 }) {
   const isClockIn = punchType === "in"
   const slugHref = useSlugHref()
-  const { data: enrollment, isLoading: enrollmentLoading } = useMyFaceEnrollment()
+  const { data: enrollment, isLoading: enrollmentLoading } =
+    useMyFaceEnrollment()
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const acquireRef = useRef<Promise<MediaStream> | null>(null)
+  // Which camera the cached acquisition belongs to, so a switch can't silently reuse the old one.
+  const acquiredDeviceRef = useRef<string | null>(null)
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const statusRef = useRef<ScanStatus>("loading")
   const runningRef = useRef(false)
   const holdRef = useRef(0)
   const doneRef = useRef(false)
+
+  const cameraDeviceId = usePreferencesStore((s) => s.cameraDeviceId)
 
   const [faceapi, setFaceApi] = useState<FaceApi | null>(null)
   const [status, setStatus] = useState<ScanStatus>("loading")
@@ -145,9 +187,27 @@ export function PunchFaceModal({
       }
       let stream: MediaStream
       try {
+        // A camera switch must release the previous device rather than reuse its stream.
+        if (
+          acquireRef.current &&
+          acquiredDeviceRef.current !== cameraDeviceId
+        ) {
+          streamRef.current?.getTracks().forEach((t) => t.stop())
+          streamRef.current = null
+          acquireRef.current = null
+        }
         if (!acquireRef.current) {
+          acquiredDeviceRef.current = cameraDeviceId
           acquireRef.current = navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+            video: {
+              // Preferred, not exact — a working default beats a hard error if it's unplugged.
+              ...(cameraDeviceId
+                ? { deviceId: { ideal: cameraDeviceId } }
+                : {}),
+              facingMode: "user",
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+            },
           })
         }
         stream = await acquireRef.current
@@ -155,8 +215,10 @@ export function PunchFaceModal({
         acquireRef.current = null
         if (cancelled) return
         const name = (e as DOMException)?.name
-        if (name === "NotFoundError" || name === "OverconstrainedError") pushStatus("no-camera")
-        else if (name === "NotReadableError" || name === "AbortError") pushStatus("busy")
+        if (name === "NotFoundError" || name === "OverconstrainedError")
+          pushStatus("no-camera")
+        else if (name === "NotReadableError" || name === "AbortError")
+          pushStatus("busy")
         else pushStatus("denied")
         return
       }
@@ -184,19 +246,27 @@ export function PunchFaceModal({
         stopTimerRef.current = null
       }, 500)
     }
-  }, [faceapi, attempt])
+    // Switching camera tears the stream down and re-acquires on the new device.
+  }, [faceapi, attempt, cameraDeviceId])
 
   // Detection loop — grabs a descriptor as soon as a single face holds steady.
   useEffect(() => {
     if (!faceapi) return
-    const gateOpts = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 })
-    const grabOpts = new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 })
+    const gateOpts = new faceapi.TinyFaceDetectorOptions({
+      inputSize: 320,
+      scoreThreshold: 0.5,
+    })
+    const grabOpts = new faceapi.TinyFaceDetectorOptions({
+      inputSize: 416,
+      scoreThreshold: 0.5,
+    })
 
     const id = setInterval(async () => {
       const video = videoRef.current
       if (!video || video.readyState < 2) return
       if (runningRef.current || doneRef.current) return
-      if (statusRef.current === "init" || statusRef.current === "captured") return
+      if (statusRef.current === "init" || statusRef.current === "captured")
+        return
 
       runningRef.current = true
       try {
@@ -274,7 +344,10 @@ export function PunchFaceModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/45 backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <div>
@@ -282,7 +355,8 @@ export function PunchFaceModal({
               {isClockIn ? "Clock In" : "Clock Out"} Verification
             </p>
             <p className="text-[13px] text-muted-foreground">
-              Verify your face to complete {isClockIn ? "clock in" : "clock out"}
+              Verify your face to complete{" "}
+              {isClockIn ? "clock in" : "clock out"}
             </p>
           </div>
           <button
@@ -297,7 +371,11 @@ export function PunchFaceModal({
         {successLabel ? (
           <div className="flex flex-col items-center gap-4 p-8 text-center">
             <div className="flex size-16 items-center justify-center rounded-full bg-green-500/10 text-green-500">
-              <HugeiconsIcon icon={CheckmarkBadge01Icon} size={36} strokeWidth={1.6} />
+              <HugeiconsIcon
+                icon={CheckmarkBadge01Icon}
+                size={36}
+                strokeWidth={1.6}
+              />
             </div>
             <div>
               <p className="text-[15px] font-semibold text-green-600 dark:text-green-400">
@@ -317,10 +395,12 @@ export function PunchFaceModal({
               <HugeiconsIcon icon={FaceIdIcon} size={28} strokeWidth={1.6} />
             </div>
             <div>
-              <p className="text-[14px] font-semibold">Face ID isn&apos;t set up</p>
+              <p className="text-[14px] font-semibold">
+                Face ID isn&apos;t set up
+              </p>
               <p className="mx-auto mt-1 max-w-xs text-[13px] text-muted-foreground">
-                Your role requires face verification to clock in and out. Enroll your
-                face once, then you can punch normally.
+                Your role requires face verification to clock in and out. Enroll
+                your face once, then you can punch normally.
               </p>
             </div>
             <div className="flex w-full items-center gap-3">
@@ -336,7 +416,10 @@ export function PunchFaceModal({
           </div>
         ) : (
           <>
-            <div className="relative overflow-hidden bg-black" style={{ aspectRatio: "4/3" }}>
+            <div
+              className="relative overflow-hidden bg-black"
+              style={{ aspectRatio: "4/3" }}
+            >
               <video
                 ref={videoRef}
                 className="absolute inset-0 h-full w-full scale-x-[-1] object-cover"
@@ -352,7 +435,13 @@ export function PunchFaceModal({
                   <defs>
                     <mask id="punch-oval-mask">
                       <rect width="400" height="300" fill="white" />
-                      <ellipse cx="200" cy="150" rx="88" ry="114" fill="black" />
+                      <ellipse
+                        cx="200"
+                        cy="150"
+                        rx="88"
+                        ry="114"
+                        fill="black"
+                      />
                     </mask>
                   </defs>
                   <rect
@@ -388,7 +477,9 @@ export function PunchFaceModal({
                   )}
                 >
                   <HugeiconsIcon
-                    icon={cfg.tone === "ok" ? CheckmarkBadge01Icon : Alert01Icon}
+                    icon={
+                      cfg.tone === "ok" ? CheckmarkBadge01Icon : Alert01Icon
+                    }
                     size={13}
                     strokeWidth={2}
                   />
@@ -417,12 +508,23 @@ export function PunchFaceModal({
               </div>
             )}
 
+            <CameraPicker className="px-5 pt-4" disabled={submitting} />
+
             <div className="flex items-center gap-3 p-5">
-              <Button variant="outline" className="flex-1" onClick={onClose} disabled={submitting}>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={onClose}
+                disabled={submitting}
+              >
                 Cancel
               </Button>
               {errorMessage && (
-                <Button className="flex-1" onClick={retry} disabled={submitting}>
+                <Button
+                  className="flex-1"
+                  onClick={retry}
+                  disabled={submitting}
+                >
                   Try again
                 </Button>
               )}

@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { AttendanceCameraCapture } from "@/components/custom/attendance-camera-capture"
+import { FaceScanner } from "@/components/custom/face-scanner"
+import { kioskApi, type KioskCompanyChoice } from "@/lib/kiosk-api"
+import { apiErrorMessage } from "@/lib/api-error"
+import { useTimeFormat } from "@/hooks/use-time-format"
 import { cn } from "@/lib/utils"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -439,7 +442,8 @@ export function LoginExperience({
                 </div>
               )}
 
-              {/* Quick Time In button */}
+              {/* Quick Time In — available on every login page, including the company-less guest
+                  one: the punch resolves its own company from the identifier. */}
               <button
                 onClick={() => setShowQuickPunch(true)}
                 className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-background text-[13px] font-medium text-foreground transition-colors hover:bg-muted"
@@ -684,16 +688,30 @@ function Modal({
   )
 }
 
-type PunchStep = "form" | "camera" | "done"
+type PunchStep = "form" | "company" | "camera" | "done"
 
 // ── Quick punch modal ──────────────────────────────────────────────────────
 
+/**
+ * Shared-terminal punch. Company-agnostic on purpose: the terminal may sit on the company-less
+ * guest login, so the identifier is resolved across employers and the employee picks one when it
+ * is shared — the same shape as role selection during sign-in.
+ */
 function QuickPunchModal({ onClose }: { onClose: () => void }) {
   const now = useClock()
+  const { formatTime } = useTimeFormat()
   const [step, setStep] = useState<PunchStep>("form")
   const [employeeId, setEmployeeId] = useState("")
   const [punchType, setPunchType] = useState<PunchType>("in")
-  const [capturedAt, setCapturedAt] = useState("")
+  /** Server-recorded ISO timestamp — the terminal must never show its own clock as the punch time. */
+  const [capturedAt, setCapturedAt] = useState<string | null>(null)
+  /** Opaque single-use handle from the lookup step; the only way to reach the punch endpoint. */
+  const [handle, setHandle] = useState<string | null>(null)
+  const [displayName, setDisplayName] = useState("")
+  const [companies, setCompanies] = useState<KioskCompanyChoice[]>([])
+  const [looking, setLooking] = useState(false)
+  const [punching, setPunching] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const timeStr = now.toLocaleTimeString("en-US", {
     hour: "2-digit",
@@ -707,21 +725,81 @@ function QuickPunchModal({ onClose }: { onClose: () => void }) {
     year: "numeric",
   })
 
-  function handleFormNext() {
-    if (!employeeId.trim()) return
-    setStep("camera")
+  /**
+   * Step 1 — resolve the identifier server-side. The response deliberately doesn't say whether the
+   * failure was an unknown id, an ambiguous one, or a missing enrollment; showing the backend's
+   * single message keeps this terminal from becoming a staff-directory oracle.
+   */
+  async function handleFormNext(companyId?: number) {
+    const identifier = employeeId.trim()
+    if (!identifier || looking) return
+    setLooking(true)
+    setError(null)
+    try {
+      const res = await kioskApi.lookup(identifier, companyId)
+      // Shared identifier across employers — same shape as login's role selection.
+      if (res.requiresCompanySelection) {
+        setCompanies(res.companies ?? [])
+        setStep("company")
+        return
+      }
+      setHandle(res.handle)
+      setDisplayName(res.displayName)
+      // Roles without Face ID punch straight through — no camera step at all.
+      if (res.requiresFace) {
+        setStep("camera")
+      } else if (res.handle) {
+        await submitPunch(res.handle)
+      }
+    } catch (e) {
+      setError(apiErrorMessage(e, "Not recognised. Check what you typed."))
+      setStep("form")
+    } finally {
+      setLooking(false)
+    }
   }
 
-  function handleCaptureDone(time: string) {
-    setCapturedAt(time)
-    setStep("done")
+  /**
+   * Step 2. The scanner only produces a descriptor — wos-hr decides whether it matches, and
+   * whether one was required at all.
+   */
+  async function submitPunch(activeHandle: string, faceDescriptor?: number[]) {
+    if (punching) return
+    setPunching(true)
+    setError(null)
+    try {
+      const res = await kioskApi.punch({
+        handle: activeHandle,
+        type: punchType,
+        faceDescriptor,
+      })
+      setCapturedAt(res.at)
+      setDisplayName(res.displayName || displayName)
+      setStep("done")
+    } catch (e) {
+      // The handle is single-use, so a failure sends them back to re-identify.
+      setHandle(null)
+      setError(apiErrorMessage(e, "Verification failed. Please try again."))
+      setStep("form")
+    } finally {
+      setPunching(false)
+    }
+  }
+
+  function handleDescriptor(faceDescriptor: number[]) {
+    if (!handle) return
+    void submitPunch(handle, faceDescriptor)
   }
 
   function handleAnother() {
     setStep("form")
     setEmployeeId("")
     setPunchType("in")
-    setCapturedAt("")
+    setCapturedAt(null)
+    setHandle(null)
+    setDisplayName("")
+    setCompanies([])
+    setError(null)
   }
 
   return (
@@ -789,7 +867,7 @@ function QuickPunchModal({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="emp-id">Employee ID</Label>
+              <Label htmlFor="emp-id">Employee ID, username or email</Label>
               <Input
                 id="emp-id"
                 autoFocus
@@ -797,32 +875,103 @@ function QuickPunchModal({ onClose }: { onClose: () => void }) {
                 value={employeeId}
                 onChange={(e) => setEmployeeId(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleFormNext()
+                  if (e.key === "Enter") void handleFormNext()
                 }}
                 className="h-11"
               />
             </div>
+
+            {error && (
+              <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-900/40 dark:bg-red-900/20">
+                <HugeiconsIcon
+                  icon={Alert01Icon}
+                  size={15}
+                  strokeWidth={2}
+                  className="mt-0.5 shrink-0 text-red-500"
+                />
+                <p className="text-[12px] leading-relaxed text-red-700 dark:text-red-400">
+                  {error}
+                </p>
+              </div>
+            )}
 
             <Button
               className={cn(
                 "mt-4 h-11 w-full justify-center gap-2 text-[14px] font-semibold",
                 punchType === "out" && "bg-red-500 hover:bg-red-600"
               )}
-              disabled={!employeeId.trim()}
-              onClick={handleFormNext}
+              disabled={!employeeId.trim() || looking}
+              onClick={() => void handleFormNext()}
             >
               <HugeiconsIcon icon={Camera01Icon} size={15} strokeWidth={2} />
-              Continue to camera
+              {looking ? "Checking…" : "Continue"}
+            </Button>
+          </div>
+        )}
+
+        {step === "company" && (
+          <div className="p-6">
+            <p className="text-[14px] font-semibold text-foreground">
+              Which company?
+            </p>
+            <p className="mt-0.5 text-[12px] text-muted-foreground">
+              That ID matches more than one employer. Pick the one you&apos;re
+              punching for.
+            </p>
+            <div className="mt-4 space-y-2">
+              {companies.map((c) => (
+                <button
+                  key={c.companyId}
+                  onClick={() => void handleFormNext(c.companyId)}
+                  disabled={looking}
+                  className="flex h-11 w-full items-center justify-center rounded-lg border border-border bg-background text-[13px] font-medium transition-colors hover:bg-muted disabled:opacity-50"
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              className="mt-4 w-full"
+              onClick={() => setStep("form")}
+              disabled={looking}
+            >
+              Back
             </Button>
           </div>
         )}
 
         {step === "camera" && (
-          <AttendanceCameraCapture
-            punchType={punchType}
-            onCapture={handleCaptureDone}
-            onBack={() => setStep("form")}
-          />
+          <div>
+            <div className="px-6 pt-4 pb-3 text-center">
+              <p className="text-[13px] font-semibold text-foreground">
+                {displayName || "Verify your face"}
+              </p>
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
+                Look at the camera to complete Time{" "}
+                {punchType === "in" ? "In" : "Out"}
+              </p>
+            </div>
+            <FaceScanner
+              onDescriptor={handleDescriptor}
+              busy={punching}
+              busyLabel="Recording your punch…"
+              maskId="kiosk-oval"
+            />
+            <div className="p-5">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setHandle(null)
+                  setStep("form")
+                }}
+                disabled={punching}
+              >
+                Back
+              </Button>
+            </div>
+          </div>
         )}
 
         {step === "done" && (
@@ -846,8 +995,12 @@ function QuickPunchModal({ onClose }: { onClose: () => void }) {
               Time {punchType === "in" ? "In" : "Out"} Recorded
             </p>
             <p className="mt-1 text-[13px] text-muted-foreground">
-              <span className="font-medium text-foreground">{employeeId}</span>{" "}
-              — {capturedAt}
+              <span className="font-medium text-foreground">
+                {displayName || employeeId}
+              </span>{" "}
+              {/* Server-recorded time — this screen previously showed a browser clock for a
+                  punch that was never saved. */}
+              — {capturedAt ? formatTime(capturedAt) : "—"}
             </p>
             <div className="mt-5 flex gap-2">
               <button
