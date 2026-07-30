@@ -140,11 +140,14 @@ export const employeeApi = {
   attendanceHeatmap: () =>
     api.get<HeatmapEntry[]>("/hr/attendance/me/heatmap").then((r) => r.data),
 
+  // Payslips are owned by wos-payroll, not wos-hr — the old /hr/employee/payslips path had no
+  // handler at all, and wos-hr's catch-all exception handler turned that into a 500 rather than a
+  // 404. `/payroll/payslips/me` is scoped to the caller and returns released runs only.
   payslips: (params: { page?: number; size?: number } = {}) =>
     api
       .get<
         PageResponse<PayslipEntry>
-      >("/hr/employee/payslips", { params: { page: 0, size: 20, ...params } })
+      >("/payroll/payslips/me", { params: { page: 0, size: 20, ...params } })
       .then((r) => r.data),
 
   stats: () => api.get<EmployeeStats>("/hr/employee/stats").then((r) => r.data),

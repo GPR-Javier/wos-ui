@@ -13,6 +13,7 @@ export type LeaveTypeCode =
   | "EMERGENCY"
   | "MATERNITY"
   | "PATERNITY"
+  | "LWOP"
 
 /**
  * - `UPFRONT` — the full annual entitlement is available immediately.

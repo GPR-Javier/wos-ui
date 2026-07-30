@@ -32,6 +32,7 @@ const TYPE_LABEL: Record<LeaveTypeCode, string> = {
   EMERGENCY: "Emergency",
   MATERNITY: "Maternity",
   PATERNITY: "Paternity",
+  LWOP: "Leave without pay",
 }
 
 const ACCRUAL_LABEL: Record<LeaveAccrualMode, string> = {

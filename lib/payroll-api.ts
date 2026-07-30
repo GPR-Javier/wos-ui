@@ -111,6 +111,32 @@ async function downloadBlob(url: string, filename: string) {
   URL.revokeObjectURL(href)
 }
 
+/**
+ * A candidate for a payroll run. `eligible: false` employees are the ones `processRun` would
+ * silently skip — `reason` says why, so it can be fixed before the run rather than discovered
+ * afterwards in a short payslip count.
+ */
+export interface RunCandidate {
+  userId: number
+  employeeId: string | null
+  name: string | null
+  position: string | null
+  monthlySalary: number | null
+  /** "Contract (monthly)" or "Position salary grade" — where the figure came from. */
+  salarySource: string | null
+  basicSalary: number | null
+  allowances: number | null
+  overtimePay: number | null
+  grossPay: number | null
+  /** Unpaid leave for the period. */
+  absences: number | null
+  statutoryDeductions: number | null
+  totalDeductions: number | null
+  netPay: number | null
+  eligible: boolean
+  reason: string | null
+}
+
 export const payrollApi = {
   stats: () => api.get<PayrollStats>("/payroll/stats").then((r) => r.data),
 
@@ -121,8 +147,20 @@ export const payrollApi = {
       })
       .then((r) => r.data),
 
-  createRun: (body: { periodStart: string; periodEnd: string }) =>
-    api.post<PayrollRun>("/payroll/runs", body).then((r) => r.data),
+  /** Who the run would cover, what each would be paid, and who'd be skipped and why. */
+  runPreview: (periodStart: string, periodEnd: string) =>
+    api
+      .get<RunCandidate[]>("/payroll/runs/preview", {
+        params: { periodStart, periodEnd },
+      })
+      .then((r) => r.data),
+
+  createRun: (body: {
+    periodStart: string
+    periodEnd: string
+    /** Omit or leave empty to cover every eligible employee. */
+    includedUserIds?: number[]
+  }) => api.post<PayrollRun>("/payroll/runs", body).then((r) => r.data),
 
   runSteps: (id: number) =>
     api.get<RunStep[]>(`/payroll/runs/${id}/steps`).then((r) => r.data),

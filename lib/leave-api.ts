@@ -7,6 +7,7 @@ export type LeaveType =
   | "EMERGENCY"
   | "MATERNITY"
   | "PATERNITY"
+  | "LWOP"
 
 export type LeaveStatus =
   | "DRAFT"
@@ -128,6 +129,7 @@ export const LEAVE_TYPE_LABEL: Record<LeaveType, string> = {
   EMERGENCY: "Emergency",
   MATERNITY: "Maternity",
   PATERNITY: "Paternity",
+  LWOP: "Leave without pay",
 }
 
 export const LEAVE_STATUS_LABEL: Record<LeaveStatus, string> = {

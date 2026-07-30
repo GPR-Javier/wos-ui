@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Dialog,
@@ -27,14 +26,22 @@ import {
   ArrowDown01Icon,
   PlayCircle02Icon,
   MoneySend01Icon,
+  EyeIcon,
 } from "@hugeicons/core-free-icons"
 import {
   usePayrollRuns,
   useRunSteps,
   useCreatePayrollRun,
+  useRunPreview,
   useProcessRun,
   useReleaseRun,
 } from "@/hooks/use-payroll"
+import {
+  DateRangePicker,
+  type DateRangePreset,
+  type DateRangeValue,
+} from "@/components/ui/date-range-picker"
+import { PayrollRunPreviewModal } from "./payroll-run-preview-modal"
 import { type RunStatus, type StepStatus } from "@/lib/payroll-api"
 import { cn } from "@/lib/utils"
 
@@ -143,6 +150,53 @@ function RunStepsPanel({ runId }: { runId: number }) {
 
 // ── Create run dialog ──────────────────────────────────────────────────────
 
+/**
+ * PH payroll is usually semi-monthly (1st–15th, 16th–EOM), so those are the presets that matter —
+ * whole-month options are there for monthly payers.
+ */
+const PERIOD_PRESETS: DateRangePreset[] = [
+  {
+    label: "1st – 15th (this month)",
+    range: () => {
+      const n = new Date()
+      return {
+        from: new Date(n.getFullYear(), n.getMonth(), 1),
+        until: new Date(n.getFullYear(), n.getMonth(), 15),
+      }
+    },
+  },
+  {
+    label: "16th – end (this month)",
+    range: () => {
+      const n = new Date()
+      return {
+        from: new Date(n.getFullYear(), n.getMonth(), 16),
+        until: new Date(n.getFullYear(), n.getMonth() + 1, 0),
+      }
+    },
+  },
+  {
+    label: "This month",
+    range: () => {
+      const n = new Date()
+      return {
+        from: new Date(n.getFullYear(), n.getMonth(), 1),
+        until: new Date(n.getFullYear(), n.getMonth() + 1, 0),
+      }
+    },
+  },
+  {
+    label: "Last month",
+    range: () => {
+      const n = new Date()
+      return {
+        from: new Date(n.getFullYear(), n.getMonth() - 1, 1),
+        until: new Date(n.getFullYear(), n.getMonth(), 0),
+      }
+    },
+  },
+]
+
 function CreateRunDialog({
   open,
   onClose,
@@ -150,55 +204,216 @@ function CreateRunDialog({
   open: boolean
   onClose: () => void
 }) {
-  const [periodStart, setPeriodStart] = useState("")
-  const [periodEnd, setPeriodEnd] = useState("")
+  const [range, setRange] = useState<Partial<DateRangeValue> | null>(null)
+  /** null until the admin touches the list — meaning "everyone eligible". */
+  const [excluded, setExcluded] = useState<Set<number>>(new Set())
+  const [previewOpen, setPreviewOpen] = useState(false)
+  /** Set to preview one person's breakdown instead of the whole run. */
+  const [previewUserId, setPreviewUserId] = useState<number | null>(null)
   const createMutation = useCreatePayrollRun()
+  const { data: candidates = [], isLoading } = useRunPreview(
+    range?.from,
+    range?.until,
+    open
+  )
+
+  const eligible = candidates.filter((c) => c.eligible)
+  const skipped = candidates.filter((c) => !c.eligible)
+  const included = eligible.filter((c) => !excluded.has(c.userId))
+
+  function toggle(userId: number) {
+    setExcluded((prev) => {
+      const next = new Set(prev)
+      if (next.has(userId)) next.delete(userId)
+      else next.add(userId)
+      return next
+    })
+  }
 
   async function handleCreate() {
-    if (!periodStart || !periodEnd) return
-    await createMutation.mutateAsync({ periodStart, periodEnd })
-    setPeriodStart("")
-    setPeriodEnd("")
+    if (!range?.from || !range?.until || included.length === 0) return
+    await createMutation.mutateAsync({
+      periodStart: range.from,
+      periodEnd: range.until,
+      // Send ids only when the admin narrowed the list; empty means "everyone eligible", which
+      // keeps the run correct if someone becomes payable between creating and processing.
+      includedUserIds:
+        excluded.size === 0 ? undefined : included.map((c) => c.userId),
+    })
+    setRange(null)
+    setExcluded(new Set())
+    setPreviewOpen(false)
     onClose()
   }
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>New Payroll Run</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-[12px]">Period start</Label>
-            <Input
-              type="date"
-              value={periodStart}
-              onChange={(e) => setPeriodStart(e.target.value)}
+            <Label className="text-[12px]">Pay period</Label>
+            <DateRangePicker
+              value={range}
+              onChange={setRange}
+              presets={PERIOD_PRESETS}
+              fromPlaceholder="Period start"
+              untilPlaceholder="Period end"
             />
           </div>
+
           <div className="space-y-1.5">
-            <Label className="text-[12px]">Period end</Label>
-            <Input
-              type="date"
-              value={periodEnd}
-              onChange={(e) => setPeriodEnd(e.target.value)}
-            />
+            <div className="flex items-center justify-between">
+              <Label className="text-[12px]">
+                Employees ({included.length} of {eligible.length})
+              </Label>
+              {eligible.length > 0 && (
+                <button
+                  type="button"
+                  className="text-[11px] text-primary hover:underline"
+                  onClick={() =>
+                    setExcluded(
+                      excluded.size === 0
+                        ? new Set(eligible.map((c) => c.userId))
+                        : new Set()
+                    )
+                  }
+                >
+                  {excluded.size === 0 ? "Deselect all" : "Select all"}
+                </button>
+              )}
+            </div>
+
+            <div className="max-h-56 overflow-y-auto rounded-lg border border-border">
+              {!range?.from || !range?.until ? (
+                <p className="px-3 py-4 text-center text-[12px] text-muted-foreground">
+                  Pick a pay period to see who&apos;s covered and what
+                  they&apos;d be paid.
+                </p>
+              ) : isLoading ? (
+                <p className="px-3 py-4 text-center text-[12px] text-muted-foreground">
+                  Calculating…
+                </p>
+              ) : candidates.length === 0 ? (
+                <p className="px-3 py-4 text-center text-[12px] text-muted-foreground">
+                  No active employees found.
+                </p>
+              ) : (
+                <>
+                  {eligible.map((c) => (
+                    <label
+                      key={c.userId}
+                      className="flex cursor-pointer items-center gap-2.5 border-b border-border px-3 py-2 last:border-0 hover:bg-muted/40"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!excluded.has(c.userId)}
+                        onChange={() => toggle(c.userId)}
+                        className="size-3.5 shrink-0 accent-primary"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[12px] font-medium">
+                          {c.name ?? c.employeeId}
+                        </span>
+                        <span className="block truncate text-[11px] text-muted-foreground">
+                          {c.position ?? "—"}
+                          {/* Where the pay came from — a surprising figure is traceable here
+                              rather than by opening the contract and the position setup. */}
+                          {c.salarySource ? ` · ${c.salarySource}` : ""}
+                        </span>
+                      </span>
+                      {/* Per-employee breakdown. Not a submit, and must not toggle the row's
+                          checkbox — the whole row is a label. */}
+                      <button
+                        type="button"
+                        title={`Preview ${c.name ?? "employee"}`}
+                        aria-label={`Preview ${c.name ?? "employee"}`}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setPreviewUserId(c.userId)
+                          setPreviewOpen(true)
+                        }}
+                        className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        <HugeiconsIcon
+                          icon={EyeIcon}
+                          size={14}
+                          strokeWidth={2}
+                        />
+                      </button>
+                    </label>
+                  ))}
+
+                  {/* Surfaced rather than silently dropped during processing. */}
+                  {skipped.map((c) => (
+                    <div
+                      key={c.userId}
+                      className="flex items-center gap-2.5 border-b border-border px-3 py-2 opacity-60 last:border-0"
+                    >
+                      <span className="size-3.5 shrink-0" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[12px] font-medium line-through">
+                          {c.name ?? c.employeeId}
+                        </span>
+                        <span className="block truncate text-[11px] text-amber-600 dark:text-amber-400">
+                          {c.reason}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+            {skipped.length > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                {`${skipped.length} employee${skipped.length === 1 ? "" : "s"} can't be paid yet and will be left out of this run.`}
+              </p>
+            )}
           </div>
+
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="outline" size="sm" onClick={onClose}>
               Cancel
             </Button>
+            {/* Creation goes through the preview: seeing the amounts before committing is the
+                point, so there's no way to skip straight past it. */}
             <Button
               size="sm"
-              disabled={!periodStart || !periodEnd || createMutation.isPending}
-              onClick={handleCreate}
+              disabled={
+                !range?.from ||
+                !range?.until ||
+                included.length === 0 ||
+                isLoading
+              }
+              onClick={() => setPreviewOpen(true)}
             >
-              {createMutation.isPending ? "Creating…" : "Create run"}
+              Preview
             </Button>
           </div>
         </div>
       </DialogContent>
+
+      <PayrollRunPreviewModal
+        open={previewOpen}
+        singleEmployee={previewUserId != null}
+        onClose={() => {
+          setPreviewOpen(false)
+          setPreviewUserId(null)
+        }}
+        onConfirm={handleCreate}
+        candidates={
+          previewUserId != null
+            ? candidates.filter((c) => c.userId === previewUserId)
+            : candidates.filter((c) => !c.eligible || !excluded.has(c.userId))
+        }
+        isLoading={isLoading}
+        periodStart={range?.from}
+        periodEnd={range?.until}
+        confirming={createMutation.isPending}
+      />
     </Dialog>
   )
 }

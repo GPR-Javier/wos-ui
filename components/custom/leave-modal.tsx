@@ -51,12 +51,14 @@ const JS_DAY_TO_WEEKDAY = [
 ] as const
 
 const CREDIT_TYPES: LeaveType[] = ["VACATION", "SICK", "EMERGENCY"]
+// LWOP last: it's the fallback when paid credit is exhausted, not a first choice.
 const TYPE_OPTIONS: LeaveType[] = [
   "VACATION",
   "SICK",
   "EMERGENCY",
   "MATERNITY",
   "PATERNITY",
+  "LWOP",
 ]
 
 function errorMessage(e: unknown): string {

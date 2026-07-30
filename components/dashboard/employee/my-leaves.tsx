@@ -44,12 +44,17 @@ import {
   type LeaveRequest,
 } from "@/lib/leave-api"
 
-const TYPE_VARIANT: Record<LeaveType, "blue" | "amber" | "red" | "purple"> = {
+const TYPE_VARIANT: Record<
+  LeaveType,
+  "blue" | "amber" | "red" | "purple" | "gray"
+> = {
   VACATION: "blue",
   SICK: "amber",
   EMERGENCY: "red",
   MATERNITY: "purple",
   PATERNITY: "purple",
+  // Unpaid — deliberately the drabbest badge, so it reads differently at a glance.
+  LWOP: "gray",
 }
 
 const STATUS_FILTERS: { label: string; value?: LeaveStatus }[] = [

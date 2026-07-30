@@ -25,11 +25,30 @@ export function useRunSteps(id: number | null) {
   })
 }
 
+/**
+ * Only fetched once a period is chosen — it runs the real payslip computation per employee, so
+ * it's meaningless without dates and not cheap enough to fire speculatively.
+ */
+export function useRunPreview(
+  periodStart: string | undefined,
+  periodEnd: string | undefined,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: ["payroll", "run-preview", periodStart, periodEnd],
+    queryFn: () => payrollApi.runPreview(periodStart!, periodEnd!),
+    enabled: enabled && !!periodStart && !!periodEnd,
+  })
+}
+
 export function useCreatePayrollRun() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { periodStart: string; periodEnd: string }) =>
-      payrollApi.createRun(body),
+    mutationFn: (body: {
+      periodStart: string
+      periodEnd: string
+      includedUserIds?: number[]
+    }) => payrollApi.createRun(body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["payroll", "runs"] }),
   })
 }
