@@ -34,8 +34,19 @@ export interface LeavePolicy {
 
 export type UpdateLeavePolicyPayload = Omit<LeavePolicy, "leaveType">
 
+/** Blast radius of changing a default: who currently inherits it, and from what. */
+export interface LeavePolicyImpact {
+  inheritingEmployees: number
+  currentDefault: number | null
+}
+
 export const leavePolicyApi = {
   list: () => api.get<LeavePolicy[]>("/hr/leave/policies").then((r) => r.data),
+
+  impact: (leaveType: LeaveTypeCode) =>
+    api
+      .get<LeavePolicyImpact>(`/hr/leave/policies/${leaveType}/impact`)
+      .then((r) => r.data),
 
   update: (leaveType: LeaveTypeCode, payload: UpdateLeavePolicyPayload) =>
     api

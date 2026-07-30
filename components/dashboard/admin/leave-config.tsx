@@ -7,9 +7,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { useToastStore } from "@/store/toast-store"
 import {
   useLeavePolicies,
+  useLeavePolicyImpact,
   useUpdateLeavePolicy,
 } from "@/hooks/use-leave-policy"
 import type {
@@ -56,6 +64,9 @@ export function LeaveConfigSection() {
   const [edits, setEdits] = useState<
     Partial<Record<LeaveTypeCode, Partial<LeavePolicy>>>
   >({})
+  /** Type awaiting confirmation because its default is being lowered. */
+  const [pendingSave, setPendingSave] = useState<LeaveTypeCode | null>(null)
+  const { data: impact } = useLeavePolicyImpact(pendingSave)
 
   const resolved = (p: LeavePolicy): LeavePolicy => ({
     ...p,
@@ -64,6 +75,21 @@ export function LeaveConfigSection() {
 
   function patch(type: LeaveTypeCode, changes: Partial<LeavePolicy>) {
     setEdits((prev) => ({ ...prev, [type]: { ...prev[type], ...changes } }))
+  }
+
+  /**
+   * Lowering a default silently reduces entitlement for everyone inheriting it, so a reduction
+   * asks first. Raising it, or changing anything else, saves straight away — there's no downside
+   * to confirm.
+   */
+  function requestSave(type: LeaveTypeCode) {
+    const original = policies.find((x) => x.leaveType === type)
+    if (!original) return
+    const next = resolved(original).defaultCredits
+    const prev = original.defaultCredits
+    const lowering = prev != null && next != null && next < prev
+    if (lowering) setPendingSave(type)
+    else void save(type)
   }
 
   async function save(type: LeaveTypeCode) {
@@ -83,6 +109,7 @@ export function LeaveConfigSection() {
       })
       // Drop the local edit so the refetched row becomes the source of truth again.
       setEdits((prev) => ({ ...prev, [type]: undefined }))
+      setPendingSave(null)
       pushToast(`${TYPE_LABEL[type]} leave settings saved`, "success")
     } catch {
       // error surfaced by the API interceptor toast
@@ -238,7 +265,7 @@ export function LeaveConfigSection() {
                   <div className="mt-4 flex justify-end">
                     <Button
                       size="sm"
-                      onClick={() => void save(type)}
+                      onClick={() => requestSave(type)}
                       disabled={updateMutation.isPending}
                     >
                       {updateMutation.isPending ? "Saving…" : "Save"}
@@ -250,6 +277,82 @@ export function LeaveConfigSection() {
           })}
         </div>
       )}
+
+      <Dialog
+        open={pendingSave !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingSave(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Lower the company default?</DialogTitle>
+          </DialogHeader>
+          {pendingSave && (
+            <div className="space-y-3">
+              <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/40 dark:bg-amber-900/20">
+                <HugeiconsIcon
+                  icon={Alert01Icon}
+                  size={15}
+                  strokeWidth={2}
+                  className="mt-0.5 shrink-0 text-amber-500"
+                />
+                <div className="text-[12px] leading-relaxed text-amber-700 dark:text-amber-400">
+                  <p>
+                    {TYPE_LABEL[pendingSave]} drops from{" "}
+                    <span className="font-semibold">
+                      {impact?.currentDefault ?? "—"}
+                    </span>{" "}
+                    to{" "}
+                    <span className="font-semibold">
+                      {resolved(
+                        policies.find((x) => x.leaveType === pendingSave)!
+                      ).defaultCredits ?? "—"}
+                    </span>{" "}
+                    days.
+                  </p>
+                  <p className="mt-1.5">
+                    {impact === undefined ? (
+                      "Checking who this affects…"
+                    ) : impact.inheritingEmployees === 0 ? (
+                      "No employee currently inherits this default, so nobody is affected."
+                    ) : (
+                      <>
+                        <span className="font-semibold">
+                          {impact.inheritingEmployees} employee
+                          {impact.inheritingEmployees === 1 ? "" : "s"}
+                        </span>{" "}
+                        inherit it and will see their entitlement reduced
+                        immediately, part-way through the year.
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <p className="text-[12px] text-muted-foreground">
+                Days already approved stay valid — entitlement never falls below
+                what someone has taken. But anyone at or over the new figure
+                won&apos;t be able to file again this year.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setPendingSave(null)}
+              disabled={updateMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => pendingSave && void save(pendingSave)}
+              disabled={updateMutation.isPending}
+            >
+              {updateMutation.isPending ? "Saving…" : "Lower it"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

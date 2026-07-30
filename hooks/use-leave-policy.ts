@@ -18,6 +18,21 @@ export function useLeavePolicies(enabled = true) {
 }
 
 /**
+ * Blast radius of changing one type's default. Fetched on demand — only when an admin is about to
+ * save a change — rather than eagerly for all five types.
+ */
+export function useLeavePolicyImpact(
+  leaveType: LeaveTypeCode | null,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: ["leave", "policies", "impact", leaveType],
+    queryFn: () => leavePolicyApi.impact(leaveType!),
+    enabled: enabled && !!leaveType,
+  })
+}
+
+/**
  * Company defaults keyed the way `LeaveCredits` is, for the contract / offer forms.
  *
  * Only enabled types contribute — a disabled type yields no entitlement server-side, so showing
