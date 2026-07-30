@@ -112,9 +112,10 @@ export function BiometricsManagementSection() {
         </h3>
         <p className="mt-0.5 text-[13px] text-muted-foreground">
           A face is required only for roles granted{" "}
-          <span className="font-medium text-foreground">Require Face</span> under My
-          Attendance in role config — those employees must enroll before they can clock
-          in or out. Reset an enrollment to let someone enroll again.
+          <span className="font-medium text-foreground">Require Face</span>{" "}
+          under My Attendance in role config — those employees must enroll
+          before they can clock in or out. Reset an enrollment to let someone
+          enroll again.
         </p>
       </div>
 

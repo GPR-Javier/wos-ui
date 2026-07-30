@@ -17,6 +17,29 @@ export function useLeavePolicies(enabled = true) {
   })
 }
 
+/**
+ * Company defaults keyed the way `LeaveCredits` is, for the contract / offer forms.
+ *
+ * Only enabled types contribute — a disabled type yields no entitlement server-side, so showing
+ * its number as an inheritable default would be a lie. `flexi` has no policy of its own; the
+ * shared pool falls back to Vacation, matching how the balance service treats it.
+ */
+export function useLeaveCreditDefaults() {
+  const { data: policies = [], ...rest } = useLeavePolicies()
+  const byType = (t: string) =>
+    policies.find((p) => p.leaveType === t && p.enabled)?.defaultCredits ?? null
+
+  return {
+    ...rest,
+    defaults: {
+      vacation: byType("VACATION"),
+      sick: byType("SICK"),
+      emergency: byType("EMERGENCY"),
+      flexi: byType("VACATION"),
+    },
+  }
+}
+
 export function useUpdateLeavePolicy() {
   const qc = useQueryClient()
   return useMutation({

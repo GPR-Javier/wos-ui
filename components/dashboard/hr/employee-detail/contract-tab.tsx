@@ -21,6 +21,7 @@ import {
   type SchedulePolicyFormValue,
 } from "@/components/custom/schedule-policy-form"
 import { LeaveCreditsForm } from "@/components/custom/leave-credits-form"
+import { useLeaveCreditDefaults } from "@/hooks/use-leave-policy"
 import type { SchedulePolicyPayload } from "@/lib/schedule-policy-api"
 import {
   Select,
@@ -108,6 +109,8 @@ export function ContractTab({ employeeId }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [form, setForm] = useState<CreateContractPayload>(EMPTY_FORM)
+  // Placeholders only — a blank field inherits the company default rather than freezing today's.
+  const { defaults: leaveDefaults } = useLeaveCreditDefaults()
   const [overrideSchedule, setOverrideSchedule] = useState(false)
   const [schedule, setSchedule] = useState<SchedulePolicyFormValue>({
     payload: DEFAULT_SCHEDULE,
@@ -364,6 +367,7 @@ export function ContractTab({ employeeId }: Props) {
             <LeaveCreditsForm
               value={form.leaveCredits ?? {}}
               onChange={(lc) => set("leaveCredits", lc)}
+              policyDefaults={leaveDefaults}
             />
           </div>
 

@@ -14,6 +14,15 @@ import {
 interface Props {
   value: LeaveCredits
   onChange: (next: LeaveCredits) => void
+  /**
+   * Company defaults from Config → Leave, keyed the same way as {@link LeaveCredits}.
+   *
+   * Shown as placeholders rather than pre-filled values, because a blank field genuinely
+   * *inherits*: the backend falls back to the company policy when a contract leaves the number
+   * unset. Pre-filling would bake today's default into the contract and sever that link, so a
+   * later change to the company standard wouldn't reach this employee.
+   */
+  policyDefaults?: Partial<Record<LeaveTypeKey, number | null>>
 }
 
 function fmtRate(annual?: number | null) {
@@ -26,7 +35,7 @@ function fmtRate(annual?: number | null) {
  * monthly-accrual toggle, and the per-pool annual entitlement inputs.
  * Used by the contract form and the employment-offer modal.
  */
-export function LeaveCreditsForm({ value, onChange }: Props) {
+export function LeaveCreditsForm({ value, onChange, policyDefaults }: Props) {
   const accrue = !!value.accrueMonthly
 
   const setNum = (k: LeaveTypeKey, v: string) =>
@@ -83,6 +92,8 @@ export function LeaveCreditsForm({ value, onChange }: Props) {
       <div className="grid grid-cols-2 gap-3">
         {fields.map((lt) => {
           const annual = value[lt.key]
+          const fallback = policyDefaults?.[lt.key]
+          const inheriting = annual == null && fallback != null
           return (
             <div key={lt.key} className="space-y-1">
               <Label className="text-[12px]">{lt.label} (days / year)</Label>
@@ -90,14 +101,22 @@ export function LeaveCreditsForm({ value, onChange }: Props) {
                 type="number"
                 min={0}
                 className="h-9 text-[13px]"
-                placeholder="—"
+                placeholder={fallback != null ? String(fallback) : "—"}
                 value={annual ?? ""}
                 onChange={(e) => setNum(lt.key, e.target.value)}
               />
-              {accrue && annual != null && annual > 0 && (
+              {inheriting ? (
                 <p className="text-[10px] text-muted-foreground">
-                  ≈ {fmtRate(annual)} days/month
+                  Inherits {fallback} days from company settings
                 </p>
+              ) : (
+                accrue &&
+                annual != null &&
+                annual > 0 && (
+                  <p className="text-[10px] text-muted-foreground">
+                    ≈ {fmtRate(annual)} days/month
+                  </p>
+                )
               )}
             </div>
           )

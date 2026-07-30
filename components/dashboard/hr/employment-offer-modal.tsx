@@ -23,6 +23,7 @@ import {
   type LeaveCredits,
 } from "@/lib/contract-api"
 import { LeaveCreditsForm } from "@/components/custom/leave-credits-form"
+import { useLeaveCreditDefaults } from "@/hooks/use-leave-policy"
 import { CURRENCY_OPTIONS } from "@/lib/employee-profile-api"
 
 const WORK_TYPE_OPTIONS = [
@@ -112,6 +113,9 @@ export function EmploymentOfferModal({
   const [leaveCredits, setLeaveCredits] = useState<LeaveCredits>(
     detail.offer?.leaveCredits ?? {}
   )
+  // Shown as placeholders, not pre-filled: a blank field inherits the company default, so leaving
+  // it alone keeps this hire tracking the company standard if it later changes.
+  const { defaults: leaveDefaults } = useLeaveCreditDefaults()
   const [overrideSchedule, setOverrideSchedule] = useState(
     detail.offer?.scheduleOverridden ?? false
   )
@@ -373,7 +377,11 @@ export function EmploymentOfferModal({
             <p className="mt-0.5 mb-3 text-[11px] text-muted-foreground">
               Annual paid-leave credits for this hire.
             </p>
-            <LeaveCreditsForm value={leaveCredits} onChange={setLeaveCredits} />
+            <LeaveCreditsForm
+              value={leaveCredits}
+              onChange={setLeaveCredits}
+              policyDefaults={leaveDefaults}
+            />
           </div>
 
           {/* Schedule policy override */}

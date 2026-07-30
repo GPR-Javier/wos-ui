@@ -104,12 +104,17 @@ export function LeaveConfigSection() {
     <div className="space-y-6">
       <div>
         <h3 className="flex items-center gap-2 text-[15px] font-semibold">
-          <HugeiconsIcon icon={CalendarMinus01Icon} size={18} strokeWidth={1.8} />
+          <HugeiconsIcon
+            icon={CalendarMinus01Icon}
+            size={18}
+            strokeWidth={1.8}
+          />
           Leave settings
         </h3>
         <p className="mt-0.5 max-w-2xl text-[13px] text-muted-foreground">
-          Company defaults per leave type. An employment contract that sets its own credits
-          still wins — these fill the gap for everyone on the standard entitlement.
+          Company defaults per leave type. An employment contract that sets its
+          own credits still wins — these fill the gap for everyone on the
+          standard entitlement.
         </p>
       </div>
 
@@ -121,8 +126,9 @@ export function LeaveConfigSection() {
           className="mt-0.5 shrink-0 text-muted-foreground"
         />
         <p className="text-[12px] leading-relaxed text-muted-foreground">
-          Carry-over isn&apos;t here yet — nothing rolls unused days into the next year, so
-          adding the setting would be misleading. Balances reset each January.
+          Carry-over isn&apos;t here yet — nothing rolls unused days into the
+          next year, so adding the setting would be misleading. Balances reset
+          each January.
         </p>
       </div>
 
@@ -172,7 +178,9 @@ export function LeaveConfigSection() {
                         onChange={(e) =>
                           patch(type, {
                             defaultCredits:
-                              e.target.value === "" ? null : Number(e.target.value),
+                              e.target.value === ""
+                                ? null
+                                : Number(e.target.value),
                           })
                         }
                       />
@@ -193,13 +201,13 @@ export function LeaveConfigSection() {
                         }
                         className="h-9 w-full rounded-lg border border-border bg-background px-2 text-[13px]"
                       >
-                        {(
-                          Object.keys(ACCRUAL_LABEL) as LeaveAccrualMode[]
-                        ).map((mode) => (
-                          <option key={mode} value={mode}>
-                            {ACCRUAL_LABEL[mode]}
-                          </option>
-                        ))}
+                        {(Object.keys(ACCRUAL_LABEL) as LeaveAccrualMode[]).map(
+                          (mode) => (
+                            <option key={mode} value={mode}>
+                              {ACCRUAL_LABEL[mode]}
+                            </option>
+                          )
+                        )}
                       </select>
                     </div>
 
@@ -214,7 +222,8 @@ export function LeaveConfigSection() {
                         value={p.accrualStartsAfterMonths}
                         onChange={(e) =>
                           patch(type, {
-                            accrualStartsAfterMonths: Number(e.target.value) || 0,
+                            accrualStartsAfterMonths:
+                              Number(e.target.value) || 0,
                           })
                         }
                       />
