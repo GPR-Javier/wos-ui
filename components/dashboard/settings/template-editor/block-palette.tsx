@@ -14,7 +14,11 @@ import {
   ParagraphIcon,
 } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
-import type { BlockType } from "@/lib/email-template-types"
+import {
+  PALETTE_BY_KIND,
+  type BlockType,
+  type TemplateKind,
+} from "@/lib/template-types"
 import { useEditorStore } from "./editor-store"
 
 const PALETTE: { type: BlockType; label: string; icon: IconSvgElement }[] = [
@@ -62,7 +66,10 @@ function PaletteItem({
   )
 }
 
-export function BlockPalette() {
+export function BlockPalette({ kind }: { kind: TemplateKind }) {
+  const allowed = PALETTE_BY_KIND[kind]
+  const items = PALETTE.filter((p) => allowed.includes(p.type))
+
   return (
     <div className="flex w-56 shrink-0 flex-col border-r border-border bg-background">
       <div className="border-b border-border px-4 py-3">
@@ -72,10 +79,16 @@ export function BlockPalette() {
         </p>
       </div>
       <div className="grid grid-cols-2 gap-2 overflow-y-auto p-3">
-        {PALETTE.map((p) => (
+        {items.map((p) => (
           <PaletteItem key={p.type} {...p} />
         ))}
       </div>
+      {kind === "PAYSLIP" && (
+        <p className="border-t border-border px-4 py-3 text-[11px] leading-relaxed text-muted-foreground">
+          The employee header, earnings, deductions, and net pay blocks are part
+          of every payslip. You can move and restyle them, but not remove them.
+        </p>
+      )}
     </div>
   )
 }

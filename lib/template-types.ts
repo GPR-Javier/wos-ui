@@ -1,6 +1,10 @@
-// Types for the email template system (frontend-only for now; the real backend will be the
-// `wos-notification` service). System templates are seeded app-side and declare a variable
-// contract; each company may override the layout/subject (the drag-and-drop customization).
+// Types for the template system, served by the `wos-notification` service. System templates are
+// seeded from JSON resources and declare a variable contract; each company may override the
+// layout/subject (the drag-and-drop customization).
+
+// What a template renders into. One editor serves all three — only the palette and the presence
+// of a subject line differ.
+export type TemplateKind = "EMAIL" | "DOCUMENT" | "PAYSLIP"
 
 export type EmailCategory =
   | "AUTH"
@@ -8,6 +12,7 @@ export type EmailCategory =
   | "HR"
   | "PAYROLL"
   | "MARKETING"
+  | "LEGAL"
 
 export const CATEGORY_LABEL: Record<EmailCategory, string> = {
   AUTH: "Authentication",
@@ -15,6 +20,7 @@ export const CATEGORY_LABEL: Record<EmailCategory, string> = {
   HR: "HR & Requests",
   PAYROLL: "Payroll & Finance",
   MARKETING: "Marketing",
+  LEGAL: "Legal",
 }
 
 export const CATEGORY_ORDER: EmailCategory[] = [
@@ -23,6 +29,7 @@ export const CATEGORY_ORDER: EmailCategory[] = [
   "HR",
   "PAYROLL",
   "MARKETING",
+  "LEGAL",
 ]
 
 // ── Variables ────────────────────────────────────────────────────────────────
@@ -55,6 +62,49 @@ export type BlockType =
   | "columns"
   | "social"
   | "footer"
+  // Payslip-only structural blocks. These render figures from the payroll record rather than
+  // authored content, which is why they carry no editable `content` and are locked (see below).
+  //
+  // They deliberately mirror the section groups of Configure → Payroll → Payroll setup
+  // (Position & Grade, Compensation, Overtime, Allowances, Deductions) so an admin meets the same
+  // vocabulary in the screen that sets a figure and the one that prints it.
+  | "payslipHeader" // Position & Grade
+  | "compensation" // Compensation — basic pay for the period
+  | "overtimeTable" // Overtime — itemised per overtime type
+  | "allowancesTable" // Allowances
+  | "grossPay" // basic + allowances + overtime
+  | "deductionsTable" // Deductions — grouped Government / Loans / Other
+  | "netPay"
+
+/** Blocks a company may restyle and reorder but never delete, and never add more of. */
+export const LOCKED_BLOCK_TYPES: BlockType[] = [
+  "payslipHeader",
+  "compensation",
+  "overtimeTable",
+  "allowancesTable",
+  "grossPay",
+  "deductionsTable",
+  "netPay",
+]
+
+/** Which blocks each kind's palette offers. Locked blocks are never in a palette — they're seeded. */
+export const PALETTE_BY_KIND: Record<TemplateKind, BlockType[]> = {
+  EMAIL: [
+    "heading",
+    "text",
+    "button",
+    "image",
+    "divider",
+    "spacer",
+    "columns",
+    "social",
+    "footer",
+  ],
+  // No buttons or social rows: a legal document is prose, and a CTA in terms of service is noise.
+  DOCUMENT: ["heading", "text", "image", "divider", "spacer"],
+  // Branding and footnotes around the fixed figure tables.
+  PAYSLIP: ["heading", "text", "image", "divider", "spacer"],
+}
 
 export type TextAlign = "left" | "center" | "right"
 
@@ -74,6 +124,11 @@ export interface BlockStyle {
 export interface EmailBlock {
   id: string
   type: BlockType
+  /**
+   * Structural block the company can move and restyle but not delete or duplicate. Set on the
+   * seeded payslip blocks so a payslip can never ship without its earnings, deductions, or net pay.
+   */
+  locked?: boolean
   // Free-form content keyed by block type. Kept loose so blocks stay self-describing
   // and the renderer can switch on `type`.
   content: {
@@ -99,11 +154,13 @@ export interface EmailLayout {
 
 export interface EmailTemplate {
   key: string // stable contract key, e.g. "REGISTER_OTP"
+  kind: TemplateKind
   category: EmailCategory
   name: string
   description: string
   isMarketing: boolean
-  defaultSubject: string
+  /** Null for DOCUMENT and PAYSLIP — neither has a subject line. */
+  defaultSubject: string | null
   defaultLayout: EmailLayout
   variables: TemplateVariable[]
 }

@@ -1,14 +1,14 @@
 "use client"
 
 import { create } from "zustand"
-import { newId } from "@/lib/email-template-api"
+import { newId } from "@/lib/template-api"
 import type {
   BlockStyle,
   BlockType,
   EmailBlock,
   EmailLayout,
   ResolvedTemplate,
-} from "@/lib/email-template-types"
+} from "@/lib/template-types"
 
 // A new block with sensible defaults, created when something is dropped from the palette.
 export function createBlock(type: BlockType): EmailBlock {
@@ -91,6 +91,23 @@ export function createBlock(type: BlockType): EmailBlock {
         content: { columns: [[], []] },
         style: { paddingY: 8 },
       }
+    // Payslip structural blocks render figures from the payroll record, so they have no authored
+    // content. They're seeded into the default layout and never added from the palette — this arm
+    // exists only so the switch stays exhaustive.
+    case "payslipHeader":
+    case "compensation":
+    case "overtimeTable":
+    case "allowancesTable":
+    case "grossPay":
+    case "deductionsTable":
+    case "netPay":
+      return {
+        id: newId(),
+        type,
+        locked: true,
+        content: {},
+        style: { fontSize: 13, color: "#0f172a", paddingY: 10 },
+      }
   }
 }
 
@@ -138,7 +155,9 @@ export const useEditorStore = create<EditorState>((set) => ({
   dirty: false,
 
   load: (resolved) => {
-    const subject = resolved.config.subject ?? resolved.template.defaultSubject
+    // Documents and payslips have no subject at all — empty string keeps the field a plain string.
+    const subject =
+      resolved.config.subject ?? resolved.template.defaultSubject ?? ""
     // Deep clone so edits don't mutate the seeded default.
     const base = resolved.config.layout ?? resolved.template.defaultLayout
     const layout = structuredClone(base)
@@ -220,6 +239,8 @@ export const useEditorStore = create<EditorState>((set) => ({
       if (!s.layout) return s
       const i = indexOf(s.layout, id)
       if (i < 0) return s
+      // Two earnings tables would double the figures shown; one is the contract.
+      if (s.layout.blocks[i].locked) return s
       const copy = { ...structuredClone(s.layout.blocks[i]), id: newId() }
       const blocks = [...s.layout.blocks]
       blocks.splice(i + 1, 0, copy)
@@ -233,6 +254,9 @@ export const useEditorStore = create<EditorState>((set) => ({
   removeBlock: (id) =>
     set((s) => {
       if (!s.layout) return s
+      // Last line of defence: the UI hides delete on locked blocks, but the store is the one place
+      // every path (keyboard, inspector, canvas) funnels through.
+      if (s.layout.blocks.find((b) => b.id === id)?.locked) return s
       const blocks = s.layout.blocks.filter((b) => b.id !== id)
       return {
         layout: { ...s.layout, blocks },

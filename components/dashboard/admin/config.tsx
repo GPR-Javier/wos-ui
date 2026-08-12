@@ -29,6 +29,8 @@ import {
   HelpSquareIcon,
   AiBrain01Icon,
   Mail01Icon,
+  File01Icon,
+  Invoice01Icon,
   ShieldUserIcon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons"
@@ -44,7 +46,7 @@ import { ReportingRolesConfigSection } from "@/components/dashboard/admin/report
 import { QuestionBankSection } from "@/components/dashboard/admin/question-bank"
 import { AiProviderConfigSection } from "@/components/dashboard/admin/ai-provider-config"
 import { OAuthProvidersSection } from "@/components/dashboard/admin/oauth-providers-config"
-import { EmailConfigPanel } from "@/components/dashboard/settings/email-config-panel"
+import { TemplateConfigPanel } from "@/components/dashboard/settings/template-config-panel"
 import { useAuthStore } from "@/store/auth-store"
 import {
   useJobPositions,
@@ -178,7 +180,11 @@ export function ConfigSection() {
     },
     {
       title: "Communications",
-      items: [{ value: "email", label: "Email templates", icon: Mail01Icon }],
+      items: [
+        { value: "email", label: "Email templates", icon: Mail01Icon },
+        { value: "terms", label: "Terms & services", icon: File01Icon },
+        { value: "payslip", label: "Payslip format", icon: Invoice01Icon },
+      ],
     },
     {
       title: "Authentication",
@@ -292,7 +298,35 @@ export function ConfigSection() {
 
         {isAdmin && activeTab === "oauth" && <OAuthProvidersSection />}
 
-        {activeTab === "email" && <EmailConfigPanel />}
+        {activeTab === "email" && (
+          <TemplateConfigPanel
+            kind="EMAIL"
+            tab="email"
+            title="Email templates"
+            description="Customize the emails your company sends. Each template starts from a system default — drag and drop to make it yours."
+          />
+        )}
+
+        {activeTab === "terms" && (
+          <TemplateConfigPanel
+            kind="DOCUMENT"
+            tab="terms"
+            title="Terms & services"
+            description="The agreement employees see when they join your workspace. Edit the wording to match your policies — it starts from a general-purpose default."
+            // A company can't switch its own terms off, so the toggle would be a dead control.
+            toggleable={false}
+          />
+        )}
+
+        {activeTab === "payslip" && (
+          <TemplateConfigPanel
+            kind="PAYSLIP"
+            tab="payslip"
+            title="Payslip format"
+            description="The layout of the payslip PDF employees download. Branding and notes are yours to arrange; the earnings, deductions, and net pay blocks are fixed so the figures always reconcile."
+            toggleable={false}
+          />
+        )}
       </div>
     </div>
   )

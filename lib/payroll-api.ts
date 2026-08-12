@@ -116,6 +116,12 @@ async function downloadBlob(url: string, filename: string) {
  * silently skip — `reason` says why, so it can be fixed before the run rather than discovered
  * afterwards in a short payslip count.
  */
+/** One named allowance or deduction line — what the total is made of. */
+export interface PayslipLine {
+  label: string
+  amount: number
+}
+
 export interface RunCandidate {
   userId: number
   employeeId: string | null
@@ -126,11 +132,17 @@ export interface RunCandidate {
   salarySource: string | null
   basicSalary: number | null
   allowances: number | null
+  allowanceLines: PayslipLine[]
   overtimePay: number | null
+  overtimeLines: PayslipOvertimeLine[]
   grossPay: number | null
   /** Unpaid leave for the period. */
   absences: number | null
   statutoryDeductions: number | null
+  /** SSS / PhilHealth / Pag-IBIG / withholding tax, itemised. */
+  statutoryLines: PayslipLine[]
+  /** Company-defined deductions (loans, cash advances…), itemised. */
+  deductionLines: PayslipLine[]
   totalDeductions: number | null
   netPay: number | null
   eligible: boolean

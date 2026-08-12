@@ -5,7 +5,9 @@ import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowRight01Icon,
+  File01Icon,
   Mail01Icon,
+  MoneyBag02Icon,
   PaintBoardIcon,
 } from "@hugeicons/core-free-icons"
 import { Badge } from "@/components/ui/badge"
@@ -14,22 +16,43 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { useSlug, useSlugHref } from "@/lib/slug"
-import { emailTemplateApi } from "@/lib/email-template-api"
+import { templateApi } from "@/lib/template-api"
 import {
   CATEGORY_LABEL,
   CATEGORY_ORDER,
   type EmailCategory,
   type ResolvedTemplate,
-} from "@/lib/email-template-types"
+  type TemplateKind,
+} from "@/lib/template-types"
 
-export function EmailTemplatesSection() {
+/**
+ * The template list for one Communications tab. `kind` scopes the fetch, `tab` is the config tab
+ * value the edit links carry so the editor can send the user back where they came from.
+ */
+export function TemplateListSection({
+  kind,
+  tab,
+  title,
+  description,
+  /** Emails can be switched off per company; a payslip format has nothing to switch off. */
+  toggleable = true,
+}: {
+  kind: TemplateKind
+  tab: string
+  title: string
+  description: string
+  toggleable?: boolean
+}) {
   const slug = useSlug()
   const slugHref = useSlugHref()
   const [items, setItems] = useState<ResolvedTemplate[] | null>(null)
 
+  // Keyed on slug so switching company refetches; the company itself comes from the session.
+  // `kind` is fixed per instance (each Communications tab mounts its own panel), but it belongs in
+  // the deps so this stays correct if that ever changes.
   useEffect(() => {
-    emailTemplateApi.list(slug).then(setItems)
-  }, [slug])
+    templateApi.list(kind).then(setItems)
+  }, [slug, kind])
 
   const toggleEnabled = async (key: string, enabled: boolean) => {
     setItems((prev) =>
@@ -41,7 +64,7 @@ export function EmailTemplatesSection() {
           )
         : prev
     )
-    await emailTemplateApi.setEnabled(slug, key, enabled)
+    await templateApi.setEnabled(key, enabled)
   }
 
   const grouped = (cat: EmailCategory) =>
@@ -50,17 +73,14 @@ export function EmailTemplatesSection() {
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <h3 className="text-[15px] font-semibold">Email templates</h3>
-        <p className="text-[13px] text-muted-foreground">
-          Customize the emails your company sends. Each template starts from a
-          system default — drag and drop to make it yours.
-        </p>
+        <h3 className="text-[15px] font-semibold">{title}</h3>
+        <p className="text-[13px] text-muted-foreground">{description}</p>
       </div>
       <Separator />
 
       {items === null ? (
         <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-16 w-full rounded-lg" />
           ))}
         </div>
@@ -81,8 +101,9 @@ export function EmailTemplatesSection() {
                       item={it}
                       first={i === 0}
                       editHref={slugHref(
-                        `/dashboard/config?tab=email&sub=${it.template.key}`
+                        `/dashboard/config?tab=${tab}&sub=${it.template.key}`
                       )}
+                      toggleable={toggleable}
                       onToggle={(v) => toggleEnabled(it.template.key, v)}
                     />
                   ))}
@@ -96,15 +117,23 @@ export function EmailTemplatesSection() {
   )
 }
 
+const KIND_ICON: Record<TemplateKind, typeof Mail01Icon> = {
+  EMAIL: Mail01Icon,
+  DOCUMENT: File01Icon,
+  PAYSLIP: MoneyBag02Icon,
+}
+
 function TemplateRow({
   item,
   first,
   editHref,
+  toggleable,
   onToggle,
 }: {
   item: ResolvedTemplate
   first: boolean
   editHref: string
+  toggleable: boolean
   onToggle: (enabled: boolean) => void
 }) {
   const { template, config, customized } = item
@@ -116,7 +145,11 @@ function TemplateRow({
       )}
     >
       <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-        <HugeiconsIcon icon={Mail01Icon} size={17} strokeWidth={1.8} />
+        <HugeiconsIcon
+          icon={KIND_ICON[template.kind]}
+          size={17}
+          strokeWidth={1.8}
+        />
       </div>
 
       <Link href={editHref} className="min-w-0 flex-1">
@@ -146,11 +179,13 @@ function TemplateRow({
         // Stop the row link from firing when toggling.
         onClick={(e) => e.stopPropagation()}
       >
-        <Switch
-          checked={config.enabled}
-          onCheckedChange={onToggle}
-          aria-label={`Enable ${template.name}`}
-        />
+        {toggleable && (
+          <Switch
+            checked={config.enabled}
+            onCheckedChange={onToggle}
+            aria-label={`Enable ${template.name}`}
+          />
+        )}
         <Link
           href={editHref}
           className="flex items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

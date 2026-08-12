@@ -7,108 +7,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Alert01Icon } from "@hugeicons/core-free-icons"
+import {
+  Alert01Icon,
+  ArrowLeft01Icon,
+  EyeIcon,
+} from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
 import type { RunCandidate } from "@/lib/payroll-api"
-
-function fmt(n: number | null | undefined) {
-  if (n == null) return "—"
-  return `₱${n.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`
-}
-
-function Line({
-  label,
-  value,
-  negative,
-  strong,
-}: {
-  label: string
-  value: number | null | undefined
-  negative?: boolean
-  strong?: boolean
-}) {
-  return (
-    <div
-      className={cn(
-        "flex items-center justify-between py-1.5 text-[12px]",
-        strong && "border-t border-border pt-2 font-semibold"
-      )}
-    >
-      <span className={strong ? "" : "text-muted-foreground"}>{label}</span>
-      <span className={cn("tabular-nums", negative && "text-danger")}>
-        {negative && value ? `-${fmt(value)}` : fmt(value)}
-      </span>
-    </div>
-  )
-}
-
-/**
- * One employee laid out as a payslip rather than a table row.
- *
- * The run-level table is right for comparing people, but for a single person it forces horizontal
- * scrolling and reads nothing like the document this becomes. Same figures, payslip shape.
- */
-function PayslipPreview({ c }: { c: RunCandidate }) {
-  // Named deductions (cash advances, loans) are whatever the total isn't otherwise accounted for.
-  const other =
-    (c.totalDeductions ?? 0) - (c.statutoryDeductions ?? 0) - (c.absences ?? 0)
-
-  return (
-    <div className="rounded-xl border border-border">
-      <div className="border-b border-border px-4 py-3">
-        <p className="text-[13px] font-semibold">{c.name ?? c.employeeId}</p>
-        <p className="text-[11px] text-muted-foreground">
-          {c.position ?? "—"}
-          {c.salarySource ? ` · ${c.salarySource}` : ""}
-          {c.monthlySalary != null ? ` · ${fmt(c.monthlySalary)}/mo` : ""}
-        </p>
-      </div>
-
-      <div className="grid gap-x-8 gap-y-1 px-4 py-3 sm:grid-cols-2">
-        <div>
-          <p className="mb-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-            Earnings
-          </p>
-          <Line label="Basic pay" value={c.basicSalary} />
-          <Line label="Allowances" value={c.allowances} />
-          <Line label="Overtime" value={c.overtimePay} />
-          <Line label="Gross pay" value={c.grossPay} strong />
-        </div>
-
-        <div>
-          <p className="mb-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-            Deductions
-          </p>
-          <Line
-            label="SSS · PhilHealth · Pag-IBIG · Tax"
-            value={c.statutoryDeductions}
-            negative
-          />
-          <Line label="Unpaid leave" value={c.absences} negative />
-          <Line
-            label="Other deductions"
-            value={other > 0 ? other : 0}
-            negative
-          />
-          <Line
-            label="Total deductions"
-            value={c.totalDeductions}
-            negative
-            strong
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between border-t border-border bg-muted/40 px-4 py-3">
-        <span className="text-[13px] font-semibold">Net pay</span>
-        <span className="text-[16px] font-bold tabular-nums">
-          {fmt(c.netPay)}
-        </span>
-      </div>
-    </div>
-  )
-}
+import { figuresFromCandidate, peso as fmt } from "@/lib/payslip-figures"
+import { PayslipDocument } from "./payslip-document"
 
 /**
  * Payroll breakdown for a period, before the run exists.
@@ -140,8 +49,25 @@ export function PayrollRunPreviewModal({
   /** One person's breakdown rather than the run's — hides the totals row and the create action. */
   singleEmployee?: boolean
 }) {
+  // Drill-down from the comparison table into one person's payslip, without closing the modal and
+  // hunting for them in the list behind it.
+  const [detailUserId, setDetailUserId] = useState<number | null>(null)
+
+  // Cleared on the way out, not in an effect watching `open` — otherwise reopening briefly shows
+  // the previous run's employee before the effect catches up.
+  const close = () => {
+    setDetailUserId(null)
+    onClose()
+  }
+
   const skipped = candidates.filter((c) => !c.eligible)
   const payable = candidates.filter((c) => c.eligible)
+
+  const detail = payable.find((c) => c.userId === detailUserId) ?? null
+  // Either entry point lands on the same payslip view: the caller's single-employee mode, or a
+  // drill-down from the table.
+  const shown = singleEmployee ? (payable[0] ?? null) : detail
+  const period = { from: periodStart ?? "—", to: periodEnd ?? "—" }
 
   const sum = (pick: (c: RunCandidate) => number | null) =>
     payable.reduce((t, c) => t + (pick(c) ?? 0), 0)
@@ -157,24 +83,31 @@ export function PayrollRunPreviewModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={(o) => !o && close()}>
       <DialogContent
         className={cn(
-          "max-h-[85vh] overflow-hidden",
-          singleEmployee ? "max-w-xl" : "max-w-4xl"
+          "max-h-[90vh] overflow-hidden",
+          // The `sm:` prefix is required, not cosmetic: DialogContent's base carries `sm:max-w-md`,
+          // and a media-query rule beats an unprefixed one — tailwind-merge can't dedupe across
+          // variants, so a plain `max-w-4xl` here is silently ignored and the dialog stays 448px.
+          //
+          // The payslip template is 720px wide, so anything narrower squeezes the document it is
+          // supposed to be previewing. The run modal keeps one width across both its states so
+          // drilling into a row doesn't resize the dialog under the cursor.
+          singleEmployee ? "sm:max-w-3xl" : "sm:max-w-4xl"
         )}
       >
         <DialogHeader>
           <DialogTitle>
-            {singleEmployee
-              ? (candidates[0]?.name ?? "Employee breakdown")
+            {shown
+              ? (shown.name ?? shown.employeeId ?? "Employee breakdown")
               : "Payroll preview"}
           </DialogTitle>
         </DialogHeader>
 
         <p className="text-[12px] text-muted-foreground">
           {periodStart && periodEnd ? `${periodStart} → ${periodEnd}` : ""}
-          {singleEmployee
+          {shown
             ? ""
             : ` · ${payable.length} employee${payable.length === 1 ? "" : "s"}`}
         </p>
@@ -183,10 +116,26 @@ export function PayrollRunPreviewModal({
           <p className="py-10 text-center text-[13px] text-muted-foreground">
             Calculating…
           </p>
-        ) : singleEmployee ? (
-          payable.length > 0 ? (
-            <PayslipPreview c={payable[0]} />
-          ) : null
+        ) : shown ? (
+          <div className="max-h-[70vh] overflow-y-auto">
+            {/* Drilled in from the table — offer the way back. The caller's single-employee mode
+                has its own Back button and never had a table to return to. */}
+            {!singleEmployee && (
+              <button
+                type="button"
+                onClick={() => setDetailUserId(null)}
+                className="mb-3 flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <HugeiconsIcon
+                  icon={ArrowLeft01Icon}
+                  size={14}
+                  strokeWidth={2}
+                />
+                All employees
+              </button>
+            )}
+            <PayslipDocument figures={figuresFromCandidate(shown, period)} />
+          </div>
         ) : (
           <div className="max-h-[55vh] overflow-auto rounded-lg border border-border">
             <table className="w-full text-[12px]">
@@ -202,6 +151,9 @@ export function PayrollRunPreviewModal({
                   <th className="px-3 py-2 font-semibold">Absences</th>
                   <th className="px-3 py-2 font-semibold">Deductions</th>
                   <th className="px-3 py-2 font-semibold">Net</th>
+                  <th className="w-9 px-2 py-2">
+                    <span className="sr-only">View payslip</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -228,6 +180,21 @@ export function PayrollRunPreviewModal({
                       {c.totalDeductions ? `-${fmt(c.totalDeductions)}` : "—"}
                     </td>
                     <td className="px-3 py-2 font-semibold">{fmt(c.netPay)}</td>
+                    <td className="px-2 py-2">
+                      <button
+                        type="button"
+                        title={`View ${c.name ?? "employee"}'s payslip`}
+                        aria-label={`View ${c.name ?? "employee"}'s payslip`}
+                        onClick={() => setDetailUserId(c.userId)}
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        <HugeiconsIcon
+                          icon={EyeIcon}
+                          size={14}
+                          strokeWidth={2}
+                        />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -251,6 +218,8 @@ export function PayrollRunPreviewModal({
                     -{fmt(totals.deductions)}
                   </td>
                   <td className="px-3 py-2">{fmt(totals.net)}</td>
+                  {/* Keeps the totals row aligned with the eye column above it. */}
+                  <td className="w-9 px-2 py-2" />
                 </tr>
               </tfoot>
             </table>
@@ -282,12 +251,13 @@ export function PayrollRunPreviewModal({
         )}
 
         <div className="flex justify-end gap-2 pt-1">
-          <Button variant="outline" size="sm" onClick={onClose}>
+          <Button variant="outline" size="sm" onClick={close}>
             Back
           </Button>
-          {/* Creating from a single-employee view would be misleading — it'd run the whole
-              payroll, not just this person. */}
-          {!singleEmployee && (
+          {/* Hidden while one person's payslip fills the dialog — with their name in the title,
+              a "Create run" button reads as creating a run for them, when it would run the whole
+              payroll. Backing out to the table restores it. */}
+          {!shown && (
             <Button
               size="sm"
               onClick={onConfirm}

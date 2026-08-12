@@ -8,11 +8,7 @@ import {
   PaintBoardIcon,
 } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
-import type {
-  BlockStyle,
-  EmailBlock,
-  TextAlign,
-} from "@/lib/email-template-types"
+import type { BlockStyle, EmailBlock, TextAlign } from "@/lib/template-types"
 import { useEditorStore } from "./editor-store"
 
 // ── Compact field primitives ─────────────────────────────────────────────────

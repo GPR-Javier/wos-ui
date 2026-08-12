@@ -9,10 +9,7 @@ import {
   Copy01Icon,
 } from "@hugeicons/core-free-icons"
 import { Badge } from "@/components/ui/badge"
-import type {
-  TemplateVariable,
-  VariableSource,
-} from "@/lib/email-template-types"
+import type { TemplateVariable, VariableSource } from "@/lib/template-types"
 import { useEditorStore } from "./editor-store"
 
 const TEXTY = new Set(["heading", "text", "button", "footer"])

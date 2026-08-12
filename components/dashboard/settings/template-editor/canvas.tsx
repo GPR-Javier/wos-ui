@@ -12,9 +12,14 @@ import {
   Copy01Icon,
   Delete02Icon,
   Mail01Icon,
+  SquareLock02Icon,
 } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
-import type { EmailBlock, TemplateVariable } from "@/lib/email-template-types"
+import type {
+  EmailBlock,
+  TemplateKind,
+  TemplateVariable,
+} from "@/lib/template-types"
 import { useEditorStore } from "./editor-store"
 import { BlockView } from "./block-view"
 
@@ -81,32 +86,54 @@ function SortableBlock({
             strokeWidth={1.8}
           />
         </button>
-        <button
-          className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-          title="Duplicate"
-          onClick={(e) => {
-            e.stopPropagation()
-            duplicateBlock(block.id)
-          }}
-        >
-          <HugeiconsIcon icon={Copy01Icon} size={13} strokeWidth={1.8} />
-        </button>
-        <button
-          className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-          title="Delete"
-          onClick={(e) => {
-            e.stopPropagation()
-            removeBlock(block.id)
-          }}
-        >
-          <HugeiconsIcon icon={Delete02Icon} size={13} strokeWidth={1.8} />
-        </button>
+        {/* Locked blocks stay draggable and restylable — they just can't be removed or copied. */}
+        {block.locked ? (
+          <span
+            className="flex size-6 items-center justify-center rounded text-muted-foreground/70"
+            title="Required block — move or restyle it, but it can't be removed"
+          >
+            <HugeiconsIcon
+              icon={SquareLock02Icon}
+              size={13}
+              strokeWidth={1.8}
+            />
+          </span>
+        ) : (
+          <>
+            <button
+              className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+              title="Duplicate"
+              onClick={(e) => {
+                e.stopPropagation()
+                duplicateBlock(block.id)
+              }}
+            >
+              <HugeiconsIcon icon={Copy01Icon} size={13} strokeWidth={1.8} />
+            </button>
+            <button
+              className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              title="Delete"
+              onClick={(e) => {
+                e.stopPropagation()
+                removeBlock(block.id)
+              }}
+            >
+              <HugeiconsIcon icon={Delete02Icon} size={13} strokeWidth={1.8} />
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
 }
 
-export function EmailCanvas() {
+const EMPTY_HINT: Record<TemplateKind, string> = {
+  EMAIL: "Drag blocks here to build your email",
+  DOCUMENT: "Drag blocks here to write your document",
+  PAYSLIP: "Drag blocks here to build your payslip",
+}
+
+export function Canvas() {
   const layout = useEditorStore((s) => s.layout)
   const selectedId = useEditorStore((s) => s.selectedId)
   const preview = useEditorStore((s) => s.preview)
@@ -134,7 +161,9 @@ export function EmailCanvas() {
         {layout.blocks.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border py-16 text-muted-foreground">
             <HugeiconsIcon icon={Mail01Icon} size={26} strokeWidth={1.5} />
-            <p className="text-[13px]">Drag blocks here to build your email</p>
+            <p className="text-[13px]">
+              {EMPTY_HINT[resolved?.template.kind ?? "EMAIL"]}
+            </p>
           </div>
         ) : preview ? (
           layout.blocks.map((b) => (
