@@ -104,6 +104,36 @@ export const SAMPLE_FIGURES: PayslipFigures = {
   netPay: "₱10,680.00",
 }
 
+/**
+ * A payslip as wos-payroll serialises it. Distinct from {@link RunCandidate}: a candidate is what
+ * someone *would* be paid, this is what they *were*.
+ */
+export interface PayslipRecord {
+  id?: number
+  employeeName?: string | null
+  employeeId?: string | null
+  position?: string | null
+  periodStart?: string | null
+  periodEnd?: string | null
+  payrollRun?: { period?: string | null; status?: string | null } | null
+  basicSalary?: number | null
+  incentives?: number | null
+  allowanceLines?: PayslipLine[] | null
+  overtimePay?: number | null
+  overtimeBreakdown?: PayslipOvertimeLine[] | null
+  grossPay?: number | null
+  absences?: number | null
+  sss?: number | null
+  philhealth?: number | null
+  pagibig?: number | null
+  tax?: number | null
+  deductionLines?: PayslipLine[] | null
+  totalDeductions?: number | null
+  netPay?: number | null
+  releasedAt?: string | null
+  status?: string | null
+}
+
 const nz = (n: number | null | undefined) => n ?? 0
 
 const toRows = (lines: PayslipLine[] | undefined): FigureRow[] =>
@@ -215,6 +245,110 @@ export function figuresFromCandidate(
       periodStart: period.from,
       periodEnd: period.to,
       netPay: peso(c.netPay),
+    },
+  }
+}
+
+/**
+ * Real figures for a payslip that already exists.
+ *
+ * <p>Deliberately mirrors {@link figuresFromCandidate}, including the deduction grouping, so an
+ * employee's payslip and the admin's preview of the same person read identically. The employee view
+ * previously built its own partial breakdown and showed only the statutory lines — the named
+ * deductions were in the total but not on the page, so the figures visibly didn't add up.
+ */
+export function figuresFromPayslip(p: PayslipRecord): PayslipFigures {
+  const deductionGroups: FigureGroup[] = []
+
+  const statutory: FigureRow[] = []
+  const addStatutory = (label: string, amount: number | null | undefined) => {
+    if (nz(amount) !== 0) statutory.push({ label, amount: peso(amount) })
+  }
+  addStatutory("SSS", p.sss)
+  addStatutory("PhilHealth", p.philhealth)
+  addStatutory("Pag-IBIG / HDMF", p.pagibig)
+  addStatutory("Withholding tax (BIR)", p.tax)
+  if (statutory.length > 0)
+    deductionGroups.push({ label: "Government", rows: statutory })
+
+  const named = toRows(p.deductionLines ?? undefined)
+  if (named.length > 0)
+    deductionGroups.push({ label: "Loans & other", rows: named })
+
+  if (nz(p.absences) > 0) {
+    deductionGroups.push({
+      label: "Leave",
+      rows: [{ label: "Unpaid leave", amount: peso(p.absences) }],
+    })
+  }
+
+  // Anything the itemised lines don't account for, rather than a total that silently exceeds them.
+  const accounted =
+    nz(p.sss) +
+    nz(p.philhealth) +
+    nz(p.pagibig) +
+    nz(p.tax) +
+    (p.deductionLines ?? []).reduce((t, l) => t + nz(l.amount), 0) +
+    nz(p.absences)
+  const unexplained =
+    Math.round((nz(p.totalDeductions) - accounted) * 100) / 100
+  if (unexplained > 0) {
+    deductionGroups.push({
+      label: "Other",
+      rows: [{ label: "Other deductions", amount: peso(unexplained) }],
+    })
+  }
+
+  const overtimeRows = (p.overtimeBreakdown ?? []).map((l) => ({
+    label: overtimeLabel(l),
+    amount: peso(l.amount),
+  }))
+  const allowanceRows = toRows(p.allowanceLines ?? undefined)
+
+  return {
+    header: [
+      { label: "Employee", amount: p.employeeName ?? p.employeeId ?? "—" },
+      { label: "Employee ID", amount: p.employeeId ?? "—" },
+      { label: "Position", amount: p.position ?? "—" },
+      {
+        label: "Pay period",
+        amount: `${p.periodStart ?? "—"} – ${p.periodEnd ?? "—"}`,
+      },
+    ],
+    compensation: {
+      rows: [{ label: "Basic pay", amount: peso(p.basicSalary) }],
+    },
+    overtime: {
+      rows:
+        overtimeRows.length > 0
+          ? overtimeRows
+          : [{ label: "Overtime & premium pay", amount: peso(p.overtimePay) }],
+      total: peso(p.overtimePay),
+      empty: nz(p.overtimePay) === 0,
+    },
+    allowances: {
+      rows:
+        allowanceRows.length > 0
+          ? allowanceRows
+          : [{ label: "Allowances", amount: peso(p.incentives) }],
+      total: peso(p.incentives),
+      empty: nz(p.incentives) === 0,
+    },
+    grossPay: peso(p.grossPay),
+    deductions: {
+      groups: deductionGroups,
+      total: peso(p.totalDeductions),
+      empty: nz(p.totalDeductions) === 0,
+    },
+    netPay: peso(p.netPay),
+    values: {
+      employeeName: p.employeeName ?? "",
+      employeeId: p.employeeId ?? "",
+      position: p.position ?? "",
+      periodStart: p.periodStart ?? "",
+      periodEnd: p.periodEnd ?? "",
+      netPay: peso(p.netPay),
+      payDate: p.releasedAt ? p.releasedAt.slice(0, 10) : "",
     },
   }
 }

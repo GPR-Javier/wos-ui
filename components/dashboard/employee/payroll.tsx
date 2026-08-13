@@ -15,7 +15,8 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { StatCard } from "@/components/custom/stat-card"
 import { StatusBadge } from "@/components/custom/status-badge"
-import { PayslipModal } from "@/components/custom/payslip-modal"
+import { PayslipViewModal } from "./payslip-view-modal"
+import { figuresFromPayslip, type PayslipRecord } from "@/lib/payslip-figures"
 import {
   Tooltip,
   TooltipContent,
@@ -30,7 +31,6 @@ import {
   TableCell,
 } from "@/components/ui/table"
 import { TablePagination } from "@/components/custom/table-pagination"
-import type { PayslipData } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth-store"
 import { usePayslips } from "@/hooks/use-employee"
@@ -151,12 +151,10 @@ function YtdCard({
 
 // ── main component ────────────────────────────────────────────────────────────
 
-function toPayslipData(p: PayslipEntry): PayslipData {
-  return p as unknown as PayslipData
-}
-
 export function PayrollSection() {
-  const [selectedPayslip, setSelectedPayslip] = useState<PayslipData | null>(
+  // The raw record, not the formatted summary: the modal renders the full template, which needs
+  // the allowance and deduction lines the summary strings drop.
+  const [selectedPayslip, setSelectedPayslip] = useState<PayslipRecord | null>(
     null
   )
   const [page, setPage] = useState(1)
@@ -181,6 +179,16 @@ export function PayrollSection() {
   const phAmt = latest ? parseAmt(latest.philhealth) : 0
   const taxAmt = latest ? parseAmt(latest.tax) : 0
   const dedAmt = latest ? parseAmt(latest.deductions) : 0
+
+  // Flattened from the same projection the template and PDF use, so the card, the modal and the
+  // downloaded payslip can't disagree about what was earned or deducted.
+  const figures = latest ? figuresFromPayslip(latest.raw) : null
+  const allowanceRows = figures?.allowances.empty
+    ? []
+    : (figures?.allowances.rows ?? [])
+  const deductionRows = (figures?.deductions.groups ?? []).flatMap(
+    (g) => g.rows
+  )
 
   const month = latest?.period.split(" ")[0] ?? "—"
   const fullName = user ? `${user.firstName} ${user.lastName}` : "—"
@@ -212,7 +220,12 @@ export function PayrollSection() {
           value={
             <span className="text-danger">{latest?.deductions ?? "—"}</span>
           }
-          meta="SSS · PhilHealth · Tax"
+          // Named the actual groups present rather than a fixed list that omitted loans.
+          meta={
+            (figures?.deductions.groups ?? [])
+              .map((g) => g.label)
+              .join(" · ") || "—"
+          }
           accent="red"
         />
         <StatCard
@@ -247,7 +260,7 @@ export function PayrollSection() {
                   size="sm"
                   variant="ghost"
                   className="border border-white/30 bg-white/15 text-white hover:bg-white/25 hover:text-white"
-                  onClick={() => setSelectedPayslip(toPayslipData(latest))}
+                  onClick={() => setSelectedPayslip(latest.raw)}
                 >
                   <DownloadIcon className="mr-1" />
                   Download PDF
@@ -259,8 +272,19 @@ export function PayrollSection() {
             </div>
 
             <div className="px-6 pb-4">
+              {/* Every line, not just the statutory four. Listing a subset under a total that
+                  includes the rest leaves an employee unable to reconcile their own payslip. */}
               <SectionBand>Earnings</SectionBand>
               <SlipRow label="Basic salary" value={latest.basic} />
+              {allowanceRows.map((r) => (
+                <SlipRow
+                  key={r.label}
+                  label={r.label}
+                  value={`+${r.amount}`}
+                  labelClass="text-muted-foreground"
+                  valueClass="text-success"
+                />
+              ))}
               {latest.ot !== "—" && (
                 <SlipRow
                   label={`Overtime — ${latest.otHrs} hrs`}
@@ -270,30 +294,15 @@ export function PayrollSection() {
                 />
               )}
               <SectionBand>Deductions</SectionBand>
-              <SlipRow
-                label="SSS contribution"
-                value={`-${latest.sss}`}
-                labelClass="text-muted-foreground"
-                valueClass="text-danger"
-              />
-              <SlipRow
-                label="PhilHealth"
-                value={`-${latest.philhealth}`}
-                labelClass="text-muted-foreground"
-                valueClass="text-danger"
-              />
-              <SlipRow
-                label="Pag-IBIG"
-                value={`-${latest.pagibig}`}
-                labelClass="text-muted-foreground"
-                valueClass="text-danger"
-              />
-              <SlipRow
-                label="Withholding tax"
-                value={`-${latest.tax}`}
-                labelClass="text-muted-foreground"
-                valueClass="text-danger"
-              />
+              {deductionRows.map((r) => (
+                <SlipRow
+                  key={r.label}
+                  label={r.label}
+                  value={`-${r.amount}`}
+                  labelClass="text-muted-foreground"
+                  valueClass="text-danger"
+                />
+              ))}
               <div className="mt-3 flex items-center justify-between rounded-lg bg-muted px-4 py-3">
                 <span className="text-[13px] font-bold">Net pay</span>
                 <span className="text-lg font-bold text-success">
@@ -325,28 +334,19 @@ export function PayrollSection() {
                   valueClass="text-success"
                 />
               )}
+              {/* Every deduction, so the bars sum to the total shown above them. Listing three of
+                  them made the composition look wrong for anyone who added it up. */}
               <div className="space-y-3 border-t border-border pt-4">
-                <BreakdownBar
-                  label="SSS"
-                  value={`-${latest.sss.replace(".00", "")}`}
-                  pct={dedAmt > 0 ? (ssAmt / dedAmt) * 100 : 0}
-                  indicatorClassName="bg-red-500"
-                  valueClass="text-danger"
-                />
-                <BreakdownBar
-                  label="PhilHealth"
-                  value={`-${latest.philhealth.replace(".00", "")}`}
-                  pct={dedAmt > 0 ? (phAmt / dedAmt) * 100 : 0}
-                  indicatorClassName="bg-red-500"
-                  valueClass="text-danger"
-                />
-                <BreakdownBar
-                  label="Withholding tax"
-                  value={`-${latest.tax.replace(".00", "")}`}
-                  pct={dedAmt > 0 ? (taxAmt / dedAmt) * 100 : 0}
-                  indicatorClassName="bg-red-400"
-                  valueClass="text-danger"
-                />
+                {deductionRows.map((r) => (
+                  <BreakdownBar
+                    key={r.label}
+                    label={r.label}
+                    value={`-${r.amount.replace(".00", "")}`}
+                    pct={dedAmt > 0 ? (parseAmt(r.amount) / dedAmt) * 100 : 0}
+                    indicatorClassName="bg-red-500"
+                    valueClass="text-danger"
+                  />
+                ))}
               </div>
               <div className="flex items-center justify-between border-t border-border pt-3">
                 <span className="text-[13px] font-semibold">Net pay</span>
@@ -501,9 +501,7 @@ export function PayrollSection() {
                                 <Button
                                   size="icon-xs"
                                   variant="outline"
-                                  onClick={() =>
-                                    setSelectedPayslip(toPayslipData(p))
-                                  }
+                                  onClick={() => setSelectedPayslip(p.raw)}
                                 >
                                   <HugeiconsIcon
                                     icon={EyeIcon}
@@ -520,9 +518,7 @@ export function PayrollSection() {
                                 <Button
                                   size="icon-xs"
                                   variant="default"
-                                  onClick={() =>
-                                    setSelectedPayslip(toPayslipData(p))
-                                  }
+                                  onClick={() => setSelectedPayslip(p.raw)}
                                 >
                                   <DownloadIcon />
                                   <span className="sr-only">Download PDF</span>
@@ -571,10 +567,10 @@ export function PayrollSection() {
         </CardContent>
       </Card>
 
-      <PayslipModal
+      <PayslipViewModal
         open={!!selectedPayslip}
         onClose={() => setSelectedPayslip(null)}
-        data={selectedPayslip}
+        payslip={selectedPayslip}
       />
     </div>
   )

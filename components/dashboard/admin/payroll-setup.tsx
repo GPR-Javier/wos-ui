@@ -108,29 +108,40 @@ const DEDUCTION_SCHEDULE_OPTIONS: {
   { value: "ANNUAL", label: "Annual", sub: "Once per year" },
 ]
 
+// Statutory contributions (SSS, PhilHealth, Pag-IBIG, withholding tax) are deliberately NOT here.
+// Payroll computes all four from the statutory tables on every run, so adding one as a named
+// deduction charges the employee twice — which is exactly what happened before these were removed.
+// Loans and company-specific charges are the legitimate use for this list.
 const DEDUCTION_PRESETS: { value: string; label: string; group: string }[] = [
-  { value: "SSS Contribution", label: "SSS Contribution", group: "Government" },
-  {
-    value: "PhilHealth Contribution",
-    label: "PhilHealth Contribution",
-    group: "Government",
-  },
-  {
-    value: "Pag-IBIG Contribution",
-    label: "Pag-IBIG / HDMF Contribution",
-    group: "Government",
-  },
-  {
-    value: "Withholding Tax",
-    label: "Withholding Tax (BIR)",
-    group: "Government",
-  },
   { value: "SSS Loan", label: "SSS Loan", group: "Loans" },
   { value: "Pag-IBIG Loan", label: "Pag-IBIG Loan", group: "Loans" },
   { value: "Salary Loan", label: "Salary Loan", group: "Loans" },
   { value: "Cash Advance", label: "Cash Advance", group: "Loans" },
+  { value: "Uniform", label: "Uniform", group: "Company" },
+  { value: "Equipment", label: "Equipment", group: "Company" },
   { value: "__custom__", label: "Custom…", group: "" },
 ]
+
+/**
+ * Names that duplicate something payroll already computes. Matched loosely because the collision is
+ * about intent, not spelling — "SSS Contribution", "sss", and "SSS Premium" are all the same
+ * mistake. Loans are excluded: an "SSS Loan" is a real, separate deduction.
+ */
+const STATUTORY_PATTERNS = [
+  /\bsss\b/i,
+  /\bphil\s*health\b/i,
+  /\bpag[\s-]?ibig\b/i,
+  /\bhdmf\b/i,
+  /\bwithholding\b/i,
+  /\b(income\s+)?tax\b/i,
+  /\bbir\b/i,
+]
+
+export function isStatutoryName(name: string): boolean {
+  if (!name) return false
+  if (/\bloan\b/i.test(name)) return false
+  return STATUTORY_PATTERNS.some((re) => re.test(name))
+}
 
 const PRESET_VALUES = new Set(
   DEDUCTION_PRESETS.map((p) => p.value).filter((v) => v !== "__custom__")
@@ -436,7 +447,7 @@ function DeductionsEditor({
                   <SelectValue placeholder="Select type…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {["Government", "Loans"].map((group) => (
+                  {["Loans", "Company"].map((group) => (
                     <div key={group}>
                       <div className="px-2 py-1.5 text-[10px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
                         {group}
@@ -539,6 +550,17 @@ function DeductionsEditor({
                   </SelectContent>
                 </Select>
               </div>
+            )}
+
+            {/* Existing rows can still carry a statutory name from before those presets were
+                removed. Payroll computes these regardless, so the row double-charges the
+                employee — say so where the row is, not in a summary they might miss. */}
+            {isStatutoryName(item.name) && (
+              <p className="rounded-md bg-amber-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                Payroll already computes {item.name} automatically. Keeping it
+                here deducts it twice — remove this row unless it is a separate
+                charge.
+              </p>
             )}
           </div>
         ))

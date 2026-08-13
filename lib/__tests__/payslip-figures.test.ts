@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest"
 import {
   SAMPLE_FIGURES,
   figuresFromCandidate,
+  figuresFromPayslip,
   peso,
 } from "@/lib/payslip-figures"
 import type { RunCandidate } from "@/lib/payroll-api"
@@ -266,5 +267,82 @@ describe("company name", () => {
   it("is included when the caller supplies it", () => {
     const f = figuresFromCandidate(candidate(), PERIOD, "Acme Corp")
     expect(f.values!.companyName).toBe("Acme Corp")
+  })
+})
+
+describe("figuresFromPayslip", () => {
+  const payslip = {
+    employeeName: "Gene Paul Javier",
+    employeeId: "gpauljavier",
+    position: "Software Engineer",
+    periodStart: "2026-08-16",
+    periodEnd: "2026-08-31",
+    basicSalary: 50000,
+    incentives: 5499,
+    allowanceLines: [
+      { label: "Food", amount: 1500 },
+      { label: "Transportation", amount: 3000 },
+      { label: "Attendance Xhit", amount: 999 },
+    ],
+    overtimePay: 0,
+    overtimeBreakdown: [],
+    grossPay: 55499,
+    absences: 0,
+    sss: 1350,
+    philhealth: 1250,
+    pagibig: 200,
+    tax: 5966.75,
+    deductionLines: [
+      { label: "SSS Contribution", amount: 3500 },
+      { label: "Withholding Tax", amount: 15000 },
+    ],
+    totalDeductions: 27266.75,
+    netPay: 28232.25,
+    status: "released",
+  }
+
+  it("shows named deductions, not just the statutory four", () => {
+    // The employee view previously listed only SSS/PhilHealth/Pag-IBIG/tax under a total that
+    // included the loans too, so the payslip could not be reconciled by the person paid.
+    const f = figuresFromPayslip(payslip)
+    const labels = f.deductions.groups!.flatMap((g) =>
+      g.rows.map((r) => r.label)
+    )
+    expect(labels).toContain("SSS Contribution")
+    expect(labels).toContain("Withholding Tax")
+  })
+
+  it("itemises allowances rather than a single total", () => {
+    const f = figuresFromPayslip(payslip)
+    expect(f.allowances.rows!.map((r) => r.label)).toEqual([
+      "Food",
+      "Transportation",
+      "Attendance Xhit",
+    ])
+    expect(f.allowances.total).toBe("₱5,499.00")
+  })
+
+  it("lists deductions that sum to the stated total", () => {
+    const f = figuresFromPayslip(payslip)
+    const num = (s: string) => Number(s.replace(/[₱,]/g, ""))
+    const sum = f.deductions
+      .groups!.flatMap((g) => g.rows)
+      .reduce((t, r) => t + num(r.amount), 0)
+    expect(sum).toBeCloseTo(num(f.deductions.total!), 2)
+  })
+
+  it("surfaces an unexplained remainder instead of hiding it", () => {
+    const f = figuresFromPayslip({ ...payslip, totalDeductions: 28266.75 })
+    const other = f.deductions.groups!.find((g) => g.label === "Other")!
+    expect(other.rows[0].amount).toBe("₱1,000.00")
+  })
+
+  it("agrees with the candidate projection on grouping", () => {
+    // The employee's payslip and the admin's preview of the same person must read alike.
+    const f = figuresFromPayslip(payslip)
+    expect(f.deductions.groups!.map((g) => g.label)).toEqual([
+      "Government",
+      "Loans & other",
+    ])
   })
 })

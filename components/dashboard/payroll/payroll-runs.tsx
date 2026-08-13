@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { StatusBadge } from "@/components/custom/status-badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -42,7 +42,11 @@ import {
   type DateRangeValue,
 } from "@/components/ui/date-range-picker"
 import { PayrollRunPreviewModal } from "./payroll-run-preview-modal"
-import { type RunStatus, type StepStatus } from "@/lib/payroll-api"
+import {
+  type PayrollRun,
+  type RunStatus,
+  type StepStatus,
+} from "@/lib/payroll-api"
 import { cn } from "@/lib/utils"
 
 const PROCESSING_STEPS = [
@@ -200,9 +204,12 @@ const PERIOD_PRESETS: DateRangePreset[] = [
 function CreateRunDialog({
   open,
   onClose,
+  existingRuns,
 }: {
   open: boolean
   onClose: () => void
+  /** Periods already covered by a run — blocked in the picker so periods can't overlap. */
+  existingRuns: PayrollRun[]
 }) {
   const [range, setRange] = useState<Partial<DateRangeValue> | null>(null)
   /** null until the admin touches the list — meaning "everyone eligible". */
@@ -215,6 +222,20 @@ function CreateRunDialog({
     range?.from,
     range?.until,
     open
+  )
+
+  // Every existing run's period, blocked in the picker. Includes drafts: a draft still reserves
+  // its period, and two runs covering the same dates is the mistake worth preventing.
+  const coveredPeriods = useMemo(
+    () =>
+      existingRuns
+        .filter((r) => r.periodStart && r.periodEnd)
+        .map((r) => ({
+          from: r.periodStart,
+          until: r.periodEnd,
+          label: `Covered by the ${r.period} run (${r.status})`,
+        })),
+    [existingRuns]
   )
 
   const eligible = candidates.filter((c) => c.eligible)
@@ -259,9 +280,16 @@ function CreateRunDialog({
               value={range}
               onChange={setRange}
               presets={PERIOD_PRESETS}
+              disabledRanges={coveredPeriods}
               fromPlaceholder="Period start"
               untilPlaceholder="Period end"
             />
+            {coveredPeriods.length > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                Dates already covered by a payroll run can&apos;t be selected —
+                paying the same period twice is not recoverable once released.
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -609,7 +637,11 @@ export function PayrollRuns({
         </TableBody>
       </Table>
 
-      <CreateRunDialog open={createOpen} onClose={() => setCreateOpen(false)} />
+      <CreateRunDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        existingRuns={runs}
+      />
     </div>
   )
 }

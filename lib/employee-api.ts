@@ -1,5 +1,6 @@
 import { api } from "./api"
 import type { PageResponse } from "./admin-api"
+import type { PayslipRecord } from "./payslip-figures"
 
 export interface AttendanceBreakEntry {
   id: number
@@ -37,6 +38,15 @@ export interface AttendanceEntry {
   breaks?: AttendanceBreakEntry[]
 }
 
+/**
+ * The employee payslip view's shape: pre-formatted display strings, with "—" where a figure
+ * doesn't apply.
+ *
+ * <p>`/payroll/payslips/me` returns the raw Payslip entity (numbers, `basicSalary`/`grossPay`/…),
+ * so {@link toPayslipEntry} adapts it. The two never matched — every field here was `undefined` at
+ * runtime — but nothing noticed until an employee actually had a released payslip, at which point
+ * the page crashed on `basic.replace`.
+ */
 export interface PayslipEntry {
   period: string
   basic: string
@@ -51,6 +61,47 @@ export interface PayslipEntry {
   net: string
   released: string
   status: "released" | "upcoming"
+  /**
+   * The untouched record. The summary strings above cover only the statutory lines, so anything
+   * needing the complete picture — the full payslip view, which renders through the company's
+   * template — reads this instead of trying to reconstruct it from formatted text.
+   */
+  raw: PayslipRecord
+}
+
+/** The raw payslip entity as wos-payroll serialises it. */
+type RawPayslip = PayslipRecord
+
+const peso = (n: number | null | undefined) =>
+  n == null
+    ? "—"
+    : `₱${n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+/** Zero reads as "doesn't apply" for optional lines — the view hides a row showing "—". */
+const pesoOrDash = (n: number | null | undefined) => (!n ? "—" : peso(n))
+
+export function toPayslipEntry(p: RawPayslip): PayslipEntry {
+  const otHours = (p.overtimeBreakdown ?? []).reduce(
+    (t, l) => t + (l.hours ?? 0),
+    0
+  )
+  return {
+    period:
+      p.payrollRun?.period ?? `${p.periodStart ?? ""} – ${p.periodEnd ?? ""}`,
+    basic: peso(p.basicSalary),
+    otHrs: otHours > 0 ? String(otHours) : "—",
+    ot: pesoOrDash(p.overtimePay),
+    gross: peso(p.grossPay),
+    sss: peso(p.sss),
+    philhealth: peso(p.philhealth),
+    pagibig: peso(p.pagibig),
+    tax: peso(p.tax),
+    deductions: peso(p.totalDeductions),
+    net: peso(p.netPay),
+    released: p.releasedAt ?? "",
+    status: p.status === "released" ? "released" : "upcoming",
+    raw: p,
+  }
 }
 
 export interface EmployeeStats {
@@ -145,10 +196,15 @@ export const employeeApi = {
   // 404. `/payroll/payslips/me` is scoped to the caller and returns released runs only.
   payslips: (params: { page?: number; size?: number } = {}) =>
     api
-      .get<
-        PageResponse<PayslipEntry>
-      >("/payroll/payslips/me", { params: { page: 0, size: 20, ...params } })
-      .then((r) => r.data),
+      .get<PageResponse<RawPayslip>>("/payroll/payslips/me", {
+        params: { page: 0, size: 20, ...params },
+      })
+      // Adapt the entity to the view's shape here rather than in the component, so one place
+      // owns the mapping and a backend field rename fails at the boundary instead of at render.
+      .then((r) => ({
+        ...r.data,
+        content: r.data.content.map(toPayslipEntry),
+      })),
 
   stats: () => api.get<EmployeeStats>("/hr/employee/stats").then((r) => r.data),
 

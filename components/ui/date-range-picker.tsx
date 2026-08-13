@@ -38,6 +38,11 @@ interface DateRangePickerProps {
   disabled?: boolean
   /** Earliest selectable day (ISO `YYYY-MM-DD`). Days before are disabled. */
   minDate?: string
+  /**
+   * Day spans that cannot be selected — inclusive of both ends. A selection may not start, end, or
+   * pass through one, so a range can't silently straddle a blocked span.
+   */
+  disabledRanges?: { from: string; until: string; label?: string }[]
   /** Number of month panels shown side by side. Default 2. */
   numberOfMonths?: number
   className?: string
@@ -64,6 +69,10 @@ function parseISO(s?: string | null): Date | null {
 
 function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+}
+
+function addDays(d: Date, n: number): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
 }
 
 function addMonths(d: Date, n: number): Date {
@@ -116,6 +125,7 @@ export function DateRangePicker({
   presets,
   disabled,
   minDate,
+  disabledRanges,
   numberOfMonths = 2,
   className,
   align = "start",
@@ -153,11 +163,46 @@ export function DateRangePicker({
         : [selEnd, draftFrom]
       : [draftFrom, draftUntil]
 
+  /** The blocked span covering this day, if any — also the tooltip source. */
+  function blockedBy(d: Date): { label?: string } | null {
+    const day = startOfDay(d).getTime()
+    for (const r of disabledRanges ?? []) {
+      const from = parseISO(r.from)
+      const until = parseISO(r.until)
+      if (!from || !until) continue
+      if (
+        day >= startOfDay(from).getTime() &&
+        day <= startOfDay(until).getTime()
+      ) {
+        return r
+      }
+    }
+    return null
+  }
+
   function isDisabled(d: Date): boolean {
-    return !!min && startOfDay(d) < startOfDay(min)
+    if (min && startOfDay(d) < startOfDay(min)) return true
+    return blockedBy(d) !== null
+  }
+
+  /** True if any day between a and b is blocked — stops a range straddling a blocked span. */
+  function spansBlocked(a: Date, b: Date): boolean {
+    const [start, end] = a <= b ? [a, b] : [b, a]
+    for (let d = startOfDay(start); d <= startOfDay(end); d = addDays(d, 1)) {
+      if (blockedBy(d)) return true
+    }
+    return false
   }
 
   function commit(a: Date, b: Date) {
+    // Selecting either end is already blocked; this catches picking a start before a blocked span
+    // and an end after it, which would otherwise swallow the whole span.
+    if (spansBlocked(a, b)) {
+      setDraftFrom(null)
+      setDraftUntil(null)
+      setHovered(null)
+      return
+    }
     const [from, until] = a <= b ? [a, b] : [b, a]
     onChange({ from: toISO(from), until: toISO(until) })
     setOpen(false)
@@ -312,6 +357,7 @@ export function DateRangePicker({
                     {monthMatrix(month).map((day, di) => {
                       const inMonth = day.getMonth() === month.getMonth()
                       const dis = isDisabled(day)
+                      const blocked = blockedBy(day)
                       const isLo = sameDay(day, lo)
                       const isHi = sameDay(day, hi)
                       const between =
@@ -345,6 +391,9 @@ export function DateRangePicker({
                               type="button"
                               data-testid={`drp-day-${toISO(day)}`}
                               disabled={dis}
+                              // A greyed-out day with no explanation reads as a bug; say what
+                              // already covers it.
+                              title={blocked?.label}
                               onClick={() => handleDayClick(day)}
                               onMouseEnter={() => setHovered(day)}
                               className={cn(
